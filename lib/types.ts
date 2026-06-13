@@ -15,6 +15,20 @@ export interface CampaignFeatures {
   submissions: boolean;
 }
 
+export type AnalyticsSource = "manual" | "metabase";
+
+export interface MetabaseConfig {
+  url: string;
+  username: string;
+  password: string;
+  questionId: number;
+}
+
+export interface AnalyticsConfig {
+  source: AnalyticsSource;
+  metabase?: MetabaseConfig | null;
+}
+
 export interface CampaignSettings {
   id: string;
   slug: string;
@@ -26,6 +40,7 @@ export interface CampaignSettings {
   coverImageUrl?: string | null;
   published: boolean;
   features: CampaignFeatures;
+  analyticsConfig: AnalyticsConfig;
   updatedAt: string;
 }
 

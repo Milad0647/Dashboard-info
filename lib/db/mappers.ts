@@ -44,6 +44,10 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
             analytics: true,
             submissions: true,
           }),
+    analyticsConfig:
+      typeof row.analytics_config === "string"
+        ? JSON.parse(row.analytics_config)
+        : (row.analytics_config ?? { source: "manual" }),
     updatedAt: toIsoString(row.updated_at),
   };
 }

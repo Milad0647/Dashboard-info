@@ -26,11 +26,12 @@ services:
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASSWORD: password
       AUTH_SECRET: change-this-secret-in-production
+      UPLOAD_DIR: /app/data/uploads
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - uploads_data:/app/public/uploads
+      - uploads_data:/app/data/uploads
 
 volumes:
   postgres_data:

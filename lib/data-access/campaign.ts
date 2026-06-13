@@ -1,5 +1,6 @@
 import { getMockStore, getMockStoreForCampaign } from "@/lib/mock-data";
 import type {
+  AnalyticsMetric,
   AnalyticsSummary,
   CampaignKPIs,
   CampaignListItem,
@@ -10,6 +11,7 @@ import type {
 } from "@/lib/types";
 import { isPostgresConfigured, isSupabaseConfigured } from "@/lib/utils";
 import * as pg from "@/lib/db/repository";
+import { fetchMetabaseMetrics } from "@/lib/services/metabase";
 import {
   mapAnalyticsFromDb,
   mapBillboardFromDb,
@@ -22,6 +24,23 @@ import {
   mapVideoVersionFromDb,
 } from "@/lib/db/mappers";
 import { createClient } from "@/lib/supabase/server";
+
+async function resolveAnalyticsMetrics(
+  settings: CampaignSettings,
+  dbMetrics: AnalyticsMetric[]
+): Promise<AnalyticsMetric[]> {
+  const metabase = settings.analyticsConfig?.metabase;
+  if (settings.analyticsConfig?.source !== "metabase" || !metabase?.url || !metabase.questionId) {
+    return dbMetrics;
+  }
+
+  try {
+    return await fetchMetabaseMetrics(settings.id, metabase);
+  } catch (error) {
+    console.error("Metabase analytics fetch failed:", error);
+    return dbMetrics;
+  }
+}
 
 function buildAnalyticsSummary(
   metrics: { visitors: number; uniqueVisitors: number; pageViews: number; avgSessionDuration: number; source?: string | null; device?: string | null; page?: string | null; city?: string | null; date: string }[]
@@ -313,9 +332,11 @@ export async function getPublicCampaignData(slug: string): Promise<PublicCampaig
     const settings = await pg.pgGetPublishedCampaignBySlug(slug);
     if (!settings) return null;
     const campaignStore = await pg.pgGetPublicCampaignData(settings.id);
+    const analyticsMetrics = await resolveAnalyticsMetrics(settings, campaignStore.analytics);
     return assemblePublicData(settings, {
       settings,
       ...campaignStore,
+      analytics: analyticsMetrics,
     } as ReturnType<typeof getMockStoreForCampaign>);
   }
   if (!isSupabaseConfigured()) {

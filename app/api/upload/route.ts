@@ -1,5 +1,4 @@
 import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import { randomUUID } from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -7,6 +6,7 @@ import {
   getAdminSessionCookieName,
   verifyAdminSessionToken,
 } from "@/lib/auth/admin-session";
+import { getUploadPublicUrl, getUploadsDir } from "@/lib/uploads";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
@@ -75,12 +75,12 @@ export async function POST(request: Request) {
 
   const extension = extensionForMime(file.type);
   const filename = `${randomUUID()}${extension}`;
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
+  const uploadsDir = getUploadsDir();
 
   await mkdir(uploadsDir, { recursive: true });
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(uploadsDir, filename), buffer);
+  await writeFile(`${uploadsDir}/${filename}`, buffer);
 
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  return NextResponse.json({ url: getUploadPublicUrl(filename) });
 }

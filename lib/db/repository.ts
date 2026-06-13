@@ -105,7 +105,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
   await sql`
     INSERT INTO campaign_settings (
       id, slug, title, description, status, start_date, end_date,
-      cover_image_url, published, features, updated_at
+      cover_image_url, published, features, analytics_config, updated_at
     ) VALUES (
       ${id},
       ${data.slug ?? slugify(data.title ?? id)},
@@ -117,6 +117,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
       ${data.coverImageUrl ?? null},
       ${data.published ?? false},
       ${sql.json({ ...features })},
+      ${sql.json(JSON.parse(JSON.stringify(data.analyticsConfig ?? { source: "manual" })))},
       ${now}
     )
     ON CONFLICT (id) DO UPDATE SET
@@ -129,6 +130,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
       cover_image_url = EXCLUDED.cover_image_url,
       published = EXCLUDED.published,
       features = EXCLUDED.features,
+      analytics_config = EXCLUDED.analytics_config,
       updated_at = EXCLUDED.updated_at
   `;
 
@@ -295,8 +297,11 @@ export async function pgSavePosterVersion(data: Partial<PosterVersion> & { id?: 
   const sql = getSql();
   const now = new Date().toISOString();
   const id = data.id ?? generateId();
+  const isNew = !data.id;
+  const isFinal = isNew ? true : (data.isFinal ?? false);
+  const status = isNew ? "final" : (data.status ?? "draft");
 
-  if (data.isFinal) {
+  if (isFinal) {
     await sql`UPDATE poster_versions SET is_final = false WHERE poster_id = ${data.posterId}`;
   }
 
@@ -315,8 +320,8 @@ export async function pgSavePosterVersion(data: Partial<PosterVersion> & { id?: 
       ${data.imageUrl ?? ""},
       ${data.thumbnailUrl ?? data.imageUrl ?? ""},
       ${data.notes ?? null},
-      ${data.status ?? "draft"},
-      ${data.isFinal ?? false},
+      ${status},
+      ${isFinal},
       ${data.date ?? now.split("T")[0]},
       ${now}
     )
@@ -330,7 +335,7 @@ export async function pgSavePosterVersion(data: Partial<PosterVersion> & { id?: 
       date = EXCLUDED.date
   `;
 
-  return { success: true };
+  return { success: true, id, versionNumber, isFinal, status };
 }
 
 export async function pgDeletePosterVersion(id: string) {
@@ -385,8 +390,11 @@ export async function pgSaveVideoVersion(data: Partial<VideoVersion> & { id?: st
   const sql = getSql();
   const now = new Date().toISOString();
   const id = data.id ?? generateId();
+  const isNew = !data.id;
+  const isFinal = isNew ? true : (data.isFinal ?? false);
+  const status = isNew ? "final" : (data.status ?? "draft");
 
-  if (data.isFinal) {
+  if (isFinal) {
     await sql`UPDATE video_versions SET is_final = false WHERE video_id = ${data.videoId}`;
   }
 
@@ -406,8 +414,8 @@ export async function pgSaveVideoVersion(data: Partial<VideoVersion> & { id?: st
       ${data.thumbnailUrl ?? ""},
       ${data.duration ?? null},
       ${data.notes ?? null},
-      ${data.status ?? "draft"},
-      ${data.isFinal ?? false},
+      ${status},
+      ${isFinal},
       ${data.date ?? now.split("T")[0]},
       ${now}
     )
@@ -422,7 +430,7 @@ export async function pgSaveVideoVersion(data: Partial<VideoVersion> & { id?: st
       date = EXCLUDED.date
   `;
 
-  return { success: true };
+  return { success: true, id, versionNumber, isFinal, status };
 }
 
 export async function pgDeleteVideoVersion(id: string) {

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS campaign_settings (
   cover_image_url TEXT,
   published BOOLEAN NOT NULL DEFAULT false,
   features JSONB NOT NULL DEFAULT '{"billboards":true,"posters":true,"videos":true,"analytics":true,"submissions":true}',
+  analytics_config JSONB NOT NULL DEFAULT '{"source":"manual"}'::jsonb,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -135,3 +136,6 @@ CREATE INDEX IF NOT EXISTS idx_posters_campaign ON posters(campaign_id, publishe
 CREATE INDEX IF NOT EXISTS idx_videos_campaign ON videos(campaign_id, published, sort_order);
 CREATE INDEX IF NOT EXISTS idx_submissions_campaign ON campaign_submissions(campaign_id, status, published);
 CREATE INDEX IF NOT EXISTS idx_analytics_campaign_date ON analytics_metrics(campaign_id, date DESC);
+
+ALTER TABLE campaign_settings
+  ADD COLUMN IF NOT EXISTS analytics_config JSONB NOT NULL DEFAULT '{"source":"manual"}'::jsonb;

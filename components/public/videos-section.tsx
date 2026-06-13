@@ -1,14 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SectionHeader } from "@/components/public/section-header";
-import {
-  MediaVersionTimeline,
-  type MediaVersionItem,
-} from "@/components/media/media-version-timeline";
-import { VideoModal } from "@/components/media/video-modal";
+import { VideoCard } from "@/components/public/video-card";
 import type { MediaCategory, VideoWithVersions } from "@/lib/types";
 
 interface VideosSectionProps {
@@ -17,19 +11,11 @@ interface VideosSectionProps {
 }
 
 export function VideosSection({ categories, videos }: VideosSectionProps) {
-  const [selectedVersion, setSelectedVersion] = useState<{
-    version: MediaVersionItem;
-    title: string;
-  } | null>(null);
-
   const defaultCategory = categories[0]?.id ?? "all";
 
   return (
     <section id="videos">
-      <SectionHeader
-        title="ویدیوها"
-        description="ویدیوهای کمپین با تاریخچه نسخه‌ها"
-      />
+      <SectionHeader title="ویدیوها" description="ویدیوهای کمپین — نسخه‌ها داخل هر کارت" />
 
       {categories.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground border rounded-xl bg-card">
@@ -46,59 +32,20 @@ export function VideosSection({ categories, videos }: VideosSectionProps) {
           {categories.map((cat) => {
             const categoryVideos = videos.filter((v) => v.categoryId === cat.id);
             return (
-              <TabsContent key={cat.id} value={cat.id} className="space-y-6">
+              <TabsContent key={cat.id} value={cat.id}>
                 {categoryVideos.length === 0 ? (
                   <p className="text-muted-foreground text-sm">ویدیویی در این دسته وجود ندارد.</p>
                 ) : (
-                  categoryVideos.map((video) => (
-                    <Card key={video.id}>
-                      <CardHeader>
-                        <CardTitle className="text-base">{video.title}</CardTitle>
-                        {video.description && (
-                          <p className="text-sm text-muted-foreground">{video.description}</p>
-                        )}
-                      </CardHeader>
-                      <CardContent>
-                        <MediaVersionTimeline
-                          type="video"
-                          versions={video.versions.map((v) => ({
-                            id: v.id,
-                            versionNumber: v.versionNumber,
-                            thumbnailUrl: v.thumbnailUrl,
-                            videoUrl: v.videoUrl,
-                            date: v.date,
-                            notes: v.notes,
-                            status: v.status,
-                            isFinal: v.isFinal,
-                            duration: v.duration,
-                          }))}
-                          onVersionClick={(version) =>
-                            setSelectedVersion({ version, title: video.title })
-                          }
-                        />
-                      </CardContent>
-                    </Card>
-                  ))
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {categoryVideos.map((video) => (
+                      <VideoCard key={video.id} title={video.title} description={video.description} versions={video.versions} />
+                    ))}
+                  </div>
                 )}
               </TabsContent>
             );
           })}
         </Tabs>
-      )}
-
-      {selectedVersion && selectedVersion.version.videoUrl && (
-        <VideoModal
-          open={!!selectedVersion}
-          onOpenChange={(open) => !open && setSelectedVersion(null)}
-          videoUrl={selectedVersion.version.videoUrl}
-          title={selectedVersion.title}
-          versionNumber={selectedVersion.version.versionNumber}
-          date={selectedVersion.version.date}
-          notes={selectedVersion.version.notes}
-          status={selectedVersion.version.status}
-          isFinal={selectedVersion.version.isFinal}
-          duration={selectedVersion.version.duration}
-        />
       )}
     </section>
   );

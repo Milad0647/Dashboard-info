@@ -137,6 +137,7 @@ export async function saveCampaign(data: Partial<CampaignSettings> & { id?: stri
           analytics: false,
           submissions: false,
         },
+        analyticsConfig: data.analyticsConfig ?? { source: "manual" },
         updatedAt: now,
       };
       return { ...store, campaigns: [...store.campaigns, newCampaign] };

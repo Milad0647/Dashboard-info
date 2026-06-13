@@ -35,6 +35,7 @@ export const mockCampaigns: CampaignSettings[] = [
     coverImageUrl: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=400&fit=crop",
     published: true,
     features: fullFeatures,
+    analyticsConfig: { source: "manual" },
     updatedAt: now,
   },
   {
@@ -54,6 +55,7 @@ export const mockCampaigns: CampaignSettings[] = [
       analytics: false,
       submissions: false,
     },
+    analyticsConfig: { source: "manual" },
     updatedAt: now,
   },
   {
@@ -73,6 +75,7 @@ export const mockCampaigns: CampaignSettings[] = [
       analytics: false,
       submissions: false,
     },
+    analyticsConfig: { source: "manual" },
     updatedAt: now,
   },
 ];

@@ -38,3 +38,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# uploaded media (stored on server volume)
+/data/uploads/*
+!/data/uploads/.gitkeep
+/public/uploads/*
+!/public/uploads/.gitkeep

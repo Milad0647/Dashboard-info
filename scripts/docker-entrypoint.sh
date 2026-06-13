@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+UPLOAD_DIR="${UPLOAD_DIR:-/app/data/uploads}"
+
 if [ -n "$DATABASE_URL" ]; then
   echo "Waiting for database..."
   until psql "$DATABASE_URL" -c "SELECT 1" >/dev/null 2>&1; do
@@ -22,6 +24,7 @@ if [ -n "$DATABASE_URL" ]; then
   fi
 fi
 
-mkdir -p public/uploads
+mkdir -p "$UPLOAD_DIR"
+chown -R nextjs:nodejs "$UPLOAD_DIR" 2>/dev/null || true
 
-exec node server.js
+exec su-exec nextjs:nodejs node server.js

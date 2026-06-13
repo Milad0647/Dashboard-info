@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { updateSettingsAction } from "@/lib/actions/admin-actions";
-import type { CampaignFeatures, CampaignSettings } from "@/lib/types";
+import type { AnalyticsConfig, CampaignFeatures, CampaignSettings } from "@/lib/types";
 
 const featuresSchema = z.object({
   billboards: z.boolean(),
@@ -24,6 +24,13 @@ const featuresSchema = z.object({
   videos: z.boolean(),
   analytics: z.boolean(),
   submissions: z.boolean(),
+});
+
+const metabaseSchema = z.object({
+  url: z.string().optional(),
+  username: z.string().optional(),
+  password: z.string().optional(),
+  questionId: z.coerce.number().optional(),
 });
 
 const schema = z.object({
@@ -36,6 +43,8 @@ const schema = z.object({
   coverImageUrl: z.string().optional(),
   published: z.boolean(),
   features: featuresSchema,
+  analyticsSource: z.enum(["manual", "metabase"]),
+  metabase: metabaseSchema,
 });
 
 interface SettingsAdminProps {
@@ -65,12 +74,46 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
       coverImageUrl: initialSettings.coverImageUrl ?? "",
       published: initialSettings.published,
       features: initialSettings.features,
+      analyticsSource: initialSettings.analyticsConfig?.source ?? "manual",
+      metabase: {
+        url: initialSettings.analyticsConfig?.metabase?.url ?? "",
+        username: initialSettings.analyticsConfig?.metabase?.username ?? "",
+        password: initialSettings.analyticsConfig?.metabase?.password ?? "",
+        questionId: initialSettings.analyticsConfig?.metabase?.questionId ?? undefined,
+      },
     },
   });
 
+  const analyticsSource = form.watch("analyticsSource");
+
   const onSubmit = form.handleSubmit((data) => {
+    const analyticsConfig: AnalyticsConfig =
+      data.analyticsSource === "metabase"
+        ? {
+            source: "metabase",
+            metabase: {
+              url: data.metabase.url ?? "",
+              username: data.metabase.username ?? "",
+              password: data.metabase.password ?? "",
+              questionId: Number(data.metabase.questionId ?? 0),
+            },
+          }
+        : { source: "manual" };
+
     startTransition(async () => {
-      await updateSettingsAction({ ...data, id: initialSettings.id });
+      await updateSettingsAction({
+        id: initialSettings.id,
+        title: data.title,
+        slug: data.slug,
+        description: data.description,
+        status: data.status,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        coverImageUrl: data.coverImageUrl,
+        published: data.published,
+        features: data.features,
+        analyticsConfig,
+      });
       toast.success("تنظیمات ذخیره شد");
     });
   });
@@ -106,11 +149,7 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
               <PersianDateField control={form.control} name="startDate" label="تاریخ شروع (شمسی)" />
               <PersianDateField control={form.control} name="endDate" label="تاریخ پایان (شمسی)" />
             </div>
-            <MediaUpload
-              label="تصویر کاور"
-              value={form.watch("coverImageUrl") ?? ""}
-              onChange={(url) => form.setValue("coverImageUrl", url)}
-            />
+            <MediaUpload label="تصویر کاور" value={form.watch("coverImageUrl") ?? ""} onChange={(url) => form.setValue("coverImageUrl", url)} />
             <div className="flex items-center gap-2">
               <Switch checked={form.watch("published")} onCheckedChange={(v) => form.setValue("published", v)} />
               <Label>منتشر در صفحه عمومی</Label>
@@ -120,13 +159,37 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
               {featureLabels.map(({ key, label }) => (
                 <div key={key} className="flex items-center justify-between">
                   <Label className="font-normal">{label}</Label>
-                  <Switch
-                    checked={form.watch(`features.${key}`)}
-                    onCheckedChange={(v) => form.setValue(`features.${key}`, v)}
-                  />
+                  <Switch checked={form.watch(`features.${key}`)} onCheckedChange={(v) => form.setValue(`features.${key}`, v)} />
                 </div>
               ))}
             </div>
+
+            <div className="space-y-4 border rounded-lg p-4">
+              <Label className="text-sm font-semibold">آمار سایت (Metabase)</Label>
+              <div>
+                <Label>منبع داده</Label>
+                <Select value={analyticsSource} onValueChange={(v) => form.setValue("analyticsSource", v as "manual" | "metabase")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">دستی (از پنل آمار)</SelectItem>
+                    <SelectItem value="metabase">Metabase</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {analyticsSource === "metabase" && (
+                <div className="space-y-3">
+                  <div><Label>آدرس Metabase</Label><Input {...form.register("metabase.url")} dir="ltr" placeholder="https://metabase.example.com" /></div>
+                  <div><Label>نام کاربری</Label><Input {...form.register("metabase.username")} dir="ltr" autoComplete="off" /></div>
+                  <div><Label>رمز عبور</Label><Input {...form.register("metabase.password")} type="password" dir="ltr" autoComplete="new-password" /></div>
+                  <div><Label>Question ID</Label><Input type="number" {...form.register("metabase.questionId")} dir="ltr" placeholder="123" /></div>
+                  <p className="text-xs text-muted-foreground">
+                    ستون‌های پیشنهادی در Question: date, visitors, unique_visitors, page_views, avg_session_duration, source, device, page, city
+                  </p>
+                </div>
+              )}
+            </div>
+
             <Button type="submit" disabled={isPending}>{isPending ? "در حال ذخیره..." : "ذخیره تغییرات"}</Button>
           </form>
         </CardContent>

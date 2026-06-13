@@ -20,8 +20,9 @@ FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+ENV UPLOAD_DIR=/app/data/uploads
 
-RUN apk add --no-cache postgresql-client
+RUN apk add --no-cache postgresql-client su-exec
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
@@ -29,9 +30,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/database ./database
 COPY --from=builder /app/scripts ./scripts
+RUN mkdir -p /app/data/uploads && chown -R nextjs:nodejs /app/data/uploads /app/public
 RUN chmod +x ./scripts/docker-entrypoint.sh
 
-USER nextjs
 EXPOSE 3000
 
 CMD ["./scripts/docker-entrypoint.sh"]

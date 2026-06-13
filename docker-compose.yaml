@@ -27,8 +27,9 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password}
       AUTH_SECRET: ${AUTH_SECRET:-change-this-secret-in-production}
       NEXT_PUBLIC_USE_MOCK_DATA: ${NEXT_PUBLIC_USE_MOCK_DATA:-false}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/app/data/uploads}
     volumes:
-      - uploads_data:/app/public/uploads
+      - uploads_data:/app/data/uploads
     depends_on:
       db:
         condition: service_healthy
