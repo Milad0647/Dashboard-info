@@ -113,7 +113,22 @@ export function AdminPosterCard({ poster, versions, categories }: AdminPosterCar
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden w-full py-0 gap-0">
+      {finalVersion && (
+        <div className="relative w-full aspect-[3/4] overflow-hidden bg-muted">
+          <Image
+            src={finalVersion.imageUrl}
+            alt={poster.title}
+            fill
+            className="object-cover object-center size-full"
+            sizes="(max-width: 768px) 100vw, 33vw"
+          />
+          <div className="absolute top-2 right-2">
+            <Badge status="final">نسخه نهایی — {finalVersion.versionNumber}</Badge>
+          </div>
+        </div>
+      )}
+
       <CardHeader className="pb-3 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1 flex-1">
@@ -131,22 +146,7 @@ export function AdminPosterCard({ poster, versions, categories }: AdminPosterCar
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {finalVersion && (
-          <div className="relative aspect-[3/4] max-h-72 rounded-lg overflow-hidden bg-muted">
-            <Image
-              src={finalVersion.thumbnailUrl || finalVersion.imageUrl}
-              alt={poster.title}
-              fill
-              className="object-cover"
-              sizes="300px"
-            />
-            <div className="absolute top-2 right-2">
-              <Badge status="final">نسخه نهایی — {finalVersion.versionNumber}</Badge>
-            </div>
-          </div>
-        )}
-
+      <CardContent className="space-y-4 pt-4">
         <div className="space-y-3 border rounded-lg p-3 bg-muted/20">
           <p className="text-xs font-medium text-muted-foreground">ویرایش اطلاعات پوستر</p>
           <div><Label>عنوان</Label><Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} /></div>

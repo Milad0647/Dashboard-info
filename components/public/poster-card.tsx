@@ -37,17 +37,17 @@ export function PosterCard({ title, description, versions }: PosterCardProps) {
 
   return (
     <>
-      <Card className="overflow-hidden w-full max-w-sm">
+      <Card className="overflow-hidden w-full py-0 gap-0">
         <div
-          className="relative aspect-[3/4] max-h-80 bg-muted cursor-pointer group"
+          className="relative w-full aspect-[3/4] overflow-hidden bg-muted cursor-pointer group"
           onClick={() => setLightboxVersion(finalVersion)}
         >
           <Image
-            src={finalVersion.thumbnailUrl || finalVersion.imageUrl}
+            src={finalVersion.imageUrl}
             alt={title}
             fill
-            className="object-cover transition-transform group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, 25vw"
+            className="object-cover object-center size-full transition-transform group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 33vw"
           />
           {finalVersion.isFinal && (
             <div className="absolute top-3 right-3">
@@ -71,7 +71,7 @@ export function PosterCard({ title, description, versions }: PosterCardProps) {
           </Button>
         </div>
 
-        <CardContent className="p-4 space-y-3">
+        <CardContent className="p-4 pt-4 space-y-3">
           <div>
             <h3 className="font-semibold">{title}</h3>
             {description && (
