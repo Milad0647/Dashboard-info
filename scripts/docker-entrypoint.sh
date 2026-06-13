@@ -11,6 +11,17 @@ if [ -n "$DATABASE_URL" ]; then
   echo "Applying database schema..."
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/schema.sql
   echo "Database schema ready."
+
+  echo "Seeding database if empty..."
+  COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM campaign_settings")
+  if [ "$COUNT" = "0" ]; then
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/seed.sql
+    echo "Demo data seeded."
+  else
+    echo "Database already has campaigns, skipping seed."
+  fi
 fi
+
+mkdir -p public/uploads
 
 exec node server.js

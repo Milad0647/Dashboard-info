@@ -137,7 +137,12 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
 
 export async function pgDeleteCampaign(id: string) {
   const sql = getSql();
-  await sql`DELETE FROM campaign_settings WHERE id = ${id}`;
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    throw new Error("Invalid campaign id");
+  }
+  await sql`DELETE FROM campaign_settings WHERE id = ${id}::uuid`;
   return { success: true };
 }
 

@@ -16,11 +16,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function getAllCampaigns(): Promise<CampaignSettings[]> {
   if (isPostgresConfigured()) {
-    try {
-      return await pg.pgGetAllCampaigns();
-    } catch {
-      return getMockStore().campaigns;
-    }
+    return pg.pgGetAllCampaigns();
   }
   if (!isSupabaseConfigured()) {
     return getMockStore().campaigns;
@@ -37,11 +33,7 @@ export async function getAllCampaigns(): Promise<CampaignSettings[]> {
 
 export async function getAdminData(campaignId: string) {
   if (isPostgresConfigured()) {
-    try {
-      return await pg.pgGetAdminData(campaignId);
-    } catch {
-      return getAdminDataMock(campaignId);
-    }
+    return pg.pgGetAdminData(campaignId);
   }
   if (!isSupabaseConfigured()) {
     const store = getMockStoreForCampaign(campaignId);
@@ -154,8 +146,14 @@ export async function saveCampaign(data: Partial<CampaignSettings> & { id?: stri
   return { success: true };
 }
 
-export async function deleteCampaign(id: string) {
-  if (isPostgresConfigured()) return pg.pgDeleteCampaign(id);
+export async function deleteCampaign(id: string): Promise<{ success: boolean; error?: string }> {
+  if (isPostgresConfigured()) {
+    try {
+      return await pg.pgDeleteCampaign(id);
+    } catch {
+      return { success: false, error: "شناسه کمپین نامعتبر است یا حذف ممکن نیست" };
+    }
+  }
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
       ...store,

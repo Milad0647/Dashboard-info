@@ -42,6 +42,7 @@ export function AdminDataTable<T extends { id: string }>({
   emptyMessage = "موردی یافت نشد.",
 }: AdminDataTableProps<T>) {
   const [search, setSearch] = useState("");
+  const hasActions = Boolean(onEdit || onDelete || onTogglePublish);
 
   const filtered = data.filter((item) => {
     if (!search) return true;
@@ -70,32 +71,33 @@ export function AdminDataTable<T extends { id: string }>({
       ) : (
         <div className="border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] table-fixed text-sm">
+              <colgroup>
+                {hasActions && <col className="w-[200px]" />}
+                {columns.map((col) => (
+                  <col key={col.key} />
+                ))}
+              </colgroup>
               <thead className="bg-muted/50">
                 <tr>
+                  {hasActions && (
+                    <th className="text-right px-4 py-3 font-medium whitespace-nowrap">
+                      عملیات
+                    </th>
+                  )}
                   {columns.map((col) => (
                     <th key={col.key} className="text-right px-4 py-3 font-medium">
                       {col.label}
                     </th>
                   ))}
-                  {(onEdit || onDelete || onTogglePublish) && (
-                    <th className="text-right px-4 py-3 font-medium">عملیات</th>
-                  )}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((item) => (
                   <tr key={item.id} className="border-t hover:bg-muted/30">
-                    {columns.map((col) => (
-                      <td key={col.key} className="px-4 py-3">
-                        {col.render
-                          ? col.render(item)
-                          : String((item as Record<string, unknown>)[col.key] ?? "—")}
-                      </td>
-                    ))}
-                    {(onEdit || onDelete || onTogglePublish) && (
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
+                    {hasActions && (
+                      <td className="px-4 py-3 align-middle">
+                        <div className="flex flex-wrap items-center justify-start gap-1">
                           {onEdit && (
                             <Button variant="ghost" size="sm" onClick={() => onEdit(item)}>
                               ویرایش
@@ -136,6 +138,13 @@ export function AdminDataTable<T extends { id: string }>({
                         </div>
                       </td>
                     )}
+                    {columns.map((col) => (
+                      <td key={col.key} className="px-4 py-3 text-right align-middle">
+                        {col.render
+                          ? col.render(item)
+                          : String((item as Record<string, unknown>)[col.key] ?? "—")}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>

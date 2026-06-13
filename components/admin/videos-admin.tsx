@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { MediaUpload } from "@/components/ui/media-upload";
 import { Badge } from "@/components/ui/badge";
 import {
   saveCategoryAction,
@@ -138,8 +139,17 @@ export function VideosAdmin({ campaignId, initialCategories, initialVideos, init
             });
           })} className="space-y-4">
             <div><Label>ویدیو</Label><Select value={versionForm.watch("videoId")} onValueChange={(v) => versionForm.setValue("videoId", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{videos.map((v) => <SelectItem key={v.id} value={v.id}>{v.title}</SelectItem>)}</SelectContent></Select></div>
-            <div><Label>آدرس ویدیو</Label><Input {...versionForm.register("videoUrl")} dir="ltr" /></div>
-            <div><Label>تصویر بندانگشتی</Label><Input {...versionForm.register("thumbnailUrl")} dir="ltr" /></div>
+            <MediaUpload
+              label="ویدیو"
+              kind="video"
+              value={versionForm.watch("videoUrl")}
+              onChange={(url) => versionForm.setValue("videoUrl", url)}
+            />
+            <MediaUpload
+              label="تصویر بندانگشتی"
+              value={versionForm.watch("thumbnailUrl") ?? ""}
+              onChange={(url) => versionForm.setValue("thumbnailUrl", url)}
+            />
             <div><Label>مدت</Label><Input {...versionForm.register("duration")} placeholder="0:30" /></div>
             <div className="flex items-center gap-2"><Switch checked={versionForm.watch("isFinal")} onCheckedChange={(v) => versionForm.setValue("isFinal", v)} /><Label>نسخه نهایی</Label></div>
             <Button type="submit">ذخیره</Button>

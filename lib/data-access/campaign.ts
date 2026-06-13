@@ -255,22 +255,7 @@ function getMockPublicDataBySlug(slug: string): PublicCampaignData | null {
 
 export async function getCampaignList(): Promise<CampaignListItem[]> {
   if (isPostgresConfigured()) {
-    try {
-      return await pg.pgGetCampaignList();
-    } catch {
-      return getMockStore()
-        .campaigns.filter((c) => c.published)
-        .map(({ id, slug, title, description, status, startDate, endDate, coverImageUrl }) => ({
-          id,
-          slug,
-          title,
-          description,
-          status,
-          startDate,
-          endDate,
-          coverImageUrl,
-        }));
-    }
+    return pg.pgGetCampaignList();
   }
   if (!isSupabaseConfigured()) {
     return getMockStore()
@@ -325,17 +310,13 @@ export async function getCampaignList(): Promise<CampaignListItem[]> {
 
 export async function getPublicCampaignData(slug: string): Promise<PublicCampaignData | null> {
   if (isPostgresConfigured()) {
-    try {
-      const settings = await pg.pgGetPublishedCampaignBySlug(slug);
-      if (!settings) return getMockPublicDataBySlug(slug);
-      const campaignStore = await pg.pgGetPublicCampaignData(settings.id);
-      return assemblePublicData(settings, {
-        settings,
-        ...campaignStore,
-      } as ReturnType<typeof getMockStoreForCampaign>);
-    } catch {
-      return getMockPublicDataBySlug(slug);
-    }
+    const settings = await pg.pgGetPublishedCampaignBySlug(slug);
+    if (!settings) return null;
+    const campaignStore = await pg.pgGetPublicCampaignData(settings.id);
+    return assemblePublicData(settings, {
+      settings,
+      ...campaignStore,
+    } as ReturnType<typeof getMockStoreForCampaign>);
   }
   if (!isSupabaseConfigured()) {
     return getMockPublicDataBySlug(slug);

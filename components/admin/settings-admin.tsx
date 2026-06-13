@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { updateSettingsAction } from "@/lib/actions/admin-actions";
 import type { CampaignFeatures, CampaignSettings } from "@/lib/types";
@@ -105,7 +106,11 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
               <PersianDateField control={form.control} name="startDate" label="تاریخ شروع (شمسی)" />
               <PersianDateField control={form.control} name="endDate" label="تاریخ پایان (شمسی)" />
             </div>
-            <div><Label>تصویر کاور</Label><Input {...form.register("coverImageUrl")} dir="ltr" /></div>
+            <MediaUpload
+              label="تصویر کاور"
+              value={form.watch("coverImageUrl") ?? ""}
+              onChange={(url) => form.setValue("coverImageUrl", url)}
+            />
             <div className="flex items-center gap-2">
               <Switch checked={form.watch("published")} onCheckedChange={(v) => form.setValue("published", v)} />
               <Label>منتشر در صفحه عمومی</Label>

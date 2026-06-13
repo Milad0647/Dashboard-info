@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -253,7 +254,11 @@ export function PostersAdmin({
               <div><Label>شماره نسخه</Label><Input type="number" {...versionForm.register("versionNumber")} /></div>
               <PersianDateField control={versionForm.control} name="date" label="تاریخ (شمسی)" />
             </div>
-            <div><Label>آدرس تصویر</Label><Input {...versionForm.register("imageUrl")} dir="ltr" /></div>
+            <MediaUpload
+              label="تصویر"
+              value={versionForm.watch("imageUrl")}
+              onChange={(url) => versionForm.setValue("imageUrl", url)}
+            />
             <div><Label>یادداشت</Label><Textarea {...versionForm.register("notes")} /></div>
             <div><Label>وضعیت</Label>
               <Select value={versionForm.watch("status")} onValueChange={(v) => versionForm.setValue("status", v as "draft" | "revised" | "final")}>

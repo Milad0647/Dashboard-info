@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   FileText,
-  FolderKanban,
   ImageIcon,
   LayoutDashboard,
   LayoutGrid,
@@ -31,7 +30,6 @@ import { useAdminCampaign } from "@/components/admin/admin-campaign-provider";
 
 const navItems = [
   { href: "/admin", label: "داشبورد", icon: LayoutDashboard },
-  { href: "/admin/campaigns", label: "مدیریت کمپین‌ها", icon: FolderKanban, noCampaignParam: true },
   { href: "/admin/settings", label: "تنظیمات کمپین", icon: Settings },
   { href: "/admin/billboards", label: "بیلبوردها", icon: LayoutGrid },
   { href: "/admin/posters", label: "پوسترها", icon: ImageIcon },
@@ -80,7 +78,7 @@ export function AdminSidebar() {
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const href = item.noCampaignParam ? item.href : adminHref(item.href, campaignId);
+          const href = adminHref(item.href, campaignId);
           const isActive = pathname === item.href;
           return (
             <Link

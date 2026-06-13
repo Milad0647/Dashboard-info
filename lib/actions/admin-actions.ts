@@ -44,7 +44,6 @@ async function revalidateAll(slug?: string) {
   revalidatePath("/admin/submissions");
   revalidatePath("/admin/settings");
   if (slug) revalidatePath(`/campaign/${slug}`);
-  revalidatePath("/campaign/[slug]", "page");
 }
 
 export async function saveCampaignAction(data: Partial<CampaignSettings> & { id?: string }) {
@@ -54,9 +53,14 @@ export async function saveCampaignAction(data: Partial<CampaignSettings> & { id?
 }
 
 export async function deleteCampaignAction(id: string) {
-  const result = await deleteCampaign(id);
-  await revalidateAll();
-  return result;
+  try {
+    const result = await deleteCampaign(id);
+    await revalidateAll();
+    return result;
+  } catch (error) {
+    console.error("deleteCampaignAction failed:", error);
+    return { success: false, error: "حذف کمپین با خطا مواجه شد" };
+  }
 }
 
 export async function updateSettingsAction(data: Partial<CampaignSettings>) {

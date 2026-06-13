@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { Badge } from "@/components/ui/badge";
 import { saveBillboardAction, deleteBillboardAction } from "@/lib/actions/admin-actions";
@@ -37,7 +38,7 @@ const schema = z.object({
   city: z.string().min(1, "شهر الزامی است"),
   location: z.string().min(1, "موقعیت الزامی است"),
   date: z.string().min(1, "تاریخ الزامی است"),
-  thumbnailUrl: z.string().url("آدرس تصویر نامعتبر").or(z.literal("")),
+  thumbnailUrl: z.string().min(1, "تصویر الزامی است"),
   externalUrl: z.string().url("آدرس لینک نامعتبر").or(z.literal("")),
   status: z.enum(["draft", "published", "completed"]),
   tags: z.string(),
@@ -226,10 +227,11 @@ export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdm
               <Label>موقعیت</Label>
               <Input {...form.register("location")} />
             </div>
-            <div className="space-y-2">
-              <Label>آدرس تصویر</Label>
-              <Input {...form.register("thumbnailUrl")} dir="ltr" />
-            </div>
+            <MediaUpload
+              label="تصویر"
+              value={form.watch("thumbnailUrl")}
+              onChange={(url) => form.setValue("thumbnailUrl", url)}
+            />
             <div className="space-y-2">
               <Label>لینک خارجی</Label>
               <Input {...form.register("externalUrl")} dir="ltr" />

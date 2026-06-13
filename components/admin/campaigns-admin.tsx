@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { Badge } from "@/components/ui/badge";
+import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { saveCampaignAction, deleteCampaignAction } from "@/lib/actions/admin-actions";
 import type { CampaignFeatures, CampaignSettings } from "@/lib/types";
@@ -227,7 +228,11 @@ export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
           onEdit={openEdit}
           onDelete={(c) => {
             startTransition(async () => {
-              await deleteCampaignAction(c.id);
+              const result = await deleteCampaignAction(c.id);
+              if (!result.success) {
+                toast.error(result.error ?? "حذف کمپین ناموفق بود");
+                return;
+              }
               setCampaigns((prev) => prev.filter((x) => x.id !== c.id));
               toast.success("کمپین حذف شد");
               router.refresh();
@@ -281,10 +286,11 @@ export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>تصویر کاور</Label>
-              <Input {...form.register("coverImageUrl")} dir="ltr" />
-            </div>
+            <MediaUpload
+              label="تصویر کاور"
+              value={form.watch("coverImageUrl") ?? ""}
+              onChange={(url) => form.setValue("coverImageUrl", url)}
+            />
             <div className="flex items-center gap-2">
               <Switch
                 checked={form.watch("published")}
