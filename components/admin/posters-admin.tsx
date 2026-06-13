@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { PersianDateField } from "@/components/ui/persian-date-input";
 import { Badge } from "@/components/ui/badge";
 import {
   saveCategoryAction,
@@ -35,6 +36,7 @@ import {
   savePosterVersionAction,
   deletePosterVersionAction,
 } from "@/lib/actions/admin-actions";
+import { todayISO } from "@/lib/jalali";
 import type { MediaCategory, Poster, PosterVersion } from "@/lib/types";
 import { getStatusLabel } from "@/lib/utils";
 
@@ -86,7 +88,7 @@ export function PostersAdmin({
 
   const categoryForm = useForm({ resolver: zodResolver(categorySchema), defaultValues: { title: "", description: "", sortOrder: 1, published: true } });
   const posterForm = useForm({ resolver: zodResolver(posterSchema), defaultValues: { categoryId: "", title: "", description: "", published: false, sortOrder: 1 } });
-  const versionForm = useForm({ resolver: zodResolver(versionSchema), defaultValues: { posterId: "", versionNumber: 1, imageUrl: "", thumbnailUrl: "", notes: "", status: "draft" as const, isFinal: false, date: new Date().toISOString().split("T")[0] } });
+  const versionForm = useForm({ resolver: zodResolver(versionSchema), defaultValues: { posterId: "", versionNumber: 1, imageUrl: "", thumbnailUrl: "", notes: "", status: "draft" as const, isFinal: false, date: todayISO() } });
 
   const saveCategory = categoryForm.handleSubmit((data) => {
     startTransition(async () => {
@@ -249,7 +251,7 @@ export function PostersAdmin({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>شماره نسخه</Label><Input type="number" {...versionForm.register("versionNumber")} /></div>
-              <div><Label>تاریخ</Label><Input type="date" {...versionForm.register("date")} /></div>
+              <PersianDateField control={versionForm.control} name="date" label="تاریخ (شمسی)" />
             </div>
             <div><Label>آدرس تصویر</Label><Input {...versionForm.register("imageUrl")} dir="ltr" /></div>
             <div><Label>یادداشت</Label><Textarea {...versionForm.register("notes")} /></div>

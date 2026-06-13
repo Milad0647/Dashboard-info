@@ -12,7 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { PersianDateField } from "@/components/ui/persian-date-input";
 import { saveAnalyticsAction, deleteAnalyticsAction } from "@/lib/actions/admin-actions";
+import { todayISO } from "@/lib/jalali";
 import type { AnalyticsMetric } from "@/lib/types";
 import { formatPersianDate, getStatusLabel } from "@/lib/utils";
 
@@ -39,7 +41,7 @@ export function AnalyticsAdmin({ campaignId, initialMetrics }: AnalyticsAdminPro
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm({ resolver: zodResolver(schema), defaultValues: { date: new Date().toISOString().split("T")[0], visitors: 0, uniqueVisitors: 0, pageViews: 0, avgSessionDuration: 120 } });
+  const form = useForm({ resolver: zodResolver(schema), defaultValues: { date: todayISO(), visitors: 0, uniqueVisitors: 0, pageViews: 0, avgSessionDuration: 120 } });
 
   const onSubmit = form.handleSubmit((data) => {
     startTransition(async () => {
@@ -97,7 +99,7 @@ export function AnalyticsAdmin({ campaignId, initialMetrics }: AnalyticsAdminPro
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editingId ? "ویرایش" : "افزودن"} رکورد آمار</DialogTitle></DialogHeader>
           <form onSubmit={onSubmit} className="space-y-4">
-            <div><Label>تاریخ</Label><Input type="date" {...form.register("date")} /></div>
+            <PersianDateField control={form.control} name="date" label="تاریخ (شمسی)" />
             <div className="grid grid-cols-2 gap-4">
               <div><Label>بازدیدکنندگان</Label><Input type="number" {...form.register("visitors")} /></div>
               <div><Label>یکتا</Label><Input type="number" {...form.register("uniqueVisitors")} /></div>

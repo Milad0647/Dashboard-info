@@ -24,13 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn, isSupabaseConfigured, adminHref } from "@/lib/utils";
+import { cn, adminHref, getDatabaseMode } from "@/lib/utils";
+import { logoutAdminAction } from "@/lib/actions/auth-actions";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminCampaign } from "@/components/admin/admin-campaign-provider";
 
 const navItems = [
   { href: "/admin", label: "داشبورد", icon: LayoutDashboard },
-  { href: "/admin/campaigns", label: "کمپین‌ها", icon: FolderKanban, noCampaignParam: true },
+  { href: "/admin/campaigns", label: "مدیریت کمپین‌ها", icon: FolderKanban, noCampaignParam: true },
   { href: "/admin/settings", label: "تنظیمات کمپین", icon: Settings },
   { href: "/admin/billboards", label: "بیلبوردها", icon: LayoutGrid },
   { href: "/admin/posters", label: "پوسترها", icon: ImageIcon },
@@ -46,11 +47,11 @@ export function AdminSidebar() {
   const { campaignId, campaigns, currentCampaign, setCampaignId } = useAdminCampaign();
 
   const handleLogout = async () => {
-    if (isSupabaseConfigured()) {
+    if (getDatabaseMode() === "supabase") {
       const supabase = createClient();
       if (supabase) await supabase.auth.signOut();
     } else {
-      document.cookie = "mock_admin=; path=/; max-age=0";
+      await logoutAdminAction();
     }
     router.push("/admin/login");
     router.refresh();

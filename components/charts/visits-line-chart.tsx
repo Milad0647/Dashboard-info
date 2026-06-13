@@ -11,7 +11,7 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatPersianDate, formatPersianNumber } from "@/lib/utils";
+import { formatPersianDateShort, formatPersianNumber } from "@/lib/utils";
 
 interface VisitsLineChartProps {
   data: { date: string; visitors: number; pageViews: number }[];
@@ -20,7 +20,7 @@ interface VisitsLineChartProps {
 export function VisitsLineChart({ data }: VisitsLineChartProps) {
   const chartData = data.map((d) => ({
     ...d,
-    label: formatPersianDate(d.date).split(" ")[1] ?? d.date,
+    label: formatPersianDateShort(d.date),
   }));
 
   return (

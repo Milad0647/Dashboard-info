@@ -1,30 +1,41 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isSupabaseConfigured } from "@/lib/utils";
+import {
+  getAdminSessionCookieName,
+  verifyAdminSessionToken,
+} from "@/lib/auth/admin-session";
+import { isPostgresConfigured, isSupabaseConfigured } from "@/lib/utils";
+
+function handleEnvAdminAuth(request: NextRequest) {
+  return verifyAdminSessionToken(request.cookies.get(getAdminSessionCookieName())?.value).then(
+    (isAuthenticated) => {
+      const isAdminRoute =
+        request.nextUrl.pathname.startsWith("/admin") &&
+        !request.nextUrl.pathname.startsWith("/admin/login");
+
+      if (isAdminRoute && !isAuthenticated) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin/login";
+        return NextResponse.redirect(url);
+      }
+
+      if (request.nextUrl.pathname === "/admin/login" && isAuthenticated) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin";
+        return NextResponse.redirect(url);
+      }
+
+      return NextResponse.next({ request });
+    }
+  );
+}
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
-
-  if (!isSupabaseConfigured()) {
-    const isAdminRoute =
-      request.nextUrl.pathname.startsWith("/admin") &&
-      !request.nextUrl.pathname.startsWith("/admin/login");
-    const mockAuth = request.cookies.get("mock_admin")?.value === "true";
-
-    if (isAdminRoute && !mockAuth) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/admin/login";
-      return NextResponse.redirect(url);
-    }
-
-    if (request.nextUrl.pathname === "/admin/login" && mockAuth) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/admin";
-      return NextResponse.redirect(url);
-    }
-
-    return supabaseResponse;
+  if (isPostgresConfigured() || !isSupabaseConfigured()) {
+    return handleEnvAdminAuth(request);
   }
+
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

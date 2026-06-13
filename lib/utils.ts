@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { parseISODateLocal } from "@/lib/jalali";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -9,13 +10,44 @@ export function formatPersianNumber(value: number): string {
   return new Intl.NumberFormat("fa-IR").format(value);
 }
 
+const persianDateFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+
+const persianDateTimeFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const persianDateShortFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+  month: "short",
+  day: "numeric",
+});
+
+function toLocalDate(dateStr: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const { y, m, d } = parseISODateLocal(dateStr);
+    return new Date(y, m - 1, d);
+  }
+  return new Date(dateStr);
+}
+
 export function formatPersianDate(dateStr: string): string {
   try {
-    return new Intl.DateTimeFormat("fa-IR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }).format(new Date(dateStr));
+    return persianDateFormatter.format(toLocalDate(dateStr));
+  } catch {
+    return dateStr;
+  }
+}
+
+export function formatPersianDateShort(dateStr: string): string {
+  try {
+    return persianDateShortFormatter.format(toLocalDate(dateStr));
   } catch {
     return dateStr;
   }
@@ -23,13 +55,7 @@ export function formatPersianDate(dateStr: string): string {
 
 export function formatPersianDateTime(dateStr: string): string {
   try {
-    return new Intl.DateTimeFormat("fa-IR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(dateStr));
+    return persianDateTimeFormatter.format(new Date(dateStr));
   } catch {
     return dateStr;
   }
@@ -128,11 +154,23 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
+export function isPostgresConfigured(): boolean {
+  if (process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true") return false;
+  return Boolean(process.env.DATABASE_URL);
+}
+
 export function isSupabaseConfigured(): boolean {
   if (process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true") return false;
+  if (isPostgresConfigured()) return false;
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
       process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://your-project.supabase.co"
   );
+}
+
+export function getDatabaseMode(): "postgres" | "supabase" | "mock" {
+  if (isPostgresConfigured()) return "postgres";
+  if (isSupabaseConfigured()) return "supabase";
+  return "mock";
 }

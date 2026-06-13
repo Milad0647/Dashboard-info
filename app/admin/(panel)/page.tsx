@@ -3,17 +3,19 @@ import { redirect } from "next/navigation";
 import {
   BarChart3,
   FileText,
+  FolderKanban,
   ImageIcon,
   LayoutGrid,
   Settings,
   Video,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getAdminData } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
 import { adminHref } from "@/lib/utils";
-import { formatPersianNumber, isSupabaseConfigured } from "@/lib/utils";
+import { formatPersianNumber, getDatabaseMode } from "@/lib/utils";
 
 interface AdminDashboardProps {
   searchParams: Promise<{ campaign?: string }>;
@@ -47,9 +49,19 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
           <h1 className="text-2xl font-bold">داشبورد</h1>
           <p className="text-muted-foreground text-sm">{data.settings.title}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={isSupabaseConfigured() ? "success" : "warning"}>
-            {isSupabaseConfigured() ? "Supabase متصل" : "حالت Mock"}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link href="/admin/campaigns">
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <FolderKanban className="h-3.5 w-3.5" />
+              مدیریت کمپین‌ها
+            </Button>
+          </Link>
+          <Badge variant={getDatabaseMode() === "mock" ? "warning" : "success"}>
+            {getDatabaseMode() === "postgres"
+              ? "PostgreSQL"
+              : getDatabaseMode() === "supabase"
+                ? "Supabase"
+                : "حالت Mock"}
           </Badge>
           <Link href={adminHref("/admin/settings", campaignId)}>
             <Badge variant="outline" className="gap-1 cursor-pointer">

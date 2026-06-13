@@ -37,6 +37,51 @@ When Supabase is not configured:
 - Email: `admin@example.com`
 - Password: `admin123`
 
+## Deploy on Coolify
+
+### 1. PostgreSQL in Coolify
+
+1. In Coolify, create a **PostgreSQL** database service.
+2. Copy the internal connection string (example):
+   `postgres://user:pass@postgres:5432/dashboard`
+
+### 2. Run migration (once)
+
+From your machine or Coolify terminal (with `DATABASE_URL` set):
+
+```bash
+npm run db:migrate
+```
+
+Or run `database/schema.sql` manually in PostgreSQL.
+
+### 3. Deploy the app
+
+1. Add a new **Application** in Coolify → connect GitHub repo `Dashboard-info`.
+2. Build pack: **Dockerfile** (auto-detected).
+3. Port: **3000**
+4. Health check path: `/api/health`
+
+### 4. Environment variables (Coolify)
+
+| Variable | Required | Example |
+|----------|----------|---------|
+| `DATABASE_URL` | Yes | `postgres://...` |
+| `ADMIN_EMAIL` | Yes | `admin@example.com` |
+| `ADMIN_PASSWORD` | Yes | strong password |
+| `AUTH_SECRET` | Yes | random 32+ chars |
+| `NODE_ENV` | Yes | `production` |
+
+### 5. Local Docker test
+
+```bash
+docker compose up --build
+```
+
+Open [http://localhost:3000](http://localhost:3000) — login with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+
+---
+
 ## Environment Variables
 
 Copy `.env.example` to `.env.local`:

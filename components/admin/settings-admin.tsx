@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PersianDateField } from "@/components/ui/persian-date-input";
 import { updateSettingsAction } from "@/lib/actions/admin-actions";
 import type { CampaignFeatures, CampaignSettings } from "@/lib/types";
 
@@ -77,6 +79,9 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
       <div>
         <h1 className="text-2xl font-bold">تنظیمات کمپین</h1>
         <p className="text-sm text-muted-foreground">اطلاعات و بخش‌های فعال این کمپین</p>
+        <Link href="/admin/campaigns" className="text-sm text-primary hover:underline inline-block mt-1">
+          ساخت یا حذف کمپین ← مدیریت کمپین‌ها
+        </Link>
       </div>
 
       <Card>
@@ -96,9 +101,9 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>تاریخ شروع</Label><Input type="date" {...form.register("startDate")} /></div>
-              <div><Label>تاریخ پایان</Label><Input type="date" {...form.register("endDate")} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <PersianDateField control={form.control} name="startDate" label="تاریخ شروع (شمسی)" />
+              <PersianDateField control={form.control} name="endDate" label="تاریخ پایان (شمسی)" />
             </div>
             <div><Label>تصویر کاور</Label><Input {...form.register("coverImageUrl")} dir="ltr" /></div>
             <div className="flex items-center gap-2">

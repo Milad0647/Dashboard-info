@@ -1,4 +1,5 @@
 import { getMockStore, getMockStoreForCampaign, updateMockStore } from "@/lib/mock-data";
+import * as pg from "@/lib/db/repository";
 import type {
   AnalyticsMetric,
   Billboard,
@@ -10,10 +11,17 @@ import type {
   Video,
   VideoVersion,
 } from "@/lib/types";
-import { generateId, isSupabaseConfigured, slugify } from "@/lib/utils";
+import { generateId, isPostgresConfigured, isSupabaseConfigured, slugify } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 
 export async function getAllCampaigns(): Promise<CampaignSettings[]> {
+  if (isPostgresConfigured()) {
+    try {
+      return await pg.pgGetAllCampaigns();
+    } catch {
+      return getMockStore().campaigns;
+    }
+  }
   if (!isSupabaseConfigured()) {
     return getMockStore().campaigns;
   }
@@ -28,6 +36,13 @@ export async function getAllCampaigns(): Promise<CampaignSettings[]> {
 }
 
 export async function getAdminData(campaignId: string) {
+  if (isPostgresConfigured()) {
+    try {
+      return await pg.pgGetAdminData(campaignId);
+    } catch {
+      return getAdminDataMock(campaignId);
+    }
+  }
   if (!isSupabaseConfigured()) {
     const store = getMockStoreForCampaign(campaignId);
     return {
@@ -100,6 +115,7 @@ function getAdminDataMock(campaignId: string) {
 }
 
 export async function saveCampaign(data: Partial<CampaignSettings> & { id?: string }) {
+  if (isPostgresConfigured()) return pg.pgSaveCampaign(data);
   const now = new Date().toISOString();
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
@@ -139,6 +155,7 @@ export async function saveCampaign(data: Partial<CampaignSettings> & { id?: stri
 }
 
 export async function deleteCampaign(id: string) {
+  if (isPostgresConfigured()) return pg.pgDeleteCampaign(id);
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
       ...store,
@@ -157,6 +174,7 @@ export async function deleteCampaign(id: string) {
 }
 
 export async function updateCampaignSettings(data: Partial<CampaignSettings>) {
+  if (isPostgresConfigured()) return pg.pgUpdateCampaignSettings(data);
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
       ...store,
@@ -170,6 +188,7 @@ export async function updateCampaignSettings(data: Partial<CampaignSettings>) {
 }
 
 export async function saveBillboard(data: Partial<Billboard> & { id?: string }) {
+  if (isPostgresConfigured()) return pg.pgSaveBillboard(data);
   const now = new Date().toISOString();
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
@@ -208,6 +227,7 @@ export async function saveBillboard(data: Partial<Billboard> & { id?: string }) 
 }
 
 export async function deleteBillboard(id: string) {
+  if (isPostgresConfigured()) return pg.pgDeleteBillboard(id);
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
       ...store,
@@ -219,6 +239,7 @@ export async function deleteBillboard(id: string) {
 }
 
 export async function saveMediaCategory(data: Partial<MediaCategory> & { id?: string }) {
+  if (isPostgresConfigured()) return pg.pgSaveMediaCategory(data);
   const now = new Date().toISOString();
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
@@ -248,6 +269,7 @@ export async function saveMediaCategory(data: Partial<MediaCategory> & { id?: st
 }
 
 export async function deleteMediaCategory(id: string, type: "poster" | "video") {
+  if (isPostgresConfigured()) return pg.pgDeleteMediaCategory(id);
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
       const key = type === "video" ? "videoCategories" : "posterCategories";
@@ -259,6 +281,7 @@ export async function deleteMediaCategory(id: string, type: "poster" | "video") 
 }
 
 export async function savePoster(data: Partial<Poster> & { id?: string }) {
+  if (isPostgresConfigured()) return pg.pgSavePoster(data);
   const now = new Date().toISOString();
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
@@ -290,6 +313,7 @@ export async function savePoster(data: Partial<Poster> & { id?: string }) {
 }
 
 export async function deletePoster(id: string) {
+  if (isPostgresConfigured()) return pg.pgDeletePoster(id);
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
       ...store,
@@ -302,6 +326,7 @@ export async function deletePoster(id: string) {
 }
 
 export async function savePosterVersion(data: Partial<PosterVersion> & { id?: string; posterId: string }) {
+  if (isPostgresConfigured()) return pg.pgSavePosterVersion(data);
   const now = new Date().toISOString();
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
@@ -340,6 +365,7 @@ export async function savePosterVersion(data: Partial<PosterVersion> & { id?: st
 }
 
 export async function deletePosterVersion(id: string) {
+  if (isPostgresConfigured()) return pg.pgDeletePosterVersion(id);
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
       ...store,
@@ -351,6 +377,7 @@ export async function deletePosterVersion(id: string) {
 }
 
 export async function saveVideo(data: Partial<Video> & { id?: string }) {
+  if (isPostgresConfigured()) return pg.pgSaveVideo(data);
   const now = new Date().toISOString();
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
@@ -382,6 +409,7 @@ export async function saveVideo(data: Partial<Video> & { id?: string }) {
 }
 
 export async function deleteVideo(id: string) {
+  if (isPostgresConfigured()) return pg.pgDeleteVideo(id);
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
       ...store,
@@ -394,6 +422,7 @@ export async function deleteVideo(id: string) {
 }
 
 export async function saveVideoVersion(data: Partial<VideoVersion> & { id?: string; videoId: string }) {
+  if (isPostgresConfigured()) return pg.pgSaveVideoVersion(data);
   const now = new Date().toISOString();
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
@@ -433,6 +462,7 @@ export async function saveVideoVersion(data: Partial<VideoVersion> & { id?: stri
 }
 
 export async function deleteVideoVersion(id: string) {
+  if (isPostgresConfigured()) return pg.pgDeleteVideoVersion(id);
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
       ...store,
@@ -444,6 +474,7 @@ export async function deleteVideoVersion(id: string) {
 }
 
 export async function saveAnalyticsMetric(data: Partial<AnalyticsMetric> & { id?: string }) {
+  if (isPostgresConfigured()) return pg.pgSaveAnalyticsMetric(data);
   const now = new Date().toISOString();
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
@@ -477,6 +508,7 @@ export async function saveAnalyticsMetric(data: Partial<AnalyticsMetric> & { id?
 }
 
 export async function deleteAnalyticsMetric(id: string) {
+  if (isPostgresConfigured()) return pg.pgDeleteAnalyticsMetric(id);
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
       ...store,
@@ -491,6 +523,7 @@ export async function updateSubmission(
   id: string,
   data: Partial<CampaignSubmission>
 ) {
+  if (isPostgresConfigured()) return pg.pgUpdateSubmission(id, data);
   const now = new Date().toISOString();
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
@@ -505,6 +538,7 @@ export async function updateSubmission(
 }
 
 export async function deleteSubmission(id: string) {
+  if (isPostgresConfigured()) return pg.pgDeleteSubmission(id);
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => ({
       ...store,

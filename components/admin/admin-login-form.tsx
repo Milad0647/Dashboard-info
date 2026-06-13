@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
-import { isSupabaseConfigured } from "@/lib/utils";
+import { loginAdminAction } from "@/lib/actions/auth-actions";
+import { getDatabaseMode } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
 export function AdminLoginForm() {
@@ -16,13 +17,14 @@ export function AdminLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const databaseMode = getDatabaseMode();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (isSupabaseConfigured()) {
+      if (databaseMode === "supabase") {
         const supabase = createClient();
         if (!supabase) throw new Error("Supabase not configured");
 
@@ -32,16 +34,18 @@ export function AdminLoginForm() {
         toast.success("ورود موفق");
         router.push("/admin");
         router.refresh();
-      } else {
-        // Mock login for local development
-        if (email && password.length >= 4) {
-          document.cookie = "mock_admin_session=true; path=/; max-age=86400";
-          toast.success("ورود موفق (حالت mock)");
-          router.push("/admin");
-        } else {
-          toast.error("ایمیل و رمز عبور (حداقل ۴ کاراکتر) را وارد کنید");
-        }
+        return;
       }
+
+      const result = await loginAdminAction(email, password);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success(databaseMode === "postgres" ? "ورود موفق" : "ورود موفق (حالت mock)");
+      router.push("/admin");
+      router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "خطا در ورود");
     } finally {
@@ -78,9 +82,14 @@ export function AdminLoginForm() {
               minLength={4}
             />
           </div>
-          {!isSupabaseConfigured() && (
+          {databaseMode === "mock" && (
             <p className="text-xs text-muted-foreground bg-muted p-3 rounded-lg">
-              حالت mock: هر ایمیل و رمز عبور (حداقل ۴ کاراکتر) پذیرفته می‌شود.
+              حالت mock: از ایمیل و رمز پیش‌فرض admin@example.com / admin123 استفاده کنید.
+            </p>
+          )}
+          {databaseMode === "postgres" && (
+            <p className="text-xs text-muted-foreground bg-muted p-3 rounded-lg">
+              ورود با ADMIN_EMAIL و ADMIN_PASSWORD تنظیم‌شده در سرور.
             </p>
           )}
           <Button type="submit" className="w-full" disabled={loading}>

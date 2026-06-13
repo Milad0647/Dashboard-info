@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import Link from "next/link";
-import { ExternalLink, Plus } from "lucide-react";
+import { ExternalLink, FolderKanban, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,9 +17,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { Badge } from "@/components/ui/badge";
+import { PersianDateField } from "@/components/ui/persian-date-input";
 import { saveCampaignAction, deleteCampaignAction } from "@/lib/actions/admin-actions";
 import type { CampaignFeatures, CampaignSettings } from "@/lib/types";
-import { slugify } from "@/lib/utils";
+import { todayISO } from "@/lib/jalali";
+import { formatPersianDate, slugify } from "@/lib/utils";
 
 const featuresSchema = z.object({
   billboards: z.boolean(),
@@ -55,6 +58,7 @@ interface CampaignsAdminProps {
 }
 
 export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
+  const router = useRouter();
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CampaignSettings | null>(null);
@@ -67,8 +71,8 @@ export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
       slug: "",
       description: "",
       status: "draft",
-      startDate: new Date().toISOString().split("T")[0],
-      endDate: new Date().toISOString().split("T")[0],
+      startDate: todayISO(),
+      endDate: todayISO(),
       coverImageUrl: "",
       published: false,
       features: defaultFeatures,
@@ -82,8 +86,8 @@ export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
       slug: "",
       description: "",
       status: "draft",
-      startDate: new Date().toISOString().split("T")[0],
-      endDate: new Date().toISOString().split("T")[0],
+      startDate: todayISO(),
+      endDate: todayISO(),
       coverImageUrl: "",
       published: false,
       features: defaultFeatures,
@@ -112,7 +116,11 @@ export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
       await saveCampaignAction({ ...data, id: editing?.id });
       if (editing) {
         setCampaigns((prev) =>
-          prev.map((c) => (c.id === editing.id ? { ...c, ...data, updatedAt: new Date().toISOString() } as CampaignSettings : c))
+          prev.map((c) =>
+            c.id === editing.id
+              ? ({ ...c, ...data, updatedAt: new Date().toISOString() } as CampaignSettings)
+              : c
+          )
         );
         toast.success("کمپین ویرایش شد");
       } else {
@@ -123,6 +131,7 @@ export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
         toast.success("کمپین ایجاد شد");
       }
       setOpen(false);
+      router.refresh();
     });
   });
 
@@ -136,82 +145,135 @@ export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold">کمپین‌ها</h1>
-          <p className="text-sm text-muted-foreground">تعریف و مدیریت کمپین‌ها — ابتدا کمپین بسازید، سپس داده‌ها را اضافه کنید</p>
+          <div className="flex items-center gap-2 mb-1">
+            <FolderKanban className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold">مدیریت کمپین‌ها</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            کمپین جدید بسازید، ویرایش کنید یا حذف کنید — سپس از منوی کناری بخش‌های هر کمپین را پر کنید
+          </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
-          افزودن کمپین
+          افزودن کمپین جدید
         </Button>
       </div>
 
-      <AdminDataTable
-        data={campaigns}
-        searchKeys={["title", "slug"]}
-        columns={[
-          { key: "title", label: "عنوان" },
-          { key: "slug", label: "اسلاگ" },
-          {
-            key: "status",
-            label: "وضعیت",
-            render: (c) => (
-              <Badge status={c.status}>
-                {c.status === "live" ? "زنده" : c.status === "completed" ? "پایان‌یافته" : "پیش‌نویس"}
-              </Badge>
-            ),
-          },
-          {
-            key: "published",
-            label: "انتشار",
-            render: (c) => (
-              <Badge variant={c.published ? "success" : "secondary"}>
-                {c.published ? "منتشر" : "پیش‌نویس"}
-              </Badge>
-            ),
-          },
-          {
-            key: "publicPage",
-            label: "صفحه عمومی",
-            render: (c) => (
-              <Link href={`/campaign/${c.slug}`} target="_blank" className="text-primary text-xs flex items-center gap-1 hover:underline">
-                <ExternalLink className="h-3 w-3" />
-                مشاهده
-              </Link>
-            ),
-          },
-        ]}
-        onEdit={openEdit}
-        onDelete={(c) => {
-          startTransition(async () => {
-            await deleteCampaignAction(c.id);
-            setCampaigns((prev) => prev.filter((x) => x.id !== c.id));
-            toast.success("کمپین حذف شد");
-          });
-        }}
-      />
+      {campaigns.length === 0 ? (
+        <div className="text-center py-16 border rounded-xl bg-muted/20 space-y-4">
+          <FolderKanban className="h-12 w-12 mx-auto text-muted-foreground" />
+          <div>
+            <p className="font-medium">هنوز کمپینی تعریف نشده</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              برای شروع، اولین کمپین خود را بسازید
+            </p>
+          </div>
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            ساخت اولین کمپین
+          </Button>
+        </div>
+      ) : (
+        <AdminDataTable
+          data={campaigns}
+          searchKeys={["title", "slug"]}
+          columns={[
+            { key: "title", label: "عنوان" },
+            { key: "slug", label: "اسلاگ" },
+            {
+              key: "period",
+              label: "بازه زمانی",
+              render: (c) => (
+                <span className="text-xs whitespace-nowrap">
+                  {formatPersianDate(c.startDate)} — {formatPersianDate(c.endDate)}
+                </span>
+              ),
+            },
+            {
+              key: "status",
+              label: "وضعیت",
+              render: (c) => (
+                <Badge status={c.status}>
+                  {c.status === "live" ? "زنده" : c.status === "completed" ? "پایان‌یافته" : "پیش‌نویس"}
+                </Badge>
+              ),
+            },
+            {
+              key: "published",
+              label: "انتشار",
+              render: (c) => (
+                <Badge variant={c.published ? "success" : "secondary"}>
+                  {c.published ? "منتشر" : "پیش‌نویس"}
+                </Badge>
+              ),
+            },
+            {
+              key: "publicPage",
+              label: "صفحه عمومی",
+              render: (c) => (
+                <Link
+                  href={`/campaign/${c.slug}`}
+                  target="_blank"
+                  className="text-primary text-xs flex items-center gap-1 hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  مشاهده
+                </Link>
+              ),
+            },
+          ]}
+          onEdit={openEdit}
+          onDelete={(c) => {
+            startTransition(async () => {
+              await deleteCampaignAction(c.id);
+              setCampaigns((prev) => prev.filter((x) => x.id !== c.id));
+              toast.success("کمپین حذف شد");
+              router.refresh();
+            });
+          }}
+        />
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? "ویرایش کمپین" : "افزودن کمپین"}</DialogTitle>
+            <DialogTitle>{editing ? "ویرایش کمپین" : "افزودن کمپین جدید"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={onSubmit} className="space-y-4">
-            <div><Label>عنوان</Label><Input {...form.register("title")} onBlur={() => {
-              if (!editing && !form.getValues("slug")) {
-                form.setValue("slug", slugify(form.getValues("title")));
-              }
-            }} /></div>
-            <div><Label>اسلاگ (URL)</Label><Input {...form.register("slug")} dir="ltr" placeholder="summer-1404" /></div>
-            <div><Label>توضیحات</Label><Textarea {...form.register("description")} rows={3} /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>تاریخ شروع</Label><Input type="date" {...form.register("startDate")} /></div>
-              <div><Label>تاریخ پایان</Label><Input type="date" {...form.register("endDate")} /></div>
+            <div>
+              <Label>عنوان</Label>
+              <Input
+                {...form.register("title")}
+                onBlur={() => {
+                  if (!editing && !form.getValues("slug")) {
+                    form.setValue("slug", slugify(form.getValues("title")));
+                  }
+                }}
+              />
             </div>
-            <div><Label>وضعیت</Label>
-              <Select value={form.watch("status")} onValueChange={(v) => form.setValue("status", v as FormData["status"])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+            <div>
+              <Label>اسلاگ (URL)</Label>
+              <Input {...form.register("slug")} dir="ltr" placeholder="summer-1404" />
+            </div>
+            <div>
+              <Label>توضیحات</Label>
+              <Textarea {...form.register("description")} rows={3} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <PersianDateField control={form.control} name="startDate" label="تاریخ شروع (شمسی)" />
+              <PersianDateField control={form.control} name="endDate" label="تاریخ پایان (شمسی)" />
+            </div>
+            <div>
+              <Label>وضعیت</Label>
+              <Select
+                value={form.watch("status")}
+                onValueChange={(v) => form.setValue("status", v as FormData["status"])}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="live">زنده</SelectItem>
                   <SelectItem value="completed">پایان‌یافته</SelectItem>
@@ -219,14 +281,22 @@ export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>تصویر کاور</Label><Input {...form.register("coverImageUrl")} dir="ltr" /></div>
+            <div>
+              <Label>تصویر کاور</Label>
+              <Input {...form.register("coverImageUrl")} dir="ltr" />
+            </div>
             <div className="flex items-center gap-2">
-              <Switch checked={form.watch("published")} onCheckedChange={(v) => form.setValue("published", v)} />
+              <Switch
+                checked={form.watch("published")}
+                onCheckedChange={(v) => form.setValue("published", v)}
+              />
               <Label>منتشر در صفحه عمومی</Label>
             </div>
             <div className="space-y-3 border rounded-lg p-4">
               <Label className="text-sm font-semibold">بخش‌های فعال کمپین</Label>
-              <p className="text-xs text-muted-foreground">فقط بخش‌هایی که فعال و دارای داده باشند در صفحه عمومی نمایش داده می‌شوند</p>
+              <p className="text-xs text-muted-foreground">
+                فقط بخش‌هایی که فعال و دارای داده باشند در صفحه عمومی نمایش داده می‌شوند
+              </p>
               {featureLabels.map(({ key, label }) => (
                 <div key={key} className="flex items-center justify-between">
                   <Label className="font-normal">{label}</Label>
@@ -238,7 +308,7 @@ export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
               ))}
             </div>
             <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending ? "در حال ذخیره..." : "ذخیره تغییرات"}
+              {isPending ? "در حال ذخیره..." : editing ? "ذخیره تغییرات" : "ایجاد کمپین"}
             </Button>
           </form>
         </DialogContent>

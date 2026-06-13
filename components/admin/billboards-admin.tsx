@@ -25,8 +25,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { PersianDateField } from "@/components/ui/persian-date-input";
 import { Badge } from "@/components/ui/badge";
 import { saveBillboardAction, deleteBillboardAction } from "@/lib/actions/admin-actions";
+import { todayISO } from "@/lib/jalali";
 import type { Billboard } from "@/lib/types";
 import { getStatusLabel } from "@/lib/utils";
 
@@ -63,7 +65,7 @@ export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdm
       title: "",
       city: "",
       location: "",
-      date: new Date().toISOString().split("T")[0],
+      date: todayISO(),
       thumbnailUrl: "",
       externalUrl: "",
       status: "draft",
@@ -80,7 +82,7 @@ export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdm
       title: "",
       city: "",
       location: "",
-      date: new Date().toISOString().split("T")[0],
+      date: todayISO(),
       thumbnailUrl: "",
       externalUrl: "",
       status: "draft",
@@ -218,10 +220,7 @@ export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdm
                 <Label>شهر</Label>
                 <Input {...form.register("city")} />
               </div>
-              <div className="space-y-2">
-                <Label>تاریخ</Label>
-                <Input type="date" {...form.register("date")} />
-              </div>
+              <PersianDateField control={form.control} name="date" label="تاریخ (شمسی)" />
             </div>
             <div className="space-y-2">
               <Label>موقعیت</Label>

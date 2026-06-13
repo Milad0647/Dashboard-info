@@ -8,7 +8,19 @@ import type {
   SectionVisibility,
   SubmissionSummary,
 } from "@/lib/types";
-import { isSupabaseConfigured } from "@/lib/utils";
+import { isPostgresConfigured, isSupabaseConfigured } from "@/lib/utils";
+import * as pg from "@/lib/db/repository";
+import {
+  mapAnalyticsFromDb,
+  mapBillboardFromDb,
+  mapCategoryFromDb,
+  mapPosterFromDb,
+  mapPosterVersionFromDb,
+  mapSettingsFromDb,
+  mapSubmissionFromDb,
+  mapVideoFromDb,
+  mapVideoVersionFromDb,
+} from "@/lib/db/mappers";
 import { createClient } from "@/lib/supabase/server";
 
 function buildAnalyticsSummary(
@@ -242,6 +254,24 @@ function getMockPublicDataBySlug(slug: string): PublicCampaignData | null {
 }
 
 export async function getCampaignList(): Promise<CampaignListItem[]> {
+  if (isPostgresConfigured()) {
+    try {
+      return await pg.pgGetCampaignList();
+    } catch {
+      return getMockStore()
+        .campaigns.filter((c) => c.published)
+        .map(({ id, slug, title, description, status, startDate, endDate, coverImageUrl }) => ({
+          id,
+          slug,
+          title,
+          description,
+          status,
+          startDate,
+          endDate,
+          coverImageUrl,
+        }));
+    }
+  }
   if (!isSupabaseConfigured()) {
     return getMockStore()
       .campaigns.filter((c) => c.published)
@@ -294,6 +324,19 @@ export async function getCampaignList(): Promise<CampaignListItem[]> {
 }
 
 export async function getPublicCampaignData(slug: string): Promise<PublicCampaignData | null> {
+  if (isPostgresConfigured()) {
+    try {
+      const settings = await pg.pgGetPublishedCampaignBySlug(slug);
+      if (!settings) return getMockPublicDataBySlug(slug);
+      const campaignStore = await pg.pgGetPublicCampaignData(settings.id);
+      return assemblePublicData(settings, {
+        settings,
+        ...campaignStore,
+      } as ReturnType<typeof getMockStoreForCampaign>);
+    } catch {
+      return getMockPublicDataBySlug(slug);
+    }
+  }
   if (!isSupabaseConfigured()) {
     return getMockPublicDataBySlug(slug);
   }
@@ -361,165 +404,6 @@ export async function getPublicCampaignData(slug: string): Promise<PublicCampaig
   } catch {
     return getMockPublicDataBySlug(slug);
   }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapSettingsFromDb(row: any): CampaignSettings {
-  return {
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    description: row.description,
-    status: row.status,
-    startDate: row.start_date,
-    endDate: row.end_date,
-    coverImageUrl: row.cover_image_url,
-    published: row.published ?? true,
-    features: row.features ?? {
-      billboards: true,
-      posters: true,
-      videos: true,
-      analytics: true,
-      submissions: true,
-    },
-    updatedAt: row.updated_at,
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapBillboardFromDb(row: any) {
-  return {
-    id: row.id,
-    campaignId: row.campaign_id,
-    title: row.title,
-    description: row.description,
-    city: row.city,
-    location: row.location,
-    date: row.date,
-    thumbnailUrl: row.thumbnail_url,
-    externalUrl: row.external_url,
-    status: row.status,
-    tags: row.tags ?? [],
-    notes: row.notes,
-    published: row.published,
-    sortOrder: row.sort_order,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapCategoryFromDb(row: any) {
-  return {
-    id: row.id,
-    campaignId: row.campaign_id,
-    type: row.type,
-    title: row.title,
-    description: row.description,
-    sortOrder: row.sort_order,
-    published: row.published,
-    createdAt: row.created_at,
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapPosterFromDb(row: any) {
-  return {
-    id: row.id,
-    campaignId: row.campaign_id,
-    categoryId: row.category_id,
-    title: row.title,
-    description: row.description,
-    published: row.published,
-    sortOrder: row.sort_order,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapPosterVersionFromDb(row: any) {
-  return {
-    id: row.id,
-    posterId: row.poster_id,
-    versionNumber: row.version_number,
-    imageUrl: row.image_url,
-    thumbnailUrl: row.thumbnail_url,
-    notes: row.notes,
-    status: row.status,
-    isFinal: row.is_final,
-    date: row.date ?? row.created_at?.split("T")[0],
-    createdAt: row.created_at,
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapVideoFromDb(row: any) {
-  return {
-    id: row.id,
-    campaignId: row.campaign_id,
-    categoryId: row.category_id,
-    title: row.title,
-    description: row.description,
-    published: row.published,
-    sortOrder: row.sort_order,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapVideoVersionFromDb(row: any) {
-  return {
-    id: row.id,
-    videoId: row.video_id,
-    versionNumber: row.version_number,
-    videoUrl: row.video_url,
-    thumbnailUrl: row.thumbnail_url,
-    duration: row.duration,
-    notes: row.notes,
-    status: row.status,
-    isFinal: row.is_final,
-    date: row.date ?? row.created_at?.split("T")[0],
-    createdAt: row.created_at,
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapAnalyticsFromDb(row: any) {
-  return {
-    id: row.id,
-    campaignId: row.campaign_id,
-    date: row.date,
-    visitors: row.visitors,
-    uniqueVisitors: row.unique_visitors,
-    pageViews: row.page_views,
-    avgSessionDuration: row.avg_session_duration,
-    source: row.source,
-    device: row.device,
-    page: row.page,
-    city: row.city,
-    createdAt: row.created_at,
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapSubmissionFromDb(row: any) {
-  return {
-    id: row.id,
-    campaignId: row.campaign_id,
-    submissionType: row.submission_type ?? row.campaign_name,
-    participantName: row.participant_name,
-    participantPhone: row.participant_phone,
-    participantEmail: row.participant_email,
-    title: row.title,
-    text: row.text,
-    mediaUrl: row.media_url,
-    status: row.status,
-    published: row.published,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
 }
 
 export { buildAnalyticsSummary, buildSubmissionSummary, buildSectionVisibility };

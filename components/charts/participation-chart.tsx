@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatPersianDate, formatPersianNumber } from "@/lib/utils";
+import { formatPersianDateShort, formatPersianNumber } from "@/lib/utils";
 
 interface ParticipationChartProps {
   data: { date: string; count: number }[];
@@ -19,7 +19,7 @@ interface ParticipationChartProps {
 export function ParticipationChart({ data }: ParticipationChartProps) {
   const chartData = data.map((d) => ({
     ...d,
-    label: formatPersianDate(d.date).split(" ")[1] ?? d.date,
+    label: formatPersianDateShort(d.date),
   }));
 
   return (
