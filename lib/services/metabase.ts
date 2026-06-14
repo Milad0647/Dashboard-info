@@ -143,7 +143,7 @@ export function buildMetabaseDashboardEmbedUrl(config: MetabaseConfig | null | u
     embedSecret
   );
 
-  return `${baseUrl}/embed/dashboard/${token}#bordered=false&titled=false&theme=transparent`;
+  return `${baseUrl}/embed/dashboard/${token}#bordered=false&titled=false&background=false&theme=transparent&refresh=300`;
 }
 
 export function resolveChannelMetabaseEmbedUrl(
