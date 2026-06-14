@@ -64,26 +64,45 @@ export function mapExternalBillboardToLocal(
   campaignId: string,
   options?: { date?: string; sortOrder?: number; published?: boolean }
 ): Partial<Billboard> & { campaignId: string } {
+  return mapExternalBillboardToBillboard(external, campaignId, options);
+}
+
+export function mapExternalBillboardToBillboard(
+  external: ExternalBillboard,
+  campaignId: string,
+  options?: { date?: string; sortOrder?: number; published?: boolean }
+): Billboard {
   const thumbnail =
     billboardApiRoutes.resolveAssetUrl(external.thumbnail_url ?? external.image_url) ??
     PLACEHOLDER_IMAGE;
+  const imageUrl =
+    billboardApiRoutes.resolveAssetUrl(external.image_url ?? external.thumbnail_url) ?? thumbnail;
 
   const tags = [external.code, external.axis, getExternalBillboardTag(external.id)].filter(Boolean);
+  const now = new Date().toISOString();
 
   return {
+    id: `api-${external.id}`,
     campaignId,
     title: `${external.code} — ${external.axis}`,
     description: external.address,
     city: resolveCity(external.address),
     location: external.address,
-    date: options?.date ?? new Date().toISOString().split("T")[0],
+    date: options?.date ?? now.split("T")[0],
     thumbnailUrl: thumbnail,
+    imageUrl,
     externalUrl: buildMapUrl(external.latitude, external.longitude),
+    latitude: external.latitude,
+    longitude: external.longitude,
+    source: "api",
+    externalId: external.id,
     status: external.status === "active" ? "published" : "draft",
     tags,
     notes: `کد: ${external.code} | محور: ${external.axis}`,
     published: options?.published ?? external.status === "active",
-    sortOrder: options?.sortOrder,
+    sortOrder: options?.sortOrder ?? 0,
+    createdAt: now,
+    updatedAt: now,
   };
 }
 

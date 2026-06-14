@@ -4,7 +4,7 @@ import { Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { downloadMedia, getFilenameFromUrl, hasDistinctThumbnail } from "@/lib/media-utils";
+import { downloadMedia, getFilenameFromUrl, hasDistinctThumbnail, isDirectVideoUrl, resolveVideoEmbedUrl } from "@/lib/media-utils";
 import { formatPersianDate, getStatusLabel, isValidUrl } from "@/lib/utils";
 
 interface VideoModalProps {
@@ -22,7 +22,7 @@ interface VideoModalProps {
 }
 
 function isDirectVideo(url: string): boolean {
-  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
+  return isDirectVideoUrl(url);
 }
 
 export function VideoModal({
@@ -39,6 +39,7 @@ export function VideoModal({
   duration,
 }: VideoModalProps) {
   const validUrl = isValidUrl(videoUrl);
+  const embedUrl = validUrl ? resolveVideoEmbedUrl(videoUrl) : "";
   const suffix = versionNumber ? `-v${versionNumber}` : "";
   const showCoverDownload = hasDistinctThumbnail(thumbnailUrl, videoUrl);
 
@@ -71,11 +72,11 @@ export function VideoModal({
         </DialogHeader>
         <div className="relative aspect-video w-full bg-black">
           {validUrl ? (
-            isDirectVideo(videoUrl) ? (
-              <video src={videoUrl} controls className="h-full w-full" playsInline />
+            isDirectVideo(embedUrl) ? (
+              <video src={embedUrl} controls className="h-full w-full" playsInline />
             ) : (
               <iframe
-                src={videoUrl}
+                src={embedUrl}
                 title={title}
                 className="h-full w-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Download, Plus } from "lucide-react";
-import { BillboardImportDialog } from "@/components/admin/billboard-import-dialog";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +41,8 @@ const schema = z.object({
   date: z.string().min(1, "تاریخ الزامی است"),
   thumbnailUrl: z.string().min(1, "تصویر الزامی است"),
   externalUrl: z.string().url("آدرس لینک نامعتبر").or(z.literal("")),
+  latitude: z.coerce.number().optional(),
+  longitude: z.coerce.number().optional(),
   status: z.enum(["draft", "published", "completed"]),
   tags: z.string(),
   notes: z.string().optional(),
@@ -57,10 +58,8 @@ interface BillboardsAdminProps {
 }
 
 export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdminProps) {
-  const router = useRouter();
   const [billboards, setBillboards] = useState(initialBillboards);
   const [open, setOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Billboard | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -77,6 +76,8 @@ export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdm
       date: todayISO(),
       thumbnailUrl: "",
       externalUrl: "",
+      latitude: undefined,
+      longitude: undefined,
       status: "draft",
       tags: "",
       notes: "",
@@ -94,6 +95,8 @@ export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdm
       date: todayISO(),
       thumbnailUrl: "",
       externalUrl: "",
+      latitude: undefined,
+      longitude: undefined,
       status: "draft",
       tags: "",
       notes: "",
@@ -112,6 +115,8 @@ export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdm
       date: item.date,
       thumbnailUrl: item.thumbnailUrl,
       externalUrl: item.externalUrl,
+      latitude: item.latitude ?? undefined,
+      longitude: item.longitude ?? undefined,
       status: item.status as FormData["status"],
       tags: item.tags.join(", "),
       notes: item.notes ?? "",
@@ -175,18 +180,18 @@ export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdm
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">بیلبوردها</h1>
-          <p className="text-sm text-muted-foreground">مدیریت بیلبوردهای کمپین</p>
+          <p className="text-sm text-muted-foreground">
+            بیلبوردهای دستی — برای دریافت زنده از Map Bilboard به{" "}
+            <Link href={`/admin/settings?campaign=${campaignId}`} className="text-primary hover:underline">
+              تنظیمات کمپین
+            </Link>{" "}
+            بروید.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setImportOpen(true)}>
-            <Download className="h-4 w-4" />
-            دریافت از Map Bilboard
-          </Button>
-          <Button onClick={openCreate}>
+        <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />
             افزودن
-          </Button>
-        </div>
+        </Button>
       </div>
 
       <AdminDataTable
@@ -215,16 +220,6 @@ export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdm
         onDelete={handleDelete}
         onTogglePublish={handleTogglePublish}
         getPublished={(item) => item.published}
-      />
-
-      <BillboardImportDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        campaignId={campaignId}
-        existingBillboards={billboards}
-        onImported={() => {
-          router.refresh();
-        }}
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -259,6 +254,16 @@ export function BillboardsAdmin({ campaignId, initialBillboards }: BillboardsAdm
             <div className="space-y-2">
               <Label>لینک خارجی</Label>
               <Input {...form.register("externalUrl")} dir="ltr" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>عرض جغرافیایی (اختیاری)</Label>
+                <Input type="number" step="any" {...form.register("latitude")} dir="ltr" placeholder="35.6892" />
+              </div>
+              <div className="space-y-2">
+                <Label>طول جغرافیایی (اختیاری)</Label>
+                <Input type="number" step="any" {...form.register("longitude")} dir="ltr" placeholder="51.3890" />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>برچسب‌ها (با کاما جدا کنید)</Label>

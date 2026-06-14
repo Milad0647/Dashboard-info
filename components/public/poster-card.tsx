@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LightboxModal } from "@/components/media/lightbox-modal";
+import { MediaPlaceholder } from "@/components/ui/media-placeholder";
 import type { PosterVersion } from "@/lib/types";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
 import { cn, formatPersianDate, getStatusLabel } from "@/lib/utils";
@@ -42,13 +43,17 @@ export function PosterCard({ title, description, versions }: PosterCardProps) {
           className="relative w-full aspect-[3/4] overflow-hidden bg-muted cursor-pointer group"
           onClick={() => setLightboxVersion(finalVersion)}
         >
-          <Image
-            src={finalVersion.imageUrl}
-            alt={title}
-            fill
-            className="object-cover object-center size-full transition-transform group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, 33vw"
-          />
+          {finalVersion.imageUrl ? (
+            <Image
+              src={finalVersion.imageUrl}
+              alt={title}
+              fill
+              className="object-cover object-center size-full transition-transform group-hover:scale-105"
+              sizes="(max-width: 768px) 100vw, 33vw"
+            />
+          ) : (
+            <MediaPlaceholder kind="poster" className="h-full" />
+          )}
           {finalVersion.isFinal && (
             <div className="absolute top-3 right-3">
               <Badge status="final">نسخه نهایی</Badge>
@@ -119,13 +124,17 @@ export function PosterCard({ title, description, versions }: PosterCardProps) {
                       className="flex items-center gap-3 flex-1 min-w-0 text-right"
                     >
                       <div className="relative w-12 h-14 shrink-0 rounded overflow-hidden bg-muted">
-                        <Image
-                          src={version.thumbnailUrl || version.imageUrl}
-                          alt={`نسخه ${version.versionNumber}`}
-                          fill
-                          className="object-cover"
-                          sizes="48px"
-                        />
+                        {version.thumbnailUrl || version.imageUrl ? (
+                          <Image
+                            src={version.thumbnailUrl || version.imageUrl}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            sizes="48px"
+                          />
+                        ) : (
+                          <MediaPlaceholder kind="poster" className="h-full" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">

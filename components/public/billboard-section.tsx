@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/select";
 import { SectionHeader } from "@/components/public/section-header";
 import { BillboardCard } from "@/components/public/billboard-card";
+import { BillboardMap } from "@/components/public/billboard-map";
+import { BillboardModal } from "@/components/public/billboard-modal";
 import type { Billboard } from "@/lib/types";
 import { getStatusLabel } from "@/lib/utils";
 
@@ -23,6 +25,8 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
   const [cityFilter, setCityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [selectedBillboard, setSelectedBillboard] = useState<Billboard | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const cities = useMemo(
     () => [...new Set(billboards.map((b) => b.city))],
@@ -38,20 +42,25 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
     });
   }, [billboards, cityFilter, statusFilter, search]);
 
+  const openBillboard = (billboard: Billboard) => {
+    setSelectedBillboard(billboard);
+    setModalOpen(true);
+  };
+
   return (
     <section id="billboards">
       <SectionHeader
         title="بیلبوردها"
-        description="نمایش تمام بیلبوردهای نصب‌شده و تکمیل‌شده در کمپین"
+        description="نمایش بیلبوردهای کمپین روی نقشه و کارت‌ها — داده‌های Map Bilboard به‌صورت زنده"
       >
-        <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="جستجو..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pr-9 w-40"
+              className="w-40 pr-9"
             />
           </div>
           <Select value={cityFilter} onValueChange={setCityFilter}>
@@ -79,17 +88,27 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
         </div>
       </SectionHeader>
 
+      <div className="mb-8">
+        <BillboardMap billboards={filtered} onSelect={openBillboard} />
+      </div>
+
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border rounded-xl bg-card">
+        <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
           بیلبوردی یافت نشد.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-start">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((billboard) => (
-            <BillboardCard key={billboard.id} billboard={billboard} />
+            <BillboardCard key={billboard.id} billboard={billboard} onView={openBillboard} />
           ))}
         </div>
       )}
+
+      <BillboardModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        billboard={selectedBillboard}
+      />
     </section>
   );
 }

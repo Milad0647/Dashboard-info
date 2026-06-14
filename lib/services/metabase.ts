@@ -1,4 +1,4 @@
-import type { AnalyticsMetric, MetabaseConfig, TrafficSource, DeviceType } from "@/lib/types";
+import type { AnalyticsChannel, AnalyticsMetric, MetabaseConfig, TrafficSource, DeviceType } from "@/lib/types";
 
 interface MetabaseRow {
   [key: string]: unknown;
@@ -39,10 +39,15 @@ function normalizeDevice(value: string | null): DeviceType | null {
     : null;
 }
 
-function mapMetabaseRows(rows: MetabaseRow[], campaignId: string): AnalyticsMetric[] {
+function mapMetabaseRows(
+  rows: MetabaseRow[],
+  campaignId: string,
+  channel: AnalyticsChannel
+): AnalyticsMetric[] {
   return rows.map((row, index) => ({
-    id: `metabase-${index}`,
+    id: `metabase-${channel}-${index}`,
     campaignId,
+    channel,
     date: asString(row.date ?? row.day ?? row.created_at) ?? new Date().toISOString().split("T")[0],
     visitors: asNumber(row.visitors ?? row.visitor ?? row.sessions),
     uniqueVisitors: asNumber(row.unique_visitors ?? row.uniqueVisitors ?? row.uniques),
@@ -58,7 +63,8 @@ function mapMetabaseRows(rows: MetabaseRow[], campaignId: string): AnalyticsMetr
 
 export async function fetchMetabaseMetrics(
   campaignId: string,
-  config: MetabaseConfig
+  config: MetabaseConfig,
+  channel: AnalyticsChannel = "site"
 ): Promise<AnalyticsMetric[]> {
   const baseUrl = config.url.replace(/\/$/, "");
   const sessionResponse = await fetch(`${baseUrl}/api/session`, {
@@ -102,5 +108,5 @@ export async function fetchMetabaseMetrics(
     throw new Error("Metabase returned invalid data");
   }
 
-  return mapMetabaseRows(rows, campaignId);
+  return mapMetabaseRows(rows, campaignId, channel);
 }

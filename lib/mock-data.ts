@@ -19,7 +19,13 @@ const fullFeatures = {
   posters: true,
   videos: true,
   analytics: true,
+  socialAnalytics: true,
   submissions: true,
+};
+
+const defaultAnalyticsConfig = {
+  site: { source: "manual" as const, metabase: null },
+  social: { source: "manual" as const, metabase: null },
 };
 
 export const mockCampaigns: CampaignSettings[] = [
@@ -35,7 +41,8 @@ export const mockCampaigns: CampaignSettings[] = [
     coverImageUrl: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=400&fit=crop",
     published: true,
     features: fullFeatures,
-    analyticsConfig: { source: "manual" },
+    analyticsConfig: defaultAnalyticsConfig,
+    billboardConfig: {},
     updatedAt: now,
   },
   {
@@ -53,9 +60,11 @@ export const mockCampaigns: CampaignSettings[] = [
       posters: true,
       videos: false,
       analytics: false,
+      socialAnalytics: false,
       submissions: false,
     },
-    analyticsConfig: { source: "manual" },
+    analyticsConfig: defaultAnalyticsConfig,
+    billboardConfig: {},
     updatedAt: now,
   },
   {
@@ -73,9 +82,11 @@ export const mockCampaigns: CampaignSettings[] = [
       posters: true,
       videos: true,
       analytics: false,
+      socialAnalytics: true,
       submissions: false,
     },
-    analyticsConfig: { source: "manual" },
+    analyticsConfig: defaultAnalyticsConfig,
+    billboardConfig: {},
     updatedAt: now,
   },
 ];
@@ -90,7 +101,11 @@ export const mockBillboards: Billboard[] = [
     location: "میدان ونک، خیابان ملاصدرا",
     date: "2025-04-10",
     thumbnailUrl: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&h=300&fit=crop",
-    externalUrl: "https://example.com/billboard/1",
+    imageUrl: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1200&h=900&fit=crop",
+    externalUrl: "https://www.google.com/maps?q=35.7575,51.41",
+    latitude: 35.7575,
+    longitude: 51.41,
+    source: "manual",
     status: "completed",
     tags: ["شمال", "اصلی"],
     notes: "نصب با موفقیت انجام شد",
@@ -107,7 +122,11 @@ export const mockBillboards: Billboard[] = [
     location: "بلوار کشاورز",
     date: "2025-04-15",
     thumbnailUrl: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop",
-    externalUrl: "https://example.com/billboard/2",
+    imageUrl: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=900&fit=crop",
+    externalUrl: "https://www.google.com/maps?q=35.709,51.398",
+    latitude: 35.709,
+    longitude: 51.398,
+    source: "manual",
     status: "completed",
     tags: ["مرکز"],
     published: true,
@@ -173,20 +192,38 @@ export const mockVideoVersions: VideoVersion[] = [
   { id: "vv-3", videoId: "v-2", versionNumber: 1, videoUrl: "https://www.w3schools.com/html/movie.mp4", thumbnailUrl: "https://images.unsplash.com/photo-1611162616305-c69b3fa7a162?w=400&h=225&fit=crop", duration: "0:15", notes: "نهایی", status: "final", isFinal: true, date: "2025-01-10", createdAt: now },
 ];
 
-export const mockAnalyticsMetrics: AnalyticsMetric[] = Array.from({ length: 14 }, (_, i) => ({
-  id: `am-${i}`,
-  campaignId: "campaign-1",
-  date: daysAgo(13 - i),
-  visitors: 800 + Math.floor(Math.random() * 400),
-  uniqueVisitors: 600 + Math.floor(Math.random() * 300),
-  pageViews: 1200 + Math.floor(Math.random() * 600),
-  avgSessionDuration: 120 + Math.floor(Math.random() * 60),
-  source: (["instagram", "telegram", "direct", "google", "referral", "other"] as const)[i % 6],
-  device: (["mobile", "desktop", "tablet"] as const)[i % 3],
-  page: ["/", "/about", "/contact", "/campaign"][i % 4],
-  city: ["تهران", "مشهد", "اصفهان", "شیراز", "تبریز"][i % 5],
-  createdAt: now,
-}));
+export const mockAnalyticsMetrics: AnalyticsMetric[] = [
+  ...Array.from({ length: 14 }, (_, i) => ({
+    id: `am-site-${i}`,
+    campaignId: "campaign-1",
+    channel: "site" as const,
+    date: daysAgo(13 - i),
+    visitors: 800 + Math.floor(Math.random() * 400),
+    uniqueVisitors: 600 + Math.floor(Math.random() * 300),
+    pageViews: 1200 + Math.floor(Math.random() * 600),
+    avgSessionDuration: 120 + Math.floor(Math.random() * 60),
+    source: (["direct", "google", "referral", "other"] as const)[i % 4],
+    device: (["mobile", "desktop", "tablet"] as const)[i % 3],
+    page: ["/", "/about", "/contact", "/campaign"][i % 4],
+    city: ["تهران", "مشهد", "اصفهان", "شیراز", "تبریز"][i % 5],
+    createdAt: now,
+  })),
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `am-social-${i}`,
+    campaignId: "campaign-1",
+    channel: "social" as const,
+    date: daysAgo(9 - i),
+    visitors: 5000 + Math.floor(Math.random() * 2000),
+    uniqueVisitors: 3200 + Math.floor(Math.random() * 1200),
+    pageViews: 900 + Math.floor(Math.random() * 500),
+    avgSessionDuration: 45 + Math.floor(Math.random() * 30),
+    source: (["instagram", "telegram"] as const)[i % 2],
+    device: (["mobile", "desktop"] as const)[i % 2],
+    page: ["reels", "story", "post", "channel"][i % 4],
+    city: ["تهران", "مشهد", "اصفهان"][i % 3],
+    createdAt: now,
+  })),
+];
 
 export const mockSubmissions: CampaignSubmission[] = [
   {

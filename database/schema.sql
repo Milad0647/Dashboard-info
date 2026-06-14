@@ -13,8 +13,9 @@ CREATE TABLE IF NOT EXISTS campaign_settings (
   end_date DATE NOT NULL,
   cover_image_url TEXT,
   published BOOLEAN NOT NULL DEFAULT false,
-  features JSONB NOT NULL DEFAULT '{"billboards":true,"posters":true,"videos":true,"analytics":true,"submissions":true}',
-  analytics_config JSONB NOT NULL DEFAULT '{"source":"manual"}'::jsonb,
+  features JSONB NOT NULL DEFAULT '{"billboards":true,"posters":true,"videos":true,"analytics":true,"socialAnalytics":true,"submissions":true}',
+  analytics_config JSONB NOT NULL DEFAULT '{"site":{"source":"manual"},"social":{"source":"manual"}}'::jsonb,
+  billboard_config JSONB NOT NULL DEFAULT '{}'::jsonb,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -27,7 +28,12 @@ CREATE TABLE IF NOT EXISTS billboards (
   location TEXT NOT NULL,
   date DATE NOT NULL,
   thumbnail_url TEXT NOT NULL,
+  image_url TEXT,
   external_url TEXT NOT NULL DEFAULT '',
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
+  source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'api')),
+  external_id TEXT,
   status TEXT NOT NULL DEFAULT 'draft',
   tags TEXT[] DEFAULT '{}',
   notes TEXT,
@@ -102,6 +108,7 @@ CREATE TABLE IF NOT EXISTS video_versions (
 CREATE TABLE IF NOT EXISTS analytics_metrics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   campaign_id UUID NOT NULL REFERENCES campaign_settings(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL DEFAULT 'site' CHECK (channel IN ('site', 'social')),
   date DATE NOT NULL,
   visitors INT NOT NULL DEFAULT 0,
   unique_visitors INT NOT NULL DEFAULT 0,
@@ -138,4 +145,17 @@ CREATE INDEX IF NOT EXISTS idx_submissions_campaign ON campaign_submissions(camp
 CREATE INDEX IF NOT EXISTS idx_analytics_campaign_date ON analytics_metrics(campaign_id, date DESC);
 
 ALTER TABLE campaign_settings
-  ADD COLUMN IF NOT EXISTS analytics_config JSONB NOT NULL DEFAULT '{"source":"manual"}'::jsonb;
+  ADD COLUMN IF NOT EXISTS analytics_config JSONB NOT NULL DEFAULT '{"site":{"source":"manual"},"social":{"source":"manual"}}'::jsonb;
+
+ALTER TABLE campaign_settings
+  ADD COLUMN IF NOT EXISTS billboard_config JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+ALTER TABLE billboards
+  ADD COLUMN IF NOT EXISTS image_url TEXT,
+  ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual',
+  ADD COLUMN IF NOT EXISTS external_id TEXT;
+
+ALTER TABLE analytics_metrics
+  ADD COLUMN IF NOT EXISTS channel TEXT NOT NULL DEFAULT 'site';

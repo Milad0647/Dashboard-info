@@ -9,6 +9,7 @@ import type {
   Video,
   VideoVersion,
 } from "@/lib/types";
+import { normalizeAnalyticsConfig } from "@/lib/analytics-config";
 
 function toDateString(value: unknown): string {
   if (value instanceof Date) {
@@ -36,18 +37,33 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
     published: row.published ?? false,
     features:
       typeof row.features === "string"
-        ? JSON.parse(row.features)
-        : (row.features ?? {
+        ? {
             billboards: true,
             posters: true,
             videos: true,
             analytics: true,
+            socialAnalytics: true,
             submissions: true,
-          }),
-    analyticsConfig:
+            ...JSON.parse(row.features),
+          }
+        : {
+            billboards: true,
+            posters: true,
+            videos: true,
+            analytics: true,
+            socialAnalytics: true,
+            submissions: true,
+            ...(row.features ?? {}),
+          },
+    analyticsConfig: normalizeAnalyticsConfig(
       typeof row.analytics_config === "string"
         ? JSON.parse(row.analytics_config)
-        : (row.analytics_config ?? { source: "manual" }),
+        : row.analytics_config
+    ),
+    billboardConfig:
+      typeof row.billboard_config === "string"
+        ? JSON.parse(row.billboard_config)
+        : (row.billboard_config ?? {}),
     updatedAt: toIsoString(row.updated_at),
   };
 }
@@ -63,7 +79,12 @@ export function mapBillboardFromDb(row: any): Billboard {
     location: row.location,
     date: toDateString(row.date),
     thumbnailUrl: row.thumbnail_url,
+    imageUrl: row.image_url ?? row.thumbnail_url,
     externalUrl: row.external_url,
+    latitude: row.latitude != null ? Number(row.latitude) : null,
+    longitude: row.longitude != null ? Number(row.longitude) : null,
+    source: row.source ?? "manual",
+    externalId: row.external_id ?? null,
     status: row.status,
     tags: row.tags ?? [],
     notes: row.notes,
@@ -156,6 +177,7 @@ export function mapAnalyticsFromDb(row: any): AnalyticsMetric {
   return {
     id: row.id,
     campaignId: row.campaign_id,
+    channel: row.channel ?? "site",
     date: toDateString(row.date),
     visitors: row.visitors,
     uniqueVisitors: row.unique_visitors,

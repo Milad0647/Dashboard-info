@@ -22,12 +22,14 @@ import type {
   VideoVersion,
 } from "@/lib/types";
 import { generateId, slugify } from "@/lib/utils";
+import { serializeAnalyticsConfig } from "@/lib/analytics-config";
 
 const defaultFeatures = {
   billboards: true,
   posters: true,
   videos: true,
   analytics: true,
+  socialAnalytics: true,
   submissions: true,
 };
 
@@ -105,7 +107,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
   await sql`
     INSERT INTO campaign_settings (
       id, slug, title, description, status, start_date, end_date,
-      cover_image_url, published, features, analytics_config, updated_at
+      cover_image_url, published, features, analytics_config, billboard_config, updated_at
     ) VALUES (
       ${id},
       ${data.slug ?? slugify(data.title ?? id)},
@@ -117,7 +119,8 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
       ${data.coverImageUrl ?? null},
       ${data.published ?? false},
       ${sql.json({ ...features })},
-      ${sql.json(JSON.parse(JSON.stringify(data.analyticsConfig ?? { source: "manual" })))},
+      ${sql.json(JSON.parse(JSON.stringify(serializeAnalyticsConfig(data.analyticsConfig ?? { site: { source: "manual" }, social: { source: "manual" } }))))},
+      ${sql.json(JSON.parse(JSON.stringify(data.billboardConfig ?? {})))},
       ${now}
     )
     ON CONFLICT (id) DO UPDATE SET
@@ -131,6 +134,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
       published = EXCLUDED.published,
       features = EXCLUDED.features,
       analytics_config = EXCLUDED.analytics_config,
+      billboard_config = EXCLUDED.billboard_config,
       updated_at = EXCLUDED.updated_at
   `;
 
@@ -166,7 +170,8 @@ export async function pgSaveBillboard(data: Partial<Billboard> & { id?: string }
   await sql`
     INSERT INTO billboards (
       id, campaign_id, title, description, city, location, date,
-      thumbnail_url, external_url, status, tags, notes, published, sort_order,
+      thumbnail_url, image_url, external_url, latitude, longitude, source, external_id,
+      status, tags, notes, published, sort_order,
       created_at, updated_at
     ) VALUES (
       ${id},
@@ -177,7 +182,12 @@ export async function pgSaveBillboard(data: Partial<Billboard> & { id?: string }
       ${data.location ?? ""},
       ${data.date ?? now.split("T")[0]},
       ${data.thumbnailUrl ?? ""},
+      ${data.imageUrl ?? data.thumbnailUrl ?? ""},
       ${data.externalUrl ?? ""},
+      ${data.latitude ?? null},
+      ${data.longitude ?? null},
+      ${data.source ?? "manual"},
+      ${data.externalId ?? null},
       ${data.status ?? "draft"},
       ${sql.array(data.tags ?? [])},
       ${data.notes ?? null},
@@ -193,7 +203,12 @@ export async function pgSaveBillboard(data: Partial<Billboard> & { id?: string }
       location = EXCLUDED.location,
       date = EXCLUDED.date,
       thumbnail_url = EXCLUDED.thumbnail_url,
+      image_url = EXCLUDED.image_url,
       external_url = EXCLUDED.external_url,
+      latitude = EXCLUDED.latitude,
+      longitude = EXCLUDED.longitude,
+      source = EXCLUDED.source,
+      external_id = EXCLUDED.external_id,
       status = EXCLUDED.status,
       tags = EXCLUDED.tags,
       notes = EXCLUDED.notes,
@@ -302,7 +317,12 @@ export async function pgSavePosterVersion(data: Partial<PosterVersion> & { id?: 
   const status = isNew ? "final" : (data.status ?? "draft");
 
   if (isFinal) {
-    await sql`UPDATE poster_versions SET is_final = false WHERE poster_id = ${data.posterId}`;
+    await sql`
+      UPDATE poster_versions
+      SET is_final = false,
+          status = CASE WHEN status = 'final' THEN 'revised' ELSE status END
+      WHERE poster_id = ${data.posterId}
+    `;
   }
 
   const countRows = await sql`
@@ -395,7 +415,12 @@ export async function pgSaveVideoVersion(data: Partial<VideoVersion> & { id?: st
   const status = isNew ? "final" : (data.status ?? "draft");
 
   if (isFinal) {
-    await sql`UPDATE video_versions SET is_final = false WHERE video_id = ${data.videoId}`;
+    await sql`
+      UPDATE video_versions
+      SET is_final = false,
+          status = CASE WHEN status = 'final' THEN 'revised' ELSE status END
+      WHERE video_id = ${data.videoId}
+    `;
   }
 
   const countRows = await sql`
@@ -446,11 +471,12 @@ export async function pgSaveAnalyticsMetric(data: Partial<AnalyticsMetric> & { i
 
   await sql`
     INSERT INTO analytics_metrics (
-      id, campaign_id, date, visitors, unique_visitors, page_views,
+      id, campaign_id, channel, date, visitors, unique_visitors, page_views,
       avg_session_duration, source, device, page, city, created_at
     ) VALUES (
       ${id},
       ${data.campaignId ?? ""},
+      ${data.channel ?? "site"},
       ${data.date ?? now.split("T")[0]},
       ${data.visitors ?? 0},
       ${data.uniqueVisitors ?? 0},
@@ -463,6 +489,7 @@ export async function pgSaveAnalyticsMetric(data: Partial<AnalyticsMetric> & { i
       ${now}
     )
     ON CONFLICT (id) DO UPDATE SET
+      channel = EXCLUDED.channel,
       date = EXCLUDED.date,
       visitors = EXCLUDED.visitors,
       unique_visitors = EXCLUDED.unique_visitors,

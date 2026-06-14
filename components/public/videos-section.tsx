@@ -1,6 +1,13 @@
 "use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMemo, useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SectionHeader } from "@/components/public/section-header";
 import { VideoCard } from "@/components/public/video-card";
 import type { MediaCategory, VideoWithVersions } from "@/lib/types";
@@ -11,41 +18,62 @@ interface VideosSectionProps {
 }
 
 export function VideosSection({ categories, videos }: VideosSectionProps) {
-  const defaultCategory = categories[0]?.id ?? "all";
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const activeCategories = useMemo(
+    () => categories.filter((cat) => videos.some((video) => video.categoryId === cat.id)),
+    [categories, videos]
+  );
+
+  const filteredVideos = useMemo(() => {
+    if (categoryFilter === "all") return videos;
+    return videos.filter((video) => video.categoryId === categoryFilter);
+  }, [videos, categoryFilter]);
+
+  if (videos.length === 0) {
+    return (
+      <section id="videos">
+        <SectionHeader title="ویدیوها" description="ویدیوهای کمپین — نسخه‌ها داخل هر کارت" />
+        <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
+          ویدیویی ثبت نشده است.
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="videos">
-      <SectionHeader title="ویدیوها" description="ویدیوهای کمپین — نسخه‌ها داخل هر کارت" />
+      <SectionHeader title="ویدیوها" description="همه ویدیوهای کمپین — نسخه‌ها داخل هر کارت">
+        {activeCategories.length > 1 && (
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="دسته" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">همه دسته‌ها</SelectItem>
+              {activeCategories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>{cat.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </SectionHeader>
 
-      {categories.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border rounded-xl bg-card">
-          ویدیویی ثبت نشده است.
+      {filteredVideos.length === 0 ? (
+        <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
+          ویدیویی در این دسته یافت نشد.
         </div>
       ) : (
-        <Tabs defaultValue={defaultCategory} dir="rtl">
-          <TabsList className="mb-4 w-full justify-start">
-            {categories.map((cat) => (
-              <TabsTrigger key={cat.id} value={cat.id}>{cat.title}</TabsTrigger>
-            ))}
-          </TabsList>
-
-          {categories.map((cat) => {
-            const categoryVideos = videos.filter((v) => v.categoryId === cat.id);
-            return (
-              <TabsContent key={cat.id} value={cat.id}>
-                {categoryVideos.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">ویدیویی در این دسته وجود ندارد.</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-start">
-                    {categoryVideos.map((video) => (
-                      <VideoCard key={video.id} title={video.title} description={video.description} versions={video.versions} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            );
-          })}
-        </Tabs>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredVideos.map((video) => (
+            <VideoCard
+              key={video.id}
+              title={video.title}
+              description={video.description}
+              versions={video.versions}
+            />
+          ))}
+        </div>
       )}
     </section>
   );

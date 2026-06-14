@@ -29,6 +29,7 @@ const featuresSchema = z.object({
   posters: z.boolean(),
   videos: z.boolean(),
   analytics: z.boolean(),
+  socialAnalytics: z.boolean(),
   submissions: z.boolean(),
 });
 
@@ -51,6 +52,7 @@ const defaultFeatures: CampaignFeatures = {
   posters: true,
   videos: false,
   analytics: false,
+  socialAnalytics: false,
   submissions: false,
 };
 
@@ -141,6 +143,7 @@ export function CampaignsAdmin({ initialCampaigns }: CampaignsAdminProps) {
     { key: "posters", label: "پوستر" },
     { key: "videos", label: "ویدیو" },
     { key: "analytics", label: "آمار سایت" },
+    { key: "socialAnalytics", label: "آمار شبکه‌های اجتماعی" },
     { key: "submissions", label: "مشارکت کاربران" },
   ];
 

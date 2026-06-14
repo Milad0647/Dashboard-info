@@ -1,10 +1,13 @@
 import { getMockStore, getMockStoreForCampaign } from "@/lib/mock-data";
+import { resolvePublicBillboards } from "@/lib/billboards";
 import type {
+  AnalyticsChannel,
   AnalyticsMetric,
   AnalyticsSummary,
   CampaignKPIs,
   CampaignListItem,
   CampaignSettings,
+  ChannelAnalyticsConfig,
   PublicCampaignData,
   SectionVisibility,
   SubmissionSummary,
@@ -25,29 +28,31 @@ import {
 } from "@/lib/db/mappers";
 import { createClient } from "@/lib/supabase/server";
 
-async function resolveAnalyticsMetrics(
+async function resolveChannelAnalyticsMetrics(
   settings: CampaignSettings,
-  dbMetrics: AnalyticsMetric[]
+  dbMetrics: AnalyticsMetric[],
+  channel: AnalyticsChannel,
+  channelConfig: ChannelAnalyticsConfig
 ): Promise<AnalyticsMetric[]> {
-  const config = settings.analyticsConfig;
-  const metabase = config?.metabase;
+  const channelMetrics = dbMetrics.filter((metric) => (metric.channel ?? "site") === channel);
+  const metabase = channelConfig.metabase;
   const useMetabase =
-    (config?.source === "metabase" || config?.source === "hybrid") &&
+    (channelConfig.source === "metabase" || channelConfig.source === "hybrid") &&
     Boolean(metabase?.url && metabase?.questionId);
 
   if (!useMetabase || !metabase) {
-    return dbMetrics;
+    return channelMetrics;
   }
 
   try {
-    const liveMetrics = await fetchMetabaseMetrics(settings.id, metabase);
-    if (config.source === "hybrid") {
-      return [...dbMetrics, ...liveMetrics];
+    const liveMetrics = await fetchMetabaseMetrics(settings.id, metabase, channel);
+    if (channelConfig.source === "hybrid") {
+      return [...channelMetrics, ...liveMetrics];
     }
     return liveMetrics;
   } catch (error) {
-    console.error("Metabase analytics fetch failed:", error);
-    return dbMetrics;
+    console.error(`Metabase analytics fetch failed (${channel}):`, error);
+    return channelMetrics;
   }
 }
 
@@ -160,6 +165,7 @@ function buildSectionVisibility(
     posters: unknown[];
     videos: unknown[];
     analytics: AnalyticsSummary;
+    socialAnalytics: AnalyticsSummary;
     submissions: unknown[];
   }
 ): SectionVisibility {
@@ -168,6 +174,7 @@ function buildSectionVisibility(
     posters: features.posters && data.posters.length > 0,
     videos: features.videos && data.videos.length > 0,
     analytics: features.analytics && data.analytics.hasData,
+    socialAnalytics: features.socialAnalytics && data.socialAnalytics.hasData,
     submissions: features.submissions && data.submissions.length > 0,
   };
 }
@@ -179,6 +186,7 @@ function buildKPIs(
     posters: unknown[];
     videos: unknown[];
     analytics: AnalyticsSummary;
+    socialAnalytics: AnalyticsSummary;
     submissions: { participantName: string }[];
   }
 ): CampaignKPIs {
@@ -187,6 +195,7 @@ function buildKPIs(
     totalPosters: sections.posters ? data.posters.length : 0,
     totalVideos: sections.videos ? data.videos.length : 0,
     totalSiteVisitors: sections.analytics ? data.analytics.totalVisitors : 0,
+    totalSocialReach: sections.socialAnalytics ? data.socialAnalytics.totalVisitors : 0,
     totalParticipants: sections.submissions
       ? new Set(data.submissions.map((s) => s.participantName)).size
       : 0,
@@ -195,12 +204,9 @@ function buildKPIs(
 
 function assemblePublicData(
   settings: CampaignSettings,
-  store: ReturnType<typeof getMockStoreForCampaign>
+  store: ReturnType<typeof getMockStoreForCampaign>,
+  billboards: ReturnType<typeof getMockStoreForCampaign>["billboards"]
 ): PublicCampaignData {
-  const billboards = store.billboards
-    .filter((b) => b.published)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-
   const posterCategories = store.posterCategories
     .filter((c) => c.published)
     .sort((a, b) => a.sortOrder - b.sortOrder);
@@ -233,7 +239,10 @@ function assemblePublicData(
     }))
     .filter((v) => v.versions.length > 0);
 
-  const analytics = buildAnalyticsSummary(store.analytics);
+  const siteMetrics = store.analytics.filter((metric) => (metric.channel ?? "site") === "site");
+  const socialMetrics = store.analytics.filter((metric) => (metric.channel ?? "site") === "social");
+  const analytics = buildAnalyticsSummary(siteMetrics);
+  const socialAnalytics = buildAnalyticsSummary(socialMetrics);
   const submissions = store.submissions
     .filter((s) => s.published && s.status === "approved")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -245,6 +254,7 @@ function assemblePublicData(
     posters,
     videos,
     analytics,
+    socialAnalytics,
     submissions,
   });
 
@@ -253,6 +263,7 @@ function assemblePublicData(
     posters,
     videos,
     analytics,
+    socialAnalytics,
     submissions,
   });
 
@@ -266,6 +277,7 @@ function assemblePublicData(
     videoCategories,
     videos,
     analytics,
+    socialAnalytics,
     submissions,
     submissionSummary,
     lastUpdated: new Date().toISOString(),
@@ -278,7 +290,10 @@ function getMockPublicDataBySlug(slug: string): PublicCampaignData | null {
   if (!settings) return null;
   const campaignStore = getMockStoreForCampaign(settings.id);
   if (!campaignStore.settings) return null;
-  return assemblePublicData(campaignStore.settings, campaignStore);
+  const billboards = campaignStore.billboards
+    .filter((b) => b.published)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  return assemblePublicData(campaignStore.settings, campaignStore, billboards);
 }
 
 export async function getCampaignList(): Promise<CampaignListItem[]> {
@@ -341,12 +356,30 @@ export async function getPublicCampaignData(slug: string): Promise<PublicCampaig
     const settings = await pg.pgGetPublishedCampaignBySlug(slug);
     if (!settings) return null;
     const campaignStore = await pg.pgGetPublicCampaignData(settings.id);
-    const analyticsMetrics = await resolveAnalyticsMetrics(settings, campaignStore.analytics);
-    return assemblePublicData(settings, {
+    const [siteMetrics, socialMetrics, billboards] = await Promise.all([
+      resolveChannelAnalyticsMetrics(
+        settings,
+        campaignStore.analytics,
+        "site",
+        settings.analyticsConfig.site
+      ),
+      resolveChannelAnalyticsMetrics(
+        settings,
+        campaignStore.analytics,
+        "social",
+        settings.analyticsConfig.social
+      ),
+      resolvePublicBillboards(settings, campaignStore.billboards),
+    ]);
+    return assemblePublicData(
       settings,
-      ...campaignStore,
-      analytics: analyticsMetrics,
-    } as ReturnType<typeof getMockStoreForCampaign>);
+      {
+        settings,
+        ...campaignStore,
+        analytics: [...siteMetrics, ...socialMetrics],
+      } as ReturnType<typeof getMockStoreForCampaign>,
+      billboards
+    );
   }
   if (!isSupabaseConfigured()) {
     return getMockPublicDataBySlug(slug);
@@ -411,7 +444,9 @@ export async function getPublicCampaignData(slug: string): Promise<PublicCampaig
       submissions: (submissionsRes.data ?? []).map(mapSubmissionFromDb),
     };
 
-    return assemblePublicData(settings, campaignStore);
+    return assemblePublicData(settings, campaignStore, campaignStore.billboards
+      .filter((b) => b.published)
+      .sort((a, b) => a.sortOrder - b.sortOrder));
   } catch {
     return getMockPublicDataBySlug(slug);
   }

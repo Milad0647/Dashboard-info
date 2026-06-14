@@ -135,9 +135,14 @@ export async function saveCampaign(data: Partial<CampaignSettings> & { id?: stri
           posters: true,
           videos: false,
           analytics: false,
+          socialAnalytics: false,
           submissions: false,
         },
-        analyticsConfig: data.analyticsConfig ?? { source: "manual" },
+        analyticsConfig: data.analyticsConfig ?? {
+          site: { source: "manual", metabase: null },
+          social: { source: "manual", metabase: null },
+        },
+        billboardConfig: data.billboardConfig ?? {},
         updatedAt: now,
       };
       return { ...store, campaigns: [...store.campaigns, newCampaign] };
@@ -294,7 +299,7 @@ export async function savePoster(data: Partial<Poster> & { id?: string }) {
       }
       const campaignPosters = store.posters.filter((p) => p.campaignId === data.campaignId);
       const newItem: Poster = {
-        id: generateId(),
+        id: data.id ?? generateId(),
         campaignId: data.campaignId ?? "",
         categoryId: data.categoryId ?? "",
         title: data.title ?? "",
@@ -332,7 +337,13 @@ export async function savePosterVersion(data: Partial<PosterVersion> & { id?: st
       let versions = [...store.posterVersions];
       if (data.isFinal) {
         versions = versions.map((v) =>
-          v.posterId === data.posterId ? { ...v, isFinal: false } : v
+          v.posterId === data.posterId
+            ? {
+                ...v,
+                isFinal: false,
+                status: v.status === "final" ? "revised" : v.status,
+              }
+            : v
         );
       }
       if (data.id) {
@@ -344,15 +355,16 @@ export async function savePosterVersion(data: Partial<PosterVersion> & { id?: st
         };
       }
       const posterVersions = versions.filter((v) => v.posterId === data.posterId);
+      const nextVersionNumber = data.versionNumber ?? posterVersions.length + 1;
       const newItem: PosterVersion = {
         id: generateId(),
         posterId: data.posterId,
-        versionNumber: data.versionNumber ?? posterVersions.length + 1,
+        versionNumber: nextVersionNumber,
         imageUrl: data.imageUrl ?? "",
         thumbnailUrl: data.thumbnailUrl ?? data.imageUrl ?? "",
         notes: data.notes,
-        status: data.status ?? "draft",
-        isFinal: data.isFinal ?? false,
+        status: data.isFinal === false ? (data.status ?? "draft") : "final",
+        isFinal: data.isFinal ?? true,
         date: data.date ?? now.split("T")[0],
         createdAt: now,
       };
@@ -428,7 +440,13 @@ export async function saveVideoVersion(data: Partial<VideoVersion> & { id?: stri
       let versions = [...store.videoVersions];
       if (data.isFinal) {
         versions = versions.map((v) =>
-          v.videoId === data.videoId ? { ...v, isFinal: false } : v
+          v.videoId === data.videoId
+            ? {
+                ...v,
+                isFinal: false,
+                status: v.status === "final" ? "revised" : v.status,
+              }
+            : v
         );
       }
       if (data.id) {
@@ -440,16 +458,17 @@ export async function saveVideoVersion(data: Partial<VideoVersion> & { id?: stri
         };
       }
       const videoVersions = versions.filter((v) => v.videoId === data.videoId);
+      const nextVersionNumber = data.versionNumber ?? videoVersions.length + 1;
       const newItem: VideoVersion = {
         id: generateId(),
         videoId: data.videoId,
-        versionNumber: data.versionNumber ?? videoVersions.length + 1,
+        versionNumber: nextVersionNumber,
         videoUrl: data.videoUrl ?? "",
         thumbnailUrl: data.thumbnailUrl ?? "",
         duration: data.duration,
         notes: data.notes,
-        status: data.status ?? "draft",
-        isFinal: data.isFinal ?? false,
+        status: data.isFinal === false ? (data.status ?? "draft") : "final",
+        isFinal: data.isFinal ?? true,
         date: data.date ?? now.split("T")[0],
         createdAt: now,
       };
@@ -488,6 +507,7 @@ export async function saveAnalyticsMetric(data: Partial<AnalyticsMetric> & { id?
       const newItem: AnalyticsMetric = {
         id: generateId(),
         campaignId: data.campaignId ?? "",
+        channel: data.channel ?? "site",
         date: data.date ?? now.split("T")[0],
         visitors: data.visitors ?? 0,
         uniqueVisitors: data.uniqueVisitors ?? 0,

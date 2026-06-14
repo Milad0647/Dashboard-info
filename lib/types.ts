@@ -12,10 +12,13 @@ export interface CampaignFeatures {
   posters: boolean;
   videos: boolean;
   analytics: boolean;
+  socialAnalytics: boolean;
   submissions: boolean;
 }
 
 export type AnalyticsSource = "manual" | "metabase" | "hybrid";
+export type AnalyticsChannel = "site" | "social";
+export type BillboardSource = "manual" | "api";
 
 export interface MetabaseConfig {
   url: string;
@@ -24,9 +27,18 @@ export interface MetabaseConfig {
   questionId: number;
 }
 
-export interface AnalyticsConfig {
+export interface ChannelAnalyticsConfig {
   source: AnalyticsSource;
   metabase?: MetabaseConfig | null;
+}
+
+export interface AnalyticsConfig {
+  site: ChannelAnalyticsConfig;
+  social: ChannelAnalyticsConfig;
+}
+
+export interface BillboardConfig {
+  externalCampaignId?: string | null;
 }
 
 export interface CampaignSettings {
@@ -41,6 +53,7 @@ export interface CampaignSettings {
   published: boolean;
   features: CampaignFeatures;
   analyticsConfig: AnalyticsConfig;
+  billboardConfig: BillboardConfig;
   updatedAt: string;
 }
 
@@ -64,7 +77,12 @@ export interface Billboard {
   location: string;
   date: string;
   thumbnailUrl: string;
+  imageUrl?: string | null;
   externalUrl: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  source?: BillboardSource;
+  externalId?: string | null;
   status: ItemStatus;
   tags: string[];
   notes?: string | null;
@@ -139,6 +157,7 @@ export interface VideoVersion {
 export interface AnalyticsMetric {
   id: string;
   campaignId: string;
+  channel: AnalyticsChannel;
   date: string;
   visitors: number;
   uniqueVisitors: number;
@@ -189,6 +208,7 @@ export interface CampaignKPIs {
   totalPosters: number;
   totalVideos: number;
   totalSiteVisitors: number;
+  totalSocialReach: number;
   totalParticipants: number;
 }
 
@@ -220,6 +240,7 @@ export interface SectionVisibility {
   posters: boolean;
   videos: boolean;
   analytics: boolean;
+  socialAnalytics: boolean;
   submissions: boolean;
 }
 
@@ -233,6 +254,7 @@ export interface PublicCampaignData {
   videoCategories: MediaCategory[];
   videos: VideoWithVersions[];
   analytics: AnalyticsSummary;
+  socialAnalytics: AnalyticsSummary;
   submissions: CampaignSubmission[];
   submissionSummary: SubmissionSummary;
   lastUpdated: string;

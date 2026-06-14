@@ -1,6 +1,13 @@
 "use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMemo, useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SectionHeader } from "@/components/public/section-header";
 import { PosterCard } from "@/components/public/poster-card";
 import type { MediaCategory, PosterWithVersions } from "@/lib/types";
@@ -11,46 +18,57 @@ interface PostersSectionProps {
 }
 
 export function PostersSection({ categories, posters }: PostersSectionProps) {
-  const activeCategories = categories.filter((cat) =>
-    posters.some((p) => p.categoryId === cat.id)
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const activeCategories = useMemo(
+    () => categories.filter((cat) => posters.some((poster) => poster.categoryId === cat.id)),
+    [categories, posters]
   );
 
-  if (activeCategories.length === 0) return null;
+  const filteredPosters = useMemo(() => {
+    if (categoryFilter === "all") return posters;
+    return posters.filter((poster) => poster.categoryId === categoryFilter);
+  }, [posters, categoryFilter]);
 
-  const defaultCategory = activeCategories[0]?.id ?? "all";
+  if (posters.length === 0) return null;
 
   return (
     <section id="posters">
       <SectionHeader
         title="پوسترها"
-        description="پوسترهای کمپین — روی هر پوستر کلیک کنید و نسخه‌های قبلی را در کارت ببینید"
-      />
+        description="همه پوسترهای کمپین — روی هر پوستر کلیک کنید و نسخه‌های قبلی را در کارت ببینید"
+      >
+        {activeCategories.length > 1 && (
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="دسته" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">همه دسته‌ها</SelectItem>
+              {activeCategories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>{cat.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </SectionHeader>
 
-      <Tabs defaultValue={defaultCategory} dir="rtl">
-        <TabsList className="mb-6 flex-wrap h-auto gap-1 w-full justify-start">
-          {activeCategories.map((cat) => (
-            <TabsTrigger key={cat.id} value={cat.id}>{cat.title}</TabsTrigger>
+      {filteredPosters.length === 0 ? (
+        <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
+          پوستری در این دسته یافت نشد.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredPosters.map((poster) => (
+            <PosterCard
+              key={poster.id}
+              title={poster.title}
+              description={poster.description}
+              versions={poster.versions}
+            />
           ))}
-        </TabsList>
-
-        {activeCategories.map((cat) => {
-          const categoryPosters = posters.filter((p) => p.categoryId === cat.id);
-          return (
-            <TabsContent key={cat.id} value={cat.id}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-start">
-                {categoryPosters.map((poster) => (
-                  <PosterCard
-                    key={poster.id}
-                    title={poster.title}
-                    description={poster.description}
-                    versions={poster.versions}
-                  />
-                ))}
-              </div>
-            </TabsContent>
-          );
-        })}
-      </Tabs>
+        </div>
+      )}
     </section>
   );
 }
