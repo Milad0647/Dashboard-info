@@ -23,9 +23,8 @@ Set these on the **Application** service in Coolify:
 | `HOSTNAME` | Yes | `0.0.0.0` |
 | `APP_URL` | Yes | `https://campain.pixlink.ir` |
 | `SERVICE_FQDN_APP` | Yes | `campain.pixlink.ir` |
-| `DATABASE_URL` | Yes | `postgres://dashboard:YOUR_PASSWORD@dashboard-postgres:5432/dashboard` |
 | `POSTGRES_USER` | Yes | `dashboard` |
-| `POSTGRES_PASSWORD` | Yes | strong password (same as in `DATABASE_URL`) |
+| `POSTGRES_PASSWORD` | Yes | **one password only** — used by both Postgres and app |
 | `POSTGRES_DB` | Yes | `dashboard` |
 | `ADMIN_EMAIL` | Yes | your admin email |
 | `ADMIN_PASSWORD` | Yes | strong admin password |
@@ -50,7 +49,8 @@ Do **not** map Postgres to host port `5432` unless you explicitly need external 
 
 1. Push changes to GitHub (`main`).
 2. In Coolify → your **Dashboard-info** application → **Environment**:
-   - Confirm all variables above (especially `DATABASE_URL` host = `dashboard-postgres`).
+   - Set `POSTGRES_PASSWORD` (and matching `POSTGRES_USER` / `POSTGRES_DB`).
+   - **Remove `DATABASE_URL`** if you set it manually — the entrypoint builds it automatically.
    - Set `NEXT_PUBLIC_USE_MOCK_DATA=false`.
 3. **Redeploy** the application (Rebuild + restart).
 4. Wait for `dashboard-postgres` health check to pass, then `dashboard-app` starts.
@@ -78,9 +78,29 @@ If Postgres is a **separate** Coolify database service (not `dashboard-postgres`
 
 ## Troubleshooting
 
+### `password authentication failed for user "dashboard"`
+
+PostgreSQL volume already exists with an **old** password. Changing `POSTGRES_PASSWORD` in Coolify does **not** update the existing database.
+
+**Quick fix (keep data):** set `POSTGRES_PASSWORD` back to the password used on **first deploy** (often `dashboard` if you never changed it).
+
+**Or reset password inside Postgres container:**
+
+```bash
+docker exec -it <postgres-container-name> psql -U postgres -c "ALTER USER dashboard PASSWORD 'your-new-password';"
+```
+
+Then set the same value in Coolify `POSTGRES_PASSWORD` and redeploy.
+
+**Or fresh start (data loss):** in Coolify → Storages → delete volume `dashboard_postgres_data` → redeploy.
+
+### Bad Gateway / 502
+
+Usually the app never started because DB auth failed (infinite wait loop). Fix the password issue above, then redeploy. Confirm Coolify **container port = 3030**.
+
 | Symptom | Check |
 |---------|--------|
-| App uses mock data | `DATABASE_URL` set? `NEXT_PUBLIC_USE_MOCK_DATA=false`? |
-| DB connection refused | Host in `DATABASE_URL` must match service name (`dashboard-postgres`) |
-| Port conflict on server | Use `expose: 3030` in Coolify compose, not `3032:3032` for Postgres |
+| App uses mock data | `POSTGRES_PASSWORD` set? `NEXT_PUBLIC_USE_MOCK_DATA=false`? |
+| DB connection refused | `POSTGRES_HOST` is `dashboard-postgres` inside compose |
+| Port conflict on server | Use `expose: 3030` in Coolify compose, not `5432:5432` for Postgres |
 | Uploads lost on redeploy | Volume `dashboard_uploads` mounted at `/app/data/uploads` |
