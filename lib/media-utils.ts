@@ -1,37 +1,72 @@
-export function normalizeVideoInput(input: string): string {
+export function extractAparatVideoHash(input: string): string | null {
   const trimmed = input.trim();
-  if (!trimmed) return trimmed;
+  if (!trimmed) return null;
 
   const scriptSrcMatch = trimmed.match(/src=["'](https?:\/\/[^"']*aparat\.com[^"']*)["']/i);
   if (scriptSrcMatch?.[1]) {
-    return normalizeVideoInput(scriptSrcMatch[1]);
+    return extractAparatVideoHash(scriptSrcMatch[1]);
   }
 
-  const embedMatch = trimmed.match(/aparat\.com\/embed\/([^/?#"'\s&]+)/i);
-  if (embedMatch?.[1]) {
-    return `https://www.aparat.com/v/${embedMatch[1]}`;
+  const patterns = [
+    /aparat\.com\/embed\/([^/?#"'\s&]+)/i,
+    /aparat\.com\/v\/([^/?#"'\s&]+)/i,
+    /videohash\/([^/?#"'\s&]+)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = trimmed.match(pattern);
+    if (match?.[1]) return match[1];
   }
 
-  const aparatMatch = trimmed.match(
-    /aparat\.com\/(?:v|video\/video\/embed\/videohash)\/([^/?#"'\s&]+)/i
-  );
-  if (aparatMatch?.[1]) {
-    return `https://www.aparat.com/v/${aparatMatch[1]}`;
-  }
-
-  return trimmed;
+  return null;
 }
 
-export function resolveVideoEmbedUrl(url: string): string {
-  const normalized = normalizeVideoInput(url);
-  if (!normalized) return normalized;
+export function getAparatThumbnailUrl(hash: string): string {
+  return `https://www.aparat.com/public/video/video/videohash/${hash}/thumb-720.jpg`;
+}
 
-  const aparatMatch = normalized.match(/aparat\.com\/v\/([^/?#]+)/i);
-  if (aparatMatch?.[1]) {
-    return `https://www.aparat.com/video/video/embed/videohash/${aparatMatch[1]}/vt/frame`;
+export function isAparatVideoInput(input: string): boolean {
+  return extractAparatVideoHash(input) !== null;
+}
+
+/** @deprecated Use raw embed input; kept for backward compatibility */
+export function normalizeVideoInput(input: string): string {
+  return input.trim();
+}
+
+export function resolveVideoEmbedUrl(input: string): string {
+  const hash = extractAparatVideoHash(input);
+  if (hash) {
+    return `https://www.aparat.com/video/video/embed/videohash/${hash}/vt/frame`;
+  }
+  return input.trim();
+}
+
+export function resolveVideoThumbnail(
+  videoUrl: string,
+  thumbnailUrl?: string | null
+): string | null {
+  if (thumbnailUrl && hasDistinctThumbnail(thumbnailUrl, videoUrl)) {
+    return thumbnailUrl;
   }
 
-  return normalized;
+  const hash = extractAparatVideoHash(videoUrl);
+  if (hash) return getAparatThumbnailUrl(hash);
+
+  return thumbnailUrl || null;
+}
+
+export function buildVideoVersionMedia(videoUrl: string, thumbnailUrl?: string) {
+  const trimmedVideoUrl = videoUrl.trim();
+  const hash = extractAparatVideoHash(trimmedVideoUrl);
+  const resolvedThumbnail =
+    thumbnailUrl?.trim() ||
+    (hash ? getAparatThumbnailUrl(hash) : trimmedVideoUrl);
+
+  return {
+    videoUrl: trimmedVideoUrl,
+    thumbnailUrl: resolvedThumbnail,
+  };
 }
 
 export function isDirectVideoUrl(url: string): boolean {
@@ -39,6 +74,7 @@ export function isDirectVideoUrl(url: string): boolean {
 }
 
 export function isEmbeddableVideoUrl(url: string): boolean {
+  if (extractAparatVideoHash(url)) return true;
   const embedUrl = resolveVideoEmbedUrl(url);
   return isDirectVideoUrl(embedUrl) || /aparat\.com\/video\/video\/embed/i.test(embedUrl);
 }

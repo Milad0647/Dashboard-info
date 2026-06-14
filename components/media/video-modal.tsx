@@ -12,10 +12,13 @@ import {
   getFilenameFromUrl,
   hasDistinctThumbnail,
   isDirectVideoUrl,
+  isAparatVideoInput,
+  isEmbeddableVideoUrl,
   resolveVideoEmbedUrl,
+  resolveVideoThumbnail,
 } from "@/lib/media-utils";
 import type { VideoVersion } from "@/lib/types";
-import { formatPersianDate, getStatusLabel, isValidUrl } from "@/lib/utils";
+import { formatPersianDate, getStatusLabel } from "@/lib/utils";
 
 interface VideoModalProps {
   open: boolean;
@@ -53,10 +56,11 @@ export function VideoModal({
 
   if (!activeVersion) return null;
 
-  const validUrl = isValidUrl(activeVersion.videoUrl);
-  const embedUrl = validUrl ? resolveVideoEmbedUrl(activeVersion.videoUrl) : "";
+  const canPlay = isEmbeddableVideoUrl(activeVersion.videoUrl);
+  const embedUrl = canPlay ? resolveVideoEmbedUrl(activeVersion.videoUrl) : "";
   const suffix = `-v${activeVersion.versionNumber}`;
-  const showCoverDownload = hasDistinctThumbnail(activeVersion.thumbnailUrl, activeVersion.videoUrl);
+  const coverUrl = resolveVideoThumbnail(activeVersion.videoUrl, activeVersion.thumbnailUrl);
+  const showCoverDownload = Boolean(coverUrl && hasDistinctThumbnail(coverUrl, activeVersion.videoUrl));
 
   const handleDownloadVideo = () => {
     void downloadMedia(
@@ -66,10 +70,10 @@ export function VideoModal({
   };
 
   const handleDownloadCover = () => {
-    if (!activeVersion.thumbnailUrl) return;
+    if (!coverUrl) return;
     void downloadMedia(
-      activeVersion.thumbnailUrl,
-      getFilenameFromUrl(activeVersion.thumbnailUrl, `${title}${suffix}-cover.jpg`)
+      coverUrl,
+      getFilenameFromUrl(coverUrl, `${title}${suffix}-cover.jpg`)
     );
   };
 
@@ -93,7 +97,7 @@ export function VideoModal({
         </DialogHeader>
 
         <div className="relative aspect-video w-full bg-black">
-          {validUrl ? (
+          {canPlay ? (
             isDirectVideo(embedUrl) ? (
               <video
                 key={activeVersion.id}
@@ -126,7 +130,7 @@ export function VideoModal({
               size="sm"
               onClick={handleDownloadVideo}
               className="gap-2"
-              disabled={!validUrl}
+              disabled={!canPlay || isAparatVideoInput(activeVersion.videoUrl)}
             >
               <Download className="h-4 w-4" />
               دانلود ویدیو

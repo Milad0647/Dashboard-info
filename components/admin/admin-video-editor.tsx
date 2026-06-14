@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { History, Play, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, History, Play, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaUpload } from "@/components/ui/media-upload";
-import { MediaThumbnail } from "@/components/ui/media-thumbnail";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import {
   Select,
   SelectContent,
@@ -32,8 +26,9 @@ import {
   saveVideoVersionAction,
 } from "@/lib/actions/admin-actions";
 import { todayISO } from "@/lib/jalali";
+import { buildVideoVersionMedia, isAparatVideoInput, resolveVideoThumbnail } from "@/lib/media-utils";
 import type { MediaCategory, Video, VideoVersion } from "@/lib/types";
-import { formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
+import { cn, formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
 
 interface PendingVideoVersion {
   localId: string;
@@ -67,8 +62,8 @@ export function AdminVideoEditor({
   onClose,
 }: AdminVideoEditorProps) {
   const router = useRouter();
+  const [versionsExpanded, setVersionsExpanded] = useState(true);
   const [isPending, startTransition] = useTransition();
-  const [versionsOpen, setVersionsOpen] = useState(false);
   const [pendingVersions, setPendingVersions] = useState<PendingVideoVersion[]>([createPendingVersion()]);
   const [editTitle, setEditTitle] = useState(video.title);
   const [editDescription, setEditDescription] = useState(video.description ?? "");
@@ -83,10 +78,29 @@ export function AdminVideoEditor({
   const sortedVersions = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
   const latestVersion = sortedVersions[0];
   const nextVersionNumber = (sortedVersions[0]?.versionNumber ?? 0) + 1;
+  const previewCover = latestVersion
+    ? resolveVideoThumbnail(latestVersion.videoUrl, latestVersion.thumbnailUrl)
+    : null;
 
   const refresh = () => router.refresh();
 
-  const handleSaveVideo = () => {
+  const updatePendingVersion = (localId: string, patch: Partial<PendingVideoVersion>) => {
+    setPendingVersions((prev) =>
+      prev.map((item) => (item.localId === localId ? { ...item, ...patch } : item))
+    );
+  };
+
+  const handleDeleteVersion = (versionId: string) => {
+    startTransition(async () => {
+      await deleteVideoVersionAction(versionId);
+      toast.success("نسخه حذف شد");
+      refresh();
+    });
+  };
+
+  const handleSaveAll = () => {
+    const validVersions = pendingVersions.filter((item) => item.videoUrl.trim());
+
     startTransition(async () => {
       await saveVideoAction({
         ...video,
@@ -94,7 +108,28 @@ export function AdminVideoEditor({
         description: editDescription,
         categoryId: editCategoryId,
       });
-      toast.success("ذخیره شد");
+
+      for (const item of validVersions) {
+        const media = buildVideoVersionMedia(item.videoUrl, item.thumbnailUrl);
+        await saveVideoVersionAction({
+          videoId: video.id,
+          videoUrl: media.videoUrl,
+          thumbnailUrl: media.thumbnailUrl,
+          duration: item.duration || undefined,
+          notes: item.notes || undefined,
+          date: todayISO(),
+        });
+      }
+
+      if (validVersions.length > 0) {
+        setPendingVersions([createPendingVersion()]);
+      }
+
+      toast.success(
+        validVersions.length > 0
+          ? `ذخیره شد — ${formatPersianNumber(validVersions.length)} نسخه جدید`
+          : "ذخیره شد"
+      );
       refresh();
     });
   };
@@ -116,171 +151,137 @@ export function AdminVideoEditor({
     });
   };
 
-  const handleDeleteVersion = (versionId: string) => {
-    startTransition(async () => {
-      await deleteVideoVersionAction(versionId);
-      toast.success("نسخه حذف شد");
-      refresh();
-    });
-  };
-
-  const updatePendingVersion = (localId: string, patch: Partial<PendingVideoVersion>) => {
-    setPendingVersions((prev) =>
-      prev.map((item) => (item.localId === localId ? { ...item, ...patch } : item))
-    );
-  };
-
-  const handleSaveAllVersions = () => {
-    const validVersions = pendingVersions.filter((item) => item.videoUrl.trim());
-    if (validVersions.length === 0) {
-      toast.error("حداقل یک ویدیو یا کد embed آپارات لازم است");
-      return;
-    }
-
-    startTransition(async () => {
-      for (const item of validVersions) {
-        await saveVideoVersionAction({
-          videoId: video.id,
-          videoUrl: item.videoUrl,
-          thumbnailUrl: item.thumbnailUrl || item.videoUrl,
-          duration: item.duration || undefined,
-          notes: item.notes || undefined,
-          date: todayISO(),
-        });
-      }
-
-      setPendingVersions([createPendingVersion()]);
-      toast.success(`${formatPersianNumber(validVersions.length)} نسخه ذخیره شد`);
-      refresh();
-    });
-  };
-
   return (
-    <>
-      <div className="space-y-4 pt-2">
-        <div className="relative mx-auto aspect-video max-h-56 w-full overflow-hidden rounded-xl bg-muted">
-          <MediaThumbnail
-            src={latestVersion?.thumbnailUrl}
+    <div className="space-y-4 pt-2">
+      <div className="relative mx-auto aspect-video max-h-56 w-full overflow-hidden rounded-xl bg-muted">
+        {previewCover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={previewCover} alt={editTitle} className="h-full w-full object-cover" />
+        ) : latestVersion ? (
+          <VideoThumbnail
+            videoUrl={latestVersion.videoUrl}
+            thumbnailUrl={latestVersion.thumbnailUrl}
             alt={editTitle}
-            kind="video"
-            sizes="640px"
           />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-            <Play className="h-12 w-12 text-white" />
-          </div>
-          <div className="absolute top-2 right-2 flex flex-wrap gap-1">
-            {latestVersion ? (
-              <>
-                <Badge variant="outline">نسخه {formatPersianNumber(latestVersion.versionNumber)}</Badge>
-                {latestVersion.isFinal && <Badge status="final">نسخه نهایی</Badge>}
-              </>
-            ) : (
-              <Badge variant="secondary">بدون نسخه</Badge>
-            )}
-          </div>
+        ) : null}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+          <Play className="h-12 w-12 text-white" />
         </div>
-
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 space-y-3">
-            <div>
-              <Label>عنوان</Label>
-              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="عنوان ویدیو" />
-            </div>
-            <div>
-              <Label>توضیحات</Label>
-              <Textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                rows={2}
-                placeholder="توضیحات (اختیاری)"
-              />
-            </div>
-            <div>
-              <Label>دسته</Label>
-              <Select value={editCategoryId} onValueChange={setEditCategoryId}>
-                <SelectTrigger><SelectValue placeholder="دسته" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>{category.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button size="sm" variant="outline" onClick={handleSaveVideo} disabled={isPending} className="w-full">
-                ذخیره اطلاعات
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setVersionsOpen(true)}
-                disabled={isPending}
-                className="w-full gap-1.5"
-              >
-                <History className="h-4 w-4" />
-                نسخه‌ها ({formatPersianNumber(sortedVersions.length)})
-              </Button>
-            </div>
-          </div>
-          <div className="flex flex-col items-center gap-2 pt-6">
-            <Switch checked={video.published} onCheckedChange={handleTogglePublish} />
-            <Button variant="ghost" size="icon" onClick={handleDeleteVideo} disabled={isPending}>
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
-          </div>
+        <div className="absolute top-2 right-2 flex flex-wrap gap-1">
+          {latestVersion ? (
+            <>
+              <Badge variant="outline">نسخه {formatPersianNumber(latestVersion.versionNumber)}</Badge>
+              {latestVersion.isFinal && <Badge status="final">نسخه نهایی</Badge>}
+            </>
+          ) : (
+            <Badge variant="secondary">بدون نسخه</Badge>
+          )}
         </div>
       </div>
 
-      <Dialog open={versionsOpen} onOpenChange={setVersionsOpen}>
-        <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>نسخه‌های {editTitle}</DialogTitle>
-          </DialogHeader>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 space-y-3">
+          <div>
+            <Label>عنوان</Label>
+            <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="عنوان ویدیو" />
+          </div>
+          <div>
+            <Label>توضیحات</Label>
+            <Textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              rows={2}
+              placeholder="توضیحات (اختیاری)"
+            />
+          </div>
+          <div>
+            <Label>دسته</Label>
+            <Select value={editCategoryId} onValueChange={setEditCategoryId}>
+              <SelectTrigger><SelectValue placeholder="دسته" /></SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>{category.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-2 pt-6">
+          <Switch checked={video.published} onCheckedChange={handleTogglePublish} />
+          <Button variant="ghost" size="icon" onClick={handleDeleteVideo} disabled={isPending}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      </div>
 
-          <div className="space-y-4">
-            {sortedVersions.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">نسخه‌های موجود</p>
-                <div className="grid gap-2">
-                  {sortedVersions.map((version) => (
-                    <div key={version.id} className="flex items-center gap-3 rounded-lg border bg-background p-2">
-                      <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded bg-muted">
-                        <MediaThumbnail src={version.thumbnailUrl} alt="" kind="video" sizes="64px" />
-                      </div>
-                      <div className="min-w-0 flex-1 text-right">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-medium">نسخه {formatPersianNumber(version.versionNumber)}</span>
-                          <Badge status={version.status} className="text-[10px]">{getStatusLabel(version.status)}</Badge>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground">
-                          {formatPersianDate(version.date)}{version.duration ? ` — ${version.duration}` : ""}
-                        </p>
-                      </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteVersion(version.id)} disabled={isPending}>
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                      </Button>
+      <div className="border-t pt-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-9 w-full justify-between text-xs"
+          onClick={() => setVersionsExpanded(!versionsExpanded)}
+        >
+          <span className="flex items-center gap-1.5">
+            <History className="h-3.5 w-3.5" />
+            نسخه‌ها ({formatPersianNumber(sortedVersions.length)})
+          </span>
+          {versionsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
+
+        <div
+          className={cn(
+            "space-y-4 overflow-hidden transition-all",
+            versionsExpanded ? "mt-3 max-h-[999px] opacity-100" : "max-h-0 opacity-0"
+          )}
+        >
+          {sortedVersions.length > 0 && (
+            <div className="grid gap-2">
+              {sortedVersions.map((version) => (
+                <div key={version.id} className="flex items-center gap-3 rounded-lg border bg-background p-2">
+                  <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded bg-muted">
+                    <VideoThumbnail
+                      videoUrl={version.videoUrl}
+                      thumbnailUrl={version.thumbnailUrl}
+                      alt={`نسخه ${version.versionNumber}`}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 text-right">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium">نسخه {formatPersianNumber(version.versionNumber)}</span>
+                      <Badge status={version.status} className="text-[10px]">{getStatusLabel(version.status)}</Badge>
                     </div>
-                  ))}
+                    <p className="text-[11px] text-muted-foreground">
+                      {formatPersianDate(version.date)}{version.duration ? ` — ${version.duration}` : ""}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => handleDeleteVersion(version.id)} disabled={isPending}>
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+          )}
 
-            <div className="space-y-3 border-t pt-4">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium">افزودن نسخه‌های جدید</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPendingVersions((prev) => [...prev, createPendingVersion()])}
-                  className="gap-1"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  ردیف جدید
-                </Button>
-              </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">نسخه‌های جدید</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setPendingVersions((prev) => [...prev, createPendingVersion()])}
+                className="gap-1"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                ردیف جدید
+              </Button>
+            </div>
 
-              {pendingVersions.map((pending, index) => (
+            {pendingVersions.map((pending, index) => {
+              const isAparat = isAparatVideoInput(pending.videoUrl);
+
+              return (
                 <div key={pending.localId} className="space-y-3 rounded-lg border p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-medium text-muted-foreground">
@@ -301,17 +302,19 @@ export function AdminVideoEditor({
                     )}
                   </div>
                   <MediaUpload
-                    label="ویدیو (کد embed آپارات یا آپلود)"
+                    label="کد embed آپارات یا ویدیو"
                     kind="video"
                     value={pending.videoUrl}
                     onChange={(url) => updatePendingVersion(pending.localId, { videoUrl: url })}
                   />
-                  <MediaUpload
-                    label="کاور (اختیاری)"
-                    value={pending.thumbnailUrl}
-                    onChange={(url) => updatePendingVersion(pending.localId, { thumbnailUrl: url })}
-                    dropzone={false}
-                  />
+                  {!isAparat && (
+                    <MediaUpload
+                      label="کاور (اختیاری)"
+                      value={pending.thumbnailUrl}
+                      onChange={(url) => updatePendingVersion(pending.localId, { thumbnailUrl: url })}
+                      dropzone={false}
+                    />
+                  )}
                   <div>
                     <Label>مدت (اختیاری)</Label>
                     <Input
@@ -330,15 +333,15 @@ export function AdminVideoEditor({
                     />
                   </div>
                 </div>
-              ))}
-
-              <Button onClick={handleSaveAllVersions} disabled={isPending} className="w-full">
-                {isPending ? "در حال ذخیره..." : "ذخیره نسخه‌ها"}
-              </Button>
-            </div>
+              );
+            })}
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+        </div>
+      </div>
+
+      <Button onClick={handleSaveAll} disabled={isPending} className="w-full">
+        {isPending ? "در حال ذخیره..." : "ذخیره"}
+      </Button>
+    </div>
   );
 }

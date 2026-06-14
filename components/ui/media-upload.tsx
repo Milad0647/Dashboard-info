@@ -3,9 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
+import { isAparatVideoInput, isDirectVideoUrl, resolveVideoThumbnail } from "@/lib/media-utils";
 import { cn } from "@/lib/utils";
-import { normalizeVideoInput } from "@/lib/media-utils";
 import { Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -69,14 +70,12 @@ export function MediaUpload({
     if (file) void handleUpload(file);
   };
 
-  const handleValueChange = (raw: string) => {
-    onChange(kind === "video" ? normalizeVideoInput(raw) : raw);
-  };
-
   const placeholder =
     kind === "video"
-      ? "کد embed آپارات، لینک ویدیو، یا فایل را بکشید و رها کنید"
+      ? "کد embed آپارات را اینجا paste کنید، یا لینک/فایل ویدیو"
       : "تصویر را بکشید و رها کنید یا لینک وارد کنید";
+
+  const videoPreviewUrl = kind === "video" ? resolveVideoThumbnail(value) : null;
 
   return (
     <div className="space-y-2">
@@ -96,34 +95,62 @@ export function MediaUpload({
           !dropzone && "border-transparent p-0"
         )}
       >
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input
+        {kind === "video" ? (
+          <Textarea
             value={value}
-            onChange={(event) => handleValueChange(event.target.value)}
+            onChange={(event) => onChange(event.target.value)}
             onPaste={(event) => {
-              if (kind !== "video") return;
               const pasted = event.clipboardData.getData("text");
               if (!pasted.includes("aparat.com")) return;
               event.preventDefault();
-              handleValueChange(pasted);
+              onChange(pasted.trim());
             }}
             dir="ltr"
             placeholder={placeholder}
-            className="flex-1"
+            rows={4}
+            className="min-h-24 font-mono text-xs"
           />
-          <Button
-            type="button"
-            variant="outline"
-            disabled={uploading}
-            onClick={() => inputRef.current?.click()}
-            className="shrink-0"
-          >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {dropzone ? "انتخاب فایل" : "آپلود"}
-          </Button>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={value}
+              onChange={(event) => onChange(event.target.value)}
+              dir="ltr"
+              placeholder={placeholder}
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={uploading}
+              onClick={() => inputRef.current?.click()}
+              className="shrink-0"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {dropzone ? "انتخاب فایل" : "آپلود"}
+            </Button>
+          </div>
+        )}
 
-        {dropzone && (
+        {kind === "video" && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploading}
+              onClick={() => inputRef.current?.click()}
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              آپلود فایل
+            </Button>
+            {isAparatVideoInput(value) && (
+              <span className="text-xs text-muted-foreground">کاور از آپارات گرفته می‌شود</span>
+            )}
+          </div>
+        )}
+
+        {dropzone && kind !== "video" && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
             فایل را اینجا بکشید و رها کنید
           </p>
@@ -148,6 +175,19 @@ export function MediaUpload({
             <img src={value} alt="" className="h-full w-full object-cover" />
           ) : (
             <MediaPlaceholder kind="image" className="h-24" />
+          )}
+        </div>
+      )}
+
+      {kind === "video" && (
+        <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
+          {videoPreviewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={videoPreviewUrl} alt="" className="h-full w-full object-cover" />
+          ) : value && isDirectVideoUrl(value) ? (
+            <video src={value} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+          ) : (
+            <MediaPlaceholder kind="video" className="h-full" />
           )}
         </div>
       )}
