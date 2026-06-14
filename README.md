@@ -38,46 +38,23 @@ Open [http://localhost:3000](http://localhost:3000) for the public report.
 
 ## Deploy on Coolify
 
-### 1. PostgreSQL in Coolify
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the full Coolify guide (unique service names, env vars, redeploy steps).
 
-1. In Coolify, create a **PostgreSQL** database service.
-2. Copy the internal connection string (example):
-   `postgres://user:pass@postgres:5432/dashboard`
+Summary:
 
-### 2. Run migration (once)
+1. Use **Dockerfile** build pack and **`docker-compose.yaml`**.
+2. Container port: **3030** (not 3000). Health check: `/api/health`.
+3. Domain: `https://campain.pixlink.ir`
+4. Internal DB host in `DATABASE_URL`: **`dashboard-postgres`** (not `db` or `postgres`).
+5. Set `NODE_ENV=production` and `NEXT_PUBLIC_USE_MOCK_DATA=false`.
 
-From your machine or Coolify terminal (with `DATABASE_URL` set):
-
-```bash
-npm run db:migrate
-```
-
-Or run `database/schema.sql` manually in PostgreSQL.
-
-### 3. Deploy the app
-
-1. Add a new **Application** in Coolify → connect GitHub repo `Dashboard-info`.
-2. Build pack: **Dockerfile** (auto-detected).
-3. Port: **3000**
-4. Health check path: `/api/health`
-
-### 4. Environment variables (Coolify)
-
-| Variable | Required | Example |
-|----------|----------|---------|
-| `DATABASE_URL` | Yes | `postgres://...` |
-| `ADMIN_EMAIL` | Yes | `admin@example.com` |
-| `ADMIN_PASSWORD` | Yes | strong password |
-| `AUTH_SECRET` | Yes | random 32+ chars |
-| `NODE_ENV` | Yes | `production` |
-
-### 5. Local Docker test
+### Local Docker test
 
 ```bash
 docker compose up --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — login with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+Open [http://localhost:3030](http://localhost:3030) — login with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 ---
 

@@ -1,40 +1,59 @@
+# Coolify / production compose — no host port conflicts with other apps on the same server.
+# Coolify routes traffic via reverse proxy; the app only exposes 3030 inside the stack.
+
 services:
-  db:
+  dashboard-postgres:
     image: postgres:16-alpine
+    container_name: dashboard-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-dashboard}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dashboard}
       POSTGRES_DB: ${POSTGRES_DB:-dashboard}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - dashboard_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\" || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 12
       start_period: 30s
+    networks:
+      - dashboard-net
 
-  app:
+  dashboard-app:
     build: .
+    container_name: dashboard-app
     restart: unless-stopped
     expose:
       - "3030"
     environment:
       NODE_ENV: production
       PORT: ${PORT:-3030}
-      DATABASE_URL: ${DATABASE_URL:-postgres://dashboard:dashboard@db:5432/dashboard}
+      HOSTNAME: 0.0.0.0
+      APP_URL: ${APP_URL:-https://campain.pixlink.ir}
+      SERVICE_FQDN_APP: ${SERVICE_FQDN_APP:-campain.pixlink.ir}
+      DATABASE_URL: ${DATABASE_URL:-postgres://dashboard:dashboard@dashboard-postgres:5432/dashboard}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password}
       AUTH_SECRET: ${AUTH_SECRET:-change-this-secret-in-production}
       NEXT_PUBLIC_USE_MOCK_DATA: ${NEXT_PUBLIC_USE_MOCK_DATA:-false}
       UPLOAD_DIR: ${UPLOAD_DIR:-/app/data/uploads}
+      BILLBOARD_API_BASE_URL: ${BILLBOARD_API_BASE_URL:-https://billboard.pixlink.ir}
     volumes:
-      - uploads_data:/app/data/uploads
+      - dashboard_uploads:/app/data/uploads
     depends_on:
-      db:
+      dashboard-postgres:
         condition: service_healthy
+    networks:
+      - dashboard-net
+
+networks:
+  dashboard-net:
+    name: dashboard-info-net
 
 volumes:
-  postgres_data:
-  uploads_data:
+  dashboard_postgres_data:
+    name: dashboard_postgres_data
+  dashboard_uploads:
+    name: dashboard_uploads
