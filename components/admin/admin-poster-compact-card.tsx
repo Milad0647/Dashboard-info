@@ -28,7 +28,6 @@ export function AdminPosterCompactCard({ poster, versions, onClick }: AdminPoste
           src={latestVersion?.imageUrl}
           alt={poster.title}
             kind="poster"
-            sizes="160px"
             objectFit="contain"
           />
         <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />

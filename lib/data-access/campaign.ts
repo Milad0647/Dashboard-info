@@ -1,5 +1,6 @@
 import { getMockStore, getMockStoreForCampaign } from "@/lib/mock-data";
-import { resolvePublicBillboards } from "@/lib/billboards";
+import { getManualPublishedBillboards, resolvePublicBillboards } from "@/lib/billboards";
+import { withTimeout } from "@/lib/async-utils";
 import type {
   AnalyticsChannel,
   AnalyticsMetric,
@@ -28,6 +29,23 @@ import {
 } from "@/lib/db/mappers";
 import { createClient } from "@/lib/supabase/server";
 
+const EXTERNAL_DATA_TIMEOUT_MS = 8_000;
+
+function getDbChannelMetrics(
+  metrics: AnalyticsMetric[],
+  channel: AnalyticsChannel
+): AnalyticsMetric[] {
+  return metrics.filter((metric) => (metric.channel ?? "site") === channel);
+}
+
+function shouldFetchMetabaseMetrics(channelConfig: ChannelAnalyticsConfig): boolean {
+  const metabase = channelConfig.metabase;
+  return (
+    (channelConfig.source === "metabase" || channelConfig.source === "hybrid") &&
+    Boolean(metabase?.url && metabase.questionId && metabase.username && metabase.password)
+  );
+}
+
 async function resolveChannelAnalyticsMetrics(
   settings: CampaignSettings,
   dbMetrics: AnalyticsMetric[],
@@ -36,9 +54,7 @@ async function resolveChannelAnalyticsMetrics(
 ): Promise<AnalyticsMetric[]> {
   const channelMetrics = dbMetrics.filter((metric) => (metric.channel ?? "site") === channel);
   const metabase = channelConfig.metabase;
-  const useMetabase =
-    (channelConfig.source === "metabase" || channelConfig.source === "hybrid") &&
-    Boolean(metabase?.url && metabase?.questionId);
+  const useMetabase = shouldFetchMetabaseMetrics(channelConfig);
 
   if (!useMetabase || !metabase) {
     return channelMetrics;
@@ -378,20 +394,36 @@ export async function getPublicCampaignData(slug: string): Promise<PublicCampaig
     const settings = await pg.pgGetPublishedCampaignBySlug(slug);
     if (!settings) return null;
     const campaignStore = await pg.pgGetPublicCampaignData(settings.id);
+    const dbSiteMetrics = getDbChannelMetrics(campaignStore.analytics, "site");
+    const dbSocialMetrics = getDbChannelMetrics(campaignStore.analytics, "social");
+    const manualBillboards = getManualPublishedBillboards(campaignStore.billboards);
+
     const [siteMetrics, socialMetrics, billboards] = await Promise.all([
-      resolveChannelAnalyticsMetrics(
-        settings,
-        campaignStore.analytics,
-        "site",
-        settings.analyticsConfig.site
+      withTimeout(
+        resolveChannelAnalyticsMetrics(
+          settings,
+          campaignStore.analytics,
+          "site",
+          settings.analyticsConfig.site
+        ),
+        EXTERNAL_DATA_TIMEOUT_MS,
+        dbSiteMetrics
       ),
-      resolveChannelAnalyticsMetrics(
-        settings,
-        campaignStore.analytics,
-        "social",
-        settings.analyticsConfig.social
+      withTimeout(
+        resolveChannelAnalyticsMetrics(
+          settings,
+          campaignStore.analytics,
+          "social",
+          settings.analyticsConfig.social
+        ),
+        EXTERNAL_DATA_TIMEOUT_MS,
+        dbSocialMetrics
       ),
-      resolvePublicBillboards(settings, campaignStore.billboards),
+      withTimeout(
+        resolvePublicBillboards(settings, campaignStore.billboards),
+        EXTERNAL_DATA_TIMEOUT_MS,
+        manualBillboards
+      ),
     ]);
     return assemblePublicData(
       settings,

@@ -54,6 +54,7 @@ export function PosterCard({ title, description, versions }: PosterCardProps) {
               src={finalVersion.imageUrl}
               alt={title}
               fill
+              placeholderKind="poster"
               className="object-contain object-center size-full transition-transform group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, 33vw"
             />
