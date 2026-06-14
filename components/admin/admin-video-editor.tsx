@@ -307,14 +307,12 @@ export function AdminVideoEditor({
                     value={pending.videoUrl}
                     onChange={(url) => updatePendingVersion(pending.localId, { videoUrl: url })}
                   />
-                  {!isAparat && (
-                    <MediaUpload
-                      label="کاور (اختیاری)"
-                      value={pending.thumbnailUrl}
-                      onChange={(url) => updatePendingVersion(pending.localId, { thumbnailUrl: url })}
-                      dropzone={false}
-                    />
-                  )}
+                  <MediaUpload
+                    label={isAparat ? "کاور سفارشی (اختیاری — بدون کاور از آپارات)" : "کاور (اختیاری)"}
+                    value={pending.thumbnailUrl}
+                    onChange={(url) => updatePendingVersion(pending.localId, { thumbnailUrl: url })}
+                    dropzone={false}
+                  />
                   <div>
                     <Label>مدت (اختیاری)</Label>
                     <Input

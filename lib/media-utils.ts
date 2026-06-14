@@ -58,9 +58,10 @@ export function resolveVideoThumbnail(
 
 export function buildVideoVersionMedia(videoUrl: string, thumbnailUrl?: string) {
   const trimmedVideoUrl = videoUrl.trim();
+  const customCover = thumbnailUrl?.trim();
   const hash = extractAparatVideoHash(trimmedVideoUrl);
   const resolvedThumbnail =
-    thumbnailUrl?.trim() ||
+    customCover ||
     (hash ? getAparatThumbnailUrl(hash) : trimmedVideoUrl);
 
   return {
