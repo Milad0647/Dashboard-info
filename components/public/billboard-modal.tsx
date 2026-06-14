@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Download, ExternalLink, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getBillboardDisplayImage } from "@/lib/billboards";
+import {
+  BILLBOARD_PLACEHOLDER_IMAGE,
+  filterPublicBillboardTags,
+  getBillboardDisplayImage,
+  hasBillboardDisplayImage,
+  shouldShowBillboardNotes,
+  shouldShowBillboardStatus,
+} from "@/lib/billboards";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
 import type { Billboard } from "@/lib/types";
 import { formatPersianDate, getStatusLabel, isValidUrl } from "@/lib/utils";
@@ -17,12 +25,24 @@ interface BillboardModalProps {
 }
 
 export function BillboardModal({ open, onOpenChange, billboard }: BillboardModalProps) {
-  if (!billboard) return null;
+  const [imageSrc, setImageSrc] = useState(BILLBOARD_PLACEHOLDER_IMAGE);
 
-  const imageUrl = getBillboardDisplayImage(billboard);
+  useEffect(() => {
+    if (billboard) {
+      setImageSrc(getBillboardDisplayImage(billboard));
+    }
+  }, [billboard]);
+
+  if (!billboard) return null;
+  const displayTags = filterPublicBillboardTags(billboard.tags);
+  const showStatus = shouldShowBillboardStatus(billboard);
+  const showNotes = shouldShowBillboardNotes(billboard);
+  const canDownload = hasBillboardDisplayImage(billboard);
+  const isPlaceholder = imageSrc === BILLBOARD_PLACEHOLDER_IMAGE;
 
   const handleDownload = () => {
-    void downloadMedia(imageUrl, getFilenameFromUrl(imageUrl, `${billboard.title}.jpg`));
+    if (!canDownload) return;
+    void downloadMedia(imageSrc, getFilenameFromUrl(imageSrc, `${billboard.title}.jpg`));
   };
 
   const handleOpenMap = () => {
@@ -37,17 +57,18 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             {billboard.title}
-            <Badge status={billboard.status}>{getStatusLabel(billboard.status)}</Badge>
+            {showStatus && <Badge status={billboard.status}>{getStatusLabel(billboard.status)}</Badge>}
           </DialogTitle>
         </DialogHeader>
 
         <div className="relative aspect-[4/3] w-full bg-muted">
           <Image
-            src={imageUrl}
+            src={imageSrc}
             alt={billboard.title}
             fill
-            className="object-cover"
+            className={isPlaceholder ? "object-contain p-8" : "object-cover"}
             sizes="(max-width: 768px) 100vw, 768px"
+            onError={() => setImageSrc(BILLBOARD_PLACEHOLDER_IMAGE)}
           />
         </div>
 
@@ -63,11 +84,11 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
 
           <p className="text-sm text-muted-foreground">{formatPersianDate(billboard.date)}</p>
 
-          {billboard.notes && <p className="text-sm">{billboard.notes}</p>}
+          {showNotes && <p className="text-sm">{billboard.notes}</p>}
 
-          {billboard.tags.length > 0 && (
+          {displayTags.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {billboard.tags.map((tag) => (
+              {displayTags.map((tag) => (
                 <Badge key={tag} variant="outline" className="text-xs">
                   {tag}
                 </Badge>
@@ -76,10 +97,12 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
           )}
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
-              <Download className="h-4 w-4" />
-              دانلود تصویر
-            </Button>
+            {canDownload && (
+              <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
+                <Download className="h-4 w-4" />
+                دانلود تصویر
+              </Button>
+            )}
             {isValidUrl(billboard.externalUrl) && (
               <Button variant="outline" size="sm" onClick={handleOpenMap} className="gap-2">
                 <ExternalLink className="h-4 w-4" />

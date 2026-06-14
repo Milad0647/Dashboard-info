@@ -1,4 +1,5 @@
-import type { AnalyticsChannel, AnalyticsMetric, MetabaseConfig, TrafficSource, DeviceType } from "@/lib/types";
+import type { AnalyticsChannel, AnalyticsMetric, ChannelAnalyticsConfig, MetabaseConfig, TrafficSource, DeviceType } from "@/lib/types";
+import { createHmac } from "crypto";
 
 interface MetabaseRow {
   [key: string]: unknown;
@@ -109,4 +110,44 @@ export async function fetchMetabaseMetrics(
   }
 
   return mapMetabaseRows(rows, campaignId, channel);
+}
+
+function base64UrlEncode(value: string): string {
+  return Buffer.from(value, "utf8").toString("base64url");
+}
+
+function signMetabaseJwt(payload: Record<string, unknown>, secret: string): string {
+  const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const body = base64UrlEncode(JSON.stringify(payload));
+  const data = `${header}.${body}`;
+  const signature = createHmac("sha256", secret).update(data).digest("base64url");
+  return `${data}.${signature}`;
+}
+
+export function buildMetabaseDashboardEmbedUrl(config: MetabaseConfig): string | null {
+  const { url, dashboardId, embedSecret } = config;
+  if (!url || !dashboardId || !embedSecret) return null;
+
+  const baseUrl = url.replace(/\/$/, "");
+  const token = signMetabaseJwt(
+    {
+      resource: { dashboard: dashboardId },
+      params: {},
+      exp: Math.round(Date.now() / 1000) + 60 * 60,
+    },
+    embedSecret
+  );
+
+  return `${baseUrl}/embed/dashboard/${token}#bordered=false&titled=false&theme=transparent`;
+}
+
+export function resolveChannelMetabaseEmbedUrl(
+  channelConfig: ChannelAnalyticsConfig
+): string | null {
+  if (channelConfig.source !== "metabase" && channelConfig.source !== "hybrid") {
+    return null;
+  }
+
+  if (!channelConfig.metabase) return null;
+  return buildMetabaseDashboardEmbedUrl(channelConfig.metabase);
 }

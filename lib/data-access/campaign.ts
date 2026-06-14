@@ -14,7 +14,7 @@ import type {
 } from "@/lib/types";
 import { isPostgresConfigured, isSupabaseConfigured } from "@/lib/utils";
 import * as pg from "@/lib/db/repository";
-import { fetchMetabaseMetrics } from "@/lib/services/metabase";
+import { fetchMetabaseMetrics, resolveChannelMetabaseEmbedUrl } from "@/lib/services/metabase";
 import {
   mapAnalyticsFromDb,
   mapBillboardFromDb,
@@ -117,6 +117,18 @@ function buildAnalyticsSummary(
       .map(([date, data]) => ({ date, ...data }))
       .sort((a, b) => a.date.localeCompare(b.date)),
     hasData: totalVisitors > 0,
+  };
+}
+
+function withMetabaseEmbed(
+  summary: AnalyticsSummary,
+  channelConfig: ChannelAnalyticsConfig
+): AnalyticsSummary {
+  const metabaseEmbedUrl = resolveChannelMetabaseEmbedUrl(channelConfig);
+  return {
+    ...summary,
+    metabaseEmbedUrl,
+    hasData: summary.hasData || Boolean(metabaseEmbedUrl),
   };
 }
 
@@ -241,8 +253,14 @@ function assemblePublicData(
 
   const siteMetrics = store.analytics.filter((metric) => (metric.channel ?? "site") === "site");
   const socialMetrics = store.analytics.filter((metric) => (metric.channel ?? "site") === "social");
-  const analytics = buildAnalyticsSummary(siteMetrics);
-  const socialAnalytics = buildAnalyticsSummary(socialMetrics);
+  const analytics = withMetabaseEmbed(
+    buildAnalyticsSummary(siteMetrics),
+    settings.analyticsConfig.site
+  );
+  const socialAnalytics = withMetabaseEmbed(
+    buildAnalyticsSummary(socialMetrics),
+    settings.analyticsConfig.social
+  );
   const submissions = store.submissions
     .filter((s) => s.published && s.status === "approved")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));

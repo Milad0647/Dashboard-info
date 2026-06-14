@@ -24,7 +24,9 @@ export interface MetabaseConfig {
   url: string;
   username: string;
   password: string;
-  questionId: number;
+  questionId?: number;
+  dashboardId?: number;
+  embedSecret?: string;
 }
 
 export interface ChannelAnalyticsConfig {
@@ -222,6 +224,7 @@ export interface AnalyticsSummary {
   topPages: { page: string; views: number }[];
   visitorLocations: { city: string; count: number }[];
   visitsOverTime: { date: string; visitors: number; pageViews: number }[];
+  metabaseEmbedUrl?: string | null;
   hasData: boolean;
 }
 

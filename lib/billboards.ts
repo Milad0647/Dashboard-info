@@ -4,6 +4,12 @@ import {
 } from "@/lib/services/billboard-api";
 import type { Billboard, CampaignSettings } from "@/lib/types";
 
+export {
+  BILLBOARD_PLACEHOLDER_IMAGE,
+  getBillboardDisplayImage,
+  hasBillboardDisplayImage,
+} from "@/lib/billboard-media";
+
 export function isApiBillboard(billboard: Billboard): boolean {
   return (
     billboard.source === "api" ||
@@ -76,10 +82,6 @@ export async function resolvePublicBillboards(
   }
 }
 
-export function getBillboardDisplayImage(billboard: Billboard): string {
-  return billboard.imageUrl ?? billboard.thumbnailUrl;
-}
-
 export function hasBillboardCoordinates(billboard: Billboard): boolean {
   return (
     typeof billboard.latitude === "number" &&
@@ -87,4 +89,16 @@ export function hasBillboardCoordinates(billboard: Billboard): boolean {
     Number.isFinite(billboard.latitude) &&
     Number.isFinite(billboard.longitude)
   );
+}
+
+export function shouldShowBillboardStatus(billboard: Billboard): boolean {
+  return !isApiBillboard(billboard);
+}
+
+export function filterPublicBillboardTags(tags: string[]): string[] {
+  return tags.filter((tag) => !tag.startsWith("map:"));
+}
+
+export function shouldShowBillboardNotes(billboard: Billboard): boolean {
+  return !isApiBillboard(billboard) && Boolean(billboard.notes);
 }

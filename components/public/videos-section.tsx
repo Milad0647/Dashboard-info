@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -13,12 +13,11 @@ import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { VideoCard } from "@/components/public/video-card";
 import {
   PUBLIC_MEDIA_GRID_CLASS,
-  PUBLIC_MEDIA_PAGE_SIZE,
   sortByPublicMediaOrder,
   type PublicMediaSort,
 } from "@/lib/public-media-section";
 import type { MediaCategory, VideoWithVersions } from "@/lib/types";
-import { formatPersianNumber } from "@/lib/utils";
+import { cn, formatPersianNumber } from "@/lib/utils";
 
 interface VideosSectionProps {
   categories: MediaCategory[];
@@ -32,11 +31,10 @@ function getVideoLatestDate(video: VideoWithVersions): string | undefined {
 export function VideosSection({ categories, videos }: VideosSectionProps) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sort, setSort] = useState<PublicMediaSort>("default");
-  const [visibleCount, setVisibleCount] = useState(PUBLIC_MEDIA_PAGE_SIZE);
 
-  const activeCategories = useMemo(
-    () => categories.filter((cat) => videos.some((video) => video.categoryId === cat.id)),
-    [categories, videos]
+  const sortedCategories = useMemo(
+    () => [...categories].sort((a, b) => a.sortOrder - b.sortOrder),
+    [categories]
   );
 
   const filteredVideos = useMemo(() => {
@@ -47,80 +45,90 @@ export function VideosSection({ categories, videos }: VideosSectionProps) {
     return sortByPublicMediaOrder(filtered, sort, getVideoLatestDate);
   }, [videos, categoryFilter, sort]);
 
-  const visibleVideos = filteredVideos.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredVideos.length;
-
-  useEffect(() => {
-    setVisibleCount(PUBLIC_MEDIA_PAGE_SIZE);
-  }, [categoryFilter, sort]);
-
   if (videos.length === 0) return null;
 
   const controls = (
-    <>
-      <Select value={sort} onValueChange={(value) => setSort(value as PublicMediaSort)}>
-        <SelectTrigger className="w-36">
-          <SelectValue placeholder="مرتب‌سازی" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="default">ترتیب پیش‌فرض</SelectItem>
-          <SelectItem value="title">عنوان</SelectItem>
-          <SelectItem value="newest">جدیدترین</SelectItem>
-        </SelectContent>
-      </Select>
-      {activeCategories.length > 0 && (
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="دسته" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">همه دسته‌ها</SelectItem>
-            {activeCategories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-    </>
+    <Select value={sort} onValueChange={(value) => setSort(value as PublicMediaSort)}>
+      <SelectTrigger className="w-36">
+        <SelectValue placeholder="مرتب‌سازی" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="default">ترتیب پیش‌فرض</SelectItem>
+        <SelectItem value="title">عنوان</SelectItem>
+        <SelectItem value="newest">جدیدترین</SelectItem>
+      </SelectContent>
+    </Select>
   );
 
   return (
     <CollapsibleSection
       id="videos"
       title="ویدیوها"
-      description="در مودال پخش، نسخه‌های قبلی را هم ببینید"
+      description={`${formatPersianNumber(videos.length)} ویدیو — همه را ببینید و با دسته فیلتر کنید`}
       controls={controls}
     >
+      {sortedCategories.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={categoryFilter === "all" ? "default" : "outline"}
+            onClick={() => setCategoryFilter("all")}
+          >
+            همه ({formatPersianNumber(videos.length)})
+          </Button>
+          {sortedCategories.map((category) => {
+            const count = videos.filter((video) => video.categoryId === category.id).length;
+
+            return (
+              <Button
+                key={category.id}
+                type="button"
+                size="sm"
+                variant={categoryFilter === category.id ? "default" : "outline"}
+                onClick={() => setCategoryFilter(category.id)}
+                className={cn(count === 0 && "opacity-60")}
+              >
+                {category.title} ({formatPersianNumber(count)})
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
+      {sortedCategories.length > 1 && (
+        <div className="mb-4 sm:hidden">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="انتخاب دسته" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">همه دسته‌ها</SelectItem>
+              {sortedCategories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {filteredVideos.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
           ویدیویی در این دسته یافت نشد.
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className={PUBLIC_MEDIA_GRID_CLASS}>
-            {visibleVideos.map((video) => (
-              <VideoCard
-                key={video.id}
-                title={video.title}
-                description={video.description}
-                categoryTitle={video.category?.title}
-                versions={video.versions}
-              />
-            ))}
-          </div>
-
-          {hasMore && (
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                onClick={() => setVisibleCount((count) => count + PUBLIC_MEDIA_PAGE_SIZE)}
-              >
-                مشاهده بیشتر ({formatPersianNumber(filteredVideos.length - visibleCount)} باقی‌مانده)
-              </Button>
-            </div>
-          )}
+        <div className={PUBLIC_MEDIA_GRID_CLASS}>
+          {filteredVideos.map((video) => (
+            <VideoCard
+              key={video.id}
+              title={video.title}
+              description={video.description}
+              categoryTitle={video.category?.title}
+              versions={video.versions}
+            />
+          ))}
         </div>
       )}
     </CollapsibleSection>

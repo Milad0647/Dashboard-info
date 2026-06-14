@@ -35,6 +35,8 @@ const metabaseSchema = z.object({
   username: z.string().optional(),
   password: z.string().optional(),
   questionId: z.coerce.number().optional(),
+  dashboardId: z.coerce.number().optional(),
+  embedSecret: z.string().optional(),
 });
 
 const channelSchema = z.object({
@@ -80,7 +82,9 @@ function buildAnalyticsConfig(data: z.infer<typeof schema>): AnalyticsConfig {
             url: channel.metabase.url ?? "",
             username: channel.metabase.username ?? "",
             password: channel.metabase.password ?? "",
-            questionId: Number(channel.metabase.questionId ?? 0),
+            questionId: Number(channel.metabase.questionId ?? 0) || undefined,
+            dashboardId: Number(channel.metabase.dashboardId ?? 0) || undefined,
+            embedSecret: channel.metabase.embedSecret ?? "",
           },
         };
 
@@ -130,10 +134,20 @@ function ChannelAnalyticsSettings({
 
       {(source === "metabase" || source === "hybrid") && (
         <div className="space-y-3">
-          <div><Label>آدرس Metabase</Label><Input {...form.register(`${metabasePrefix}.metabase.url`)} dir="ltr" placeholder="https://metabase.example.com" /></div>
+          <div><Label>آدرس Metabase</Label><Input {...form.register(`${metabasePrefix}.metabase.url`)} dir="ltr" placeholder="https://oneclick-metabase-fh09o5az.darkube.ir" /></div>
           <div><Label>نام کاربری</Label><Input {...form.register(`${metabasePrefix}.metabase.username`)} dir="ltr" autoComplete="off" /></div>
           <div><Label>رمز عبور</Label><Input {...form.register(`${metabasePrefix}.metabase.password`)} type="password" dir="ltr" autoComplete="new-password" /></div>
-          <div><Label>Question ID</Label><Input type="number" {...form.register(`${metabasePrefix}.metabase.questionId`)} dir="ltr" placeholder="123" /></div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div><Label>Dashboard ID</Label><Input type="number" {...form.register(`${metabasePrefix}.metabase.dashboardId`)} dir="ltr" placeholder="2" /></div>
+            <div><Label>Question ID (اختیاری)</Label><Input type="number" {...form.register(`${metabasePrefix}.metabase.questionId`)} dir="ltr" placeholder="123" /></div>
+          </div>
+          <div>
+            <Label>Embed Secret</Label>
+            <Input {...form.register(`${metabasePrefix}.metabase.embedSecret`)} type="password" dir="ltr" autoComplete="new-password" placeholder="کلید embedding از Metabase Admin" />
+            <p className="mt-1 text-xs text-muted-foreground">
+              برای نمایش داشبورد عمومی در سایت، embedding را در Metabase فعال کنید و Secret Key را اینجا وارد کنید.
+            </p>
+          </div>
         </div>
       )}
     </div>
@@ -165,6 +179,8 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
           username: initialSettings.analyticsConfig.site.metabase?.username ?? "",
           password: initialSettings.analyticsConfig.site.metabase?.password ?? "",
           questionId: initialSettings.analyticsConfig.site.metabase?.questionId ?? undefined,
+          dashboardId: initialSettings.analyticsConfig.site.metabase?.dashboardId ?? undefined,
+          embedSecret: initialSettings.analyticsConfig.site.metabase?.embedSecret ?? "",
         },
       },
       socialAnalyticsConfig: {
@@ -174,6 +190,8 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
           username: initialSettings.analyticsConfig.social.metabase?.username ?? "",
           password: initialSettings.analyticsConfig.social.metabase?.password ?? "",
           questionId: initialSettings.analyticsConfig.social.metabase?.questionId ?? undefined,
+          dashboardId: initialSettings.analyticsConfig.social.metabase?.dashboardId ?? undefined,
+          embedSecret: initialSettings.analyticsConfig.social.metabase?.embedSecret ?? "",
         },
       },
     },

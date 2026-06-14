@@ -6,9 +6,8 @@ import {
   type ExternalCampaignsResponse,
 } from "@/lib/models/billboard-api";
 import { billboardApiRoutes } from "@/lib/routes/billboard-api";
+import { BILLBOARD_PLACEHOLDER_IMAGE } from "@/lib/billboard-media";
 import type { Billboard } from "@/lib/types";
-
-const PLACEHOLDER_IMAGE = "https://via.placeholder.com/400x300?text=Billboard";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { cache: "no-store" });
@@ -72,11 +71,14 @@ export function mapExternalBillboardToBillboard(
   campaignId: string,
   options?: { date?: string; sortOrder?: number; published?: boolean }
 ): Billboard {
-  const thumbnail =
-    billboardApiRoutes.resolveAssetUrl(external.thumbnail_url ?? external.image_url) ??
-    PLACEHOLDER_IMAGE;
-  const imageUrl =
-    billboardApiRoutes.resolveAssetUrl(external.image_url ?? external.thumbnail_url) ?? thumbnail;
+  const resolvedThumbnail = billboardApiRoutes.resolveAssetUrl(
+    external.thumbnail_url ?? external.image_url
+  );
+  const resolvedImage = billboardApiRoutes.resolveAssetUrl(
+    external.image_url ?? external.thumbnail_url
+  );
+  const thumbnail = resolvedThumbnail || BILLBOARD_PLACEHOLDER_IMAGE;
+  const imageUrl = resolvedImage || thumbnail;
 
   const tags = [external.code, external.axis, getExternalBillboardTag(external.id)].filter(Boolean);
   const now = new Date().toISOString();
