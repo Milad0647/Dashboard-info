@@ -172,7 +172,7 @@ export function PosterCard({ title, description, versions }: PosterCardProps) {
         </CardContent>
       </Card>
 
-      {lightboxOpen && lightboxVersionId && (
+      {lightboxVersionId && (
         <LightboxModal
           open={lightboxOpen}
           onOpenChange={(open) => {

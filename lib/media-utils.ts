@@ -1,3 +1,5 @@
+import { normalizeUploadMediaUrl } from "@/lib/uploads";
+
 export function extractAparatVideoHash(input: string): string | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
@@ -46,8 +48,9 @@ export function resolveVideoThumbnail(
   videoUrl: string,
   thumbnailUrl?: string | null
 ): string | null {
-  if (thumbnailUrl && hasDistinctThumbnail(thumbnailUrl, videoUrl)) {
-    return thumbnailUrl;
+  const normalizedThumbnail = normalizeUploadMediaUrl(thumbnailUrl);
+  if (normalizedThumbnail && hasDistinctThumbnail(normalizedThumbnail, videoUrl)) {
+    return normalizedThumbnail;
   }
 
   const hash = extractAparatVideoHash(videoUrl);

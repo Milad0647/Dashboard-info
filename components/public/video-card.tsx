@@ -154,7 +154,7 @@ export function VideoCard({ title, description, categoryTitle, versions }: Video
         </CardContent>
       </Card>
 
-      {modalOpen && activeVersionId && (
+      {activeVersionId && (
         <VideoModal
           open={modalOpen}
           onOpenChange={(open) => {
