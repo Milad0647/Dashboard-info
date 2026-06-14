@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, History, Play, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,16 +26,27 @@ import {
   saveVideoVersionAction,
 } from "@/lib/actions/admin-actions";
 import { todayISO } from "@/lib/jalali";
-import { buildVideoVersionMedia, isAparatVideoInput, resolveVideoThumbnail } from "@/lib/media-utils";
+import {
+  buildVideoVersionMedia,
+  extractAparatVideoHash,
+  getAparatThumbnailUrl,
+  isAparatVideoInput,
+  resolveVideoThumbnail,
+} from "@/lib/media-utils";
 import type { MediaCategory, Video, VideoVersion } from "@/lib/types";
 import { cn, formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
 
-interface PendingVideoVersion {
+interface VideoVersionDraft {
   localId: string;
+  id?: string;
+  versionNumber?: number;
   videoUrl: string;
   thumbnailUrl: string;
   duration: string;
   notes: string;
+  isFinal?: boolean;
+  status?: VideoVersion["status"];
+  date?: string;
 }
 
 interface AdminVideoEditorProps {
@@ -45,7 +56,7 @@ interface AdminVideoEditorProps {
   onClose: () => void;
 }
 
-function createPendingVersion(): PendingVideoVersion {
+function createVideoVersionDraft(): VideoVersionDraft {
   return {
     localId: crypto.randomUUID(),
     videoUrl: "",
@@ -53,6 +64,33 @@ function createPendingVersion(): PendingVideoVersion {
     duration: "",
     notes: "",
   };
+}
+
+function draftCoverFromVersion(version: VideoVersion): string {
+  const hash = extractAparatVideoHash(version.videoUrl);
+  if (hash && version.thumbnailUrl === getAparatThumbnailUrl(hash)) return "";
+  if (version.thumbnailUrl === version.videoUrl) return "";
+  return version.thumbnailUrl ?? "";
+}
+
+function videoVersionToDraft(version: VideoVersion): VideoVersionDraft {
+  return {
+    localId: version.id,
+    id: version.id,
+    versionNumber: version.versionNumber,
+    videoUrl: version.videoUrl,
+    thumbnailUrl: draftCoverFromVersion(version),
+    duration: version.duration ?? "",
+    notes: version.notes ?? "",
+    isFinal: version.isFinal,
+    status: version.status,
+    date: version.date,
+  };
+}
+
+function buildVideoVersionDrafts(versions: VideoVersion[]): VideoVersionDraft[] {
+  const sorted = [...versions].sort((a, b) => a.versionNumber - b.versionNumber);
+  return sorted.length > 0 ? sorted.map(videoVersionToDraft) : [createVideoVersionDraft()];
 }
 
 export function AdminVideoEditor({
@@ -64,7 +102,9 @@ export function AdminVideoEditor({
   const router = useRouter();
   const [versionsExpanded, setVersionsExpanded] = useState(true);
   const [isPending, startTransition] = useTransition();
-  const [pendingVersions, setPendingVersions] = useState<PendingVideoVersion[]>([createPendingVersion()]);
+  const [versionDrafts, setVersionDrafts] = useState<VideoVersionDraft[]>(() =>
+    buildVideoVersionDrafts(versions)
+  );
   const [editTitle, setEditTitle] = useState(video.title);
   const [editDescription, setEditDescription] = useState(video.description ?? "");
   const [editCategoryId, setEditCategoryId] = useState(video.categoryId);
@@ -73,33 +113,49 @@ export function AdminVideoEditor({
     setEditTitle(video.title);
     setEditDescription(video.description ?? "");
     setEditCategoryId(video.categoryId);
-  }, [video.id, video.title, video.description, video.categoryId]);
+    setVersionDrafts(buildVideoVersionDrafts(versions));
+  }, [video.id, video.title, video.description, video.categoryId, versions]);
 
-  const sortedVersions = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
+  const sortedVersions = useMemo(
+    () => [...versions].sort((a, b) => b.versionNumber - a.versionNumber),
+    [versions]
+  );
   const latestVersion = sortedVersions[0];
-  const nextVersionNumber = (sortedVersions[0]?.versionNumber ?? 0) + 1;
   const previewCover = latestVersion
     ? resolveVideoThumbnail(latestVersion.videoUrl, latestVersion.thumbnailUrl)
     : null;
 
   const refresh = () => router.refresh();
 
-  const updatePendingVersion = (localId: string, patch: Partial<PendingVideoVersion>) => {
-    setPendingVersions((prev) =>
+  const updateDraft = (localId: string, patch: Partial<VideoVersionDraft>) => {
+    setVersionDrafts((prev) =>
       prev.map((item) => (item.localId === localId ? { ...item, ...patch } : item))
     );
   };
 
-  const handleDeleteVersion = (versionId: string) => {
-    startTransition(async () => {
-      await deleteVideoVersionAction(versionId);
-      toast.success("نسخه حذف شد");
-      refresh();
+  const handleDeleteVersion = (draft: VideoVersionDraft) => {
+    if (draft.id) {
+      startTransition(async () => {
+        await deleteVideoVersionAction(draft.id!);
+        setVersionDrafts((prev) => prev.filter((item) => item.localId !== draft.localId));
+        toast.success("نسخه حذف شد");
+        refresh();
+      });
+      return;
+    }
+
+    setVersionDrafts((prev) => {
+      const next = prev.filter((item) => item.localId !== draft.localId);
+      return next.length > 0 ? next : [createVideoVersionDraft()];
     });
   };
 
   const handleSaveAll = () => {
-    const validVersions = pendingVersions.filter((item) => item.videoUrl.trim());
+    const draftsToSave = versionDrafts.filter((item) => item.videoUrl.trim());
+    if (draftsToSave.length === 0) {
+      toast.error("حداقل یک embed یا ویدیو لازم است");
+      return;
+    }
 
     startTransition(async () => {
       await saveVideoAction({
@@ -109,27 +165,25 @@ export function AdminVideoEditor({
         categoryId: editCategoryId,
       });
 
-      for (const item of validVersions) {
-        const media = buildVideoVersionMedia(item.videoUrl, item.thumbnailUrl);
+      let savedCount = 0;
+      for (const draft of draftsToSave) {
+        const media = buildVideoVersionMedia(draft.videoUrl, draft.thumbnailUrl);
         await saveVideoVersionAction({
+          id: draft.id,
           videoId: video.id,
+          versionNumber: draft.versionNumber,
           videoUrl: media.videoUrl,
           thumbnailUrl: media.thumbnailUrl,
-          duration: item.duration || undefined,
-          notes: item.notes || undefined,
-          date: todayISO(),
+          duration: draft.duration || undefined,
+          notes: draft.notes || undefined,
+          date: draft.date ?? todayISO(),
+          isFinal: draft.isFinal,
+          status: draft.status,
         });
+        savedCount += 1;
       }
 
-      if (validVersions.length > 0) {
-        setPendingVersions([createPendingVersion()]);
-      }
-
-      toast.success(
-        validVersions.length > 0
-          ? `ذخیره شد — ${formatPersianNumber(validVersions.length)} نسخه جدید`
-          : "ذخیره شد"
-      );
+      toast.success(`ذخیره شد — ${formatPersianNumber(savedCount)} نسخه`);
       refresh();
     });
   };
@@ -224,116 +278,110 @@ export function AdminVideoEditor({
         >
           <span className="flex items-center gap-1.5">
             <History className="h-3.5 w-3.5" />
-            نسخه‌ها ({formatPersianNumber(sortedVersions.length)})
+            نسخه‌ها ({formatPersianNumber(versionDrafts.filter((item) => item.id).length || versionDrafts.length)})
           </span>
           {versionsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
 
         <div
           className={cn(
-            "space-y-4 overflow-hidden transition-all",
+            "space-y-3 overflow-hidden transition-all",
             versionsExpanded ? "mt-3 max-h-[999px] opacity-100" : "max-h-0 opacity-0"
           )}
         >
-          {sortedVersions.length > 0 && (
-            <div className="grid gap-2">
-              {sortedVersions.map((version) => (
-                <div key={version.id} className="flex items-center gap-3 rounded-lg border bg-background p-2">
-                  <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded bg-muted">
-                    <VideoThumbnail
-                      videoUrl={version.videoUrl}
-                      thumbnailUrl={version.thumbnailUrl}
-                      alt={`نسخه ${version.versionNumber}`}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1 text-right">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium">نسخه {formatPersianNumber(version.versionNumber)}</span>
-                      <Badge status={version.status} className="text-[10px]">{getStatusLabel(version.status)}</Badge>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {formatPersianDate(version.date)}{version.duration ? ` — ${version.duration}` : ""}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">ویرایش / افزودن نسخه</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setVersionDrafts((prev) => [...prev, createVideoVersionDraft()])}
+              className="gap-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              نسخه جدید
+            </Button>
+          </div>
+
+          {versionDrafts.map((draft, index) => {
+            const isAparat = isAparatVideoInput(draft.videoUrl);
+            const draftPreview = draft.videoUrl
+              ? resolveVideoThumbnail(draft.videoUrl, draft.thumbnailUrl || null)
+              : null;
+
+            return (
+              <div key={draft.localId} className="space-y-3 rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {draft.id
+                        ? `نسخه ${formatPersianNumber(draft.versionNumber ?? index + 1)}`
+                        : `نسخه جدید ${formatPersianNumber(index + 1)}`}
                     </p>
+                    {draft.id && draft.status && (
+                      <Badge status={draft.status} className="text-[10px]">
+                        {getStatusLabel(draft.status)}
+                      </Badge>
+                    )}
+                    {draft.id && draft.date && (
+                      <span className="text-[10px] text-muted-foreground">{formatPersianDate(draft.date)}</span>
+                    )}
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => handleDeleteVersion(version.id)} disabled={isPending}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleDeleteVersion(draft)}
+                    disabled={isPending}
+                  >
                     <Trash2 className="h-3.5 w-3.5 text-destructive" />
                   </Button>
                 </div>
-              ))}
-            </div>
-          )}
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">نسخه‌های جدید</p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setPendingVersions((prev) => [...prev, createPendingVersion()])}
-                className="gap-1"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                ردیف جدید
-              </Button>
-            </div>
-
-            {pendingVersions.map((pending, index) => {
-              const isAparat = isAparatVideoInput(pending.videoUrl);
-
-              return (
-                <div key={pending.localId} className="space-y-3 rounded-lg border p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      نسخه {formatPersianNumber(nextVersionNumber + index)}
-                    </p>
-                    {pendingVersions.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() =>
-                          setPendingVersions((prev) => prev.filter((item) => item.localId !== pending.localId))
-                        }
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                      </Button>
-                    )}
+                {draftPreview && (
+                  <div className="relative aspect-video max-h-32 overflow-hidden rounded-lg border bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={draftPreview} alt="" className="h-full w-full object-cover" />
                   </div>
-                  <MediaUpload
-                    label="کد embed آپارات یا ویدیو"
-                    kind="video"
-                    value={pending.videoUrl}
-                    onChange={(url) => updatePendingVersion(pending.localId, { videoUrl: url })}
+                )}
+
+                <MediaUpload
+                  label="کد embed آپارات یا ویدیو"
+                  kind="video"
+                  value={draft.videoUrl}
+                  onChange={(url) => updateDraft(draft.localId, { videoUrl: url })}
+                />
+                <MediaUpload
+                  label={
+                    isAparat
+                      ? "کاور سفارشی (اختیاری — بدون کاور از آپارات)"
+                      : "کاور (اختیاری)"
+                  }
+                  value={draft.thumbnailUrl}
+                  onChange={(url) => updateDraft(draft.localId, { thumbnailUrl: url })}
+                  dropzone={false}
+                />
+                <div>
+                  <Label>مدت (اختیاری)</Label>
+                  <Input
+                    value={draft.duration}
+                    onChange={(e) => updateDraft(draft.localId, { duration: e.target.value })}
+                    placeholder="0:30"
+                    dir="ltr"
                   />
-                  <MediaUpload
-                    label={isAparat ? "کاور سفارشی (اختیاری — بدون کاور از آپارات)" : "کاور (اختیاری)"}
-                    value={pending.thumbnailUrl}
-                    onChange={(url) => updatePendingVersion(pending.localId, { thumbnailUrl: url })}
-                    dropzone={false}
-                  />
-                  <div>
-                    <Label>مدت (اختیاری)</Label>
-                    <Input
-                      value={pending.duration}
-                      onChange={(e) => updatePendingVersion(pending.localId, { duration: e.target.value })}
-                      placeholder="0:30"
-                      dir="ltr"
-                    />
-                  </div>
-                  <div>
-                    <Label>یادداشت (اختیاری)</Label>
-                    <Textarea
-                      value={pending.notes}
-                      onChange={(e) => updatePendingVersion(pending.localId, { notes: e.target.value })}
-                      rows={2}
-                    />
-                  </div>
                 </div>
-              );
-            })}
-          </div>
+                <div>
+                  <Label>یادداشت (اختیاری)</Label>
+                  <Textarea
+                    value={draft.notes}
+                    onChange={(e) => updateDraft(draft.localId, { notes: e.target.value })}
+                    rows={2}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
