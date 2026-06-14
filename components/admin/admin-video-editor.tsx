@@ -114,7 +114,7 @@ export function AdminVideoEditor({
     setEditDescription(video.description ?? "");
     setEditCategoryId(video.categoryId);
     setVersionDrafts(buildVideoVersionDrafts(versions));
-  }, [video.id, video.title, video.description, video.categoryId, versions]);
+  }, [video.id, video.title, video.description, video.categoryId, versions.length]);
 
   const sortedVersions = useMemo(
     () => [...versions].sort((a, b) => b.versionNumber - a.versionNumber),

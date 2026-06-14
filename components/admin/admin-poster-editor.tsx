@@ -92,7 +92,7 @@ export function AdminPosterEditor({
     setEditDescription(poster.description ?? "");
     setEditCategoryId(poster.categoryId);
     setVersionDrafts(buildPosterVersionDrafts(versions));
-  }, [poster.id, poster.title, poster.description, poster.categoryId, versions]);
+  }, [poster.id, poster.title, poster.description, poster.categoryId, versions.length]);
 
   const sortedVersions = useMemo(
     () => [...versions].sort((a, b) => b.versionNumber - a.versionNumber),

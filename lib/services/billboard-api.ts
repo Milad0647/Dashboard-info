@@ -8,8 +8,13 @@ import {
 import { billboardApiRoutes } from "@/lib/routes/billboard-api";
 import type { Billboard } from "@/lib/types";
 
+const BILLBOARD_API_TIMEOUT_MS = 8_000;
+
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetch(url, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(BILLBOARD_API_TIMEOUT_MS),
+  });
   if (!response.ok) {
     throw new Error(`Billboard API request failed: ${response.status}`);
   }
