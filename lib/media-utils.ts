@@ -71,12 +71,25 @@ export function buildVideoVersionMedia(videoUrl: string, thumbnailUrl?: string) 
 }
 
 export function isDirectVideoUrl(url: string): boolean {
-  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
+  const trimmed = url.trim();
+  if (/^\/api\/files\/.+\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed)) return true;
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed);
+}
+
+export function resolveAbsoluteMediaUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (typeof window !== "undefined") {
+    return new URL(trimmed, window.location.origin).href;
+  }
+  return trimmed;
 }
 
 export function isEmbeddableVideoUrl(url: string): boolean {
   if (extractAparatVideoHash(url)) return true;
   const embedUrl = resolveVideoEmbedUrl(url);
+  if (/^\/api\/files\/.+\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(embedUrl.trim())) return true;
   return isDirectVideoUrl(embedUrl) || /aparat\.com\/video\/video\/embed/i.test(embedUrl);
 }
 

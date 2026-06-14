@@ -16,6 +16,7 @@ import {
   sortByPublicMediaOrder,
   type PublicMediaSort,
 } from "@/lib/public-media-section";
+import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
 import type { MediaCategory, VideoWithVersions } from "@/lib/types";
 import { cn, formatPersianNumber } from "@/lib/utils";
 
@@ -44,6 +45,13 @@ export function VideosSection({ categories, videos }: VideosSectionProps) {
         : videos.filter((video) => video.categoryId === categoryFilter);
     return sortByPublicMediaOrder(filtered, sort, getVideoLatestDate);
   }, [videos, categoryFilter, sort]);
+
+  const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
+    filteredVideos.length,
+    `${categoryFilter}:${sort}`
+  );
+
+  const visibleVideos = filteredVideos.slice(0, visibleCount);
 
   if (videos.length === 0) return null;
 
@@ -119,16 +127,26 @@ export function VideosSection({ categories, videos }: VideosSectionProps) {
           ویدیویی در این دسته یافت نشد.
         </div>
       ) : (
-        <div className={PUBLIC_MEDIA_GRID_CLASS}>
-          {filteredVideos.map((video) => (
-            <VideoCard
-              key={video.id}
-              title={video.title}
-              description={video.description}
-              categoryTitle={video.category?.title}
-              versions={video.versions}
-            />
-          ))}
+        <div className="space-y-4">
+          <div className={PUBLIC_MEDIA_GRID_CLASS}>
+            {visibleVideos.map((video) => (
+              <VideoCard
+                key={video.id}
+                title={video.title}
+                description={video.description}
+                categoryTitle={video.category?.title}
+                versions={video.versions}
+              />
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={loadMore}>
+                مشاهده بیشتر ({formatPersianNumber(filteredVideos.length - visibleCount)} باقی‌مانده)
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </CollapsibleSection>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -13,10 +13,10 @@ import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { PosterCard } from "@/components/public/poster-card";
 import {
   PUBLIC_MEDIA_GRID_CLASS,
-  PUBLIC_MEDIA_PAGE_SIZE,
   sortByPublicMediaOrder,
   type PublicMediaSort,
 } from "@/lib/public-media-section";
+import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
 import type { MediaCategory, PosterWithVersions } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
 
@@ -32,7 +32,6 @@ function getPosterLatestDate(poster: PosterWithVersions): string | undefined {
 export function PostersSection({ categories, posters }: PostersSectionProps) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sort, setSort] = useState<PublicMediaSort>("default");
-  const [visibleCount, setVisibleCount] = useState(PUBLIC_MEDIA_PAGE_SIZE);
 
   const activeCategories = useMemo(
     () => categories.filter((cat) => posters.some((poster) => poster.categoryId === cat.id)),
@@ -47,12 +46,12 @@ export function PostersSection({ categories, posters }: PostersSectionProps) {
     return sortByPublicMediaOrder(filtered, sort, getPosterLatestDate);
   }, [posters, categoryFilter, sort]);
 
-  const visiblePosters = filteredPosters.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredPosters.length;
+  const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
+    filteredPosters.length,
+    `${categoryFilter}:${sort}`
+  );
 
-  useEffect(() => {
-    setVisibleCount(PUBLIC_MEDIA_PAGE_SIZE);
-  }, [categoryFilter, sort]);
+  const visiblePosters = filteredPosters.slice(0, visibleCount);
 
   if (posters.length === 0) return null;
 
@@ -112,10 +111,7 @@ export function PostersSection({ categories, posters }: PostersSectionProps) {
 
           {hasMore && (
             <div className="flex justify-center">
-              <Button
-                variant="outline"
-                onClick={() => setVisibleCount((count) => count + PUBLIC_MEDIA_PAGE_SIZE)}
-              >
+              <Button variant="outline" onClick={loadMore}>
                 مشاهده بیشتر ({formatPersianNumber(filteredPosters.length - visibleCount)} باقی‌مانده)
               </Button>
             </div>

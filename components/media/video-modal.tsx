@@ -14,6 +14,7 @@ import {
   isDirectVideoUrl,
   isAparatVideoInput,
   isEmbeddableVideoUrl,
+  resolveAbsoluteMediaUrl,
   resolveVideoEmbedUrl,
   resolveVideoThumbnail,
 } from "@/lib/media-utils";
@@ -58,6 +59,7 @@ export function VideoModal({
 
   const canPlay = isEmbeddableVideoUrl(activeVersion.videoUrl);
   const embedUrl = canPlay ? resolveVideoEmbedUrl(activeVersion.videoUrl) : "";
+  const videoSrc = resolveAbsoluteMediaUrl(embedUrl);
   const suffix = `-v${activeVersion.versionNumber}`;
   const coverUrl = resolveVideoThumbnail(activeVersion.videoUrl, activeVersion.thumbnailUrl);
   const showCoverDownload = Boolean(coverUrl && hasDistinctThumbnail(coverUrl, activeVersion.videoUrl));
@@ -98,21 +100,22 @@ export function VideoModal({
 
         <div className="relative aspect-video w-full bg-black">
           {canPlay ? (
-            isDirectVideo(embedUrl) ? (
+            isDirectVideo(videoSrc) ? (
               <video
                 key={activeVersion.id}
-                src={embedUrl}
+                src={videoSrc}
                 controls
-                className="h-full w-full"
                 playsInline
+                preload="metadata"
+                className="h-full w-full bg-black"
               />
             ) : (
               <iframe
                 key={activeVersion.id}
-                src={embedUrl}
+                src={videoSrc}
                 title={`${title} — نسخه ${activeVersion.versionNumber}`}
                 className="h-full w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 allowFullScreen
               />
             )

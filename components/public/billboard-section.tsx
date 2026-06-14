@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,10 @@ import { BillboardMap } from "@/components/public/billboard-map";
 import { BillboardModal } from "@/components/public/billboard-modal";
 import {
   PUBLIC_MEDIA_GRID_CLASS,
-  PUBLIC_MEDIA_PAGE_SIZE,
   sortByPublicMediaOrder,
   type PublicMediaSort,
 } from "@/lib/public-media-section";
+import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
 import type { Billboard } from "@/lib/types";
 import { formatPersianNumber, getStatusLabel } from "@/lib/utils";
 
@@ -33,7 +33,6 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sort, setSort] = useState<PublicMediaSort>("default");
   const [search, setSearch] = useState("");
-  const [visibleCount, setVisibleCount] = useState(PUBLIC_MEDIA_PAGE_SIZE);
   const [selectedBillboard, setSelectedBillboard] = useState<Billboard | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -52,12 +51,12 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
     return sortByPublicMediaOrder(items, sort, (item) => item.date);
   }, [billboards, cityFilter, statusFilter, search, sort]);
 
-  const visibleBillboards = filtered.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
+  const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
+    filtered.length,
+    `${cityFilter}:${statusFilter}:${search}:${sort}`
+  );
 
-  useEffect(() => {
-    setVisibleCount(PUBLIC_MEDIA_PAGE_SIZE);
-  }, [cityFilter, statusFilter, search, sort]);
+  const visibleBillboards = filtered.slice(0, visibleCount);
 
   const openBillboard = (billboard: Billboard) => {
     setSelectedBillboard(billboard);
@@ -140,10 +139,7 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
 
             {hasMore && (
               <div className="flex justify-center">
-                <Button
-                  variant="outline"
-                  onClick={() => setVisibleCount((count) => count + PUBLIC_MEDIA_PAGE_SIZE)}
-                >
+                <Button variant="outline" onClick={loadMore}>
                   مشاهده بیشتر ({formatPersianNumber(filtered.length - visibleCount)} باقی‌مانده)
                 </Button>
               </div>
