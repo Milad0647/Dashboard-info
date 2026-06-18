@@ -38,8 +38,10 @@ export function AdminPosterCompactCard({ poster, versions, onClick }: AdminPoste
             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
               v{formatPersianNumber(displayVersion.versionNumber)}
             </Badge>
-            {displayVersion.isFinal && (
+            {displayVersion.isFinal ? (
               <Badge status="final" className="text-[10px] px-1.5 py-0">نهایی</Badge>
+            ) : (
+              <Badge status="draft" className="text-[10px] px-1.5 py-0">پیش‌نویس</Badge>
             )}
           </div>
         )}

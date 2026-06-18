@@ -319,7 +319,7 @@ export async function pgSavePosterVersion(data: Partial<PosterVersion> & { id?: 
   const now = new Date().toISOString();
   const id = data.id ?? generateId();
   const isFinal = Boolean(data.isFinal);
-  const status = isFinal ? "final" : (data.status ?? "draft");
+  const status = isFinal ? "final" : "draft";
 
   if (isFinal) {
     await sql`
@@ -416,7 +416,7 @@ export async function pgSaveVideoVersion(data: Partial<VideoVersion> & { id?: st
   const now = new Date().toISOString();
   const id = data.id ?? generateId();
   const isFinal = Boolean(data.isFinal);
-  const status = isFinal ? "final" : (data.status ?? "draft");
+  const status = isFinal ? "final" : "draft";
 
   if (isFinal) {
     await sql`

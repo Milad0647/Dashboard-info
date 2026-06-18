@@ -28,7 +28,7 @@ import {
 import { todayISO } from "@/lib/jalali";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { MediaCategory, Poster, PosterVersion } from "@/lib/types";
-import { cn, formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
+import { cn, formatPersianDate, formatPersianNumber } from "@/lib/utils";
 
 interface PosterVersionDraft {
   localId: string;
@@ -119,10 +119,15 @@ export function AdminPosterEditor({
     );
   };
 
-  const handleSetFinal = (localId: string) => {
-    setVersionDrafts((prev) =>
-      prev.map((item) => ({ ...item, isFinal: item.localId === localId }))
-    );
+  const handleSetFinal = (localId: string, isFinal: boolean) => {
+    if (isFinal) {
+      setVersionDrafts((prev) =>
+        prev.map((item) => ({ ...item, isFinal: item.localId === localId }))
+      );
+      return;
+    }
+
+    updateDraft(localId, { isFinal: false });
   };
 
   const handleDeleteVersion = (draft: PosterVersionDraft) => {
@@ -149,19 +154,13 @@ export function AdminPosterEditor({
       return;
     }
 
-    let finalLocalId = versionDrafts.find((item) => item.isFinal)?.localId;
-    if (!finalLocalId && draftsToSave.length === 1) {
-      finalLocalId = draftsToSave[0].localId;
-    }
-    if (!finalLocalId) {
-      toast.error("یک نسخه را به‌عنوان نسخه نهایی انتخاب کنید");
-      return;
-    }
-
-    const orderedDrafts = [
-      ...draftsToSave.filter((item) => item.localId !== finalLocalId),
-      ...draftsToSave.filter((item) => item.localId === finalLocalId),
-    ];
+    const finalLocalId = versionDrafts.find((item) => item.isFinal)?.localId;
+    const orderedDrafts = finalLocalId
+      ? [
+          ...draftsToSave.filter((item) => item.localId !== finalLocalId),
+          ...draftsToSave.filter((item) => item.localId === finalLocalId),
+        ]
+      : draftsToSave;
 
     startTransition(async () => {
       await savePosterAction({
@@ -173,7 +172,7 @@ export function AdminPosterEditor({
 
       let savedCount = 0;
       for (const draft of orderedDrafts) {
-        const isFinal = draft.localId === finalLocalId;
+        const isFinal = Boolean(draft.isFinal);
         await savePosterVersionAction({
           id: draft.id,
           posterId: poster.id,
@@ -183,7 +182,7 @@ export function AdminPosterEditor({
           notes: draft.notes || undefined,
           date: draft.date ?? todayISO(),
           isFinal,
-          status: isFinal ? "final" : draft.status ?? "draft",
+          status: isFinal ? "final" : "draft",
         });
         savedCount += 1;
       }
@@ -228,7 +227,9 @@ export function AdminPosterEditor({
           {displayVersion ? (
             <>
               <Badge variant="outline">نسخه {formatPersianNumber(displayVersion.versionNumber)}</Badge>
-              {displayVersion.isFinal && <Badge status="final">نسخه نهایی</Badge>}
+              <Badge status={displayVersion.isFinal ? "final" : "draft"}>
+                {displayVersion.isFinal ? "نسخه نهایی" : "پیش‌نویس"}
+              </Badge>
             </>
           ) : (
             <Badge variant="secondary">بدون نسخه</Badge>
@@ -303,11 +304,9 @@ export function AdminPosterEditor({
                       ? `نسخه ${formatPersianNumber(draft.versionNumber ?? index + 1)}`
                       : `نسخه جدید ${formatPersianNumber(index + 1)}`}
                   </p>
-                  {draft.id && draft.status && (
-                    <Badge status={draft.status} className="text-[10px]">
-                      {getStatusLabel(draft.status)}
-                    </Badge>
-                  )}
+                  <Badge status={draft.isFinal ? "final" : "draft"} className="text-[10px]">
+                    {draft.isFinal ? "نسخه نهایی" : "پیش‌نویس"}
+                  </Badge>
                   {draft.id && draft.date && (
                     <span className="text-[10px] text-muted-foreground">{formatPersianDate(draft.date)}</span>
                   )}
@@ -343,9 +342,7 @@ export function AdminPosterEditor({
                 </div>
                 <Switch
                   checked={Boolean(draft.isFinal)}
-                  onCheckedChange={(checked) => {
-                    if (checked) handleSetFinal(draft.localId);
-                  }}
+                  onCheckedChange={(checked) => handleSetFinal(draft.localId, checked)}
                   disabled={isPending}
                 />
               </div>

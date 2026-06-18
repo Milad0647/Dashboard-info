@@ -9,7 +9,7 @@ import { VideoModal } from "@/components/media/video-modal";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import type { VideoVersion } from "@/lib/types";
 import { downloadMedia, getFilenameFromUrl, hasDistinctThumbnail, resolveDisplayVersion } from "@/lib/media-utils";
-import { cn, formatPersianDate, getStatusLabel } from "@/lib/utils";
+import { cn, formatPersianDate } from "@/lib/utils";
 
 interface VideoCardProps {
   title: string;
@@ -67,11 +67,11 @@ export function VideoCard({ title, description, categoryTitle, versions }: Video
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors pointer-events-none">
             <Play className="h-12 w-12 text-white" />
           </div>
-          {finalVersion.isFinal && (
-            <div className="absolute top-3 right-3">
-              <Badge status="final">نسخه نهایی</Badge>
-            </div>
-          )}
+          <div className="absolute top-3 right-3">
+            <Badge status={finalVersion.isFinal ? "final" : "draft"}>
+              {finalVersion.isFinal ? "نسخه نهایی" : "پیش‌نویس"}
+            </Badge>
+          </div>
           <div className="absolute bottom-3 left-3 flex gap-1">
             <Button
               type="button"
@@ -110,7 +110,9 @@ export function VideoCard({ title, description, categoryTitle, versions }: Video
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>نسخه {finalVersion.versionNumber}{finalVersion.duration ? ` — ${finalVersion.duration}` : ""}</span>
-            <Badge status={finalVersion.status} className="text-[10px]">{getStatusLabel(finalVersion.status)}</Badge>
+            <Badge status={finalVersion.isFinal ? "final" : "draft"} className="text-[10px]">
+              {finalVersion.isFinal ? "نسخه نهایی" : "پیش‌نویس"}
+            </Badge>
           </div>
           <p className="text-xs text-muted-foreground">{formatPersianDate(finalVersion.date)}</p>
 
@@ -138,7 +140,9 @@ export function VideoCard({ title, description, categoryTitle, versions }: Video
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-medium">نسخه {version.versionNumber}</span>
-                          <Badge status={version.status} className="text-[10px] shrink-0">{getStatusLabel(version.status)}</Badge>
+                          <Badge status={version.isFinal ? "final" : "draft"} className="text-[10px] shrink-0">
+                            {version.isFinal ? "نسخه نهایی" : "پیش‌نویس"}
+                          </Badge>
                         </div>
                         <p className="text-[11px] text-muted-foreground mt-0.5">{formatPersianDate(version.date)}</p>
                       </div>

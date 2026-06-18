@@ -10,7 +10,7 @@ import { LightboxModal } from "@/components/media/lightbox-modal";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
 import type { PosterVersion } from "@/lib/types";
 import { downloadMedia, getFilenameFromUrl, resolveDisplayVersion } from "@/lib/media-utils";
-import { cn, formatPersianDate, getStatusLabel } from "@/lib/utils";
+import { cn, formatPersianDate } from "@/lib/utils";
 
 interface PosterCardProps {
   title: string;
@@ -61,11 +61,11 @@ export function PosterCard({ title, description, versions }: PosterCardProps) {
           ) : (
             <MediaPlaceholder kind="poster" className="h-full" />
           )}
-          {finalVersion.isFinal && (
-            <div className="absolute top-3 right-3">
-              <Badge status="final">نسخه نهایی</Badge>
-            </div>
-          )}
+          <div className="absolute top-3 right-3">
+            <Badge status={finalVersion.isFinal ? "final" : "draft"}>
+              {finalVersion.isFinal ? "نسخه نهایی" : "پیش‌نویس"}
+            </Badge>
+          </div>
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center gap-2">
             <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-medium bg-black/50 px-3 py-1.5 rounded-lg transition-opacity">
               مشاهده
@@ -93,8 +93,8 @@ export function PosterCard({ title, description, versions }: PosterCardProps) {
 
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>نسخه {finalVersion.versionNumber}</span>
-            <Badge status={finalVersion.status} className="text-[10px]">
-              {getStatusLabel(finalVersion.status)}
+            <Badge status={finalVersion.isFinal ? "final" : "draft"} className="text-[10px]">
+              {finalVersion.isFinal ? "نسخه نهایی" : "پیش‌نویس"}
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground">{formatPersianDate(finalVersion.date)}</p>
@@ -147,8 +147,8 @@ export function PosterCard({ title, description, versions }: PosterCardProps) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-medium">نسخه {version.versionNumber}</span>
-                          <Badge status={version.status} className="text-[10px] shrink-0">
-                            {getStatusLabel(version.status)}
+                          <Badge status={version.isFinal ? "final" : "draft"} className="text-[10px] shrink-0">
+                            {version.isFinal ? "نسخه نهایی" : "پیش‌نویس"}
                           </Badge>
                         </div>
                         <p className="text-[11px] text-muted-foreground mt-0.5">

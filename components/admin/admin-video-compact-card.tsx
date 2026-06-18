@@ -44,8 +44,10 @@ export function AdminVideoCompactCard({ video, versions, onClick }: AdminVideoCo
             <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
               v{formatPersianNumber(displayVersion.versionNumber)}
             </Badge>
-            {displayVersion.isFinal && (
+            {displayVersion.isFinal ? (
               <Badge status="final" className="px-1.5 py-0 text-[10px]">نهایی</Badge>
+            ) : (
+              <Badge status="draft" className="px-1.5 py-0 text-[10px]">پیش‌نویس</Badge>
             )}
           </div>
         )}
