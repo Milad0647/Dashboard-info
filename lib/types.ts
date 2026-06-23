@@ -42,6 +42,7 @@ export interface AnalyticsConfig {
 
 export interface BillboardConfig {
   externalCampaignId?: string | null;
+  externalCampaignSlug?: string | null;
 }
 
 export interface CampaignSettings {
@@ -91,6 +92,11 @@ export interface Billboard {
   notes?: string | null;
   published: boolean;
   sortOrder: number;
+  code?: string | null;
+  displayDateRange?: string | null;
+  providerName?: string | null;
+  qualityTierLabel?: string | null;
+  billboardTypeLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }

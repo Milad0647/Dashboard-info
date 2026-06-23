@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { BillboardThumbnail } from "@/components/public/billboard-thumbnail";
 import {
   filterPublicBillboardTags,
+  getBillboardDateLabel,
   shouldShowBillboardNotes,
   shouldShowBillboardStatus,
 } from "@/lib/billboards";
@@ -22,6 +23,7 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
   const displayTags = filterPublicBillboardTags(billboard.tags);
   const showStatus = shouldShowBillboardStatus(billboard);
   const showNotes = shouldShowBillboardNotes(billboard);
+  const dateLabel = getBillboardDateLabel(billboard);
 
   return (
     <Card className="group flex h-full w-full max-w-sm flex-col overflow-hidden">
@@ -32,6 +34,13 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
           sizes="(max-width: 768px) 100vw, 320px"
           imageClassName="transition-transform group-hover:scale-105"
         />
+        {billboard.code && (
+          <div className="absolute top-3 right-3">
+            <Badge variant="outline" className="bg-background/90 text-xs">
+              {billboard.code}
+            </Badge>
+          </div>
+        )}
       </div>
 
       <CardContent className="flex flex-1 flex-col space-y-3 p-4">
@@ -45,7 +54,26 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
           <span className="line-clamp-2 min-h-[2.5rem]">{billboard.city} — {billboard.location}</span>
         </div>
 
-        <p className="text-xs text-muted-foreground">{formatPersianDate(billboard.date)}</p>
+        {dateLabel ? (
+          <p className="text-xs text-muted-foreground">{dateLabel}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">{formatPersianDate(billboard.date)}</p>
+        )}
+
+        {(billboard.providerName || billboard.qualityTierLabel) && (
+          <div className="flex flex-wrap gap-1">
+            {billboard.providerName && (
+              <Badge variant="secondary" className="text-[10px]">
+                {billboard.providerName}
+              </Badge>
+            )}
+            {billboard.qualityTierLabel && (
+              <Badge variant="outline" className="text-[10px]">
+                {billboard.qualityTierLabel}
+              </Badge>
+            )}
+          </div>
+        )}
 
         {showNotes && (
           <p className="line-clamp-2 min-h-[2.5rem] text-sm text-muted-foreground">{billboard.notes}</p>

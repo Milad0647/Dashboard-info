@@ -1,6 +1,8 @@
 import {
   fetchAllExternalBillboards,
+  fetchCampaignIntegration,
   mapExternalBillboardToBillboard,
+  mapIntegrationBillboardToBillboard,
 } from "@/lib/services/billboard-api";
 import type { Billboard, CampaignSettings } from "@/lib/types";
 
@@ -22,6 +24,45 @@ function isManualBillboard(billboard: Billboard): boolean {
   return !isApiBillboard(billboard);
 }
 
+export function getExternalCampaignSlug(settings: CampaignSettings): string | null {
+  const slug = settings.billboardConfig?.externalCampaignSlug?.trim();
+  return slug || null;
+}
+
+export function hasExternalBillboardConnection(settings: CampaignSettings): boolean {
+  return Boolean(
+    getExternalCampaignSlug(settings) || settings.billboardConfig?.externalCampaignId
+  );
+}
+
+async function fetchLiveBillboards(settings: CampaignSettings): Promise<Billboard[]> {
+  const integrationSlug = getExternalCampaignSlug(settings);
+  if (integrationSlug) {
+    const integration = await fetchCampaignIntegration(integrationSlug);
+    return integration.billboards.map((item, index) =>
+      mapIntegrationBillboardToBillboard(item, settings.id, {
+        sortOrder: index + 1,
+        published: true,
+      })
+    );
+  }
+
+  const externalCampaignId = settings.billboardConfig?.externalCampaignId;
+  if (!externalCampaignId) {
+    return [];
+  }
+
+  const externalBillboards = await fetchAllExternalBillboards(externalCampaignId);
+  return externalBillboards
+    .filter((item) => item.status === "active")
+    .map((item, index) =>
+      mapExternalBillboardToBillboard(item, settings.id, {
+        sortOrder: index + 1,
+        published: true,
+      })
+    );
+}
+
 export async function resolveAdminBillboards(
   settings: CampaignSettings,
   dbBillboards: Billboard[]
@@ -30,21 +71,19 @@ export async function resolveAdminBillboards(
     .filter(isManualBillboard)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const externalCampaignId = settings.billboardConfig?.externalCampaignId;
-  if (!externalCampaignId) {
+  if (!hasExternalBillboardConnection(settings)) {
     return manualBillboards;
   }
 
   try {
-    const externalBillboards = await fetchAllExternalBillboards(externalCampaignId);
-    const liveBillboards = externalBillboards.map((item, index) =>
-      mapExternalBillboardToBillboard(item, settings.id, {
+    const liveBillboards = await fetchLiveBillboards(settings);
+    return [
+      ...manualBillboards,
+      ...liveBillboards.map((billboard, index) => ({
+        ...billboard,
         sortOrder: manualBillboards.length + index + 1,
-        published: item.status === "active",
-      })
-    );
-
-    return [...manualBillboards, ...liveBillboards];
+      })),
+    ];
   } catch (error) {
     console.error("Admin billboard API fetch failed:", error);
     return manualBillboards;
@@ -59,23 +98,20 @@ export async function resolvePublicBillboards(
     .filter((billboard) => billboard.published && isManualBillboard(billboard))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const externalCampaignId = settings.billboardConfig?.externalCampaignId;
-  if (!externalCampaignId) {
+  if (!hasExternalBillboardConnection(settings)) {
     return manualBillboards;
   }
 
   try {
-    const externalBillboards = await fetchAllExternalBillboards(externalCampaignId);
-    const liveBillboards = externalBillboards
-      .filter((item) => item.status === "active")
-      .map((item, index) =>
-        mapExternalBillboardToBillboard(item, settings.id, {
-          sortOrder: manualBillboards.length + index + 1,
-          published: true,
-        })
-      );
-
-    return [...manualBillboards, ...liveBillboards];
+    const liveBillboards = await fetchLiveBillboards(settings);
+    return [
+      ...manualBillboards,
+      ...liveBillboards.map((billboard, index) => ({
+        ...billboard,
+        sortOrder: manualBillboards.length + index + 1,
+        published: true,
+      })),
+    ];
   } catch (error) {
     console.error("Live billboard fetch failed:", error);
     return manualBillboards;
@@ -101,4 +137,9 @@ export function filterPublicBillboardTags(tags: string[]): string[] {
 
 export function shouldShowBillboardNotes(billboard: Billboard): boolean {
   return !isApiBillboard(billboard) && Boolean(billboard.notes);
+}
+
+export function getBillboardDateLabel(billboard: Billboard): string | null {
+  if (billboard.displayDateRange) return billboard.displayDateRange;
+  return null;
 }

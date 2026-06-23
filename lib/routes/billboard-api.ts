@@ -7,6 +7,8 @@ export function getBillboardApiBaseUrl(): string {
 
 export const billboardApiRoutes = {
   campaigns: () => `${getBillboardApiBaseUrl()}/api/v1/campaigns`,
+  campaignIntegration: (slug: string) =>
+    `${getBillboardApiBaseUrl()}/api/v1/campaigns/${encodeURIComponent(slug)}/integration`,
   billboards: (params?: { campaignId?: string; page?: number; perPage?: number }) => {
     const searchParams = new URLSearchParams();
     if (params?.campaignId) searchParams.set("campaign_id", params.campaignId);

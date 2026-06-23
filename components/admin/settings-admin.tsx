@@ -56,6 +56,7 @@ const schema = z.object({
   published: z.boolean(),
   features: featuresSchema,
   externalCampaignId: z.string().optional(),
+  externalCampaignSlug: z.string().optional(),
   siteAnalytics: channelSchema,
   socialAnalyticsConfig: channelSchema,
 });
@@ -210,6 +211,7 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
       published: initialSettings.published,
       features: initialSettings.features,
       externalCampaignId: initialSettings.billboardConfig?.externalCampaignId ?? "",
+      externalCampaignSlug: initialSettings.billboardConfig?.externalCampaignSlug ?? "",
       siteAnalytics: {
         source: initialSettings.analyticsConfig.site.source,
         metabase: {
@@ -248,6 +250,17 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
     void loadExternalCampaigns();
   }, [loadExternalCampaigns]);
 
+  useEffect(() => {
+    const currentSlug = form.getValues("externalCampaignSlug");
+    const currentId = form.getValues("externalCampaignId");
+    if (!currentSlug && currentId && externalCampaigns.length > 0) {
+      const match = externalCampaigns.find((item) => item.id === currentId);
+      if (match) {
+        form.setValue("externalCampaignSlug", match.slug);
+      }
+    }
+  }, [externalCampaigns, form]);
+
   const onSubmit = form.handleSubmit((data) => {
     startTransition(async () => {
       await updateSettingsAction({
@@ -264,6 +277,7 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
         analyticsConfig: buildAnalyticsConfig(data, initialSettings.analyticsConfig),
         billboardConfig: {
           externalCampaignId: data.externalCampaignId || null,
+          externalCampaignSlug: data.externalCampaignSlug || null,
         },
       });
       toast.success("تنظیمات ذخیره شد");
@@ -322,7 +336,7 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
                 <div>
                   <Label className="text-sm font-semibold">بیلبورد زنده (Map Bilboard)</Label>
                   <p className="text-xs text-muted-foreground mt-1">
-                    بیلبوردها مستقیماً از API خوانده می‌شوند — نیازی به import نیست.
+                    بیلبوردها از API integration خوانده می‌شوند — کمپین خارجی را انتخاب کنید.
                   </p>
                 </div>
                 <Button type="button" variant="outline" size="icon" onClick={() => void loadExternalCampaigns()} disabled={loadingCampaigns}>
@@ -330,14 +344,27 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
                 </Button>
               </div>
               <Select
-                value={form.watch("externalCampaignId") || "none"}
-                onValueChange={(value) => form.setValue("externalCampaignId", value === "none" ? "" : value)}
+                value={form.watch("externalCampaignSlug") || "none"}
+                onValueChange={(value) => {
+                  if (value === "none") {
+                    form.setValue("externalCampaignSlug", "");
+                    form.setValue("externalCampaignId", "");
+                    return;
+                  }
+
+                  const campaign = externalCampaigns.find((item) => item.slug === value);
+                  form.setValue("externalCampaignSlug", value);
+                  form.setValue("externalCampaignId", campaign?.id ?? "");
+                }}
               >
                 <SelectTrigger><SelectValue placeholder="انتخاب کمپین خارجی" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">بدون اتصال — فقط بیلبوردهای دستی</SelectItem>
                   {externalCampaigns.map((campaign) => (
-                    <SelectItem key={campaign.id} value={campaign.id}>{campaign.name}</SelectItem>
+                    <SelectItem key={campaign.id} value={campaign.slug}>
+                      {campaign.name}
+                      {campaign.date_range_shamsi ? ` — ${campaign.date_range_shamsi}` : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

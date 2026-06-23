@@ -475,9 +475,11 @@ export async function getPublicCampaignData(slug: string): Promise<PublicCampaig
       files: [],
     };
 
-    return assemblePublicData(settings, campaignStore, campaignStore.billboards
-      .filter((b) => b.published)
-      .sort((a, b) => a.sortOrder - b.sortOrder));
+    return assemblePublicData(
+      settings,
+      campaignStore,
+      await resolvePublicBillboards(settings, campaignStore.billboards)
+    );
   } catch {
     return getMockPublicDataBySlug(slug);
   }

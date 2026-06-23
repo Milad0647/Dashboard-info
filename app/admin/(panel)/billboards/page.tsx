@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAdminData } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
-import { resolveAdminBillboards } from "@/lib/billboards";
+import { hasExternalBillboardConnection, resolveAdminBillboards } from "@/lib/billboards";
 import { BillboardsAdmin } from "@/components/admin/billboards-admin";
 import type { Billboard, CampaignSettings } from "@/lib/types";
 
@@ -24,7 +24,7 @@ export default async function BillboardsPage({ searchParams }: PageProps) {
       campaignId={campaignId}
       initialBillboards={billboards}
       liveApiEnabled={Boolean(
-        (data.settings as CampaignSettings | null)?.billboardConfig?.externalCampaignId
+        data.settings && hasExternalBillboardConnection(data.settings as CampaignSettings)
       )}
     />
   );

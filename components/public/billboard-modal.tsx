@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { BillboardThumbnail } from "@/components/public/billboard-thumbnail";
 import {
   filterPublicBillboardTags,
+  getBillboardDateLabel,
   getBillboardDisplayImage,
   hasBillboardDisplayImage,
   shouldShowBillboardNotes,
@@ -29,6 +30,7 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
   const showStatus = shouldShowBillboardStatus(billboard);
   const showNotes = shouldShowBillboardNotes(billboard);
   const canDownload = hasBillboardDisplayImage(billboard);
+  const dateLabel = getBillboardDateLabel(billboard);
 
   const handleDownload = () => {
     if (!canDownload) return;
@@ -48,6 +50,7 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             {billboard.title}
+            {billboard.code && <Badge variant="outline">{billboard.code}</Badge>}
             {showStatus && <Badge status={billboard.status}>{getStatusLabel(billboard.status)}</Badge>}
           </DialogTitle>
         </DialogHeader>
@@ -70,7 +73,19 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
             <p className="text-sm text-muted-foreground">{billboard.description}</p>
           )}
 
-          <p className="text-sm text-muted-foreground">{formatPersianDate(billboard.date)}</p>
+          {dateLabel ? (
+            <p className="text-sm text-muted-foreground">{dateLabel}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">{formatPersianDate(billboard.date)}</p>
+          )}
+
+          {(billboard.providerName || billboard.qualityTierLabel || billboard.billboardTypeLabel) && (
+            <div className="flex flex-wrap gap-1">
+              {billboard.providerName && <Badge variant="secondary">{billboard.providerName}</Badge>}
+              {billboard.qualityTierLabel && <Badge variant="outline">{billboard.qualityTierLabel}</Badge>}
+              {billboard.billboardTypeLabel && <Badge variant="outline">{billboard.billboardTypeLabel}</Badge>}
+            </div>
+          )}
 
           {showNotes && <p className="text-sm">{billboard.notes}</p>}
 

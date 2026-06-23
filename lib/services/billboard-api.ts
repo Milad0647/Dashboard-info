@@ -1,9 +1,11 @@
 import {
   getExternalBillboardTag,
+  type CampaignIntegrationResponse,
   type ExternalBillboard,
   type ExternalBillboardsResponse,
   type ExternalCampaign,
   type ExternalCampaignsResponse,
+  type IntegrationBillboard,
 } from "@/lib/models/billboard-api";
 import { billboardApiRoutes } from "@/lib/routes/billboard-api";
 import type { Billboard } from "@/lib/types";
@@ -13,6 +15,7 @@ const BILLBOARD_API_TIMEOUT_MS = 8_000;
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, {
     cache: "no-store",
+    headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(BILLBOARD_API_TIMEOUT_MS),
   });
   if (!response.ok) {
@@ -49,6 +52,13 @@ export async function fetchAllExternalBillboards(campaignId: string): Promise<Ex
   return items;
 }
 
+export async function fetchCampaignIntegration(slug: string) {
+  const body = await fetchJson<CampaignIntegrationResponse>(
+    billboardApiRoutes.campaignIntegration(slug)
+  );
+  return body.data;
+}
+
 function resolveCity(address: string): string {
   if (address.includes("تهران")) return "تهران";
   if (address.includes("مشهد")) return "مشهد";
@@ -60,6 +70,64 @@ function resolveCity(address: string): string {
 
 function buildMapUrl(latitude: number, longitude: number): string {
   return `https://www.google.com/maps?q=${latitude},${longitude}`;
+}
+
+export function mapIntegrationBillboardToBillboard(
+  external: IntegrationBillboard,
+  campaignId: string,
+  options?: { sortOrder?: number; published?: boolean }
+): Billboard {
+  const cardImage = billboardApiRoutes.resolveAssetUrl(
+    external.card_image_url ??
+      external.execution_thumbnail_url ??
+      external.thumbnail_url ??
+      external.image_url
+  );
+  const fullImage = billboardApiRoutes.resolveAssetUrl(
+    external.execution_image_url ??
+      external.image_url ??
+      external.card_image_url ??
+      external.thumbnail_url
+  );
+  const thumbnail = cardImage ?? "";
+  const imageUrl = fullImage ?? "";
+  const title = external.name?.trim() || external.axis?.trim() || external.code;
+  const address = external.address?.trim() ?? "";
+  const tags = [
+    external.quality_tier_label,
+    external.billboard_type_label,
+    getExternalBillboardTag(external.billboard_id),
+  ].filter((tag): tag is string => Boolean(tag));
+  const now = new Date().toISOString();
+
+  return {
+    id: `api-${external.billboard_id}`,
+    campaignId,
+    title,
+    description: address || null,
+    city: resolveCity(address),
+    location: address || external.axis || title,
+    date: external.display_start ?? now.split("T")[0],
+    thumbnailUrl: thumbnail,
+    imageUrl,
+    externalUrl: buildMapUrl(external.latitude, external.longitude),
+    latitude: external.latitude,
+    longitude: external.longitude,
+    source: "api",
+    externalId: external.billboard_id,
+    status: "published",
+    tags,
+    notes: external.notes,
+    published: options?.published ?? true,
+    sortOrder: options?.sortOrder ?? 0,
+    code: external.code,
+    displayDateRange: external.display_range_shamsi,
+    providerName: external.provider_name,
+    qualityTierLabel: external.quality_tier_label,
+    billboardTypeLabel: external.billboard_type_label,
+    createdAt: now,
+    updatedAt: now,
+  };
 }
 
 export function mapExternalBillboardToLocal(
