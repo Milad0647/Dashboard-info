@@ -1,5 +1,5 @@
 import { getSql } from "@/lib/db/client";
-import { pgGetMeetingsWithTasks } from "@/lib/db/repository-extended";
+import { pgGetMeetingsWithTasks, pgGetPublicMeetingPreviews } from "@/lib/db/repository-extended";
 import {
   mapAnalyticsFromDb,
   mapBillboardFromDb,
@@ -815,7 +815,7 @@ export async function pgGetPublicCampaignData(campaignId: string) {
       WHERE sps.campaign_id = ${campaignId}
       ORDER BY sps.sort_order, sps.platform
     `,
-    pgGetMeetingsWithTasks(campaignId, { publishedOnly: true }),
+    pgGetPublicMeetingPreviews(campaignId),
   ]);
 
   return {

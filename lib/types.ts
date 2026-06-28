@@ -350,10 +350,14 @@ export interface CampaignMeeting {
   campaignId: string;
   ownerUserId?: string | null;
   ownerName?: string | null;
+  title: string;
   meetingDate: string;
   location: string;
   imageUrl?: string | null;
   discussionSummary: string;
+  attendees: string[];
+  audioUrl?: string | null;
+  viewPasswordHash?: string | null;
   published: boolean;
   sortOrder: number;
   createdAt: string;
@@ -362,6 +366,31 @@ export interface CampaignMeeting {
 
 export interface MeetingWithTasks extends CampaignMeeting {
   tasks: MeetingTask[];
+}
+
+export interface MeetingPublicPreview {
+  id: string;
+  campaignId: string;
+  ownerUserId?: string | null;
+  ownerName?: string | null;
+  title: string;
+  meetingDate: string;
+  imageUrl?: string | null;
+  summaryPreview: string;
+  hasPassword: boolean;
+  sortOrder: number;
+}
+
+export interface MeetingPublicDetail {
+  id: string;
+  title: string;
+  meetingDate: string;
+  location: string;
+  imageUrl?: string | null;
+  discussionSummary: string;
+  attendees: string[];
+  audioUrl?: string | null;
+  tasks: Pick<MeetingTask, "id" | "title" | "completed" | "sortOrder">[];
 }
 
 export interface DataOwnerGroup<T> {
@@ -445,8 +474,8 @@ export interface PublicCampaignData {
   socialPostGroups: DataOwnerGroup<SocialMediaPost>[];
   broadcastReports: BroadcastReport[];
   broadcastReportGroups: DataOwnerGroup<BroadcastReport>[];
-  meetings: MeetingWithTasks[];
-  meetingGroups: DataOwnerGroup<MeetingWithTasks>[];
+  meetings: MeetingPublicPreview[];
+  meetingGroups: DataOwnerGroup<MeetingPublicPreview>[];
   submissions: CampaignSubmission[];
   submissionGroups: DataOwnerGroup<CampaignSubmission>[];
   submissionSummary: SubmissionSummary;

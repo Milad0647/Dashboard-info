@@ -13,7 +13,10 @@ import type {
   SocialAnalyticsSummary,
   SocialPlatformStat,
   SubmissionSummary,
+  MeetingPublicPreview,
+  MeetingWithTasks,
 } from "@/lib/types";
+import { truncateMeetingSummary } from "@/lib/meeting-preview";
 import { groupByOwner } from "@/lib/owner-groups";
 import { buildSocialAnalyticsSummary } from "@/lib/social-analytics";
 import { isPostgresConfigured, isSupabaseConfigured } from "@/lib/utils";
@@ -176,6 +179,29 @@ function buildSubmissionSummary(
   };
 }
 
+function toMeetingPreview(meeting: MeetingWithTasks): MeetingPublicPreview {
+  return {
+    id: meeting.id,
+    campaignId: meeting.campaignId,
+    ownerUserId: meeting.ownerUserId,
+    ownerName: meeting.ownerName,
+    title: meeting.title,
+    meetingDate: meeting.meetingDate,
+    imageUrl: meeting.imageUrl,
+    summaryPreview: truncateMeetingSummary(meeting.discussionSummary),
+    hasPassword: Boolean(meeting.viewPasswordHash),
+    sortOrder: meeting.sortOrder,
+  };
+}
+
+function normalizeMeetingPreviews(
+  items: (MeetingPublicPreview | MeetingWithTasks)[]
+): MeetingPublicPreview[] {
+  return items.map((item) =>
+    "summaryPreview" in item ? item : toMeetingPreview(item)
+  );
+}
+
 function buildSectionVisibility(
   features: CampaignSettings["features"],
   data: {
@@ -231,9 +257,14 @@ function buildKPIs(
   };
 }
 
+type CampaignPublicStore = Omit<ReturnType<typeof getMockStoreForCampaign>, "meetings"> & {
+  meetings?: (MeetingPublicPreview | MeetingWithTasks)[];
+  socialPlatformStats?: SocialPlatformStat[];
+};
+
 function assemblePublicData(
   settings: CampaignSettings,
-  store: ReturnType<typeof getMockStoreForCampaign> & { socialPlatformStats?: SocialPlatformStat[] },
+  store: CampaignPublicStore,
   billboards: ReturnType<typeof getMockStoreForCampaign>["billboards"]
 ): PublicCampaignData {
   const posterCategories = store.posterCategories
@@ -290,9 +321,11 @@ function assemblePublicData(
     .filter((report) => report.published)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const meetings = (store.meetings ?? [])
-    .filter((meeting) => meeting.published)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const meetings = normalizeMeetingPreviews(
+    (store.meetings ?? [])
+      .filter((meeting) => ("published" in meeting ? meeting.published : true))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+  );
 
   const submissionSummary = buildSubmissionSummary(store.submissions);
 
@@ -435,7 +468,7 @@ export async function getPublicCampaignData(slug: string): Promise<PublicCampaig
         ...campaignStore,
         analytics: siteMetrics,
         socialPlatformStats: campaignStore.socialPlatformStats ?? [],
-      } as ReturnType<typeof getMockStoreForCampaign> & { socialPlatformStats: SocialPlatformStat[] },
+      } as CampaignPublicStore,
       billboards
     );
   }

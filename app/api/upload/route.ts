@@ -12,6 +12,8 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
 
+const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+
 const IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -32,6 +34,17 @@ const DOCUMENT_TYPES = new Set([
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/plain",
+]);
+
+const AUDIO_TYPES = new Set([
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+  "audio/ogg",
+  "audio/webm",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/aac",
 ]);
 
 function extensionForMime(mime: string): string {
@@ -62,6 +75,20 @@ function extensionForMime(mime: string): string {
       return ".xlsx";
     case "text/plain":
       return ".txt";
+    case "audio/mpeg":
+    case "audio/mp3":
+      return ".mp3";
+    case "audio/wav":
+      return ".wav";
+    case "audio/ogg":
+      return ".ogg";
+    case "audio/webm":
+      return ".webm";
+    case "audio/mp4":
+    case "audio/x-m4a":
+      return ".m4a";
+    case "audio/aac":
+      return ".aac";
     default:
       return "";
   }
@@ -85,13 +112,21 @@ export async function POST(request: Request) {
   }
 
   const allowedTypes =
-    kind === "video" ? VIDEO_TYPES : kind === "document" ? DOCUMENT_TYPES : IMAGE_TYPES;
+    kind === "video"
+      ? VIDEO_TYPES
+      : kind === "audio"
+        ? AUDIO_TYPES
+        : kind === "document"
+          ? DOCUMENT_TYPES
+          : IMAGE_TYPES;
   const maxBytes =
     kind === "video"
       ? MAX_VIDEO_BYTES
-      : kind === "document"
-        ? MAX_DOCUMENT_BYTES
-        : MAX_IMAGE_BYTES;
+      : kind === "audio"
+        ? MAX_AUDIO_BYTES
+        : kind === "document"
+          ? MAX_DOCUMENT_BYTES
+          : MAX_IMAGE_BYTES;
 
   if (!allowedTypes.has(file.type)) {
     return NextResponse.json({ error: "نوع فایل مجاز نیست" }, { status: 400 });

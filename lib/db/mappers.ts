@@ -9,6 +9,8 @@ import type {
   CampaignSubmission,
   MediaCategory,
   MeetingTask,
+  MeetingPublicDetail,
+  MeetingPublicPreview,
   Poster,
   PosterVersion,
   SocialMediaPost,
@@ -18,6 +20,7 @@ import type {
 } from "@/lib/types";
 import type { ContributorPermissions } from "@/lib/contributor-permissions";
 import { normalizeAnalyticsConfig } from "@/lib/analytics-config";
+import { truncateMeetingSummary } from "@/lib/meeting-preview";
 
 function toDateString(value: unknown): string {
   if (value instanceof Date) {
@@ -305,20 +308,79 @@ export function mapBroadcastReportFromDb(row: any): BroadcastReport {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseAttendees(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item).trim()).filter(Boolean);
+      }
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapMeetingFromDb(row: any): CampaignMeeting {
   return {
     id: row.id,
     campaignId: row.campaign_id,
     ownerUserId: row.owner_user_id ?? null,
     ownerName: row.owner_name ?? null,
+    title: row.title ?? "",
     meetingDate: toDateString(row.meeting_date),
     location: row.location ?? "",
     imageUrl: row.image_url ?? null,
     discussionSummary: row.discussion_summary ?? "",
+    attendees: parseAttendees(row.attendees),
+    audioUrl: row.audio_url ?? null,
+    viewPasswordHash: row.view_password_hash ?? null,
     published: row.published ?? false,
     sortOrder: row.sort_order ?? 0,
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mapMeetingPreviewFromDb(row: any): MeetingPublicPreview {
+  const summary = row.discussion_summary ?? "";
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    ownerUserId: row.owner_user_id ?? null,
+    ownerName: row.owner_name ?? null,
+    title: row.title ?? "",
+    meetingDate: toDateString(row.meeting_date),
+    imageUrl: row.image_url ?? null,
+    summaryPreview: truncateMeetingSummary(summary),
+    hasPassword: Boolean(row.has_password),
+    sortOrder: row.sort_order ?? 0,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mapMeetingPublicDetailFromDb(row: any, taskRows: any[]): MeetingPublicDetail {
+  return {
+    id: row.id,
+    title: row.title ?? "",
+    meetingDate: toDateString(row.meeting_date),
+    location: row.location ?? "",
+    imageUrl: row.image_url ?? null,
+    discussionSummary: row.discussion_summary ?? "",
+    attendees: parseAttendees(row.attendees),
+    audioUrl: row.audio_url ?? null,
+    tasks: taskRows.map((task) => ({
+      id: task.id,
+      title: task.title,
+      completed: task.completed ?? false,
+      sortOrder: task.sort_order ?? 0,
+    })),
   };
 }
 

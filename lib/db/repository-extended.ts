@@ -2,6 +2,8 @@ import { getSql } from "@/lib/db/client";
 import {
   mapBroadcastReportFromDb,
   mapMeetingFromDb,
+  mapMeetingPreviewFromDb,
+  mapMeetingPublicDetailFromDb,
   mapMeetingTaskFromDb,
   mapSocialPlatformStatFromDb,
   mapSocialPostFromDb,
@@ -11,11 +13,14 @@ import type {
   AdminUser,
   BroadcastReport,
   CampaignMeeting,
+  MeetingPublicDetail,
+  MeetingPublicPreview,
   MeetingTask,
   MeetingWithTasks,
   SocialMediaPost,
   SocialPlatformStat,
 } from "@/lib/types";
+import { verifyPassword } from "@/lib/auth/password";
 import {
   defaultContributorPermissions,
   normalizeContributorPermissions,
@@ -418,6 +423,65 @@ function groupMeetingTasks(rows: MeetingTask[]): Map<string, MeetingTask[]> {
   return map;
 }
 
+export async function pgGetPublicMeetingPreviews(campaignId: string): Promise<MeetingPublicPreview[]> {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT
+      m.id,
+      m.campaign_id,
+      m.meeting_date,
+      m.title,
+      m.image_url,
+      m.discussion_summary,
+      m.sort_order,
+      m.owner_user_id,
+      u.name AS owner_name,
+      (m.view_password_hash IS NOT NULL AND LENGTH(m.view_password_hash) > 0) AS has_password
+    FROM campaign_meetings m
+    LEFT JOIN users u ON u.id = m.owner_user_id
+    WHERE m.campaign_id = ${campaignId} AND m.published = true
+    ORDER BY m.sort_order, m.meeting_date DESC
+  `;
+
+  return rows.map(mapMeetingPreviewFromDb);
+}
+
+export type MeetingUnlockResult =
+  | { status: "ok"; meeting: MeetingPublicDetail }
+  | { status: "not_found" }
+  | { status: "wrong_password" };
+
+export async function pgUnlockMeetingDetail(
+  meetingId: string,
+  password: string
+): Promise<MeetingUnlockResult> {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT * FROM campaign_meetings
+    WHERE id = ${meetingId} AND published = true
+    LIMIT 1
+  `;
+
+  if (!rows[0]) return { status: "not_found" };
+
+  const hash = rows[0].view_password_hash as string | null;
+  if (hash) {
+    const valid = await verifyPassword(password, hash);
+    if (!valid) return { status: "wrong_password" };
+  }
+
+  const taskRows = await sql`
+    SELECT * FROM meeting_tasks
+    WHERE meeting_id = ${meetingId}
+    ORDER BY sort_order
+  `;
+
+  return {
+    status: "ok",
+    meeting: mapMeetingPublicDetailFromDb(rows[0], taskRows),
+  };
+}
+
 export async function pgGetMeetingsWithTasks(
   campaignId: string,
   options?: { publishedOnly?: boolean; ownerUserId?: string | null }
@@ -462,7 +526,8 @@ export async function pgGetMeetingsWithTasks(
 
 export async function pgSaveMeetingWithTasks(
   data: Partial<CampaignMeeting> & { id?: string },
-  tasks: MeetingTaskPayload[]
+  tasks: MeetingTaskPayload[],
+  options?: { updatePasswordHash?: boolean }
 ) {
   const sql = getSql();
   const now = new Date().toISOString();
@@ -472,33 +537,105 @@ export async function pgSaveMeetingWithTasks(
     SELECT COUNT(*)::int AS count FROM campaign_meetings WHERE campaign_id = ${data.campaignId ?? ""}
   `;
   const sortOrder = data.sortOrder ?? (Number(countRows[0]?.count) || 0) + 1;
+  const attendees = JSON.stringify(data.attendees ?? []);
+  const updatePassword = options?.updatePasswordHash && data.viewPasswordHash !== undefined;
 
-  await sql`
-    INSERT INTO campaign_meetings (
-      id, campaign_id, owner_user_id, meeting_date, location, image_url,
-      discussion_summary, published, sort_order, created_at, updated_at
-    ) VALUES (
-      ${id},
-      ${data.campaignId ?? ""},
-      ${data.ownerUserId ?? null},
-      ${data.meetingDate ?? now.split("T")[0]},
-      ${data.location ?? ""},
-      ${data.imageUrl ?? null},
-      ${data.discussionSummary ?? ""},
-      ${data.published ?? false},
-      ${sortOrder},
-      ${now},
-      ${now}
-    )
-    ON CONFLICT (id) DO UPDATE SET
-      meeting_date = EXCLUDED.meeting_date,
-      location = EXCLUDED.location,
-      image_url = EXCLUDED.image_url,
-      discussion_summary = EXCLUDED.discussion_summary,
-      published = EXCLUDED.published,
-      sort_order = EXCLUDED.sort_order,
-      updated_at = EXCLUDED.updated_at
-  `;
+  if (data.id && updatePassword) {
+    await sql`
+      INSERT INTO campaign_meetings (
+        id, campaign_id, owner_user_id, title, meeting_date, location, image_url,
+        discussion_summary, attendees, audio_url, view_password_hash,
+        published, sort_order, created_at, updated_at
+      ) VALUES (
+        ${id},
+        ${data.campaignId ?? ""},
+        ${data.ownerUserId ?? null},
+        ${data.title ?? ""},
+        ${data.meetingDate ?? now.split("T")[0]},
+        ${data.location ?? ""},
+        ${data.imageUrl ?? null},
+        ${data.discussionSummary ?? ""},
+        ${sql.json(JSON.parse(attendees))},
+        ${data.audioUrl ?? null},
+        ${data.viewPasswordHash ?? null},
+        ${data.published ?? false},
+        ${sortOrder},
+        ${now},
+        ${now}
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        title = EXCLUDED.title,
+        meeting_date = EXCLUDED.meeting_date,
+        location = EXCLUDED.location,
+        image_url = EXCLUDED.image_url,
+        discussion_summary = EXCLUDED.discussion_summary,
+        attendees = EXCLUDED.attendees,
+        audio_url = EXCLUDED.audio_url,
+        view_password_hash = EXCLUDED.view_password_hash,
+        published = EXCLUDED.published,
+        sort_order = EXCLUDED.sort_order,
+        updated_at = EXCLUDED.updated_at
+    `;
+  } else if (data.id) {
+    await sql`
+      INSERT INTO campaign_meetings (
+        id, campaign_id, owner_user_id, title, meeting_date, location, image_url,
+        discussion_summary, attendees, audio_url, view_password_hash,
+        published, sort_order, created_at, updated_at
+      ) VALUES (
+        ${id},
+        ${data.campaignId ?? ""},
+        ${data.ownerUserId ?? null},
+        ${data.title ?? ""},
+        ${data.meetingDate ?? now.split("T")[0]},
+        ${data.location ?? ""},
+        ${data.imageUrl ?? null},
+        ${data.discussionSummary ?? ""},
+        ${sql.json(JSON.parse(attendees))},
+        ${data.audioUrl ?? null},
+        ${data.viewPasswordHash ?? null},
+        ${data.published ?? false},
+        ${sortOrder},
+        ${now},
+        ${now}
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        title = EXCLUDED.title,
+        meeting_date = EXCLUDED.meeting_date,
+        location = EXCLUDED.location,
+        image_url = EXCLUDED.image_url,
+        discussion_summary = EXCLUDED.discussion_summary,
+        attendees = EXCLUDED.attendees,
+        audio_url = EXCLUDED.audio_url,
+        published = EXCLUDED.published,
+        sort_order = EXCLUDED.sort_order,
+        updated_at = EXCLUDED.updated_at
+    `;
+  } else {
+    await sql`
+      INSERT INTO campaign_meetings (
+        id, campaign_id, owner_user_id, title, meeting_date, location, image_url,
+        discussion_summary, attendees, audio_url, view_password_hash,
+        published, sort_order, created_at, updated_at
+      ) VALUES (
+        ${id},
+        ${data.campaignId ?? ""},
+        ${data.ownerUserId ?? null},
+        ${data.title ?? ""},
+        ${data.meetingDate ?? now.split("T")[0]},
+        ${data.location ?? ""},
+        ${data.imageUrl ?? null},
+        ${data.discussionSummary ?? ""},
+        ${sql.json(JSON.parse(attendees))},
+        ${data.audioUrl ?? null},
+        ${data.viewPasswordHash ?? null},
+        ${data.published ?? false},
+        ${sortOrder},
+        ${now},
+        ${now}
+      )
+    `;
+  }
 
   const keptIds: string[] = [];
   for (const task of tasks) {

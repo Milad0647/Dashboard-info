@@ -16,7 +16,7 @@ interface MediaUploadProps {
   onChange: (url: string) => void;
   onUploaded?: (url: string) => void;
   label?: string;
-  kind?: "image" | "video";
+  kind?: "image" | "video" | "audio";
   accept?: string;
   dropzone?: boolean;
 }
@@ -73,7 +73,9 @@ export function MediaUpload({
   const placeholder =
     kind === "video"
       ? "کد embed آپارات را اینجا paste کنید، یا لینک/فایل ویدیو"
-      : "تصویر را بکشید و رها کنید یا لینک وارد کنید";
+      : kind === "audio"
+        ? "فایل صوتی را آپلود کنید یا لینک مستقیم وارد کنید"
+        : "تصویر را بکشید و رها کنید یا لینک وارد کنید";
 
   const videoPreviewUrl = kind === "video" ? resolveVideoThumbnail(value) : null;
 
@@ -132,6 +134,21 @@ export function MediaUpload({
           </div>
         )}
 
+        {kind === "audio" && (
+          <div className="mt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploading}
+              onClick={() => inputRef.current?.click()}
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              آپلود فایل صوتی
+            </Button>
+          </div>
+        )}
+
         {kind === "video" && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Button
@@ -160,7 +177,7 @@ export function MediaUpload({
       <input
         ref={inputRef}
         type="file"
-        accept={accept ?? (kind === "video" ? "video/*" : "image/*")}
+        accept={accept ?? (kind === "video" ? "video/*" : kind === "audio" ? "audio/*" : "image/*")}
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -190,6 +207,10 @@ export function MediaUpload({
             <MediaPlaceholder kind="video" className="h-full" />
           )}
         </div>
+      )}
+
+      {kind === "audio" && value && (
+        <audio src={value} controls className="w-full" preload="metadata" />
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import {
   hasContributorPermission,
   type ContributorPermissions,
 } from "@/lib/contributor-permissions";
+import { hashPassword } from "@/lib/auth/password";
 import * as pgExt from "@/lib/db/repository-extended";
 import type { MeetingTaskPayload } from "@/lib/db/repository-extended";
 import type { BroadcastReport, CampaignMeeting, SocialMediaPost, SocialPlatformStat } from "@/lib/types";
@@ -118,7 +119,7 @@ export async function deleteBroadcastReportAction(id: string) {
 }
 
 export async function saveMeetingAction(
-  data: Partial<CampaignMeeting> & { id?: string },
+  data: Partial<CampaignMeeting> & { id?: string; viewPassword?: string },
   tasks: MeetingTaskPayload[]
 ) {
   const session = await getAuthSession();
@@ -132,13 +133,29 @@ export async function saveMeetingAction(
   }
 
   const ownerUserId = isFullAdmin(session) ? (data.ownerUserId ?? null) : session.userId;
-  const payload = { ...data, ownerUserId };
+  const { viewPassword, ...meetingData } = data;
+
+  let viewPasswordHash: string | undefined;
+  let updatePasswordHash = false;
+
+  if (viewPassword?.trim()) {
+    viewPasswordHash = await hashPassword(viewPassword.trim());
+    updatePasswordHash = true;
+  } else if (!data.id) {
+    return { success: false, error: "رمز مشاهده الزامی است" };
+  }
+
+  const payload = {
+    ...meetingData,
+    ownerUserId,
+    ...(updatePasswordHash ? { viewPasswordHash } : {}),
+  };
 
   if (!isPostgresConfigured()) {
     return { success: false, error: "Database required" };
   }
 
-  const result = await pgExt.pgSaveMeetingWithTasks(payload, tasks);
+  const result = await pgExt.pgSaveMeetingWithTasks(payload, tasks, { updatePasswordHash });
   await revalidateExtended();
   return result;
 }

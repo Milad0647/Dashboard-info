@@ -21,6 +21,7 @@ import {
 } from "@/lib/actions/extended-actions";
 import {
   appendMultilineTasks,
+  parseMultilineTasks,
   reindexMeetingTasks,
   type MeetingTaskInput,
 } from "@/lib/meeting-tasks";
@@ -29,10 +30,13 @@ import type { MeetingWithTasks } from "@/lib/types";
 import { cn, formatPersianDate } from "@/lib/utils";
 
 const schema = z.object({
+  title: z.string().min(1, "عنوان الزامی است"),
   meetingDate: z.string(),
   location: z.string(),
   imageUrl: z.string().optional(),
   discussionSummary: z.string(),
+  audioUrl: z.string().optional(),
+  viewPassword: z.string().optional(),
   published: z.boolean(),
 });
 
@@ -52,24 +56,31 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rows, setRows] = useState(initialMeetings);
   const [tasks, setTasks] = useState<MeetingTaskInput[]>([]);
+  const [attendees, setAttendees] = useState<string[]>([]);
   const [bulkText, setBulkText] = useState("");
+  const [attendeesText, setAttendeesText] = useState("");
   const [editingTaskIndex, setEditingTaskIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
+      title: "",
       meetingDate: todayISO(),
       location: "",
       imageUrl: "",
       discussionSummary: "",
+      audioUrl: "",
+      viewPassword: "",
       published: false,
     },
   });
 
   const resetDialog = () => {
     setTasks([]);
+    setAttendees([]);
     setBulkText("");
+    setAttendeesText("");
     setEditingTaskIndex(null);
   };
 
@@ -77,10 +88,13 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
     setEditingId(null);
     resetDialog();
     form.reset({
+      title: "",
       meetingDate: todayISO(),
       location: "",
       imageUrl: "",
       discussionSummary: "",
+      audioUrl: "",
+      viewPassword: "",
       published: false,
     });
     setOpen(true);
@@ -90,12 +104,16 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
     setEditingId(meeting.id);
     resetDialog();
     form.reset({
+      title: meeting.title,
       meetingDate: meeting.meetingDate,
       location: meeting.location,
       imageUrl: meeting.imageUrl ?? "",
       discussionSummary: meeting.discussionSummary,
+      audioUrl: meeting.audioUrl ?? "",
+      viewPassword: "",
       published: meeting.published,
     });
+    setAttendees([...meeting.attendees]);
     setTasks(
       meeting.tasks.map((task) => ({
         id: task.id,
@@ -112,6 +130,18 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
     setTasks((prev) => reindexMeetingTasks(appendMultilineTasks(prev, bulkText)));
     setBulkText("");
     toast.success("موارد به چک‌لیست اضافه شد");
+  };
+
+  const addBulkAttendees = () => {
+    const names = parseMultilineTasks(attendeesText);
+    if (names.length === 0) return;
+    setAttendees((prev) => [...new Set([...prev, ...names])]);
+    setAttendeesText("");
+    toast.success("حاضرین اضافه شدند");
+  };
+
+  const removeAttendee = (index: number) => {
+    setAttendees((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateTaskTitle = (index: number, title: string) => {
@@ -140,6 +170,11 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
   };
 
   const onSubmit = form.handleSubmit((data) => {
+    if (!editingId && !data.viewPassword?.trim()) {
+      toast.error("رمز مشاهده الزامی است");
+      return;
+    }
+
     const normalizedTasks = reindexMeetingTasks(
       tasks
         .map((task) => ({ ...task, title: task.title.trim() }))
@@ -151,32 +186,41 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
         {
           campaignId,
           id: editingId ?? undefined,
+          title: data.title,
           meetingDate: data.meetingDate,
           location: data.location,
           imageUrl: data.imageUrl || null,
           discussionSummary: data.discussionSummary,
+          audioUrl: data.audioUrl || null,
+          attendees,
           published: data.published,
+          viewPassword: data.viewPassword?.trim() || undefined,
         },
         normalizedTasks
       );
 
       if (!result.success) {
-        toast.error("ذخیره نشد");
+        toast.error("error" in result && result.error ? result.error : "ذخیره نشد");
         return;
       }
 
       const savedId = "id" in result ? result.id : (editingId ?? crypto.randomUUID());
       const now = new Date().toISOString();
+      const existing = editingId ? rows.find((row) => row.id === editingId) : null;
       const savedMeeting: MeetingWithTasks = {
         id: savedId,
         campaignId,
+        title: data.title,
         meetingDate: data.meetingDate,
         location: data.location,
         imageUrl: data.imageUrl || null,
         discussionSummary: data.discussionSummary,
+        audioUrl: data.audioUrl || null,
+        attendees,
+        viewPasswordHash: existing?.viewPasswordHash ?? "set",
         published: data.published,
-        sortOrder: 0,
-        createdAt: now,
+        sortOrder: existing?.sortOrder ?? 0,
+        createdAt: existing?.createdAt ?? now,
         updatedAt: now,
         tasks: normalizedTasks.map((task, index) => ({
           id: task.id ?? crypto.randomUUID(),
@@ -205,7 +249,7 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
         <div>
           <h1 className="text-2xl font-bold">جلسات و مصوبات</h1>
           <p className="text-sm text-muted-foreground">
-            ثبت جلسه با تاریخ، مکان، تصویر و چک‌لیست مصوبات
+            ثبت جلسه با رمز مشاهده، حاضرین، صوت و چک‌لیست مصوبات
           </p>
         </div>
         <Button onClick={openCreate}>
@@ -216,8 +260,9 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
 
       <AdminDataTable
         data={rows}
-        searchKeys={["location", "discussionSummary"]}
+        searchKeys={["title", "location", "discussionSummary"]}
         columns={[
+          { key: "title", label: "عنوان" },
           { key: "meetingDate", label: "تاریخ", render: (item) => formatPersianDate(item.meetingDate) },
           { key: "location", label: "مکان" },
           {
@@ -243,11 +288,25 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
             <DialogTitle>{editingId ? "ویرایش جلسه" : "جلسه جدید"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={onSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>عنوان جلسه</Label>
+              <Input {...form.register("title")} placeholder="مثلاً جلسه هماهنگی کمپین" />
+            </div>
+
             <PersianDateField control={form.control} name="meetingDate" label="تاریخ جلسه" />
 
             <div className="space-y-2">
               <Label>مکان جلسه</Label>
               <Input {...form.register("location")} placeholder="مثلاً سالن جلسات مرکز" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{editingId ? "رمز مشاهده (برای تغییر وارد کنید)" : "رمز مشاهده"}</Label>
+              <Input
+                type="password"
+                {...form.register("viewPassword")}
+                placeholder={editingId ? "خالی = بدون تغییر" : "برای دیدن جزئیات در صفحه عمومی"}
+              />
             </div>
 
             <MediaUpload
@@ -257,6 +316,14 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
               kind="image"
             />
 
+            <MediaUpload
+              label="فایل صوتی جلسه"
+              value={form.watch("audioUrl") ?? ""}
+              onChange={(url) => form.setValue("audioUrl", url)}
+              kind="audio"
+              dropzone={false}
+            />
+
             <div className="space-y-2">
               <Label>خلاصه صحبت‌ها</Label>
               <Textarea
@@ -264,6 +331,38 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
                 rows={4}
                 placeholder="خلاصه مباحث و نتایج کلی جلسه"
               />
+            </div>
+
+            <div className="space-y-3 rounded-lg border p-4">
+              <div>
+                <Label>حاضرین جلسه</Label>
+                <p className="text-xs text-muted-foreground mt-1">هر خط یک نام — یا از لیست زیر حذف کنید.</p>
+              </div>
+              <Textarea
+                value={attendeesText}
+                onChange={(event) => setAttendeesText(event.target.value)}
+                rows={3}
+                placeholder={"علی محمدی\nسارا احمدی"}
+                dir="rtl"
+              />
+              <Button type="button" variant="secondary" size="sm" onClick={addBulkAttendees} disabled={!attendeesText.trim()}>
+                افزودن حاضرین
+              </Button>
+              {attendees.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {attendees.map((name, index) => (
+                    <span
+                      key={`${name}-${index}`}
+                      className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-3 py-1 text-xs"
+                    >
+                      {name}
+                      <button type="button" onClick={() => removeAttendee(index)} className="text-muted-foreground hover:text-destructive">
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-3 rounded-lg border p-4">

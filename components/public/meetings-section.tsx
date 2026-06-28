@@ -1,83 +1,118 @@
-import type { DataOwnerGroup, MeetingWithTasks } from "@/lib/types";
-import { cn, formatPersianDate } from "@/lib/utils";
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { MeetingDetailDialog } from "@/components/public/meeting-detail-dialog";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { SectionHeader } from "@/components/public/section-header";
-import { CalendarDays, MapPin } from "lucide-react";
-import Image from "next/image";
+import type { DataOwnerGroup, MeetingPublicDetail, MeetingPublicPreview } from "@/lib/types";
+import { formatPersianDate } from "@/lib/utils";
+
+const MEETINGS_INITIAL_COUNT = 9;
+const MEETINGS_PAGE_SIZE = 9;
 
 interface MeetingsSectionProps {
-  meetings: MeetingWithTasks[];
-  groups: DataOwnerGroup<MeetingWithTasks>[];
+  meetings: MeetingPublicPreview[];
+  groups: DataOwnerGroup<MeetingPublicPreview>[];
 }
 
-function MeetingCard({ meeting }: { meeting: MeetingWithTasks }) {
-  const completedCount = meeting.tasks.filter((task) => task.completed).length;
-  const totalCount = meeting.tasks.length;
-
+function MeetingPreviewCard({
+  meeting,
+  onOpen,
+}: {
+  meeting: MeetingPublicPreview;
+  onOpen: () => void;
+}) {
   return (
-    <article className="rounded-xl border bg-card overflow-hidden">
-      {meeting.imageUrl && (
-        <div className="relative aspect-video w-full bg-muted">
+    <Card className="overflow-hidden h-full flex flex-col">
+      <div className="relative aspect-[4/3] bg-muted">
+        {meeting.imageUrl ? (
           <Image
             src={meeting.imageUrl}
-            alt={`جلسه ${formatPersianDate(meeting.meetingDate)}`}
+            alt={meeting.title}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, 50vw"
+            sizes="(max-width: 1024px) 50vw, 33vw"
           />
-        </div>
-      )}
-
-      <div className="p-4 space-y-4">
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="h-4 w-4" />
-            {formatPersianDate(meeting.meetingDate)}
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            بدون تصویر
+          </div>
+        )}
+        {meeting.hasPassword && (
+          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-1 text-[11px] border">
+            <Lock className="h-3 w-3" />
+            محافظت‌شده
           </span>
-          {meeting.location && (
-            <span className="inline-flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" />
-              {meeting.location}
-            </span>
-          )}
+        )}
+      </div>
+
+      <CardContent className="p-4 flex flex-col gap-3 flex-1">
+        <div className="space-y-1">
+          <h3 className="font-semibold text-sm line-clamp-2">{meeting.title}</h3>
+          <p className="text-xs text-muted-foreground">{formatPersianDate(meeting.meetingDate)}</p>
         </div>
 
-        {meeting.discussionSummary && (
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{meeting.discussionSummary}</p>
+        {meeting.summaryPreview && (
+          <p className="text-sm text-muted-foreground line-clamp-3 flex-1">{meeting.summaryPreview}</p>
         )}
 
-        {totalCount > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <h4 className="text-sm font-medium">مصوبات</h4>
-              <span className="text-xs text-muted-foreground">
-                {completedCount}/{totalCount} انجام‌شده
-              </span>
-            </div>
-            <ul className="space-y-2 rounded-lg border bg-muted/20 p-3">
-              {meeting.tasks.map((task) => (
-                <li key={task.id} className="flex items-start gap-2 text-sm">
-                  <span
-                    className={cn(
-                      "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px]",
-                      task.completed
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-muted-foreground/40 bg-background"
-                    )}
-                    aria-hidden
-                  >
-                    {task.completed ? "✓" : ""}
-                  </span>
-                  <span className={cn(task.completed && "line-through text-muted-foreground")}>
-                    {task.title}
-                  </span>
-                </li>
-              ))}
-            </ul>
+        <Button variant="outline" size="sm" className="w-full mt-auto" onClick={onOpen}>
+          مشاهده جزئیات
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MeetingsGrid({ meetings }: { meetings: MeetingPublicPreview[] }) {
+  const [visibleCount, setVisibleCount] = useState(MEETINGS_INITIAL_COUNT);
+  const [selectedMeeting, setSelectedMeeting] = useState<MeetingPublicPreview | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailCache, setDetailCache] = useState<Record<string, MeetingPublicDetail>>({});
+
+  const visibleMeetings = meetings.slice(0, visibleCount);
+  const hasMore = visibleCount < meetings.length;
+
+  const openMeeting = (meeting: MeetingPublicPreview) => {
+    setSelectedMeeting(meeting);
+    setDialogOpen(true);
+  };
+
+  return (
+    <>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {visibleMeetings.map((meeting) => (
+            <MeetingPreviewCard key={meeting.id} meeting={meeting} onOpen={() => openMeeting(meeting)} />
+          ))}
+        </div>
+
+        {hasMore && (
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => setVisibleCount((count) => count + MEETINGS_PAGE_SIZE)}
+            >
+              مشاهده بیشتر ({meetings.length - visibleCount} باقی‌مانده)
+            </Button>
           </div>
         )}
       </div>
-    </article>
+
+      <MeetingDetailDialog
+        preview={selectedMeeting}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        cachedDetail={selectedMeeting ? detailCache[selectedMeeting.id] : null}
+        onDetailLoaded={(meeting) =>
+          setDetailCache((prev) => ({ ...prev, [meeting.id]: meeting }))
+        }
+      />
+    </>
   );
 }
 
@@ -86,19 +121,10 @@ export function MeetingsSection({ meetings, groups }: MeetingsSectionProps) {
 
   return (
     <section id="meetings">
-      <SectionHeader
-        title="جلسات و مصوبات"
-        description="خلاصه جلسات و پیگیری مصوبات"
-      />
+      <SectionHeader title="جلسات و مصوبات" description="خلاصه جلسات — جزئیات با رمز قابل مشاهده است" />
 
       <OwnerGroupedSection groups={groups}>
-        {(groupMeetings) => (
-          <div className="grid gap-4 md:grid-cols-2">
-            {groupMeetings.map((meeting) => (
-              <MeetingCard key={meeting.id} meeting={meeting} />
-            ))}
-          </div>
-        )}
+        {(groupMeetings) => <MeetingsGrid meetings={groupMeetings} />}
       </OwnerGroupedSection>
     </section>
   );
