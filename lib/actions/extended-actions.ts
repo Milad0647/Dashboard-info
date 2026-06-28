@@ -204,6 +204,8 @@ export async function saveUserAction(data: {
   name: string;
   role: "admin" | "contributor";
   password?: string;
+  province?: string | null;
+  city?: string | null;
   campaignIds?: string[];
   campaignPermissions?: Record<string, ContributorPermissions>;
 }) {

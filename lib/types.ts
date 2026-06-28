@@ -230,6 +230,8 @@ export interface AdminUser {
   email: string;
   name: string;
   role: AdminRole;
+  province?: string | null;
+  city?: string | null;
   campaignIds: string[];
   campaignPermissions: Record<string, ContributorPermissions>;
   createdAt: string;

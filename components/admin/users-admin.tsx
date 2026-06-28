@@ -13,6 +13,9 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UsersImportPanel } from "@/components/admin/users-import-panel";
+import { normalizeStoredUserEmail } from "@/lib/auth/user-login";
 import { deleteUserAction, saveUserAction } from "@/lib/actions/extended-actions";
 import {
   contributorPermissionLabels,
@@ -23,10 +26,12 @@ import {
 import type { AdminUser, CampaignSettings } from "@/lib/types";
 
 const schema = z.object({
-  email: z.string().email(),
+  email: z.string().min(1, "نام کاربری یا ایمیل الزامی است"),
   name: z.string().min(1),
   role: z.enum(["admin", "contributor"]),
   password: z.string().optional(),
+  province: z.string().optional(),
+  city: z.string().optional(),
   campaignIds: z.array(z.string()),
 });
 
@@ -51,6 +56,8 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
       name: "",
       role: "contributor" as const,
       password: "",
+      province: "",
+      city: "",
       campaignIds: [] as string[],
     },
   });
@@ -94,7 +101,10 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
     startTransition(async () => {
       const result = await saveUserAction({
         ...data,
+        email: normalizeStoredUserEmail(data.email),
         id: editingId ?? undefined,
+        province: data.province?.trim() || null,
+        city: data.city?.trim() || null,
         campaignPermissions: data.role === "contributor" ? campaignPermissions : undefined,
       });
       if (!result.success) {
@@ -106,9 +116,11 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
 
       const nextUser: AdminUser = {
         id: savedId,
-        email: data.email,
+        email: normalizeStoredUserEmail(data.email),
         name: data.name,
         role: data.role,
+        province: data.province?.trim() || null,
+        city: data.city?.trim() || null,
         campaignIds: data.campaignIds,
         campaignPermissions: data.role === "contributor" ? campaignPermissions : {},
         createdAt: new Date().toISOString(),
@@ -125,7 +137,7 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
   const openCreate = () => {
     setEditingId(null);
     setCampaignPermissions({});
-    form.reset({ email: "", name: "", role: "contributor", password: "", campaignIds: [] });
+    form.reset({ email: "", name: "", role: "contributor", password: "", province: "", city: "", campaignIds: [] });
     setOpen(true);
   };
 
@@ -137,6 +149,8 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
       name: user.name,
       role: user.role,
       password: "",
+      province: user.province ?? "",
+      city: user.city ?? "",
       campaignIds: user.campaignIds,
     });
     setOpen(true);
@@ -144,25 +158,35 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">کاربران</h1>
-          <p className="text-sm text-muted-foreground">
-            تعریف کاربر، دسترسی به کمپین و فعال/غیرفعال کردن هر بخش در پنل
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-          کاربر جدید
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold">کاربران</h1>
+        <p className="text-sm text-muted-foreground">
+          تعریف کاربر، ورود گروهی از Excel، دسترسی به کمپین و بخش‌های پنل
+        </p>
       </div>
+
+      <Tabs defaultValue="list">
+        <TabsList>
+          <TabsTrigger value="list">لیست کاربران</TabsTrigger>
+          <TabsTrigger value="import">ورود از Excel</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="space-y-4 mt-4">
+          <div className="flex justify-end">
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              کاربر جدید
+            </Button>
+          </div>
 
       <AdminDataTable
         data={rows}
-        searchKeys={["name", "email", "role"]}
+        searchKeys={["name", "email", "role", "province", "city"]}
         columns={[
           { key: "name", label: "نام" },
-          { key: "email", label: "ایمیل" },
+          { key: "email", label: "نام کاربری / ایمیل" },
+          { key: "province", label: "استان", render: (item) => item.province || "—" },
+          { key: "city", label: "شهر", render: (item) => item.city || "—" },
           { key: "role", label: "نقش", render: (item) => (item.role === "admin" ? "مدیر" : "کاربر") },
           {
             key: "campaignIds",
@@ -182,6 +206,17 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
           });
         }}
       />
+        </TabsContent>
+
+        <TabsContent value="import" className="mt-4">
+          <UsersImportPanel
+            campaigns={campaigns}
+            onImported={() => {
+              window.location.reload();
+            }}
+          />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -190,7 +225,14 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
           </DialogHeader>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2"><Label>نام</Label><Input {...form.register("name")} /></div>
-            <div className="space-y-2"><Label>ایمیل</Label><Input {...form.register("email")} dir="ltr" /></div>
+            <div className="space-y-2">
+              <Label>نام کاربری یا ایمیل</Label>
+              <Input {...form.register("email")} dir="ltr" placeholder="BAZARBAYJAN یا user@example.com" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>استان</Label><Input {...form.register("province")} /></div>
+              <div className="space-y-2"><Label>شهر</Label><Input {...form.register("city")} /></div>
+            </div>
             <div className="space-y-2">
               <Label>{editingId ? "رمز عبور جدید (اختیاری)" : "رمز عبور"}</Label>
               <Input type="password" {...form.register("password")} />

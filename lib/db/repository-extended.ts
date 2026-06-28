@@ -23,11 +23,13 @@ import type {
   SocialPlatformStat,
 } from "@/lib/types";
 import { verifyPassword } from "@/lib/auth/password";
+import { buildLoginEmailCandidates, normalizeStoredUserEmail } from "@/lib/auth/user-login";
 import {
   defaultContributorPermissions,
   normalizeContributorPermissions,
   type ContributorPermissions,
 } from "@/lib/contributor-permissions";
+import type { ParsedUserImportRow } from "@/lib/services/users-excel-parser";
 import { generateId } from "@/lib/utils";
 import { hashPassword } from "@/lib/auth/password";
 
@@ -74,6 +76,15 @@ export async function pgGetUserAuthByEmail(email: string) {
   };
 }
 
+export async function pgGetUserAuthByLogin(identifier: string) {
+  const candidates = buildLoginEmailCandidates(identifier);
+  for (const email of candidates) {
+    const user = await pgGetUserAuthByEmail(email);
+    if (user) return user;
+  }
+  return null;
+}
+
 export async function pgGetUserById(id: string) {
   const sql = getSql();
   const rows = await sql`SELECT * FROM users WHERE id = ${id} LIMIT 1`;
@@ -113,13 +124,17 @@ export async function pgSaveUser(data: {
   name: string;
   role: "admin" | "contributor";
   password?: string;
+  province?: string | null;
+  city?: string | null;
   campaignIds?: string[];
   campaignPermissions?: Record<string, ContributorPermissions>;
 }) {
   const sql = getSql();
   const id = data.id ?? generateId();
-  const email = data.email.toLowerCase().trim();
+  const email = normalizeStoredUserEmail(data.email);
   const now = new Date().toISOString();
+  const province = data.province?.trim() || null;
+  const city = data.city?.trim() || null;
 
   if (data.id) {
     if (data.password) {
@@ -129,12 +144,19 @@ export async function pgSaveUser(data: {
           email = ${email},
           name = ${data.name},
           role = ${data.role},
+          province = ${province},
+          city = ${city},
           password_hash = ${passwordHash}
         WHERE id = ${id}
       `;
     } else {
       await sql`
-        UPDATE users SET email = ${email}, name = ${data.name}, role = ${data.role}
+        UPDATE users SET
+          email = ${email},
+          name = ${data.name},
+          role = ${data.role},
+          province = ${province},
+          city = ${city}
         WHERE id = ${id}
       `;
     }
@@ -144,8 +166,8 @@ export async function pgSaveUser(data: {
     }
     const passwordHash = await hashPassword(data.password);
     await sql`
-      INSERT INTO users (id, email, password_hash, name, role, created_at)
-      VALUES (${id}, ${email}, ${passwordHash}, ${data.name}, ${data.role}, ${now})
+      INSERT INTO users (id, email, password_hash, name, role, province, city, created_at)
+      VALUES (${id}, ${email}, ${passwordHash}, ${data.name}, ${data.role}, ${province}, ${city}, ${now})
     `;
   }
 
@@ -168,6 +190,100 @@ export async function pgSaveUser(data: {
   }
 
   return { success: true as const, id };
+}
+
+export async function pgImportUsersFromExcel(params: {
+  rows: ParsedUserImportRow[];
+  campaignIds: string[];
+  campaignPermissions: ContributorPermissions;
+  updateExisting: boolean;
+}) {
+  const sql = getSql();
+  const now = new Date().toISOString();
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  for (const row of params.rows) {
+    try {
+      const email = normalizeStoredUserEmail(row.username);
+      const existingRows = await sql`SELECT id FROM users WHERE email = ${email} LIMIT 1`;
+      const permissions = normalizeContributorPermissions(params.campaignPermissions);
+
+      if (existingRows[0]) {
+        if (!params.updateExisting) {
+          skipped += 1;
+          continue;
+        }
+
+        const userId = String(existingRows[0].id);
+        const passwordHash = await hashPassword(row.password);
+        await sql`
+          UPDATE users SET
+            name = ${row.companyName},
+            password_hash = ${passwordHash},
+            province = ${row.province},
+            city = ${row.city},
+            role = 'contributor'
+          WHERE id = ${userId}
+        `;
+
+        for (const campaignId of params.campaignIds) {
+          await sql`
+            INSERT INTO user_campaign_access (user_id, campaign_id, permissions, created_at)
+            VALUES (
+              ${userId},
+              ${campaignId},
+              ${sql.json(JSON.parse(JSON.stringify(permissions)))},
+              ${now}
+            )
+            ON CONFLICT (user_id, campaign_id) DO UPDATE SET
+              permissions = EXCLUDED.permissions
+          `;
+        }
+
+        updated += 1;
+        continue;
+      }
+
+      const userId = generateId();
+      const passwordHash = await hashPassword(row.password);
+      await sql`
+        INSERT INTO users (id, email, password_hash, name, role, province, city, created_at)
+        VALUES (
+          ${userId},
+          ${email},
+          ${passwordHash},
+          ${row.companyName},
+          'contributor',
+          ${row.province},
+          ${row.city},
+          ${now}
+        )
+      `;
+
+      for (const campaignId of params.campaignIds) {
+        await sql`
+          INSERT INTO user_campaign_access (user_id, campaign_id, permissions, created_at)
+          VALUES (
+            ${userId},
+            ${campaignId},
+            ${sql.json(JSON.parse(JSON.stringify(permissions)))},
+            ${now}
+          )
+        `;
+      }
+
+      created += 1;
+    } catch (error) {
+      errors.push(
+        `${row.username}: ${error instanceof Error ? error.message : "خطای ناشناخته"}`
+      );
+    }
+  }
+
+  return { created, updated, skipped, errors };
 }
 
 export async function pgDeleteUser(id: string) {

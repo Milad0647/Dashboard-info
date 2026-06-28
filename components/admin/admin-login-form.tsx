@@ -59,14 +59,16 @@ export function AdminLoginForm() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">ایمیل</Label>
+            <Label htmlFor="email">نام کاربری یا ایمیل</Label>
             <Input
               id="email"
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@example.com"
+              placeholder="BAZARBAYJAN"
               required
+              dir="ltr"
+              autoComplete="username"
             />
           </div>
           <div className="space-y-2">

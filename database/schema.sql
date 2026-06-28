@@ -194,8 +194,13 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   name TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'contributor' CHECK (role IN ('admin', 'contributor')),
+  province TEXT,
+  city TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS province TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS city TEXT;
 
 CREATE TABLE IF NOT EXISTS user_campaign_access (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

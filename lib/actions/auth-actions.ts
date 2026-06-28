@@ -13,7 +13,7 @@ import {
   createUserSessionTokenSync,
 } from "@/lib/auth/admin-session-node";
 import { verifyPassword } from "@/lib/auth/password";
-import { pgGetUserAuthByEmail } from "@/lib/db/repository-extended";
+import { pgGetUserAuthByLogin } from "@/lib/db/repository-extended";
 import { isPostgresConfigured } from "@/lib/utils";
 
 export async function loginAdminAction(email: string, password: string) {
@@ -28,7 +28,7 @@ export async function loginAdminAction(email: string, password: string) {
   }
 
   if (isPostgresConfigured()) {
-    const user = await pgGetUserAuthByEmail(email);
+    const user = await pgGetUserAuthByLogin(email);
     if (user && (await verifyPassword(password, user.passwordHash))) {
       const cookieStore = await cookies();
       const token = createUserSessionTokenSync(user.id, user.role);

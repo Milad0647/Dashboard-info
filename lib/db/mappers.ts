@@ -432,6 +432,8 @@ export function mapUserFromDb(
     email: row.email,
     name: row.name,
     role: row.role,
+    province: row.province ?? null,
+    city: row.city ?? null,
     campaignIds: campaignAccess.map((access) => access.campaignId),
     campaignPermissions: Object.fromEntries(
       campaignAccess.map((access) => [access.campaignId, access.permissions])
