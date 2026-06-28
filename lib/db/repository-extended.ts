@@ -292,6 +292,16 @@ export async function pgDeleteUser(id: string) {
   return { success: true };
 }
 
+export async function pgDeleteUsers(ids: string[]) {
+  if (ids.length === 0) {
+    return { success: true, deleted: 0 };
+  }
+
+  const sql = getSql();
+  await sql`DELETE FROM users WHERE id IN ${sql(ids)}`;
+  return { success: true, deleted: ids.length };
+}
+
 export async function pgGetSocialPosts(
   campaignId: string,
   ownerUserId?: string | null

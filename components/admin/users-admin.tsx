@@ -17,7 +17,7 @@ import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersImportPanel } from "@/components/admin/users-import-panel";
 import { normalizeStoredUserEmail } from "@/lib/auth/user-login";
-import { deleteUserAction, saveUserAction } from "@/lib/actions/extended-actions";
+import { deleteUserAction, deleteUsersAction, saveUserAction } from "@/lib/actions/extended-actions";
 import {
   contributorPermissionLabels,
   defaultContributorPermissions,
@@ -184,6 +184,7 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
 
       <AdminDataTable
         data={rows}
+        selectable
         searchKeys={["name", "email", "role", "province", "city"]}
         columns={[
           { key: "name", label: "نام" },
@@ -203,9 +204,26 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
         onEdit={openEdit}
         onDelete={(user) => {
           startTransition(async () => {
-            await deleteUserAction(user.id);
+            const result = await deleteUserAction(user.id);
+            if (!result.success) {
+              toast.error("error" in result ? result.error : "حذف نشد");
+              return;
+            }
             setRows((prev) => prev.filter((row) => row.id !== user.id));
             toast.success("حذف شد");
+          });
+        }}
+        onBulkDelete={(users) => {
+          startTransition(async () => {
+            const ids = users.map((user) => user.id);
+            const result = await deleteUsersAction(ids);
+            if (!result.success) {
+              toast.error("error" in result ? result.error : "حذف نشد");
+              return;
+            }
+            const deletedIds = new Set(ids);
+            setRows((prev) => prev.filter((row) => !deletedIds.has(row.id)));
+            toast.success(`${ids.length} کاربر حذف شد`);
           });
         }}
       />

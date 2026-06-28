@@ -230,6 +230,19 @@ export async function deleteUserAction(id: string) {
   return { success: true };
 }
 
+export async function deleteUsersAction(ids: string[]) {
+  const session = await getAuthSession();
+  if (!session || !isFullAdmin(session)) {
+    return { success: false, error: "Unauthorized" };
+  }
+  if (!isPostgresConfigured()) return { success: false, error: "Database required" };
+  if (ids.length === 0) return { success: true, deleted: 0 };
+
+  const result = await pgExt.pgDeleteUsers(ids);
+  await revalidateExtended();
+  return result;
+}
+
 export async function getSessionContextAction(campaignId?: string) {
   const session = await getAuthSession();
   if (!session) return null;
