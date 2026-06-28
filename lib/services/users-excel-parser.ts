@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { parseCompanyLocation } from "@/lib/services/company-location-parser";
+import { normalizeImportedCity, normalizeImportedProvince } from "@/lib/iran-locations";
 
 export interface ParsedUserImportRow {
   companyName: string;
@@ -47,12 +48,13 @@ function mapObjectRow(row: Record<string, unknown>): ParsedUserImportRow | null 
   if (!companyName || !username || !password) return null;
 
   const location = parseCompanyLocation(companyName);
+  const province = normalizeImportedProvince(location.province);
   return {
     companyName,
     username,
     password,
-    province: location.province,
-    city: location.city,
+    province,
+    city: normalizeImportedCity(province, location.city),
   };
 }
 
@@ -64,12 +66,13 @@ function mapArrayRow(cells: unknown[]): ParsedUserImportRow | null {
   if (!companyName || !username || !password) return null;
 
   const location = parseCompanyLocation(companyName);
+  const province = normalizeImportedProvince(location.province);
   return {
     companyName,
     username,
     password,
-    province: location.province,
-    city: location.city,
+    province,
+    city: normalizeImportedCity(province, location.city),
   };
 }
 

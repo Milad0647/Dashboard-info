@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ProvinceCityFields } from "@/components/admin/province-city-fields";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersImportPanel } from "@/components/admin/users-import-panel";
@@ -64,6 +65,8 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
 
   const selectedCampaignIds = form.watch("campaignIds");
   const selectedRole = form.watch("role");
+  const selectedProvince = form.watch("province");
+  const selectedCity = form.watch("city");
 
   const toggleCampaign = (campaignId: string) => {
     const current = form.getValues("campaignIds");
@@ -229,10 +232,12 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
               <Label>نام کاربری یا ایمیل</Label>
               <Input {...form.register("email")} dir="ltr" placeholder="BAZARBAYJAN یا user@example.com" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>استان</Label><Input {...form.register("province")} /></div>
-              <div className="space-y-2"><Label>شهر</Label><Input {...form.register("city")} /></div>
-            </div>
+            <ProvinceCityFields
+              province={selectedProvince ?? ""}
+              city={selectedCity ?? ""}
+              onProvinceChange={(value) => form.setValue("province", value)}
+              onCityChange={(value) => form.setValue("city", value)}
+            />
             <div className="space-y-2">
               <Label>{editingId ? "رمز عبور جدید (اختیاری)" : "رمز عبور"}</Label>
               <Input type="password" {...form.register("password")} />
