@@ -29,6 +29,7 @@ const platformOptions: SocialPlatform[] = [
   "linkedin",
   "rubika",
   "eitaa",
+  "bale",
   "other",
 ];
 
@@ -42,6 +43,7 @@ const schema = z.object({
     "aparat",
     "rubika",
     "eitaa",
+    "bale",
     "other",
   ]),
   followers: z.coerce.number().min(0),

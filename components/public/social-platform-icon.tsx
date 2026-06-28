@@ -46,6 +46,11 @@ const platformStyles: Record<
     className: "bg-[#F58220] text-white",
     glyph: "ET",
   },
+  bale: {
+    label: "بله",
+    className: "bg-[#21C063] text-white",
+    glyph: "BL",
+  },
   other: {
     label: "سایر",
     className: "bg-muted text-foreground",

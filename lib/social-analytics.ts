@@ -9,6 +9,7 @@ const PLATFORM_ORDER: SocialPlatform[] = [
   "linkedin",
   "rubika",
   "eitaa",
+  "bale",
   "other",
 ];
 

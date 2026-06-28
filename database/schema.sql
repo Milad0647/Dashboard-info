@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS social_media_posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   campaign_id UUID NOT NULL REFERENCES campaign_settings(id) ON DELETE CASCADE,
   owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-  platform TEXT NOT NULL DEFAULT 'instagram' CHECK (platform IN ('instagram', 'x', 'telegram', 'linkedin', 'youtube', 'aparat', 'rubika', 'eitaa', 'other')),
+  platform TEXT NOT NULL DEFAULT 'instagram' CHECK (platform IN ('instagram', 'x', 'telegram', 'linkedin', 'youtube', 'aparat', 'rubika', 'eitaa', 'bale', 'other')),
   title TEXT NOT NULL,
   cover_image_url TEXT,
   views INT NOT NULL DEFAULT 0,
@@ -242,7 +242,7 @@ CREATE TABLE IF NOT EXISTS social_platform_stats (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   campaign_id UUID NOT NULL REFERENCES campaign_settings(id) ON DELETE CASCADE,
   owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-  platform TEXT NOT NULL CHECK (platform IN ('instagram', 'x', 'telegram', 'linkedin', 'youtube', 'aparat', 'rubika', 'eitaa', 'other')),
+  platform TEXT NOT NULL CHECK (platform IN ('instagram', 'x', 'telegram', 'linkedin', 'youtube', 'aparat', 'rubika', 'eitaa', 'bale', 'other')),
   followers INT NOT NULL DEFAULT 0,
   posts INT NOT NULL DEFAULT 0,
   profile_url TEXT,
@@ -302,3 +302,12 @@ CREATE TABLE IF NOT EXISTS meeting_tasks (
 );
 
 CREATE INDEX IF NOT EXISTS idx_meeting_tasks_meeting ON meeting_tasks(meeting_id, sort_order);
+
+-- Expand social platform enum for existing databases
+ALTER TABLE social_media_posts DROP CONSTRAINT IF EXISTS social_media_posts_platform_check;
+ALTER TABLE social_media_posts ADD CONSTRAINT social_media_posts_platform_check
+  CHECK (platform IN ('instagram', 'x', 'telegram', 'linkedin', 'youtube', 'aparat', 'rubika', 'eitaa', 'bale', 'other'));
+
+ALTER TABLE social_platform_stats DROP CONSTRAINT IF EXISTS social_platform_stats_platform_check;
+ALTER TABLE social_platform_stats ADD CONSTRAINT social_platform_stats_platform_check
+  CHECK (platform IN ('instagram', 'x', 'telegram', 'linkedin', 'youtube', 'aparat', 'rubika', 'eitaa', 'bale', 'other'));
