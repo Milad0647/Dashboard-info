@@ -35,6 +35,9 @@ export function SocialPostsSection({ posts, groups }: SocialPostsSectionProps) {
                   <Badge variant="secondary">{getStatusLabel(post.contentType)}</Badge>
                 </div>
                 <h3 className="font-semibold">{post.title}</h3>
+                {post.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-4">{post.description}</p>
+                )}
                 <p className="text-sm text-muted-foreground">{formatPersianDate(post.publishedDate)}</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>بازدید: {formatPersianNumber(post.views)}</div>

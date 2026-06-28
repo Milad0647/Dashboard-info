@@ -67,12 +67,15 @@ export function SocialPostsAdmin({ campaignId, initialPosts }: SocialPostsAdminP
     defaultValues: {
       platform: "instagram" as SocialPlatform,
       title: "",
+      coverImageUrl: "",
       views: 0,
       likes: 0,
       comments: 0,
       shares: 0,
       link: "",
       contentType: "image" as SocialContentType,
+      mediaUrl: "",
+      description: "",
       publishedDate: todayISO(),
       published: false,
     },
@@ -83,12 +86,15 @@ export function SocialPostsAdmin({ campaignId, initialPosts }: SocialPostsAdminP
     form.reset({
       platform: "instagram",
       title: "",
+      coverImageUrl: "",
       views: 0,
       likes: 0,
       comments: 0,
       shares: 0,
       link: "",
       contentType: "image",
+      mediaUrl: "",
+      description: "",
       publishedDate: todayISO(),
       published: false,
     });
@@ -242,7 +248,11 @@ export function SocialPostsAdmin({ campaignId, initialPosts }: SocialPostsAdminP
 
             <div className="space-y-2">
               <Label>توضیحات</Label>
-              <Textarea {...form.register("description")} />
+              <Textarea
+                {...form.register("description")}
+                rows={4}
+                placeholder="خلاصه پست، متن کپشن، نکات مهم یا توضیح محتوا"
+              />
             </div>
 
             <div className="flex items-center gap-2">

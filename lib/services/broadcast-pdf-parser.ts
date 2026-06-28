@@ -27,6 +27,7 @@ const QUALITY_PATTERNS: { pattern: RegExp; label: string }[] = [
   { pattern: /وﺮیﻧ.*وزارت|وزارت\s*نیرو/i, label: "وزارت نیرو" },
 ];
 
+const TAB_NUMERIC_ROW = /^(.+)\t([\d۰-۹]+)$/;
 const FOOTER_PATTERN =
   /^(?:\d{1,2}\/\d{1,2}\/\d{2,4}|--\s*\d+\s+of\s+\d+\s+--|\d+\.\d+\.\d+\.\d+)/i;
 
