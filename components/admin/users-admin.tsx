@@ -9,10 +9,17 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { deleteUserAction, saveUserAction } from "@/lib/actions/extended-actions";
+import {
+  contributorPermissionLabels,
+  defaultContributorPermissions,
+  type ContributorPermissionKey,
+  type ContributorPermissions,
+} from "@/lib/contributor-permissions";
 import type { AdminUser, CampaignSettings } from "@/lib/types";
 
 const schema = z.object({
@@ -23,6 +30,8 @@ const schema = z.object({
   campaignIds: z.array(z.string()),
 });
 
+const permissionKeys = Object.keys(contributorPermissionLabels) as ContributorPermissionKey[];
+
 interface UsersAdminProps {
   initialUsers: AdminUser[];
   campaigns: CampaignSettings[];
@@ -32,6 +41,7 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rows, setRows] = useState(initialUsers);
+  const [campaignPermissions, setCampaignPermissions] = useState<Record<string, ContributorPermissions>>({});
   const [isPending, startTransition] = useTransition();
 
   const form = useForm({
@@ -45,14 +55,34 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
     },
   });
 
+  const selectedCampaignIds = form.watch("campaignIds");
+  const selectedRole = form.watch("role");
+
   const toggleCampaign = (campaignId: string) => {
     const current = form.getValues("campaignIds");
-    form.setValue(
-      "campaignIds",
-      current.includes(campaignId)
-        ? current.filter((id) => id !== campaignId)
-        : [...current, campaignId]
-    );
+    if (current.includes(campaignId)) {
+      form.setValue(
+        "campaignIds",
+        current.filter((id) => id !== campaignId)
+      );
+      return;
+    }
+
+    form.setValue("campaignIds", [...current, campaignId]);
+    setCampaignPermissions((prev) => ({
+      ...prev,
+      [campaignId]: prev[campaignId] ?? defaultContributorPermissions(),
+    }));
+  };
+
+  const togglePermission = (campaignId: string, key: ContributorPermissionKey, value: boolean) => {
+    setCampaignPermissions((prev) => ({
+      ...prev,
+      [campaignId]: {
+        ...(prev[campaignId] ?? defaultContributorPermissions()),
+        [key]: value,
+      },
+    }));
   };
 
   const onSubmit = form.handleSubmit((data) => {
@@ -62,7 +92,11 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
     }
 
     startTransition(async () => {
-      const result = await saveUserAction({ ...data, id: editingId ?? undefined });
+      const result = await saveUserAction({
+        ...data,
+        id: editingId ?? undefined,
+        campaignPermissions: data.role === "contributor" ? campaignPermissions : undefined,
+      });
       if (!result.success) {
         toast.error(result.error ?? "ذخیره نشد");
         return;
@@ -76,6 +110,7 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
         name: data.name,
         role: data.role,
         campaignIds: data.campaignIds,
+        campaignPermissions: data.role === "contributor" ? campaignPermissions : {},
         createdAt: new Date().toISOString(),
       };
 
@@ -87,14 +122,36 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
     });
   });
 
+  const openCreate = () => {
+    setEditingId(null);
+    setCampaignPermissions({});
+    form.reset({ email: "", name: "", role: "contributor", password: "", campaignIds: [] });
+    setOpen(true);
+  };
+
+  const openEdit = (user: AdminUser) => {
+    setEditingId(user.id);
+    setCampaignPermissions(user.campaignPermissions);
+    form.reset({
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      password: "",
+      campaignIds: user.campaignIds,
+    });
+    setOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">کاربران</h1>
-          <p className="text-sm text-muted-foreground">تعریف کاربر و دسترسی به کمپین — هر کاربر فقط داده خودش را می‌بیند</p>
+          <p className="text-sm text-muted-foreground">
+            تعریف کاربر، دسترسی به کمپین و فعال/غیرفعال کردن هر بخش در پنل
+          </p>
         </div>
-        <Button onClick={() => { setEditingId(null); form.reset({ email: "", name: "", role: "contributor", password: "", campaignIds: [] }); setOpen(true); }}>
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
           کاربر جدید
         </Button>
@@ -116,17 +173,7 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
                 .join("، ") || "—",
           },
         ]}
-        onEdit={(user) => {
-          setEditingId(user.id);
-          form.reset({
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            password: "",
-            campaignIds: user.campaignIds,
-          });
-          setOpen(true);
-        }}
+        onEdit={openEdit}
         onDelete={(user) => {
           startTransition(async () => {
             await deleteUserAction(user.id);
@@ -137,7 +184,7 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "ویرایش کاربر" : "کاربر جدید"}</DialogTitle>
           </DialogHeader>
@@ -150,7 +197,7 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
             </div>
             <div className="space-y-2">
               <Label>نقش</Label>
-              <Select value={form.watch("role")} onValueChange={(value) => form.setValue("role", value as "admin" | "contributor")}>
+              <Select value={selectedRole} onValueChange={(value) => form.setValue("role", value as "admin" | "contributor")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="contributor">کاربر (فقط داده خودش)</SelectItem>
@@ -158,6 +205,7 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-2">
               <Label>دسترسی به کمپین‌ها</Label>
               <div className="space-y-2 rounded-lg border p-3">
@@ -165,7 +213,7 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
                   <label key={campaign.id} className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
-                      checked={form.watch("campaignIds").includes(campaign.id)}
+                      checked={selectedCampaignIds.includes(campaign.id)}
                       onChange={() => toggleCampaign(campaign.id)}
                     />
                     {campaign.title}
@@ -173,6 +221,33 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
                 ))}
               </div>
             </div>
+
+            {selectedRole === "contributor" && selectedCampaignIds.length > 0 && (
+              <div className="space-y-3">
+                <Label>دسترسی به بخش‌های پنل (برای هر کمپین)</Label>
+                {selectedCampaignIds.map((campaignId) => {
+                  const campaign = campaigns.find((item) => item.id === campaignId);
+                  const permissions = campaignPermissions[campaignId] ?? defaultContributorPermissions();
+                  return (
+                    <div key={campaignId} className="rounded-lg border p-3 space-y-2">
+                      <p className="text-sm font-medium">{campaign?.title ?? campaignId}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {permissionKeys.map((key) => (
+                          <label key={key} className="flex items-center justify-between gap-3 text-sm rounded-md border px-3 py-2">
+                            <span>{contributorPermissionLabels[key]}</span>
+                            <Switch
+                              checked={permissions[key]}
+                              onCheckedChange={(value) => togglePermission(campaignId, key, value)}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <Button type="submit" disabled={isPending} className="w-full">ذخیره</Button>
           </form>
         </DialogContent>

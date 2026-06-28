@@ -5,22 +5,41 @@ import {
   mapUserFromDb,
 } from "@/lib/db/mappers";
 import type { AdminUser, BroadcastReport, SocialMediaPost } from "@/lib/types";
+import {
+  defaultContributorPermissions,
+  normalizeContributorPermissions,
+  type ContributorPermissions,
+} from "@/lib/contributor-permissions";
 import { generateId } from "@/lib/utils";
 import { hashPassword } from "@/lib/auth/password";
+
+interface CampaignAccessRow {
+  campaignId: string;
+  permissions: ContributorPermissions;
+}
+
+async function loadUserCampaignAccess(userId: string): Promise<CampaignAccessRow[]> {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT campaign_id, permissions FROM user_campaign_access WHERE user_id = ${userId}
+  `;
+  return rows.map((row) => ({
+    campaignId: String(row.campaign_id),
+    permissions: normalizeContributorPermissions(row.permissions),
+  }));
+}
+
+function mapAccessToUser(row: Record<string, unknown>, access: CampaignAccessRow[]): AdminUser {
+  return mapUserFromDb(row, access);
+}
 
 export async function pgGetUserByEmail(email: string) {
   const sql = getSql();
   const rows = await sql`SELECT * FROM users WHERE email = ${email.toLowerCase().trim()} LIMIT 1`;
   if (!rows[0]) return null;
 
-  const accessRows = await sql`
-    SELECT campaign_id FROM user_campaign_access WHERE user_id = ${rows[0].id}
-  `;
-
-  return mapUserFromDb(
-    rows[0],
-    accessRows.map((row) => String(row.campaign_id))
-  );
+  const access = await loadUserCampaignAccess(String(rows[0].id));
+  return mapAccessToUser(rows[0], access);
 }
 
 export async function pgGetUserAuthByEmail(email: string) {
@@ -28,15 +47,11 @@ export async function pgGetUserAuthByEmail(email: string) {
   const rows = await sql`SELECT * FROM users WHERE email = ${email.toLowerCase().trim()} LIMIT 1`;
   if (!rows[0]) return null;
 
-  const accessRows = await sql`
-    SELECT campaign_id FROM user_campaign_access WHERE user_id = ${rows[0].id}
-  `;
+  const access = await loadUserCampaignAccess(String(rows[0].id));
+  const user = mapAccessToUser(rows[0], access);
 
   return {
-    ...mapUserFromDb(
-      rows[0],
-      accessRows.map((row) => String(row.campaign_id))
-    ),
+    ...user,
     passwordHash: String(rows[0].password_hash),
   };
 }
@@ -46,14 +61,19 @@ export async function pgGetUserById(id: string) {
   const rows = await sql`SELECT * FROM users WHERE id = ${id} LIMIT 1`;
   if (!rows[0]) return null;
 
-  const accessRows = await sql`
-    SELECT campaign_id FROM user_campaign_access WHERE user_id = ${id}
-  `;
+  const access = await loadUserCampaignAccess(id);
+  return mapAccessToUser(rows[0], access);
+}
 
-  return mapUserFromDb(
-    rows[0],
-    accessRows.map((row) => String(row.campaign_id))
-  );
+export async function pgGetUserPermissionsForCampaign(userId: string, campaignId: string) {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT permissions FROM user_campaign_access
+    WHERE user_id = ${userId} AND campaign_id = ${campaignId}
+    LIMIT 1
+  `;
+  if (!rows[0]) return null;
+  return normalizeContributorPermissions(rows[0].permissions);
 }
 
 export async function pgGetAllUsers(): Promise<AdminUser[]> {
@@ -62,15 +82,8 @@ export async function pgGetAllUsers(): Promise<AdminUser[]> {
   const users: AdminUser[] = [];
 
   for (const row of rows) {
-    const accessRows = await sql`
-      SELECT campaign_id FROM user_campaign_access WHERE user_id = ${row.id}
-    `;
-    users.push(
-      mapUserFromDb(
-        row,
-        accessRows.map((access) => String(access.campaign_id))
-      )
-    );
+    const access = await loadUserCampaignAccess(String(row.id));
+    users.push(mapAccessToUser(row, access));
   }
 
   return users;
@@ -83,6 +96,7 @@ export async function pgSaveUser(data: {
   role: "admin" | "contributor";
   password?: string;
   campaignIds?: string[];
+  campaignPermissions?: Record<string, ContributorPermissions>;
 }) {
   const sql = getSql();
   const id = data.id ?? generateId();
@@ -119,10 +133,19 @@ export async function pgSaveUser(data: {
 
   await sql`DELETE FROM user_campaign_access WHERE user_id = ${id}`;
   for (const campaignId of data.campaignIds ?? []) {
+    const permissions = normalizeContributorPermissions(
+      data.campaignPermissions?.[campaignId] ?? defaultContributorPermissions()
+    );
     await sql`
-      INSERT INTO user_campaign_access (user_id, campaign_id, created_at)
-      VALUES (${id}, ${campaignId}, ${now})
-      ON CONFLICT DO NOTHING
+      INSERT INTO user_campaign_access (user_id, campaign_id, permissions, created_at)
+      VALUES (
+        ${id},
+        ${campaignId},
+        ${sql.json(JSON.parse(JSON.stringify(permissions)))},
+        ${now}
+      )
+      ON CONFLICT (user_id, campaign_id) DO UPDATE SET
+        permissions = EXCLUDED.permissions
     `;
   }
 

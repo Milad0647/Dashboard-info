@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useTransition } from "react";
-import { Download, FileArchive, FileText, Upload } from "lucide-react";
+import { Camera, FileArchive, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,15 +57,16 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
           variant="outline"
           size="sm"
           disabled={isPending}
-          onClick={() =>
-            download(
-              `/api/campaign/export-pdf?campaignId=${encodeURIComponent(campaignId)}`,
-              `report-${currentCampaign.slug}.pdf`
-            )
-          }
+          onClick={() => {
+            window.open(
+              `/campaign/${currentCampaign.slug}?export=screenshot`,
+              "_blank",
+              "noopener,noreferrer,width=1400,height=900"
+            );
+          }}
         >
-          <FileText className="h-4 w-4" />
-          دانلود PDF گزارش
+          <Camera className="h-4 w-4" />
+          دانلود PDF (اسکرین‌شات)
         </Button>
 
         {isFullAdmin && (
@@ -111,7 +112,6 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
 
         <Button variant="ghost" size="sm" asChild>
           <a href={`/campaign/${currentCampaign.slug}`} target="_blank" rel="noreferrer">
-            <Download className="h-4 w-4" />
             مشاهده گزارش زنده
           </a>
         </Button>

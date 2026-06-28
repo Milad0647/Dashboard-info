@@ -190,9 +190,13 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS user_campaign_access (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   campaign_id UUID NOT NULL REFERENCES campaign_settings(id) ON DELETE CASCADE,
+  permissions JSONB NOT NULL DEFAULT '{"billboards":true,"posters":true,"videos":true,"files":true,"analytics":true,"socialPosts":true,"broadcast":true,"submissions":true}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, campaign_id)
 );
+
+ALTER TABLE user_campaign_access
+  ADD COLUMN IF NOT EXISTS permissions JSONB NOT NULL DEFAULT '{"billboards":true,"posters":true,"videos":true,"files":true,"analytics":true,"socialPosts":true,"broadcast":true,"submissions":true}'::jsonb;
 
 CREATE INDEX IF NOT EXISTS idx_user_campaign_access_campaign ON user_campaign_access(campaign_id);
 

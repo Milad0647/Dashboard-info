@@ -220,12 +220,15 @@ export interface CampaignFile extends Ownable {
   updatedAt: string;
 }
 
+import type { ContributorPermissions } from "@/lib/contributor-permissions";
+
 export interface AdminUser {
   id: string;
   email: string;
   name: string;
   role: AdminRole;
   campaignIds: string[];
+  campaignPermissions: Record<string, ContributorPermissions>;
   createdAt: string;
 }
 

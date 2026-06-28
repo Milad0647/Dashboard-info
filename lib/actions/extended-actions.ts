@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { getAuthSession, getOwnerFilter, isFullAdmin } from "@/lib/auth/get-session";
+import {
+  defaultContributorPermissions,
+  hasContributorPermission,
+  type ContributorPermissions,
+} from "@/lib/contributor-permissions";
 import * as pgExt from "@/lib/db/repository-extended";
 import type { BroadcastReport, SocialMediaPost } from "@/lib/types";
 import { isPostgresConfigured } from "@/lib/utils";
@@ -16,6 +21,13 @@ async function revalidateExtended(slug?: string) {
 export async function saveSocialPostAction(data: Partial<SocialMediaPost> & { id?: string }) {
   const session = await getAuthSession();
   if (!session) return { success: false, error: "Unauthorized" };
+
+  if (!isFullAdmin(session) && data.campaignId) {
+    const permissions = await pgExt.pgGetUserPermissionsForCampaign(session.userId!, data.campaignId);
+    if (!hasContributorPermission(permissions, "socialPosts")) {
+      return { success: false, error: "دسترسی ندارید" };
+    }
+  }
 
   const ownerUserId = isFullAdmin(session) ? (data.ownerUserId ?? null) : session.userId;
   const payload = { ...data, ownerUserId };
@@ -41,6 +53,13 @@ export async function deleteSocialPostAction(id: string) {
 export async function saveBroadcastReportAction(data: Partial<BroadcastReport> & { id?: string }) {
   const session = await getAuthSession();
   if (!session) return { success: false, error: "Unauthorized" };
+
+  if (!isFullAdmin(session) && data.campaignId) {
+    const permissions = await pgExt.pgGetUserPermissionsForCampaign(session.userId!, data.campaignId);
+    if (!hasContributorPermission(permissions, "broadcast")) {
+      return { success: false, error: "دسترسی ندارید" };
+    }
+  }
 
   const ownerUserId = isFullAdmin(session) ? (data.ownerUserId ?? null) : session.userId;
   const payload = { ...data, ownerUserId };
@@ -70,6 +89,7 @@ export async function saveUserAction(data: {
   role: "admin" | "contributor";
   password?: string;
   campaignIds?: string[];
+  campaignPermissions?: Record<string, ContributorPermissions>;
 }) {
   const session = await getAuthSession();
   if (!session || !isFullAdmin(session)) {
@@ -92,17 +112,24 @@ export async function deleteUserAction(id: string) {
   return { success: true };
 }
 
-export async function getSessionContextAction() {
+export async function getSessionContextAction(campaignId?: string) {
   const session = await getAuthSession();
   if (!session) return null;
 
   if (session.type === "db_user" && session.userId) {
     const user = await pgExt.pgGetUserById(session.userId);
+    const permissions =
+      session.role === "admin" || !campaignId
+        ? null
+        : (user?.campaignPermissions[campaignId] ?? defaultContributorPermissions());
+
     return {
       ...session,
       email: user?.email,
       name: user?.name,
       campaignIds: user?.campaignIds ?? [],
+      campaignPermissions: user?.campaignPermissions ?? {},
+      permissions,
     };
   }
 
@@ -111,6 +138,8 @@ export async function getSessionContextAction() {
     email: process.env.ADMIN_EMAIL ?? "admin",
     name: "مدیر سیستم",
     campaignIds: [] as string[],
+    campaignPermissions: {} as Record<string, ContributorPermissions>,
+    permissions: null,
   };
 }
 

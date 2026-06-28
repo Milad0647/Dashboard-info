@@ -9,6 +9,7 @@ interface DeferredSectionProps {
   fallback?: ReactNode;
   minHeight?: number;
   rootMargin?: string;
+  forceRender?: boolean;
 }
 
 export function DeferredSection({
@@ -16,12 +17,14 @@ export function DeferredSection({
   fallback,
   minHeight = 240,
   rootMargin = "240px",
+  forceRender = false,
 }: DeferredSectionProps) {
   const { ref, inView } = useInView<HTMLDivElement>({ rootMargin, triggerOnce: true });
+  const shouldRender = forceRender || inView;
 
   return (
-    <div ref={ref} style={{ minHeight: inView ? undefined : minHeight }}>
-      {inView
+    <div ref={ref} style={{ minHeight: shouldRender ? undefined : minHeight }}>
+      {shouldRender
         ? children
         : fallback ?? (
             <div className="space-y-3 rounded-xl border bg-card/40 p-4">

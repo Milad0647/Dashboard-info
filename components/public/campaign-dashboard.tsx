@@ -26,15 +26,17 @@ import { CampaignFilesSection } from "@/components/public/campaign-files-section
 import { SocialPostsSection } from "@/components/public/social-posts-section";
 import { BroadcastSection } from "@/components/public/broadcast-section";
 import { DeferredSection } from "@/components/public/deferred-section";
+import { CampaignScreenshotExporter } from "@/components/public/campaign-screenshot-exporter";
 import type { PublicCampaignData } from "@/lib/types";
 import { formatPersianDate, formatPersianDateTime } from "@/lib/utils";
 
 interface CampaignDashboardProps {
   initialData: PublicCampaignData;
   slug: string;
+  exportMode?: boolean;
 }
 
-export function CampaignDashboard({ initialData, slug }: CampaignDashboardProps) {
+export function CampaignDashboard({ initialData, slug, exportMode = false }: CampaignDashboardProps) {
   const [data, setData] = useState(initialData);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -78,7 +80,8 @@ export function CampaignDashboard({ initialData, slug }: CampaignDashboardProps)
   ].filter((k) => k.show);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" data-campaign-export-root>
+      {exportMode && <CampaignScreenshotExporter slug={slug} title={settings.title} />}
       <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div>
@@ -103,8 +106,8 @@ export function CampaignDashboard({ initialData, slug }: CampaignDashboardProps)
         </div>
       </header>
 
-      <main className="container mx-auto space-y-8 px-4 py-8">
-        <section id="overview">
+      <main className="container mx-auto space-y-8 px-4 py-8 max-w-[1280px]">
+        <section id="overview" data-export-section data-export-label="خلاصه کمپین">
           <SectionHeader title="خلاصه کمپین" description={settings.description}>
             <Badge status={settings.status}>
               {settings.status === "live" ? "زنده" : settings.status === "completed" ? "پایان‌یافته" : "پیش‌نویس"}
@@ -125,48 +128,66 @@ export function CampaignDashboard({ initialData, slug }: CampaignDashboardProps)
         </section>
 
         {sections.analytics && (
-          <DeferredSection minHeight={320}>
-            <AnalyticsSection analytics={data.analytics} />
+          <DeferredSection minHeight={320} forceRender={exportMode}>
+            <section data-export-section data-export-label="آمار سایت">
+              <AnalyticsSection analytics={data.analytics} />
+            </section>
           </DeferredSection>
         )}
         {sections.socialAnalytics && (
-          <DeferredSection minHeight={280}>
-            <SocialAnalyticsSection analytics={data.socialAnalytics} />
+          <DeferredSection minHeight={280} forceRender={exportMode}>
+            <section data-export-section data-export-label="آمار شبکه‌های اجتماعی">
+              <SocialAnalyticsSection analytics={data.socialAnalytics} />
+            </section>
           </DeferredSection>
         )}
         {sections.billboards && (
-          <DeferredSection minHeight={360}>
-            <BillboardSection billboards={data.billboards} />
+          <DeferredSection minHeight={360} forceRender={exportMode}>
+            <section data-export-section data-export-label="بیلبوردها">
+              <BillboardSection billboards={data.billboards} />
+            </section>
           </DeferredSection>
         )}
         {sections.posters && (
-          <DeferredSection minHeight={400}>
-            <PostersSection categories={data.posterCategories} posters={data.posters} />
+          <DeferredSection minHeight={400} forceRender={exportMode}>
+            <section data-export-section data-export-label="پوسترها">
+              <PostersSection categories={data.posterCategories} posters={data.posters} />
+            </section>
           </DeferredSection>
         )}
         {sections.videos && (
-          <DeferredSection minHeight={400}>
-            <VideosSection categories={data.videoCategories} videos={data.videos} />
+          <DeferredSection minHeight={400} forceRender={exportMode}>
+            <section data-export-section data-export-label="ویدیوها">
+              <VideosSection categories={data.videoCategories} videos={data.videos} />
+            </section>
           </DeferredSection>
         )}
         {sections.submissions && (
-          <DeferredSection minHeight={280}>
-            <SubmissionsSection submissions={data.submissions} summary={data.submissionSummary} />
+          <DeferredSection minHeight={280} forceRender={exportMode}>
+            <section data-export-section data-export-label="مشارکت‌ها">
+              <SubmissionsSection submissions={data.submissions} summary={data.submissionSummary} />
+            </section>
           </DeferredSection>
         )}
         {sections.socialPosts && (
-          <DeferredSection minHeight={280}>
-            <SocialPostsSection posts={data.socialPosts} groups={data.socialPostGroups} />
+          <DeferredSection minHeight={280} forceRender={exportMode}>
+            <section data-export-section data-export-label="پست‌های شبکه اجتماعی">
+              <SocialPostsSection posts={data.socialPosts} groups={data.socialPostGroups} />
+            </section>
           </DeferredSection>
         )}
         {sections.broadcastReports && (
-          <DeferredSection minHeight={240}>
-            <BroadcastSection reports={data.broadcastReports} groups={data.broadcastReportGroups} />
+          <DeferredSection minHeight={240} forceRender={exportMode}>
+            <section data-export-section data-export-label="پخش صدا و سیما">
+              <BroadcastSection reports={data.broadcastReports} groups={data.broadcastReportGroups} />
+            </section>
           </DeferredSection>
         )}
         {sections.files && (
-          <DeferredSection minHeight={200}>
-            <CampaignFilesSection files={data.files} />
+          <DeferredSection minHeight={200} forceRender={exportMode}>
+            <section data-export-section data-export-label="فایل‌ها">
+              <CampaignFilesSection files={data.files} />
+            </section>
           </DeferredSection>
         )}
       </main>

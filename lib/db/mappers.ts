@@ -13,6 +13,7 @@ import type {
   Video,
   VideoVersion,
 } from "@/lib/types";
+import type { ContributorPermissions } from "@/lib/contributor-permissions";
 import { normalizeAnalyticsConfig } from "@/lib/analytics-config";
 
 function toDateString(value: unknown): string {
@@ -281,13 +282,20 @@ export function mapBroadcastReportFromDb(row: any): BroadcastReport {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function mapUserFromDb(row: any, campaignIds: string[] = []): AdminUser {
+export function mapUserFromDb(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  row: any,
+  campaignAccess: { campaignId: string; permissions: ContributorPermissions }[] = []
+): AdminUser {
   return {
     id: row.id,
     email: row.email,
     name: row.name,
     role: row.role,
-    campaignIds,
+    campaignIds: campaignAccess.map((access) => access.campaignId),
+    campaignPermissions: Object.fromEntries(
+      campaignAccess.map((access) => [access.campaignId, access.permissions])
+    ),
     createdAt: toIsoString(row.created_at),
   };
 }

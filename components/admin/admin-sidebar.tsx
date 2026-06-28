@@ -32,18 +32,29 @@ import { logoutAdminAction } from "@/lib/actions/auth-actions";
 import { getSessionContextAction } from "@/lib/actions/extended-actions";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminCampaign } from "@/components/admin/admin-campaign-provider";
+import {
+  hasContributorPermission,
+  type ContributorPermissionKey,
+  type ContributorPermissions,
+} from "@/lib/contributor-permissions";
 
-const allNavItems = [
-  { href: "/admin", label: "داشبورد", icon: LayoutDashboard, adminOnly: false },
+const allNavItems: {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  adminOnly?: boolean;
+  permissionKey?: ContributorPermissionKey;
+}[] = [
+  { href: "/admin", label: "داشبورد", icon: LayoutDashboard },
   { href: "/admin/settings", label: "تنظیمات کمپین", icon: Settings, adminOnly: true },
-  { href: "/admin/billboards", label: "بیلبوردها", icon: LayoutGrid, adminOnly: false },
-  { href: "/admin/posters", label: "پوسترها", icon: ImageIcon, adminOnly: false },
-  { href: "/admin/videos", label: "ویدیوها", icon: Video, adminOnly: false },
-  { href: "/admin/files", label: "فایل‌ها", icon: FileStack, adminOnly: false },
-  { href: "/admin/analytics", label: "آمار سایت", icon: BarChart3, adminOnly: false },
-  { href: "/admin/social-posts", label: "شبکه‌های اجتماعی", icon: Share2, adminOnly: false },
-  { href: "/admin/broadcast", label: "پخش صدا و سیما", icon: Radio, adminOnly: false },
-  { href: "/admin/submissions", label: "مشارکت‌ها", icon: FileText, adminOnly: false },
+  { href: "/admin/billboards", label: "بیلبوردها", icon: LayoutGrid, permissionKey: "billboards" },
+  { href: "/admin/posters", label: "پوسترها", icon: ImageIcon, permissionKey: "posters" },
+  { href: "/admin/videos", label: "ویدیوها", icon: Video, permissionKey: "videos" },
+  { href: "/admin/files", label: "فایل‌ها", icon: FileStack, permissionKey: "files" },
+  { href: "/admin/analytics", label: "آمار سایت", icon: BarChart3, permissionKey: "analytics" },
+  { href: "/admin/social-posts", label: "شبکه‌های اجتماعی", icon: Share2, permissionKey: "socialPosts" },
+  { href: "/admin/broadcast", label: "پخش صدا و سیما", icon: Radio, permissionKey: "broadcast" },
+  { href: "/admin/submissions", label: "مشارکت‌ها", icon: FileText, permissionKey: "submissions" },
   { href: "/admin/users", label: "کاربران", icon: Users, adminOnly: true },
 ];
 
@@ -52,16 +63,23 @@ export function AdminSidebar() {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isFullAdminUser, setIsFullAdminUser] = useState(true);
+  const [permissions, setPermissions] = useState<ContributorPermissions | null>(null);
   const { campaignId, campaigns, currentCampaign, setCampaignId } = useAdminCampaign();
 
   useEffect(() => {
-    getSessionContextAction().then((session) => {
+    getSessionContextAction(campaignId).then((session) => {
       if (!session) return;
       setIsFullAdminUser(session.type === "env_admin" || session.role === "admin");
+      setPermissions(session.permissions ?? null);
     });
-  }, []);
+  }, [campaignId]);
 
-  const navItems = allNavItems.filter((item) => isFullAdminUser || !item.adminOnly);
+  const navItems = allNavItems.filter((item) => {
+    if (isFullAdminUser) return true;
+    if (item.adminOnly) return false;
+    if (!item.permissionKey) return true;
+    return hasContributorPermission(permissions, item.permissionKey);
+  });
 
   const handleLogout = async () => {
     if (isSupabaseConfigured()) {
