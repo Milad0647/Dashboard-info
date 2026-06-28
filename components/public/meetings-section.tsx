@@ -19,8 +19,9 @@ import {
 import type { DataOwnerGroup, MeetingPublicDetail, MeetingPublicPreview } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 
-const MEETINGS_INITIAL_COUNT = 9;
-const MEETINGS_PAGE_SIZE = 9;
+const MEETINGS_INITIAL_COUNT = 4;
+const MEETINGS_PAGE_SIZE = 4;
+const MEETINGS_GRID_CLASS = "grid grid-cols-2 md:grid-cols-4 gap-4";
 
 interface MeetingsSectionProps {
   campaignSlug: string;
@@ -68,13 +69,15 @@ function MeetingPreviewCard({
           <p className="text-xs text-muted-foreground">{formatPersianDate(meeting.meetingDate)}</p>
         </div>
 
-        {meeting.summaryPreview && (
+        {meeting.summaryPreview && !locked && (
           <p className="text-sm text-muted-foreground line-clamp-3 flex-1">{meeting.summaryPreview}</p>
         )}
 
+        {!locked && (
         <Button variant="outline" size="sm" className="w-full mt-auto" onClick={onOpen} data-export-hide>
           مشاهده جزئیات
         </Button>
+        )}
       </CardContent>
     </Card>
   );
@@ -147,46 +150,35 @@ function MeetingsUnlockBanner({
 
 function MeetingsGrid({
   meetings,
-  campaignSlug,
   meetingsHasPassword,
   isUnlocked,
   detailCache,
-  onUnlock,
 }: {
   meetings: MeetingPublicPreview[];
-  campaignSlug: string;
   meetingsHasPassword: boolean;
   isUnlocked: boolean;
   detailCache: Record<string, MeetingPublicDetail>;
-  onUnlock: (details: Record<string, MeetingPublicDetail>) => void;
 }) {
   const exportMode = useCampaignExportMode();
   const [visibleCount, setVisibleCount] = useState(MEETINGS_INITIAL_COUNT);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingPublicPreview | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const effectiveCount = exportMode ? meetings.length : visibleCount;
+  const effectiveCount = exportMode ? meetings.length : Math.min(visibleCount, meetings.length);
   const visibleMeetings = meetings.slice(0, effectiveCount);
-  const hasMore = !exportMode && visibleCount < meetings.length;
+  const hasMore = !exportMode && effectiveCount < meetings.length;
   const sectionLocked = meetingsHasPassword && !isUnlocked;
 
   const openMeeting = (meeting: MeetingPublicPreview) => {
-    if (sectionLocked) {
-      toast.error("ابتدا رمز جلسات را در بالای بخش وارد کنید");
-      return;
-    }
+    if (sectionLocked) return;
     setSelectedMeeting(meeting);
     setDialogOpen(true);
   };
 
   return (
     <>
-      {meetingsHasPassword && !isUnlocked && (
-        <MeetingsUnlockBanner campaignSlug={campaignSlug} onUnlocked={onUnlock} />
-      )}
-
       <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={MEETINGS_GRID_CLASS}>
           {visibleMeetings.map((meeting) => (
             <MeetingPreviewCard
               key={meeting.id}
@@ -203,7 +195,7 @@ function MeetingsGrid({
               variant="outline"
               onClick={() => setVisibleCount((count) => count + MEETINGS_PAGE_SIZE)}
             >
-              مشاهده بیشتر ({meetings.length - visibleCount} باقی‌مانده)
+              مشاهده بیشتر ({meetings.length - effectiveCount} باقی‌مانده)
             </Button>
           </div>
         )}
@@ -254,17 +246,21 @@ export function MeetingsSection({
     <CollapsibleSection
       id="meetings"
       title="جلسات و مصوبات"
-      description="خلاصه جلسات — جزئیات با رمز مشترک قابل مشاهده است"
+      description="آخرین جلسات — جزئیات با رمز مشترک در بالا قابل مشاهده است"
     >
+      {meetingsHasPassword && !isUnlocked && (
+        <div className="mb-6">
+          <MeetingsUnlockBanner campaignSlug={campaignSlug} onUnlocked={applyUnlock} />
+        </div>
+      )}
+
       <OwnerGroupedSection groups={groups}>
         {(groupMeetings) => (
           <MeetingsGrid
             meetings={groupMeetings}
-            campaignSlug={campaignSlug}
             meetingsHasPassword={meetingsHasPassword}
             isUnlocked={isUnlocked}
             detailCache={detailCache}
-            onUnlock={applyUnlock}
           />
         )}
       </OwnerGroupedSection>
