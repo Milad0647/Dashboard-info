@@ -157,21 +157,33 @@ export function CampaignDashboard({ initialData, slug, exportMode = false }: Cam
         {sections.posters && (
           <DeferredSection minHeight={400} forceRender={exportMode}>
             <section data-export-section data-export-label="پوسترها">
-              <PostersSection categories={data.posterCategories} posters={data.posters} />
+              <PostersSection
+                categories={data.posterCategories}
+                posters={data.posters}
+                groups={data.posterGroups}
+              />
             </section>
           </DeferredSection>
         )}
         {sections.videos && (
           <DeferredSection minHeight={400} forceRender={exportMode}>
             <section data-export-section data-export-label="ویدیوها">
-              <VideosSection categories={data.videoCategories} videos={data.videos} />
+              <VideosSection
+                categories={data.videoCategories}
+                videos={data.videos}
+                groups={data.videoGroups}
+              />
             </section>
           </DeferredSection>
         )}
         {sections.submissions && (
           <DeferredSection minHeight={280} forceRender={exportMode}>
             <section data-export-section data-export-label="مشارکت‌ها">
-              <SubmissionsSection submissions={data.submissions} summary={data.submissionSummary} />
+              <SubmissionsSection
+                submissions={data.submissions}
+                groups={data.submissionGroups}
+                summary={data.submissionSummary}
+              />
             </section>
           </DeferredSection>
         )}
@@ -204,7 +216,7 @@ export function CampaignDashboard({ initialData, slug, exportMode = false }: Cam
         {sections.files && (
           <DeferredSection minHeight={200} forceRender={exportMode}>
             <section data-export-section data-export-label="فایل‌ها">
-              <CampaignFilesSection files={data.files} />
+              <CampaignFilesSection files={data.files} groups={data.fileGroups} />
             </section>
           </DeferredSection>
         )}

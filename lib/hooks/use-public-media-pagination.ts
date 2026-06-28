@@ -13,7 +13,7 @@ function getInitialVisibleCount(isMobile: boolean): number {
   return isMobile ? PUBLIC_MEDIA_MOBILE_INITIAL : PUBLIC_MEDIA_PAGE_SIZE;
 }
 
-export function usePublicMediaPagination(totalCount: number, resetKey: string) {
+export function usePublicMediaPagination(totalCount: number, resetKey: string, enabled = true) {
   const exportMode = useCampaignExportMode();
   const [isMobile, setIsMobile] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PUBLIC_MEDIA_PAGE_SIZE);
@@ -42,8 +42,8 @@ export function usePublicMediaPagination(totalCount: number, resetKey: string) {
     );
   }, [isMobile]);
 
-  const hasMore = !exportMode && visibleCount < totalCount;
-  const effectiveVisibleCount = exportMode ? totalCount : visibleCount;
+  const hasMore = enabled && !exportMode && visibleCount < totalCount;
+  const effectiveVisibleCount = !enabled || exportMode ? totalCount : visibleCount;
 
   return { visibleCount: effectiveVisibleCount, hasMore, loadMore, isMobile };
 }

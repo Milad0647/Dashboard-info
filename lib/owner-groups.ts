@@ -41,3 +41,19 @@ export function groupByOwner<T extends OwnableItem>(
 
   return ordered;
 }
+
+export function filterOwnerGroups<T extends OwnableItem>(
+  groups: DataOwnerGroup<T>[],
+  predicate: (item: T) => boolean
+): DataOwnerGroup<T>[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(predicate),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+export function hasUserOwnedGroups<T>(groups: DataOwnerGroup<T>[]): boolean {
+  return groups.some((group) => group.ownerUserId !== null);
+}

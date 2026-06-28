@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
+import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { VideoCard } from "@/components/public/video-card";
 import {
   PUBLIC_MEDIA_GRID_CLASS,
@@ -17,19 +18,41 @@ import {
   type PublicMediaSort,
 } from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
-import type { MediaCategory, VideoWithVersions } from "@/lib/types";
+import { hasUserOwnedGroups } from "@/lib/owner-groups";
+import type { DataOwnerGroup, MediaCategory, VideoWithVersions } from "@/lib/types";
 import { cn, formatPersianNumber } from "@/lib/utils";
-
-interface VideosSectionProps {
-  categories: MediaCategory[];
-  videos: VideoWithVersions[];
-}
 
 function getVideoLatestDate(video: VideoWithVersions): string | undefined {
   return [...video.versions].sort((a, b) => b.versionNumber - a.versionNumber)[0]?.date;
 }
 
-export function VideosSection({ categories, videos }: VideosSectionProps) {
+interface VideosSectionProps {
+  categories: MediaCategory[];
+  videos: VideoWithVersions[];
+  groups: DataOwnerGroup<VideoWithVersions>[];
+}
+
+function filterVideoGroups(
+  groups: DataOwnerGroup<VideoWithVersions>[],
+  categoryFilter: string,
+  sort: PublicMediaSort
+): DataOwnerGroup<VideoWithVersions>[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items:
+        categoryFilter === "all"
+          ? sortByPublicMediaOrder(group.items, sort, getVideoLatestDate)
+          : sortByPublicMediaOrder(
+              group.items.filter((video) => video.categoryId === categoryFilter),
+              sort,
+              getVideoLatestDate
+            ),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+export function VideosSection({ categories, videos, groups }: VideosSectionProps) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sort, setSort] = useState<PublicMediaSort>("default");
 
@@ -38,20 +61,35 @@ export function VideosSection({ categories, videos }: VideosSectionProps) {
     [categories]
   );
 
-  const filteredVideos = useMemo(() => {
-    const filtered =
-      categoryFilter === "all"
-        ? videos
-        : videos.filter((video) => video.categoryId === categoryFilter);
-    return sortByPublicMediaOrder(filtered, sort, getVideoLatestDate);
-  }, [videos, categoryFilter, sort]);
+  const filteredGroups = useMemo(
+    () => filterVideoGroups(groups, categoryFilter, sort),
+    [groups, categoryFilter, sort]
+  );
+
+  const filteredVideos = useMemo(
+    () => filteredGroups.flatMap((group) => group.items),
+    [filteredGroups]
+  );
+
+  const enablePagination = !hasUserOwnedGroups(filteredGroups);
 
   const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
     filteredVideos.length,
-    `${categoryFilter}:${sort}`
+    `${categoryFilter}:${sort}`,
+    enablePagination
   );
 
-  const visibleVideos = filteredVideos.slice(0, visibleCount);
+  const visibleGroups = useMemo(() => {
+    if (!enablePagination) return filteredGroups;
+
+    const visibleIds = new Set(filteredVideos.slice(0, visibleCount).map((video) => video.id));
+    return filteredGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((video) => visibleIds.has(video.id)),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [enablePagination, filteredGroups, filteredVideos, visibleCount]);
 
   if (videos.length === 0) return null;
 
@@ -128,19 +166,23 @@ export function VideosSection({ categories, videos }: VideosSectionProps) {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className={PUBLIC_MEDIA_GRID_CLASS}>
-            {visibleVideos.map((video) => (
-              <VideoCard
-                key={video.id}
-                title={video.title}
-                description={video.description}
-                categoryTitle={video.category?.title}
-                versions={video.versions}
-              />
-            ))}
-          </div>
+          <OwnerGroupedSection groups={visibleGroups}>
+            {(groupVideos) => (
+              <div className={PUBLIC_MEDIA_GRID_CLASS}>
+                {groupVideos.map((video) => (
+                  <VideoCard
+                    key={video.id}
+                    title={video.title}
+                    description={video.description}
+                    categoryTitle={video.category?.title}
+                    versions={video.versions}
+                  />
+                ))}
+              </div>
+            )}
+          </OwnerGroupedSection>
 
-            {hasMore && (
+          {enablePagination && hasMore && (
               <div className="flex justify-center" data-export-hide>
                 <Button variant="outline" onClick={loadMore}>
                 مشاهده بیشتر ({formatPersianNumber(filteredVideos.length - visibleCount)} باقی‌مانده)

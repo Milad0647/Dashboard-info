@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { KPICard } from "@/components/public/kpi-card";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
+import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { ParticipationChart } from "@/components/charts/participation-chart";
 import { useCampaignExportMode } from "@/lib/context/campaign-export-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { CampaignSubmission, SubmissionSummary } from "@/lib/types";
+import { hasUserOwnedGroups } from "@/lib/owner-groups";
+import type { CampaignSubmission, DataOwnerGroup, SubmissionSummary } from "@/lib/types";
 import { formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
 import { CheckCircle, Clock, FileText, Users, XCircle } from "lucide-react";
 
@@ -18,15 +20,61 @@ const SUBMISSIONS_PAGE_SIZE = 12;
 
 interface SubmissionsSectionProps {
   submissions: CampaignSubmission[];
+  groups: DataOwnerGroup<CampaignSubmission>[];
   summary: SubmissionSummary;
 }
 
-export function SubmissionsSection({ submissions, summary }: SubmissionsSectionProps) {
+function SubmissionCards({ submissions }: { submissions: CampaignSubmission[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+      {submissions.map((sub) => (
+        <Card key={sub.id} className="overflow-hidden">
+          {sub.mediaUrl && (
+            <div className="relative aspect-video bg-muted">
+              <Image
+                src={sub.mediaUrl}
+                alt={sub.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 50vw, 25vw"
+              />
+            </div>
+          )}
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-semibold text-sm line-clamp-2">{sub.title}</h3>
+              <Badge status={sub.status}>{getStatusLabel(sub.status)}</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">{sub.submissionType}</p>
+            <p className="text-sm line-clamp-2">{sub.text}</p>
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+              <span className="truncate">
+                {sub.participantName === "ناشناس" ? "کاربر ناشناس" : sub.participantName}
+              </span>
+              <span className="shrink-0">{formatPersianDate(sub.createdAt)}</span>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function SubmissionsSection({ submissions, groups, summary }: SubmissionsSectionProps) {
   const exportMode = useCampaignExportMode();
   const [visibleCount, setVisibleCount] = useState(SUBMISSIONS_INITIAL_COUNT);
-  const effectiveCount = exportMode ? submissions.length : visibleCount;
-  const visibleSubmissions = submissions.slice(0, effectiveCount);
-  const hasMore = !exportMode && visibleCount < submissions.length;
+  const enablePagination = !hasUserOwnedGroups(groups);
+  const effectiveCount = exportMode || !enablePagination ? submissions.length : visibleCount;
+  const visibleGroups = useMemo(() => {
+    const ids = new Set(submissions.slice(0, effectiveCount).map((submission) => submission.id));
+    return groups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((submission) => ids.has(submission.id)),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [groups, submissions, effectiveCount]);
+  const hasMore = enablePagination && !exportMode && visibleCount < submissions.length;
 
   return (
     <CollapsibleSection
@@ -53,37 +101,9 @@ export function SubmissionsSection({ submissions, summary }: SubmissionsSectionP
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {visibleSubmissions.map((sub) => (
-              <Card key={sub.id} className="overflow-hidden">
-                {sub.mediaUrl && (
-                  <div className="relative aspect-video bg-muted">
-                    <Image
-                      src={sub.mediaUrl}
-                      alt={sub.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 1024px) 50vw, 25vw"
-                    />
-                  </div>
-                )}
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-sm line-clamp-2">{sub.title}</h3>
-                    <Badge status={sub.status}>{getStatusLabel(sub.status)}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{sub.submissionType}</p>
-                  <p className="text-sm line-clamp-2">{sub.text}</p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-                    <span className="truncate">
-                      {sub.participantName === "ناشناس" ? "کاربر ناشناس" : sub.participantName}
-                    </span>
-                    <span className="shrink-0">{formatPersianDate(sub.createdAt)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <OwnerGroupedSection groups={visibleGroups}>
+            {(groupSubmissions) => <SubmissionCards submissions={groupSubmissions} />}
+          </OwnerGroupedSection>
 
           {hasMore && (
             <div className="flex justify-center" data-export-hide>

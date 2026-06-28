@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
+import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { BillboardCard } from "@/components/public/billboard-card";
 import { BillboardMap } from "@/components/public/billboard-map";
 import { BillboardModal } from "@/components/public/billboard-modal";
@@ -21,6 +22,7 @@ import {
   type PublicMediaSort,
 } from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
+import { groupByOwner, hasUserOwnedGroups } from "@/lib/owner-groups";
 import type { Billboard } from "@/lib/types";
 import { formatPersianNumber, getStatusLabel } from "@/lib/utils";
 
@@ -51,12 +53,20 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
     return sortByPublicMediaOrder(items, sort, (item) => item.date);
   }, [billboards, cityFilter, statusFilter, search, sort]);
 
+  const filteredGroups = useMemo(() => groupByOwner(filtered), [filtered]);
+  const enablePagination = !hasUserOwnedGroups(filteredGroups);
+
   const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
     filtered.length,
-    `${cityFilter}:${statusFilter}:${search}:${sort}`
+    `${cityFilter}:${statusFilter}:${search}:${sort}`,
+    enablePagination
   );
 
-  const visibleBillboards = filtered.slice(0, visibleCount);
+  const visibleBillboards = enablePagination ? filtered.slice(0, visibleCount) : filtered;
+  const visibleGroups = useMemo(
+    () => (enablePagination ? groupByOwner(visibleBillboards) : filteredGroups),
+    [enablePagination, visibleBillboards, filteredGroups]
+  );
 
   const openBillboard = (billboard: Billboard) => {
     setSelectedBillboard(billboard);
@@ -131,13 +141,17 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className={PUBLIC_MEDIA_GRID_CLASS}>
-              {visibleBillboards.map((billboard) => (
-                <BillboardCard key={billboard.id} billboard={billboard} onView={openBillboard} />
-              ))}
-            </div>
+            <OwnerGroupedSection groups={visibleGroups}>
+              {(groupBillboards) => (
+                <div className={PUBLIC_MEDIA_GRID_CLASS}>
+                  {groupBillboards.map((billboard) => (
+                    <BillboardCard key={billboard.id} billboard={billboard} onView={openBillboard} />
+                  ))}
+                </div>
+              )}
+            </OwnerGroupedSection>
 
-            {hasMore && (
+            {enablePagination && hasMore && (
               <div className="flex justify-center" data-export-hide>
                 <Button variant="outline" onClick={loadMore}>
                   مشاهده بیشتر ({formatPersianNumber(filtered.length - visibleCount)} باقی‌مانده)
