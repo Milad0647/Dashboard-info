@@ -9,7 +9,7 @@ import {
 } from "@/lib/contributor-permissions";
 import { hashPassword } from "@/lib/auth/password";
 import * as pgExt from "@/lib/db/repository-extended";
-import type { MeetingTaskPayload } from "@/lib/db/repository-extended";
+import type { MeetingDecisionPayload, MeetingTaskPayload } from "@/lib/db/repository-extended";
 import type { BroadcastReport, CampaignMeeting, SocialMediaPost, SocialPlatformStat } from "@/lib/types";
 import { isPostgresConfigured } from "@/lib/utils";
 
@@ -120,7 +120,8 @@ export async function deleteBroadcastReportAction(id: string) {
 
 export async function saveMeetingAction(
   data: Partial<CampaignMeeting> & { id?: string; viewPassword?: string },
-  tasks: MeetingTaskPayload[]
+  tasks: MeetingTaskPayload[],
+  decisions: MeetingDecisionPayload[] = []
 ) {
   const session = await getAuthSession();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -155,7 +156,7 @@ export async function saveMeetingAction(
     return { success: false, error: "Database required" };
   }
 
-  const result = await pgExt.pgSaveMeetingWithTasks(payload, tasks, { updatePasswordHash });
+  const result = await pgExt.pgSaveMeetingWithTasks(payload, tasks, decisions, { updatePasswordHash });
   await revalidateExtended();
   return result;
 }

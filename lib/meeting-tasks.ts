@@ -32,3 +32,29 @@ export function appendMultilineTasks(
 export function reindexMeetingTasks(tasks: MeetingTaskInput[]): MeetingTaskInput[] {
   return tasks.map((task, index) => ({ ...task, sortOrder: index }));
 }
+
+export interface MeetingDecisionInput {
+  id?: string;
+  title: string;
+  sortOrder: number;
+}
+
+export function appendMultilineDecisions(
+  existing: MeetingDecisionInput[],
+  text: string
+): MeetingDecisionInput[] {
+  const titles = parseMultilineTasks(text);
+  if (titles.length === 0) return existing;
+
+  const startOrder = existing.length;
+  const newItems = titles.map((title, index) => ({
+    title,
+    sortOrder: startOrder + index,
+  }));
+
+  return [...existing, ...newItems];
+}
+
+export function reindexMeetingDecisions(decisions: MeetingDecisionInput[]): MeetingDecisionInput[] {
+  return decisions.map((item, index) => ({ ...item, sortOrder: index }));
+}

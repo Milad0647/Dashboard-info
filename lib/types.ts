@@ -345,6 +345,15 @@ export interface MeetingTask {
   updatedAt: string;
 }
 
+export interface MeetingDecision {
+  id: string;
+  meetingId: string;
+  title: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CampaignMeeting {
   id: string;
   campaignId: string;
@@ -366,6 +375,7 @@ export interface CampaignMeeting {
 
 export interface MeetingWithTasks extends CampaignMeeting {
   tasks: MeetingTask[];
+  decisions: MeetingDecision[];
 }
 
 export interface MeetingPublicPreview {
@@ -391,6 +401,7 @@ export interface MeetingPublicDetail {
   attendees: string[];
   audioUrl?: string | null;
   tasks: Pick<MeetingTask, "id" | "title" | "completed" | "sortOrder">[];
+  decisions: Pick<MeetingDecision, "id" | "title" | "sortOrder">[];
 }
 
 export interface DataOwnerGroup<T> {

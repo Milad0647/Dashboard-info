@@ -1,6 +1,7 @@
 import { getSql } from "@/lib/db/client";
 import {
   mapBroadcastReportFromDb,
+  mapMeetingDecisionFromDb,
   mapMeetingFromDb,
   mapMeetingPreviewFromDb,
   mapMeetingPublicDetailFromDb,
@@ -13,6 +14,7 @@ import type {
   AdminUser,
   BroadcastReport,
   CampaignMeeting,
+  MeetingDecision,
   MeetingPublicDetail,
   MeetingPublicPreview,
   MeetingTask,
@@ -413,12 +415,28 @@ export interface MeetingTaskPayload {
   sortOrder: number;
 }
 
+export interface MeetingDecisionPayload {
+  id?: string;
+  title: string;
+  sortOrder: number;
+}
+
 function groupMeetingTasks(rows: MeetingTask[]): Map<string, MeetingTask[]> {
   const map = new Map<string, MeetingTask[]>();
   for (const task of rows) {
     const list = map.get(task.meetingId) ?? [];
     list.push(task);
     map.set(task.meetingId, list);
+  }
+  return map;
+}
+
+function groupMeetingDecisions(rows: MeetingDecision[]): Map<string, MeetingDecision[]> {
+  const map = new Map<string, MeetingDecision[]>();
+  for (const decision of rows) {
+    const list = map.get(decision.meetingId) ?? [];
+    list.push(decision);
+    map.set(decision.meetingId, list);
   }
   return map;
 }
@@ -481,9 +499,15 @@ export async function pgUnlockMeetingDetail(
     ORDER BY sort_order
   `;
 
+  const decisionRows = await sql`
+    SELECT * FROM meeting_decisions
+    WHERE meeting_id = ${meetingId}
+    ORDER BY sort_order
+  `;
+
   return {
     status: "ok",
-    meeting: mapMeetingPublicDetailFromDb(rows[0], taskRows),
+    meeting: mapMeetingPublicDetailFromDb(rows[0], taskRows, decisionRows),
   };
 }
 
@@ -522,11 +546,23 @@ export async function pgGetMeetingsWithTasks(
       ORDER BY mt.sort_order
     `;
 
+    const decisionRows = await sql`
+      SELECT md.*
+      FROM meeting_decisions md
+      INNER JOIN campaign_meetings m ON m.id = md.meeting_id
+      WHERE m.campaign_id = ${campaignId}
+      ${ownerFilter}
+      ${publishedFilter}
+      ORDER BY md.sort_order
+    `;
+
     const tasksByMeeting = groupMeetingTasks(taskRows.map(mapMeetingTaskFromDb));
+    const decisionsByMeeting = groupMeetingDecisions(decisionRows.map(mapMeetingDecisionFromDb));
 
     return meetingRows.map((row) => ({
       ...mapMeetingFromDb(row),
       tasks: tasksByMeeting.get(row.id) ?? [],
+      decisions: decisionsByMeeting.get(row.id) ?? [],
     }));
   } catch (error) {
     console.error("pgGetMeetingsWithTasks failed:", error);
@@ -537,6 +573,7 @@ export async function pgGetMeetingsWithTasks(
 export async function pgSaveMeetingWithTasks(
   data: Partial<CampaignMeeting> & { id?: string },
   tasks: MeetingTaskPayload[],
+  decisions: MeetingDecisionPayload[] = [],
   options?: { updatePasswordHash?: boolean }
 ) {
   const sql = getSql();
@@ -678,6 +715,38 @@ export async function pgSaveMeetingWithTasks(
       DELETE FROM meeting_tasks
       WHERE meeting_id = ${id}
       AND id NOT IN ${sql(keptIds)}
+    `;
+  }
+
+  const keptDecisionIds: string[] = [];
+  for (const decision of decisions) {
+    const decisionId = decision.id ?? generateId();
+    keptDecisionIds.push(decisionId);
+    await sql`
+      INSERT INTO meeting_decisions (
+        id, meeting_id, title, sort_order, created_at, updated_at
+      ) VALUES (
+        ${decisionId},
+        ${id},
+        ${decision.title},
+        ${decision.sortOrder},
+        ${now},
+        ${now}
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        title = EXCLUDED.title,
+        sort_order = EXCLUDED.sort_order,
+        updated_at = EXCLUDED.updated_at
+    `;
+  }
+
+  if (keptDecisionIds.length === 0) {
+    await sql`DELETE FROM meeting_decisions WHERE meeting_id = ${id}`;
+  } else {
+    await sql`
+      DELETE FROM meeting_decisions
+      WHERE meeting_id = ${id}
+      AND id NOT IN ${sql(keptDecisionIds)}
     `;
   }
 

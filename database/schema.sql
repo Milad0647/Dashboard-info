@@ -308,6 +308,17 @@ CREATE TABLE IF NOT EXISTS meeting_tasks (
 
 CREATE INDEX IF NOT EXISTS idx_meeting_tasks_meeting ON meeting_tasks(meeting_id, sort_order);
 
+CREATE TABLE IF NOT EXISTS meeting_decisions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  meeting_id UUID NOT NULL REFERENCES campaign_meetings(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_meeting_decisions_meeting ON meeting_decisions(meeting_id, sort_order);
+
 -- Expand social platform enum for existing databases
 ALTER TABLE social_media_posts DROP CONSTRAINT IF EXISTS social_media_posts_platform_check;
 ALTER TABLE social_media_posts ADD CONSTRAINT social_media_posts_platform_check

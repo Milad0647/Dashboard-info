@@ -20,9 +20,12 @@ import {
   saveMeetingAction,
 } from "@/lib/actions/extended-actions";
 import {
+  appendMultilineDecisions,
   appendMultilineTasks,
   parseMultilineTasks,
+  reindexMeetingDecisions,
   reindexMeetingTasks,
+  type MeetingDecisionInput,
   type MeetingTaskInput,
 } from "@/lib/meeting-tasks";
 import { todayISO } from "@/lib/jalali";
@@ -51,15 +54,23 @@ function taskProgress(tasks: MeetingTaskInput[]) {
   return `${done}/${tasks.length} انجام‌شده`;
 }
 
+function decisionSummary(decisions: MeetingDecisionInput[]) {
+  if (decisions.length === 0) return "بدون تصمیم";
+  return `${decisions.length} مورد`;
+}
+
 export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProps) {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rows, setRows] = useState(initialMeetings);
   const [tasks, setTasks] = useState<MeetingTaskInput[]>([]);
+  const [decisions, setDecisions] = useState<MeetingDecisionInput[]>([]);
   const [attendees, setAttendees] = useState<string[]>([]);
   const [bulkText, setBulkText] = useState("");
+  const [decisionsBulkText, setDecisionsBulkText] = useState("");
   const [attendeesText, setAttendeesText] = useState("");
   const [editingTaskIndex, setEditingTaskIndex] = useState<number | null>(null);
+  const [editingDecisionIndex, setEditingDecisionIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const form = useForm({
@@ -78,10 +89,13 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
 
   const resetDialog = () => {
     setTasks([]);
+    setDecisions([]);
     setAttendees([]);
     setBulkText("");
+    setDecisionsBulkText("");
     setAttendeesText("");
     setEditingTaskIndex(null);
+    setEditingDecisionIndex(null);
   };
 
   const openCreate = () => {
@@ -122,6 +136,13 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
         sortOrder: task.sortOrder,
       }))
     );
+    setDecisions(
+      meeting.decisions.map((decision) => ({
+        id: decision.id,
+        title: decision.title,
+        sortOrder: decision.sortOrder,
+      }))
+    );
     setOpen(true);
   };
 
@@ -130,6 +151,13 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
     setTasks((prev) => reindexMeetingTasks(appendMultilineTasks(prev, bulkText)));
     setBulkText("");
     toast.success("موارد به چک‌لیست اضافه شد");
+  };
+
+  const addBulkDecisions = () => {
+    if (!decisionsBulkText.trim()) return;
+    setDecisions((prev) => reindexMeetingDecisions(appendMultilineDecisions(prev, decisionsBulkText)));
+    setDecisionsBulkText("");
+    toast.success("تصمیم‌ها اضافه شدند");
   };
 
   const addBulkAttendees = () => {
@@ -169,6 +197,22 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
     setEditingTaskIndex(tasks.length);
   };
 
+  const updateDecisionTitle = (index: number, title: string) => {
+    setDecisions((prev) => prev.map((decision, i) => (i === index ? { ...decision, title } : decision)));
+  };
+
+  const removeDecision = (index: number) => {
+    setDecisions((prev) => reindexMeetingDecisions(prev.filter((_, i) => i !== index)));
+    setEditingDecisionIndex(null);
+  };
+
+  const addEmptyDecision = () => {
+    setDecisions((prev) =>
+      reindexMeetingDecisions([...prev, { title: "", sortOrder: prev.length }])
+    );
+    setEditingDecisionIndex(decisions.length);
+  };
+
   const onSubmit = form.handleSubmit((data) => {
     if (!editingId && !data.viewPassword?.trim()) {
       toast.error("رمز مشاهده الزامی است");
@@ -179,6 +223,12 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
       tasks
         .map((task) => ({ ...task, title: task.title.trim() }))
         .filter((task) => task.title.length > 0)
+    );
+
+    const normalizedDecisions = reindexMeetingDecisions(
+      decisions
+        .map((decision) => ({ ...decision, title: decision.title.trim() }))
+        .filter((decision) => decision.title.length > 0)
     );
 
     startTransition(async () => {
@@ -196,7 +246,8 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
           published: data.published,
           viewPassword: data.viewPassword?.trim() || undefined,
         },
-        normalizedTasks
+        normalizedTasks,
+        normalizedDecisions
       );
 
       if (!result.success) {
@@ -231,6 +282,14 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
           createdAt: now,
           updatedAt: now,
         })),
+        decisions: normalizedDecisions.map((decision, index) => ({
+          id: decision.id ?? crypto.randomUUID(),
+          meetingId: savedId,
+          title: decision.title,
+          sortOrder: index,
+          createdAt: now,
+          updatedAt: now,
+        })),
       };
 
       setRows((prev) =>
@@ -249,7 +308,7 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
         <div>
           <h1 className="text-2xl font-bold">جلسات و مصوبات</h1>
           <p className="text-sm text-muted-foreground">
-            ثبت جلسه با رمز مشاهده، حاضرین، صوت و چک‌لیست مصوبات
+            ثبت جلسه با رمز مشاهده، حاضرین، صوت، مصوبات و تصمیم‌ها
           </p>
         </div>
         <Button onClick={openCreate}>
@@ -269,6 +328,11 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
             key: "tasks",
             label: "مصوبات",
             render: (item) => taskProgress(item.tasks),
+          },
+          {
+            key: "decisions",
+            label: "تصمیم‌ها",
+            render: (item) => decisionSummary(item.decisions),
           },
           { key: "published", label: "وضعیت", render: (item) => (item.published ? "منتشر" : "پیش‌نویس") },
         ]}
@@ -446,6 +510,79 @@ export function MeetingsAdmin({ campaignId, initialMeetings }: MeetingsAdminProp
                   <Check className="h-3.5 w-3.5" />
                   {taskProgress(tasks)}
                 </p>
+              )}
+            </div>
+
+            <div className="space-y-3 rounded-lg border p-4">
+              <div>
+                <Label>تصمیم‌های جلسه</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  هر خط یک تصمیم — بدون چک‌باکس. متن را paste کنید و «افزودن تصمیم‌ها» بزنید.
+                </p>
+              </div>
+
+              <Textarea
+                value={decisionsBulkText}
+                onChange={(event) => setDecisionsBulkText(event.target.value)}
+                rows={4}
+                placeholder={`تصمیم برگزاری جلسه هفتگی\nتخصیص بودجه تبلیغات`}
+                dir="rtl"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={addBulkDecisions}
+                disabled={!decisionsBulkText.trim()}
+              >
+                افزودن تصمیم‌ها
+              </Button>
+
+              <div className="space-y-2">
+                {decisions.map((decision, index) => (
+                  <div
+                    key={decision.id ?? `decision-${index}`}
+                    className="flex items-center gap-2 rounded-md border px-3 py-2 bg-muted/30"
+                  >
+                    {editingDecisionIndex === index ? (
+                      <Input
+                        value={decision.title}
+                        onChange={(event) => updateDecisionTitle(index, event.target.value)}
+                        onBlur={() => setEditingDecisionIndex(null)}
+                        autoFocus
+                        className="h-8 flex-1"
+                      />
+                    ) : (
+                      <span className="flex-1 text-sm">{decision.title || "—"}</span>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      onClick={() => setEditingDecisionIndex(index)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 text-destructive"
+                      onClick={() => removeDecision(index)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <Button type="button" variant="outline" size="sm" onClick={addEmptyDecision}>
+                <Plus className="h-3.5 w-3.5" />
+                افزودن تصمیم تکی
+              </Button>
+
+              {decisions.length > 0 && (
+                <p className="text-xs text-muted-foreground">{decisionSummary(decisions)}</p>
               )}
             </div>
 

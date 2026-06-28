@@ -8,6 +8,7 @@ import type {
   CampaignSettings,
   CampaignSubmission,
   MediaCategory,
+  MeetingDecision,
   MeetingTask,
   MeetingPublicDetail,
   MeetingPublicPreview,
@@ -364,8 +365,14 @@ export function mapMeetingPreviewFromDb(row: any): MeetingPublicPreview {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function mapMeetingPublicDetailFromDb(row: any, taskRows: any[]): MeetingPublicDetail {
+export function mapMeetingPublicDetailFromDb(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  row: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  taskRows: any[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  decisionRows: any[] = []
+): MeetingPublicDetail {
   return {
     id: row.id,
     title: row.title ?? "",
@@ -381,6 +388,11 @@ export function mapMeetingPublicDetailFromDb(row: any, taskRows: any[]): Meeting
       completed: task.completed ?? false,
       sortOrder: task.sort_order ?? 0,
     })),
+    decisions: decisionRows.map((decision) => ({
+      id: decision.id,
+      title: decision.title,
+      sortOrder: decision.sort_order ?? 0,
+    })),
   };
 }
 
@@ -391,6 +403,18 @@ export function mapMeetingTaskFromDb(row: any): MeetingTask {
     meetingId: row.meeting_id,
     title: row.title,
     completed: row.completed ?? false,
+    sortOrder: row.sort_order ?? 0,
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mapMeetingDecisionFromDb(row: any): MeetingDecision {
+  return {
+    id: row.id,
+    meetingId: row.meeting_id,
+    title: row.title,
     sortOrder: row.sort_order ?? 0,
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),

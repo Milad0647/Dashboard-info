@@ -214,6 +214,20 @@ export function MeetingDetailDialog({
                 </ul>
               </div>
             )}
+
+            {detail.decisions.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">تصمیم‌های جلسه</h4>
+                <ul className="space-y-2 rounded-lg border bg-muted/20 p-3">
+                  {detail.decisions.map((decision) => (
+                    <li key={decision.id} className="flex items-start gap-2 text-sm">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+                      <span>{decision.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-8 text-center text-sm text-muted-foreground">در حال بارگذاری…</div>
