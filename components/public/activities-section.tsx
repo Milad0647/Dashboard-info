@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import Image from "next/image";
 import { MapPin } from "lucide-react";
 import { isDirectVideoUrl } from "@/lib/media-utils";
 import { getActivityTypeLabel } from "@/lib/activity-types";
-import { useCampaignExportMode } from "@/lib/context/campaign-export-context";
+import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
+import { ShowMoreButton } from "@/components/public/show-more-button";
+import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import type { CampaignActivity, DataOwnerGroup } from "@/lib/types";
-import { formatPersianDate, formatPersianNumber } from "@/lib/utils";
+import { formatPersianDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 
-const ACTIVITIES_INITIAL_COUNT = 8;
-const ACTIVITIES_PAGE_SIZE = 8;
+const ACTIVITIES_ITEMS_PER_ROW = 3;
 
 interface ActivitiesSectionProps {
   activities: CampaignActivity[];
@@ -73,17 +73,30 @@ function ActivityCards({ activities }: { activities: CampaignActivity[] }) {
 }
 
 export function ActivitiesSection({ activities, groups }: ActivitiesSectionProps) {
-  const exportMode = useCampaignExportMode();
-  const [visibleCount, setVisibleCount] = useState(ACTIVITIES_INITIAL_COUNT);
-  const effectiveCount = exportMode ? activities.length : visibleCount;
-  const visibleIds = new Set(activities.slice(0, effectiveCount).map((activity) => activity.id));
-  const visibleGroups = groups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((activity) => visibleIds.has(activity.id)),
-    }))
-    .filter((group) => group.items.length > 0);
-  const hasMore = !exportMode && visibleCount < activities.length;
+  const filteredGroups = useFilteredOwnerGroups(groups);
+  const filteredActivities = useMemo(
+    () => filteredGroups.flatMap((group) => group.items),
+    [filteredGroups]
+  );
+
+  const { effectiveCount, hasMore, loadMore } = useSectionPagination(
+    filteredActivities.length,
+    ACTIVITIES_ITEMS_PER_ROW,
+    3,
+    `activities:${filteredActivities.length}`
+  );
+
+  const visibleGroups = useMemo(() => {
+    const visibleIds = new Set(
+      filteredActivities.slice(0, effectiveCount).map((activity) => activity.id)
+    );
+    return filteredGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((activity) => visibleIds.has(activity.id)),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [filteredGroups, filteredActivities, effectiveCount]);
 
   if (activities.length === 0) return null;
 
@@ -93,16 +106,25 @@ export function ActivitiesSection({ activities, groups }: ActivitiesSectionProps
       title="اقدامات"
       description="فعالیت‌های میدانی و تبلیغاتی: مجله، روزنامه، تراکت، غرفه، برنامه فرهنگی و ..."
     >
-      <OwnerGroupedSection groups={visibleGroups}>
-        {(groupActivities) => <ActivityCards activities={groupActivities} />}
-      </OwnerGroupedSection>
-
-      {hasMore && (
-        <div className="flex justify-center mt-4" data-export-hide>
-          <Button variant="outline" onClick={() => setVisibleCount((count) => count + ACTIVITIES_PAGE_SIZE)}>
-            مشاهده بیشتر ({formatPersianNumber(activities.length - visibleCount)} باقی‌مانده)
-          </Button>
+      {filteredActivities.length === 0 ? (
+        <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
+          فعالیتی با فیلتر انتخاب‌شده یافت نشد.
         </div>
+      ) : (
+        <>
+          <OwnerGroupedSection groups={visibleGroups}>
+            {(groupActivities) => <ActivityCards activities={groupActivities} />}
+          </OwnerGroupedSection>
+
+          {hasMore && (
+            <div className="mt-4">
+              <ShowMoreButton
+                remaining={filteredActivities.length - effectiveCount}
+                onClick={loadMore}
+              />
+            </div>
+          )}
+        </>
       )}
     </CollapsibleSection>
   );

@@ -22,7 +22,8 @@ import {
   type PublicMediaSort,
 } from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
-import { groupByOwner, hasUserOwnedGroups } from "@/lib/owner-groups";
+import { useFilteredOwnableItems } from "@/lib/hooks/use-filtered-owner-groups";
+import { groupByOwner } from "@/lib/owner-groups";
 import type { Billboard } from "@/lib/types";
 import { formatPersianNumber, getStatusLabel } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ interface BillboardSectionProps {
 }
 
 export function BillboardSection({ billboards }: BillboardSectionProps) {
+  const locationFilteredBillboards = useFilteredOwnableItems(billboards);
   const [cityFilter, setCityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sort, setSort] = useState<PublicMediaSort>("default");
@@ -39,33 +41,29 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
   const cities = useMemo(
-    () => [...new Set(billboards.map((billboard) => billboard.city))],
-    [billboards]
+    () => [...new Set(locationFilteredBillboards.map((billboard) => billboard.city))],
+    [locationFilteredBillboards]
   );
 
   const filtered = useMemo(() => {
-    const items = billboards.filter((billboard) => {
+    const items = locationFilteredBillboards.filter((billboard) => {
       if (cityFilter !== "all" && billboard.city !== cityFilter) return false;
       if (statusFilter !== "all" && billboard.status !== statusFilter) return false;
       if (search && !billboard.title.includes(search) && !billboard.city.includes(search)) return false;
       return true;
     });
     return sortByPublicMediaOrder(items, sort, (item) => item.date);
-  }, [billboards, cityFilter, statusFilter, search, sort]);
-
-  const filteredGroups = useMemo(() => groupByOwner(filtered), [filtered]);
-  const enablePagination = !hasUserOwnedGroups(filteredGroups);
+  }, [locationFilteredBillboards, cityFilter, statusFilter, search, sort]);
 
   const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
     filtered.length,
-    `${cityFilter}:${statusFilter}:${search}:${sort}`,
-    enablePagination
+    `${cityFilter}:${statusFilter}:${search}:${sort}`
   );
 
-  const visibleBillboards = enablePagination ? filtered.slice(0, visibleCount) : filtered;
+  const visibleBillboards = filtered.slice(0, visibleCount);
   const visibleGroups = useMemo(
-    () => (enablePagination ? groupByOwner(visibleBillboards) : filteredGroups),
-    [enablePagination, visibleBillboards, filteredGroups]
+    () => groupByOwner(visibleBillboards),
+    [visibleBillboards]
   );
 
   const openBillboard = (billboard: Billboard) => {
@@ -151,7 +149,7 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
               )}
             </OwnerGroupedSection>
 
-            {enablePagination && hasMore && (
+            {hasMore && (
               <div className="flex justify-center" data-export-hide>
                 <Button variant="outline" onClick={loadMore}>
                   مشاهده بیشتر ({formatPersianNumber(filtered.length - visibleCount)} باقی‌مانده)

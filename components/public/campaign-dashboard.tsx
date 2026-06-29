@@ -31,6 +31,8 @@ import { MeetingsSection } from "@/components/public/meetings-section";
 import { DeferredSection } from "@/components/public/deferred-section";
 import { CampaignScreenshotExporter } from "@/components/public/campaign-screenshot-exporter";
 import { CampaignExportProvider } from "@/lib/context/campaign-export-context";
+import { OwnerLocationFilterProvider } from "@/lib/context/owner-location-filter-context";
+import { OwnerLocationFilterBar } from "@/components/public/owner-location-filter-bar";
 import type { PublicCampaignData } from "@/lib/types";
 import { formatPersianDate, formatPersianDateTime } from "@/lib/utils";
 
@@ -87,6 +89,7 @@ export function CampaignDashboard({ initialData, slug, exportMode = false }: Cam
 
   return (
     <CampaignExportProvider exportMode={exportMode}>
+    <OwnerLocationFilterProvider data={data}>
     <div className="min-h-screen" data-campaign-export-root>
       {exportMode && <CampaignScreenshotExporter slug={slug} title={settings.title} />}
       <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-40">
@@ -134,6 +137,8 @@ export function CampaignDashboard({ initialData, slug, exportMode = false }: Cam
             </div>
           )}
         </section>
+
+        <OwnerLocationFilterBar />
 
         {sections.analytics && (
           <DeferredSection minHeight={320} forceRender={exportMode}>
@@ -245,6 +250,7 @@ export function CampaignDashboard({ initialData, slug, exportMode = false }: Cam
         <p>گزارش زنده کمپین — {settings.title}</p>
       </footer>
     </div>
+    </OwnerLocationFilterProvider>
     </CampaignExportProvider>
   );
 }

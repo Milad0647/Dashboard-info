@@ -18,7 +18,7 @@ import {
   type PublicMediaSort,
 } from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
-import { hasUserOwnedGroups } from "@/lib/owner-groups";
+import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import type { DataOwnerGroup, MediaCategory, VideoWithVersions } from "@/lib/types";
 import { cn, formatPersianNumber } from "@/lib/utils";
 
@@ -61,9 +61,11 @@ export function VideosSection({ categories, videos, groups }: VideosSectionProps
     [categories]
   );
 
+  const locationFilteredGroups = useFilteredOwnerGroups(groups);
+
   const filteredGroups = useMemo(
-    () => filterVideoGroups(groups, categoryFilter, sort),
-    [groups, categoryFilter, sort]
+    () => filterVideoGroups(locationFilteredGroups, categoryFilter, sort),
+    [locationFilteredGroups, categoryFilter, sort]
   );
 
   const filteredVideos = useMemo(
@@ -71,17 +73,12 @@ export function VideosSection({ categories, videos, groups }: VideosSectionProps
     [filteredGroups]
   );
 
-  const enablePagination = !hasUserOwnedGroups(filteredGroups);
-
   const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
     filteredVideos.length,
-    `${categoryFilter}:${sort}`,
-    enablePagination
+    `${categoryFilter}:${sort}`
   );
 
   const visibleGroups = useMemo(() => {
-    if (!enablePagination) return filteredGroups;
-
     const visibleIds = new Set(filteredVideos.slice(0, visibleCount).map((video) => video.id));
     return filteredGroups
       .map((group) => ({
@@ -89,7 +86,7 @@ export function VideosSection({ categories, videos, groups }: VideosSectionProps
         items: group.items.filter((video) => visibleIds.has(video.id)),
       }))
       .filter((group) => group.items.length > 0);
-  }, [enablePagination, filteredGroups, filteredVideos, visibleCount]);
+  }, [filteredGroups, filteredVideos, visibleCount]);
 
   if (videos.length === 0) return null;
 
@@ -182,7 +179,7 @@ export function VideosSection({ categories, videos, groups }: VideosSectionProps
             )}
           </OwnerGroupedSection>
 
-          {enablePagination && hasMore && (
+          {hasMore && (
               <div className="flex justify-center" data-export-hide>
                 <Button variant="outline" onClick={loadMore}>
                 مشاهده بیشتر ({formatPersianNumber(filteredVideos.length - visibleCount)} باقی‌مانده)

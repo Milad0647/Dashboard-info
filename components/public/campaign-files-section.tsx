@@ -1,9 +1,17 @@
+"use client";
+
+import { useMemo } from "react";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
+import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
+import { ShowMoreButton } from "@/components/public/show-more-button";
+import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import type { CampaignFile, DataOwnerGroup } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
+
+const FILES_ITEMS_PER_ROW = 2;
 
 interface CampaignFilesSectionProps {
   files: CampaignFile[];
@@ -61,6 +69,29 @@ function fileIcon(mimeType: string) {
 }
 
 export function CampaignFilesSection({ files, groups }: CampaignFilesSectionProps) {
+  const filteredGroups = useFilteredOwnerGroups(groups);
+  const filteredFiles = useMemo(
+    () => filteredGroups.flatMap((group) => group.items),
+    [filteredGroups]
+  );
+
+  const { effectiveCount, hasMore, loadMore } = useSectionPagination(
+    filteredFiles.length,
+    FILES_ITEMS_PER_ROW,
+    3,
+    `files:${filteredFiles.length}`
+  );
+
+  const visibleGroups = useMemo(() => {
+    const ids = new Set(filteredFiles.slice(0, effectiveCount).map((file) => file.id));
+    return filteredGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((file) => ids.has(file.id)),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [filteredGroups, filteredFiles, effectiveCount]);
+
   if (files.length === 0) return null;
 
   return (
@@ -69,9 +100,24 @@ export function CampaignFilesSection({ files, groups }: CampaignFilesSectionProp
       title="فایل‌های کمپین"
       description="دانلود PDF، Word، Excel و سایر فایل‌های مرتبط با کمپین"
     >
-      <OwnerGroupedSection groups={groups}>
-        {(groupFiles) => <FileList files={groupFiles} />}
-      </OwnerGroupedSection>
+      {filteredFiles.length === 0 ? (
+        <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
+          فایلی با فیلتر انتخاب‌شده یافت نشد.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <OwnerGroupedSection groups={visibleGroups}>
+            {(groupFiles) => <FileList files={groupFiles} />}
+          </OwnerGroupedSection>
+
+          {hasMore && (
+            <ShowMoreButton
+              remaining={filteredFiles.length - effectiveCount}
+              onClick={loadMore}
+            />
+          )}
+        </div>
+      )}
     </CollapsibleSection>
   );
 }

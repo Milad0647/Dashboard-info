@@ -13,6 +13,7 @@ import type {
   MeetingTask,
   MeetingPublicDetail,
   MeetingPublicPreview,
+  Ownable,
   Poster,
   PosterVersion,
   SocialMediaPost,
@@ -34,6 +35,16 @@ function toDateString(value: unknown): string {
 function toIsoString(value: unknown): string {
   if (value instanceof Date) return value.toISOString();
   return String(value ?? "");
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapOwnerFromDb(row: any): Ownable {
+  return {
+    ownerUserId: row.owner_user_id ?? null,
+    ownerName: row.owner_name ?? null,
+    ownerProvince: row.owner_province ?? null,
+    ownerCity: row.owner_city ?? null,
+  };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -116,8 +127,7 @@ export function mapBillboardFromDb(row: any): Billboard {
     notes: row.notes,
     published: row.published,
     sortOrder: row.sort_order,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
   };
@@ -147,8 +157,7 @@ export function mapPosterFromDb(row: any): Poster {
     description: row.description,
     published: row.published,
     sortOrder: row.sort_order,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
   };
@@ -180,8 +189,7 @@ export function mapVideoFromDb(row: any): Video {
     description: row.description,
     published: row.published,
     sortOrder: row.sort_order,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
   };
@@ -219,8 +227,7 @@ export function mapAnalyticsFromDb(row: any): AnalyticsMetric {
     device: row.device,
     page: row.page,
     city: row.city,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     createdAt: toIsoString(row.created_at),
   };
 }
@@ -240,8 +247,7 @@ export function mapSubmissionFromDb(row: any): CampaignSubmission {
     mediaUrl: row.media_url,
     status: row.status,
     published: row.published,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
   };
@@ -252,8 +258,7 @@ export function mapSocialPostFromDb(row: any): SocialMediaPost {
   return {
     id: row.id,
     campaignId: row.campaign_id,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     platform: row.platform,
     title: row.title,
     coverImageUrl: row.cover_image_url,
@@ -278,8 +283,7 @@ export function mapSocialPlatformStatFromDb(row: any): SocialPlatformStat {
   return {
     id: row.id,
     campaignId: row.campaign_id,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     platform: row.platform,
     followers: Number(row.followers ?? 0),
     posts: Number(row.posts ?? 0),
@@ -300,8 +304,7 @@ export function mapBroadcastReportFromDb(row: any): BroadcastReport {
   return {
     id: row.id,
     campaignId: row.campaign_id,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     title: row.title,
     reportDate: toDateString(row.report_date),
     pdfUrl: row.pdf_url,
@@ -319,8 +322,7 @@ export function mapCampaignActivityFromDb(row: any): CampaignActivity {
   return {
     id: row.id,
     campaignId: row.campaign_id,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     title: row.title,
     activityType: row.activity_type ?? "other",
     activityDate: toDateString(row.activity_date),
@@ -358,8 +360,7 @@ export function mapMeetingFromDb(row: any): CampaignMeeting {
   return {
     id: row.id,
     campaignId: row.campaign_id,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     title: row.title ?? "",
     meetingDate: toDateString(row.meeting_date),
     location: row.location ?? "",
@@ -381,8 +382,7 @@ export function mapMeetingPreviewFromDb(row: any): MeetingPublicPreview {
   return {
     id: row.id,
     campaignId: row.campaign_id,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     title: row.title ?? "",
     meetingDate: toDateString(row.meeting_date),
     imageUrl: row.image_url ?? null,
@@ -481,8 +481,7 @@ export function mapCampaignFileFromDb(row: any): CampaignFile {
     fileSize: Number(row.file_size ?? 0),
     published: row.published ?? false,
     sortOrder: row.sort_order ?? 0,
-    ownerUserId: row.owner_user_id ?? null,
-    ownerName: row.owner_name ?? null,
+    ...mapOwnerFromDb(row),
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
   };

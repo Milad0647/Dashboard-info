@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
 import {
   isDirectVideoUrl,
@@ -14,7 +15,14 @@ interface VideoThumbnailProps {
   className?: string;
 }
 
+function withFirstFrameFragment(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.includes("#")) return trimmed;
+  return `${trimmed}#t=0.001`;
+}
+
 export function VideoThumbnail({ videoUrl, thumbnailUrl, alt, className = "object-cover" }: VideoThumbnailProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const coverUrl = resolveVideoThumbnail(videoUrl, thumbnailUrl);
 
   if (coverUrl) {
@@ -31,11 +39,15 @@ export function VideoThumbnail({ videoUrl, thumbnailUrl, alt, className = "objec
   if (isDirectVideoUrl(videoUrl)) {
     return (
       <video
-        src={videoUrl}
+        ref={videoRef}
+        src={withFirstFrameFragment(videoUrl)}
         className={cn("h-full w-full", className)}
         muted
         playsInline
-        preload="metadata"
+        preload="auto"
+        onLoadedData={(event) => {
+          event.currentTarget.currentTime = 0;
+        }}
         aria-label={alt}
       />
     );

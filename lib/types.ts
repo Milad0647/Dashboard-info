@@ -95,6 +95,8 @@ export interface CampaignListItem {
 export interface Ownable {
   ownerUserId?: string | null;
   ownerName?: string | null;
+  ownerProvince?: string | null;
+  ownerCity?: string | null;
 }
 
 export interface Billboard extends Ownable {
@@ -442,6 +444,8 @@ export interface DataOwnerGroup<T> {
   ownerKey: string;
   ownerLabel: string;
   ownerUserId: string | null;
+  ownerProvince?: string | null;
+  ownerCity?: string | null;
   items: T[];
 }
 

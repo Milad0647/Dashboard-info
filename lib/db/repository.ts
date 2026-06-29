@@ -85,7 +85,7 @@ export async function pgGetAdminData(campaignId: string, ownerUserId?: string | 
     sql`SELECT * FROM campaign_settings ORDER BY updated_at DESC`,
     sql`SELECT * FROM campaign_settings WHERE id = ${campaignId} LIMIT 1`,
     sql`
-      SELECT b.*, u.name AS owner_name
+      SELECT b.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM billboards b
       LEFT JOIN users u ON u.id = b.owner_user_id
       WHERE b.campaign_id = ${campaignId}
@@ -94,7 +94,7 @@ export async function pgGetAdminData(campaignId: string, ownerUserId?: string | 
     `,
     sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'poster' ORDER BY sort_order`,
     sql`
-      SELECT p.*, u.name AS owner_name
+      SELECT p.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM posters p
       LEFT JOIN users u ON u.id = p.owner_user_id
       WHERE p.campaign_id = ${campaignId}
@@ -109,7 +109,7 @@ export async function pgGetAdminData(campaignId: string, ownerUserId?: string | 
     `,
     sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'video' ORDER BY sort_order`,
     sql`
-      SELECT v.*, u.name AS owner_name
+      SELECT v.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM videos v
       LEFT JOIN users u ON u.id = v.owner_user_id
       WHERE v.campaign_id = ${campaignId}
@@ -123,7 +123,7 @@ export async function pgGetAdminData(campaignId: string, ownerUserId?: string | 
       ${ownerUserId === undefined ? sql`` : sql`AND v.owner_user_id IS NOT DISTINCT FROM ${ownerUserId}`}
     `,
     sql`
-      SELECT a.*, u.name AS owner_name
+      SELECT a.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM analytics_metrics a
       LEFT JOIN users u ON u.id = a.owner_user_id
       WHERE a.campaign_id = ${campaignId}
@@ -131,7 +131,7 @@ export async function pgGetAdminData(campaignId: string, ownerUserId?: string | 
       ORDER BY a.date DESC
     `,
     sql`
-      SELECT s.*, u.name AS owner_name
+      SELECT s.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM campaign_submissions s
       LEFT JOIN users u ON u.id = s.owner_user_id
       WHERE s.campaign_id = ${campaignId}
@@ -139,7 +139,7 @@ export async function pgGetAdminData(campaignId: string, ownerUserId?: string | 
       ORDER BY s.created_at DESC
     `,
     sql`
-      SELECT f.*, u.name AS owner_name
+      SELECT f.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM campaign_files f
       LEFT JOIN users u ON u.id = f.owner_user_id
       WHERE f.campaign_id = ${campaignId}
@@ -147,7 +147,7 @@ export async function pgGetAdminData(campaignId: string, ownerUserId?: string | 
       ORDER BY f.sort_order
     `,
     sql`
-      SELECT sp.*, u.name AS owner_name
+      SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM social_media_posts sp
       LEFT JOIN users u ON u.id = sp.owner_user_id
       WHERE sp.campaign_id = ${campaignId}
@@ -155,7 +155,7 @@ export async function pgGetAdminData(campaignId: string, ownerUserId?: string | 
       ORDER BY sp.sort_order
     `,
     sql`
-      SELECT br.*, u.name AS owner_name
+      SELECT br.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM broadcast_reports br
       LEFT JOIN users u ON u.id = br.owner_user_id
       WHERE br.campaign_id = ${campaignId}
@@ -163,7 +163,7 @@ export async function pgGetAdminData(campaignId: string, ownerUserId?: string | 
       ORDER BY br.sort_order
     `,
     sql`
-      SELECT sps.*, u.name AS owner_name
+      SELECT sps.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM social_platform_stats sps
       LEFT JOIN users u ON u.id = sps.owner_user_id
       WHERE sps.campaign_id = ${campaignId}
@@ -745,7 +745,7 @@ export async function pgGetPublicCampaignData(campaignId: string) {
     activities,
   ] = await Promise.all([
     sql`
-      SELECT b.*, u.name AS owner_name
+      SELECT b.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM billboards b
       LEFT JOIN users u ON u.id = b.owner_user_id
       WHERE b.campaign_id = ${campaignId} AND b.published = true
@@ -753,7 +753,7 @@ export async function pgGetPublicCampaignData(campaignId: string) {
     `,
     sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'poster' AND published = true ORDER BY sort_order`,
     sql`
-      SELECT p.*, u.name AS owner_name
+      SELECT p.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM posters p
       LEFT JOIN users u ON u.id = p.owner_user_id
       WHERE p.campaign_id = ${campaignId} AND p.published = true
@@ -767,7 +767,7 @@ export async function pgGetPublicCampaignData(campaignId: string) {
     `,
     sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'video' AND published = true ORDER BY sort_order`,
     sql`
-      SELECT v.*, u.name AS owner_name
+      SELECT v.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM videos v
       LEFT JOIN users u ON u.id = v.owner_user_id
       WHERE v.campaign_id = ${campaignId} AND v.published = true
@@ -780,42 +780,42 @@ export async function pgGetPublicCampaignData(campaignId: string) {
       ORDER BY vv.version_number
     `,
     sql`
-      SELECT a.*, u.name AS owner_name
+      SELECT a.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM analytics_metrics a
       LEFT JOIN users u ON u.id = a.owner_user_id
       WHERE a.campaign_id = ${campaignId}
       ORDER BY a.date
     `,
     sql`
-      SELECT s.*, u.name AS owner_name
+      SELECT s.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM campaign_submissions s
       LEFT JOIN users u ON u.id = s.owner_user_id
       WHERE s.campaign_id = ${campaignId} AND s.published = true AND s.status = 'approved'
       ORDER BY s.created_at DESC
     `,
     sql`
-      SELECT f.*, u.name AS owner_name
+      SELECT f.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM campaign_files f
       LEFT JOIN users u ON u.id = f.owner_user_id
       WHERE f.campaign_id = ${campaignId} AND f.published = true
       ORDER BY f.sort_order
     `,
     sql`
-      SELECT sp.*, u.name AS owner_name
+      SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM social_media_posts sp
       LEFT JOIN users u ON u.id = sp.owner_user_id
       WHERE sp.campaign_id = ${campaignId} AND sp.published = true
       ORDER BY sp.sort_order
     `,
     sql`
-      SELECT br.*, u.name AS owner_name
+      SELECT br.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM broadcast_reports br
       LEFT JOIN users u ON u.id = br.owner_user_id
       WHERE br.campaign_id = ${campaignId} AND br.published = true
       ORDER BY br.sort_order, br.report_date DESC
     `,
     sql`
-      SELECT sps.*, u.name AS owner_name
+      SELECT sps.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM social_platform_stats sps
       LEFT JOIN users u ON u.id = sps.owner_user_id
       WHERE sps.campaign_id = ${campaignId}

@@ -10,15 +10,23 @@ interface OwnerGroupedSectionProps<T> {
 function GroupHeader({
   label,
   count,
+  province,
+  city,
   variant = "outline",
 }: {
   label: string;
   count: number;
+  province?: string | null;
+  city?: string | null;
   variant?: "outline" | "secondary";
 }) {
+  const location =
+    province && city ? `${province} — ${city}` : province ? province : city ? city : null;
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Badge variant={variant}>{label}</Badge>
+      {location && <span className="text-xs text-muted-foreground">{location}</span>}
       <span className="text-xs text-muted-foreground">{count} مورد</span>
     </div>
   );
@@ -56,7 +64,15 @@ export function OwnerGroupedSection<T>({ groups, children }: OwnerGroupedSection
     <div className="space-y-8">
       {adminGroups.map((group) => (
         <div key={group.ownerKey} className="space-y-4">
-          {showUserDivider && <GroupHeader label={group.ownerLabel} count={group.items.length} variant="secondary" />}
+          {showUserDivider && (
+            <GroupHeader
+              label={group.ownerLabel}
+              count={group.items.length}
+              province={group.ownerProvince}
+              city={group.ownerCity}
+              variant="secondary"
+            />
+          )}
           {children(group.items, group)}
         </div>
       ))}
@@ -65,7 +81,12 @@ export function OwnerGroupedSection<T>({ groups, children }: OwnerGroupedSection
 
       {userGroups.map((group) => (
         <div key={group.ownerKey} className="space-y-4">
-          <GroupHeader label={group.ownerLabel} count={group.items.length} />
+          <GroupHeader
+            label={group.ownerLabel}
+            count={group.items.length}
+            province={group.ownerProvince}
+            city={group.ownerCity}
+          />
           {children(group.items, group)}
         </div>
       ))}

@@ -1,13 +1,8 @@
-import type { DataOwnerGroup } from "@/lib/types";
-
-interface OwnableItem {
-  ownerUserId?: string | null;
-  ownerName?: string | null;
-}
+import type { DataOwnerGroup, Ownable } from "@/lib/types";
 
 const ADMIN_KEY = "admin";
 
-export function groupByOwner<T extends OwnableItem>(
+export function groupByOwner<T extends Ownable>(
   items: T[],
   adminLabel = "مدیریت"
 ): DataOwnerGroup<T>[] {
@@ -28,6 +23,8 @@ export function groupByOwner<T extends OwnableItem>(
       ownerKey: key,
       ownerLabel,
       ownerUserId,
+      ownerProvince: ownerUserId ? (item.ownerProvince ?? null) : null,
+      ownerCity: ownerUserId ? (item.ownerCity ?? null) : null,
       items: [item],
     });
   }
@@ -42,7 +39,7 @@ export function groupByOwner<T extends OwnableItem>(
   return ordered;
 }
 
-export function filterOwnerGroups<T extends OwnableItem>(
+export function filterOwnerGroups<T extends Ownable>(
   groups: DataOwnerGroup<T>[],
   predicate: (item: T) => boolean
 ): DataOwnerGroup<T>[] {

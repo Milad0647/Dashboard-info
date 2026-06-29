@@ -1,22 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Image from "next/image";
 import { KPICard } from "@/components/public/kpi-card";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { ParticipationChart } from "@/components/charts/participation-chart";
-import { useCampaignExportMode } from "@/lib/context/campaign-export-context";
+import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
+import { ShowMoreButton } from "@/components/public/show-more-button";
+import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { hasUserOwnedGroups } from "@/lib/owner-groups";
 import type { CampaignSubmission, DataOwnerGroup, SubmissionSummary } from "@/lib/types";
-import { formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
+import { formatPersianDate, getStatusLabel } from "@/lib/utils";
 import { CheckCircle, Clock, FileText, Users, XCircle } from "lucide-react";
 
-const SUBMISSIONS_INITIAL_COUNT = 12;
-const SUBMISSIONS_PAGE_SIZE = 12;
+const SUBMISSIONS_ITEMS_PER_ROW = 4;
 
 interface SubmissionsSectionProps {
   submissions: CampaignSubmission[];
@@ -60,21 +59,29 @@ function SubmissionCards({ submissions }: { submissions: CampaignSubmission[] })
   );
 }
 
-export function SubmissionsSection({ submissions, groups, summary }: SubmissionsSectionProps) {
-  const exportMode = useCampaignExportMode();
-  const [visibleCount, setVisibleCount] = useState(SUBMISSIONS_INITIAL_COUNT);
-  const enablePagination = !hasUserOwnedGroups(groups);
-  const effectiveCount = exportMode || !enablePagination ? submissions.length : visibleCount;
+export function SubmissionsSection({ groups, summary }: SubmissionsSectionProps) {
+  const filteredGroups = useFilteredOwnerGroups(groups);
+  const filteredSubmissions = useMemo(
+    () => filteredGroups.flatMap((group) => group.items),
+    [filteredGroups]
+  );
+
+  const { effectiveCount, hasMore, loadMore } = useSectionPagination(
+    filteredSubmissions.length,
+    SUBMISSIONS_ITEMS_PER_ROW,
+    3,
+    `submissions:${filteredSubmissions.length}`
+  );
+
   const visibleGroups = useMemo(() => {
-    const ids = new Set(submissions.slice(0, effectiveCount).map((submission) => submission.id));
-    return groups
+    const ids = new Set(filteredSubmissions.slice(0, effectiveCount).map((submission) => submission.id));
+    return filteredGroups
       .map((group) => ({
         ...group,
         items: group.items.filter((submission) => ids.has(submission.id)),
       }))
       .filter((group) => group.items.length > 0);
-  }, [groups, submissions, effectiveCount]);
-  const hasMore = enablePagination && !exportMode && visibleCount < submissions.length;
+  }, [filteredGroups, filteredSubmissions, effectiveCount]);
 
   return (
     <CollapsibleSection
@@ -95,9 +102,9 @@ export function SubmissionsSection({ submissions, groups, summary }: Submissions
         <ParticipationChart data={summary.participationByDate} />
       </div>
 
-      {submissions.length === 0 ? (
+      {filteredSubmissions.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground border rounded-xl bg-card">
-          ارسال تأییدشده‌ای وجود ندارد.
+          ارسال تأییدشده‌ای با فیلتر انتخاب‌شده وجود ندارد.
         </div>
       ) : (
         <div className="space-y-4">
@@ -106,14 +113,11 @@ export function SubmissionsSection({ submissions, groups, summary }: Submissions
           </OwnerGroupedSection>
 
           {hasMore && (
-            <div className="flex justify-center" data-export-hide>
-              <Button
-                variant="outline"
-                onClick={() => setVisibleCount((count) => count + SUBMISSIONS_PAGE_SIZE)}
-              >
-                نمایش بیشتر ({formatPersianNumber(submissions.length - visibleCount)} باقی‌مانده)
-              </Button>
-            </div>
+            <ShowMoreButton
+              remaining={filteredSubmissions.length - effectiveCount}
+              onClick={loadMore}
+              label="نمایش بیشتر"
+            />
           )}
         </div>
       )}

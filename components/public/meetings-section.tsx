@@ -10,6 +10,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MeetingDetailDialog } from "@/components/public/meeting-detail-dialog";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
+import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
+import { ShowMoreButton } from "@/components/public/show-more-button";
+import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import { useCampaignExportMode } from "@/lib/context/campaign-export-context";
 import {
   loadUnlockedMeetings,
@@ -18,8 +21,7 @@ import {
 import type { DataOwnerGroup, MeetingPublicDetail, MeetingPublicPreview } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 
-const MEETINGS_INITIAL_COUNT = 4;
-const MEETINGS_PAGE_SIZE = 4;
+const MEETINGS_ITEMS_PER_ROW = 4;
 const MEETINGS_GRID_CLASS = "grid grid-cols-2 md:grid-cols-4 gap-4";
 
 interface MeetingsSectionProps {
@@ -141,14 +143,16 @@ function MeetingsGrid({
   isUnlocked: boolean;
   detailCache: Record<string, MeetingPublicDetail>;
 }) {
-  const exportMode = useCampaignExportMode();
-  const [visibleCount, setVisibleCount] = useState(MEETINGS_INITIAL_COUNT);
+  const { effectiveCount, hasMore, loadMore } = useSectionPagination(
+    meetings.length,
+    MEETINGS_ITEMS_PER_ROW,
+    3,
+    `meetings:${meetings.length}`
+  );
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingPublicPreview | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const effectiveCount = exportMode ? meetings.length : Math.min(visibleCount, meetings.length);
   const visibleMeetings = meetings.slice(0, effectiveCount);
-  const hasMore = !exportMode && effectiveCount < meetings.length;
 
   const openMeeting = (meeting: MeetingPublicPreview) => {
     setSelectedMeeting(meeting);
@@ -169,14 +173,10 @@ function MeetingsGrid({
         </div>
 
         {hasMore && (
-          <div className="flex justify-center" data-export-hide>
-            <Button
-              variant="outline"
-              onClick={() => setVisibleCount((count) => count + MEETINGS_PAGE_SIZE)}
-            >
-              مشاهده بیشتر ({meetings.length - effectiveCount} باقی‌مانده)
-            </Button>
-          </div>
+          <ShowMoreButton
+            remaining={meetings.length - effectiveCount}
+            onClick={loadMore}
+          />
         )}
       </div>
 
@@ -199,6 +199,7 @@ export function MeetingsSection({
   groups,
 }: MeetingsSectionProps) {
   const exportMode = useCampaignExportMode();
+  const filteredGroups = useFilteredOwnerGroups(groups);
   const [detailCache, setDetailCache] = useState<Record<string, MeetingPublicDetail>>({});
   const [isUnlocked, setIsUnlocked] = useState(!meetingsHasPassword);
 
@@ -232,7 +233,7 @@ export function MeetingsSection({
       {sectionLocked ? (
         <MeetingsUnlockBanner campaignSlug={campaignSlug} onUnlocked={applyUnlock} />
       ) : (
-        <OwnerGroupedSection groups={groups}>
+        <OwnerGroupedSection groups={filteredGroups}>
           {(groupMeetings) => (
             <MeetingsGrid
               meetings={groupMeetings}

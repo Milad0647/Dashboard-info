@@ -1,10 +1,18 @@
+"use client";
+
+import { useMemo } from "react";
 import Image from "next/image";
 import { ExternalLink, Globe } from "lucide-react";
 import type { DataOwnerGroup, SocialMediaPost } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
+import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
+import { ShowMoreButton } from "@/components/public/show-more-button";
+import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import { Badge } from "@/components/ui/badge";
+
+const PUBLICATIONS_ITEMS_PER_ROW = 1;
 
 interface SitePublicationsSectionProps {
   publications: SocialMediaPost[];
@@ -65,6 +73,29 @@ function PublicationList({ items }: { items: SocialMediaPost[] }) {
 }
 
 export function SitePublicationsSection({ publications, groups }: SitePublicationsSectionProps) {
+  const filteredGroups = useFilteredOwnerGroups(groups);
+  const filteredPublications = useMemo(
+    () => filteredGroups.flatMap((group) => group.items),
+    [filteredGroups]
+  );
+
+  const { effectiveCount, hasMore, loadMore } = useSectionPagination(
+    filteredPublications.length,
+    PUBLICATIONS_ITEMS_PER_ROW,
+    3,
+    `site-publications:${filteredPublications.length}`
+  );
+
+  const visibleGroups = useMemo(() => {
+    const ids = new Set(filteredPublications.slice(0, effectiveCount).map((item) => item.id));
+    return filteredGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => ids.has(item.id)),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [filteredGroups, filteredPublications, effectiveCount]);
+
   if (publications.length === 0) return null;
 
   return (
@@ -73,9 +104,24 @@ export function SitePublicationsSection({ publications, groups }: SitePublicatio
       title="انتشار در سایت"
       description="مطالب منتشرشده در سایت کمپین — عنوان هر مورد لینک مستقیم به صفحه است"
     >
-      <OwnerGroupedSection groups={groups}>
-        {(groupItems) => <PublicationList items={groupItems} />}
-      </OwnerGroupedSection>
+      {filteredPublications.length === 0 ? (
+        <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
+          مطلبی با فیلتر انتخاب‌شده یافت نشد.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <OwnerGroupedSection groups={visibleGroups}>
+            {(groupItems) => <PublicationList items={groupItems} />}
+          </OwnerGroupedSection>
+
+          {hasMore && (
+            <ShowMoreButton
+              remaining={filteredPublications.length - effectiveCount}
+              onClick={loadMore}
+            />
+          )}
+        </div>
+      )}
     </CollapsibleSection>
   );
 }

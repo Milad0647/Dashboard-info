@@ -18,7 +18,7 @@ import {
   type PublicMediaSort,
 } from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
-import { hasUserOwnedGroups } from "@/lib/owner-groups";
+import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import type { DataOwnerGroup, MediaCategory, PosterWithVersions } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
 
@@ -61,9 +61,11 @@ export function PostersSection({ categories, posters, groups }: PostersSectionPr
     [categories, posters]
   );
 
+  const locationFilteredGroups = useFilteredOwnerGroups(groups);
+
   const filteredGroups = useMemo(
-    () => filterPosterGroups(groups, categoryFilter, sort),
-    [groups, categoryFilter, sort]
+    () => filterPosterGroups(locationFilteredGroups, categoryFilter, sort),
+    [locationFilteredGroups, categoryFilter, sort]
   );
 
   const filteredPosters = useMemo(
@@ -71,17 +73,12 @@ export function PostersSection({ categories, posters, groups }: PostersSectionPr
     [filteredGroups]
   );
 
-  const enablePagination = !hasUserOwnedGroups(filteredGroups);
-
   const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
     filteredPosters.length,
-    `${categoryFilter}:${sort}`,
-    enablePagination
+    `${categoryFilter}:${sort}`
   );
 
   const visibleGroups = useMemo(() => {
-    if (!enablePagination) return filteredGroups;
-
     const visibleIds = new Set(filteredPosters.slice(0, visibleCount).map((poster) => poster.id));
     return filteredGroups
       .map((group) => ({
@@ -89,7 +86,7 @@ export function PostersSection({ categories, posters, groups }: PostersSectionPr
         items: group.items.filter((poster) => visibleIds.has(poster.id)),
       }))
       .filter((group) => group.items.length > 0);
-  }, [enablePagination, filteredGroups, filteredPosters, visibleCount]);
+  }, [filteredGroups, filteredPosters, visibleCount]);
   if (posters.length === 0) return null;
 
   const controls = (
@@ -150,7 +147,7 @@ export function PostersSection({ categories, posters, groups }: PostersSectionPr
             )}
           </OwnerGroupedSection>
 
-          {enablePagination && hasMore && (              <div className="flex justify-center" data-export-hide>
+          {hasMore && (              <div className="flex justify-center" data-export-hide>
                 <Button variant="outline" onClick={loadMore}>
                 مشاهده بیشتر ({formatPersianNumber(filteredPosters.length - visibleCount)} باقی‌مانده)
               </Button>
