@@ -238,7 +238,7 @@ export async function importMapBilboardBackupZip(params: {
     const date = assignment.start_date ?? campaignBillboard.display_start ?? new Date().toISOString().split("T")[0];
 
     await pgSaveBillboard({
-      id: `mb-${assignment.id}`,
+      id: generateId(),
       campaignId: params.campaignId,
       title,
       description: billboard.address,

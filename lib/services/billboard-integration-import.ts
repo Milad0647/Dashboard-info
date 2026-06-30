@@ -6,6 +6,7 @@ import {
 } from "@/lib/services/billboard-api";
 import { matchOwnerToUser } from "@/lib/services/owner-user-match";
 import type { AdminUser, Billboard } from "@/lib/types";
+import { generateId } from "@/lib/utils";
 
 export interface IntegrationBillboardImportResult {
   imported: number;
@@ -63,7 +64,7 @@ export async function importIntegrationBillboards(params: {
 
     await pgSaveBillboard({
       ...mapped,
-      id: `int-${item.billboard_id}`,
+      id: generateId(),
     });
 
     imported += 1;
