@@ -5,7 +5,6 @@ import type { DataOwnerGroup, SocialMediaPost } from "@/lib/types";
 import { formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
-import { SectionLocationFilter } from "@/components/public/section-location-filter";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -143,7 +142,6 @@ export function SocialPostsSection({ posts, groups }: SocialPostsSectionProps) {
       id="social-posts"
       title="شبکه‌های اجتماعی"
       description={`${formatPersianNumber(posts.length)} پست — اینستاگرام، تلگرام و سایر شبکه‌ها`}
-      controls={<SectionLocationFilter />}
     >
       {filteredPosts.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">

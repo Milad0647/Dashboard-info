@@ -5,7 +5,6 @@ import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
-import { SectionLocationFilter } from "@/components/public/section-location-filter";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
@@ -100,7 +99,6 @@ export function CampaignFilesSection({ files, groups }: CampaignFilesSectionProp
       id="files"
       title="فایل‌های کمپین"
       description="دانلود PDF، Word، Excel و سایر فایل‌های مرتبط با کمپین"
-      controls={<SectionLocationFilter />}
     >
       {filteredFiles.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">

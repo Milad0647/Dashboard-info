@@ -21,7 +21,7 @@ export function OwnerLocationFilterBar() {
     >
       <div className="flex items-center gap-2 text-sm font-medium">
         <MapPin className="h-4 w-4 text-primary shrink-0" />
-        <span>فیلتر محتوای کاربران بر اساس موقعیت</span>
+        <span>تفکیک بر اساس استان و شهر</span>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

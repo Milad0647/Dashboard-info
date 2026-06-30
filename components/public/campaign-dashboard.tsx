@@ -4,23 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
-  CalendarDays,
-  FileText,
-  Globe,
-  ImageIcon,
-  LayoutGrid,
-  Megaphone,
-  MonitorPlay,
-  Radio,
   RefreshCw,
-  Share2,
-  Users,
-  Video,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { KPICard } from "@/components/public/kpi-card";
-import { SectionHeader } from "@/components/public/section-header";
+import { CampaignOverviewSection } from "@/components/public/campaign-overview-section";
 import { BillboardSection } from "@/components/public/billboard-section";
 import { PostersSection } from "@/components/public/posters-section";
 import { VideosSection } from "@/components/public/videos-section";
@@ -37,9 +24,8 @@ import { DeferredSection } from "@/components/public/deferred-section";
 import { CampaignScreenshotExporter } from "@/components/public/campaign-screenshot-exporter";
 import { CampaignExportProvider } from "@/lib/context/campaign-export-context";
 import { OwnerLocationFilterProvider } from "@/lib/context/owner-location-filter-context";
-import { OwnerLocationFilterBar } from "@/components/public/owner-location-filter-bar";
 import type { PublicCampaignData } from "@/lib/types";
-import { formatPersianDate, formatPersianDateTime } from "@/lib/utils";
+import { formatPersianDateTime } from "@/lib/utils";
 
 interface CampaignDashboardProps {
   initialData: PublicCampaignData;
@@ -75,36 +61,7 @@ export function CampaignDashboard({ initialData, slug, exportMode = false }: Cam
     return () => clearInterval(interval);
   }, [refreshData, exportMode]);
 
-  const { settings, kpis, sections } = data;
-  const kpiVisibility = {
-    billboards: settings.features.billboards,
-    posters: settings.features.posters,
-    videos: settings.features.videos,
-    analytics: settings.features.analytics,
-    socialAnalytics: settings.features.socialAnalytics,
-    socialPosts: settings.features.socialPosts ?? true,
-    sitePublications: settings.features.sitePublications ?? true,
-    broadcastReports: settings.features.broadcastReports ?? true,
-    meetings: settings.features.meetings ?? true,
-    activities: settings.features.activities ?? true,
-    submissions: settings.features.submissions,
-    files: settings.features.files,
-  };
-
-  const kpiItems = [
-    { show: kpiVisibility.billboards, title: "کل بیلبوردها", value: kpis.totalBillboards, icon: LayoutGrid },
-    { show: kpiVisibility.posters, title: "کل پوسترها", value: kpis.totalPosters, icon: ImageIcon },
-    { show: kpiVisibility.videos, title: "کل ویدیوها", value: kpis.totalVideos, icon: Video },
-    { show: kpiVisibility.analytics, title: "بازدید سایت", value: kpis.totalSiteVisitors, icon: MonitorPlay },
-    { show: kpiVisibility.socialAnalytics, title: "فالوور اجتماعی", value: kpis.totalSocialFollowers, icon: Share2 },
-    { show: kpiVisibility.socialPosts, title: "پست‌های شبکه اجتماعی", value: kpis.totalSocialPosts, icon: Share2 },
-    { show: kpiVisibility.sitePublications, title: "انتشار در سایت", value: kpis.totalSitePublications, icon: Globe },
-    { show: kpiVisibility.broadcastReports, title: "گزارش پخش", value: kpis.totalBroadcastReports, icon: Radio },
-    { show: kpiVisibility.meetings, title: "جلسات", value: kpis.totalMeetings, icon: CalendarDays },
-    { show: kpiVisibility.activities, title: "اقدامات", value: kpis.totalActivities, icon: Megaphone },
-    { show: kpiVisibility.submissions, title: "شرکت‌کنندگان", value: kpis.totalParticipants, icon: Users },
-    { show: kpiVisibility.files, title: "فایل‌ها", value: kpis.totalFiles, icon: FileText },
-  ].filter((k) => k.show);
+  const { settings, sections } = data;
 
   return (
     <CampaignExportProvider exportMode={exportMode}>
@@ -137,27 +94,7 @@ export function CampaignDashboard({ initialData, slug, exportMode = false }: Cam
       </header>
 
       <main className="container mx-auto space-y-8 px-4 py-8 max-w-[1280px]">
-        <section id="overview" data-export-section data-export-label="خلاصه کمپین">
-          <SectionHeader title="خلاصه کمپین" description={settings.description}>
-            <Badge status={settings.status}>
-              {settings.status === "live" ? "زنده" : settings.status === "completed" ? "پایان‌یافته" : "پیش‌نویس"}
-            </Badge>
-          </SectionHeader>
-
-          <p className="text-sm text-muted-foreground mb-6">
-            {formatPersianDate(settings.startDate)} — {formatPersianDate(settings.endDate)}
-          </p>
-
-          {kpiItems.length > 0 && (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-              {kpiItems.map((kpi) => (
-                <KPICard key={kpi.title} title={kpi.title} value={kpi.value} icon={kpi.icon} />
-              ))}
-            </div>
-          )}
-        </section>
-
-        <OwnerLocationFilterBar />
+        <CampaignOverviewSection data={data} />
 
         {sections.analytics && (
           <DeferredSection minHeight={320} forceRender={exportMode}>

@@ -5,7 +5,6 @@ import Image from "next/image";
 import { KPICard } from "@/components/public/kpi-card";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
-import { SectionLocationFilter } from "@/components/public/section-location-filter";
 import { ParticipationChart } from "@/components/charts/participation-chart";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { ShowMoreButton } from "@/components/public/show-more-button";
@@ -89,7 +88,6 @@ export function SubmissionsSection({ groups, summary }: SubmissionsSectionProps)
       id="submissions"
       title="مشارکت کاربران"
       description="مشارکت‌کنندگان و ارسال‌های تأییدشده در کمپین"
-      controls={<SectionLocationFilter />}
     >
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">

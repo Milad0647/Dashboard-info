@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
-import { SectionLocationFilter } from "@/components/public/section-location-filter";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { BillboardCard } from "@/components/public/billboard-card";
 import { BillboardMap } from "@/components/public/billboard-map";
@@ -74,7 +73,6 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
 
   const controls = (
     <>
-      <SectionLocationFilter />
       <Select value={sort} onValueChange={(value) => setSort(value as PublicMediaSort)}>
         <SelectTrigger className="w-36">
           <SelectValue placeholder="مرتب‌سازی" />

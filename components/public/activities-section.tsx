@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
-import { SectionLocationFilter } from "@/components/public/section-location-filter";
 import { ActivityMediaDialog } from "@/components/public/activity-media-dialog";
 import { PUBLIC_MEDIA_GRID_CLASS } from "@/lib/public-media-section";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
@@ -159,7 +158,6 @@ export function ActivitiesSection({ activities, groups }: ActivitiesSectionProps
       id="activities"
       title="اقدامات"
       description="فعالیت‌های میدانی و تبلیغاتی: مجله، روزنامه، تراکت، غرفه، برنامه فرهنگی و ..."
-      controls={<SectionLocationFilter />}
     >
       {filteredActivities.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">

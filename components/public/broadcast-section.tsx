@@ -5,7 +5,6 @@ import type { BroadcastReport, DataOwnerGroup } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
-import { SectionLocationFilter } from "@/components/public/section-location-filter";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
@@ -75,7 +74,6 @@ export function BroadcastSection({ reports, groups }: BroadcastSectionProps) {
       id="broadcast-reports"
       title="گزارش پخش صدا و سیما"
       description="گزارش‌های PDF روزانه"
-      controls={<SectionLocationFilter />}
     >
       {filteredReports.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">

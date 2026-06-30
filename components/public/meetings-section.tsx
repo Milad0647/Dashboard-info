@@ -10,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MeetingDetailDialog } from "@/components/public/meeting-detail-dialog";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
-import { SectionLocationFilter } from "@/components/public/section-location-filter";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
@@ -230,7 +229,6 @@ export function MeetingsSection({
       id="meetings"
       title="جلسات و مصوبات"
       description={sectionLocked ? undefined : "آخرین جلسات و مصوبات"}
-      controls={sectionLocked ? undefined : <SectionLocationFilter />}
     >
       {sectionLocked ? (
         <MeetingsUnlockBanner campaignSlug={campaignSlug} onUnlocked={applyUnlock} />

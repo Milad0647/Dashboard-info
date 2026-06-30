@@ -7,7 +7,6 @@ import type { DataOwnerGroup, SocialMediaPost } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
-import { SectionLocationFilter } from "@/components/public/section-location-filter";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
@@ -104,7 +103,6 @@ export function SitePublicationsSection({ publications, groups }: SitePublicatio
       id="site-publications"
       title="انتشار در سایت"
       description="مطالب منتشرشده در سایت کمپین — عنوان هر مورد لینک مستقیم به صفحه است"
-      controls={<SectionLocationFilter />}
     >
       {filteredPublications.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
