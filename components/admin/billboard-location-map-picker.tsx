@@ -2,19 +2,18 @@
 
 import { useEffect, useRef } from "react";
 import type { Map as LeafletMap, Marker } from "leaflet";
-import { getCityCoordinates } from "@/lib/iran-city-coordinates";
 
 interface BillboardLocationMapPickerProps {
   latitude: number;
   longitude: number;
-  city?: string | null;
+  mapCenter?: { lat: number; lng: number } | null;
   onChange: (coords: { latitude: number; longitude: number }) => void;
 }
 
 export function BillboardLocationMapPicker({
   latitude,
   longitude,
-  city,
+  mapCenter = null,
   onChange,
 }: BillboardLocationMapPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,7 +39,7 @@ export function BillboardLocationMapPicker({
 
       const map = L.map(containerRef.current, { scrollWheelZoom: true }).setView(
         [latitude, longitude],
-        13
+        14
       );
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -72,16 +71,14 @@ export function BillboardLocationMapPicker({
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !markerRef.current) return;
-    const [lat, lng] = getCityCoordinates(city);
-    mapRef.current.setView([lat, lng], 13);
-    markerRef.current.setLatLng([lat, lng]);
-    onChangeRef.current({ latitude: lat, longitude: lng });
-  }, [city]);
+    if (!mapCenter || !mapRef.current || !markerRef.current) return;
+    mapRef.current.flyTo([mapCenter.lat, mapCenter.lng], 14, { duration: 0.6 });
+    markerRef.current.setLatLng([mapCenter.lat, mapCenter.lng]);
+    onChangeRef.current({ latitude: mapCenter.lat, longitude: mapCenter.lng });
+  }, [mapCenter?.lat, mapCenter?.lng]);
 
   useEffect(() => {
     markerRef.current?.setLatLng([latitude, longitude]);
-    mapRef.current?.panTo([latitude, longitude]);
   }, [latitude, longitude]);
 
   return (

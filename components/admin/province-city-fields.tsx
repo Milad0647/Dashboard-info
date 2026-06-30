@@ -13,12 +13,14 @@ import {
   getCitiesForProvince,
   IRAN_PROVINCES,
 } from "@/lib/iran-locations";
+import { getLocationCenter, resolveLocationNames } from "@/lib/iran-location-center";
 
 interface ProvinceCityFieldsProps {
   province: string;
   city: string;
   onProvinceChange: (province: string) => void;
   onCityChange: (city: string) => void;
+  onLocationCenterChange?: (center: { lat: number; lng: number }) => void;
 }
 
 const EMPTY_VALUE = "__none__";
@@ -28,6 +30,7 @@ export function ProvinceCityFields({
   city,
   onProvinceChange,
   onCityChange,
+  onLocationCenterChange,
 }: ProvinceCityFieldsProps) {
   const provinceOptions = ensureSelectOptions([...IRAN_PROVINCES], province);
   const cityOptions = ensureSelectOptions(getCitiesForProvince(province), city);
@@ -40,8 +43,12 @@ export function ProvinceCityFields({
           value={province || EMPTY_VALUE}
           onValueChange={(value) => {
             const nextProvince = value === EMPTY_VALUE ? "" : value;
-            onProvinceChange(nextProvince);
-            onCityChange("");
+            const resolved = resolveLocationNames(nextProvince, "");
+            onProvinceChange(resolved.province);
+            onCityChange(resolved.city);
+            if (resolved.province) {
+              onLocationCenterChange?.(getLocationCenter(resolved.province, resolved.city));
+            }
           }}
         >
           <SelectTrigger>
@@ -62,7 +69,13 @@ export function ProvinceCityFields({
         <Label>شهر</Label>
         <Select
           value={city || EMPTY_VALUE}
-          onValueChange={(value) => onCityChange(value === EMPTY_VALUE ? "" : value)}
+          onValueChange={(value) => {
+            const nextCity = value === EMPTY_VALUE ? "" : value;
+            onCityChange(nextCity);
+            if (province && nextCity) {
+              onLocationCenterChange?.(getLocationCenter(province, nextCity));
+            }
+          }}
           disabled={!province}
         >
           <SelectTrigger>

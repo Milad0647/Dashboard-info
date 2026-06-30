@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImageFileDropzone } from "@/components/ui/image-file-dropzone";
 import { PersianDateInput } from "@/components/ui/persian-date-input";
 import { todayISO } from "@/lib/jalali";
 
@@ -110,32 +111,19 @@ export function BillboardDisplayPeriodsEditor({
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>
-                  عکس بیلبورد{requireImages ? " *" : ""}
-                </Label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) =>
-                    updatePeriod(period.id, {
-                      billboardImageFile: event.target.files?.[0] ?? null,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>
-                  تصویر تأییدیه{requireImages ? " *" : ""}
-                </Label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) =>
-                    updatePeriod(period.id, { imageFile: event.target.files?.[0] ?? null })
-                  }
-                />
-              </div>
+              <ImageFileDropzone
+                label="عکس بیلبورد"
+                required={requireImages}
+                value={period.billboardImageFile}
+                onChange={(file) => updatePeriod(period.id, { billboardImageFile: file })}
+              />
+              <ImageFileDropzone
+                label="تصویر تأییدیه"
+                required={requireImages}
+                optionalHint={requireImages ? undefined : "اختیاری"}
+                value={period.imageFile}
+                onChange={(file) => updatePeriod(period.id, { imageFile: file })}
+              />
             </div>
           </div>
         ))

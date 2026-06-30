@@ -26,7 +26,7 @@ export default async function BillboardsPage({ searchParams }: PageProps) {
   const fullAdmin = session ? isFullAdmin(session) : true;
   let contributorProfile = null;
 
-  if (session?.userId && !fullAdmin) {
+  if (session?.userId) {
     const user = await pgGetUserById(session.userId);
     if (user) {
       contributorProfile = {
