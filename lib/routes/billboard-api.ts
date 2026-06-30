@@ -17,6 +17,11 @@ export const billboardApiRoutes = {
     const query = searchParams.toString();
     return `${getBillboardApiBaseUrl()}/api/v1/billboards${query ? `?${query}` : ""}`;
   },
+  createBillboard: () => `${getBillboardApiBaseUrl()}/api/v1/billboards`,
+  campaignBillboards: (campaignId: string) =>
+    `${getBillboardApiBaseUrl()}/api/v1/campaigns/${encodeURIComponent(campaignId)}/billboards`,
+  campaignBillboardDesigns: (campaignId: string, assignmentId: string) =>
+    `${getBillboardApiBaseUrl()}/api/v1/campaigns/${encodeURIComponent(campaignId)}/billboards/${encodeURIComponent(assignmentId)}/designs`,
   resolveAssetUrl: (path: string | null | undefined) => {
     if (!path) return null;
     if (path.startsWith("http://") || path.startsWith("https://")) return path;

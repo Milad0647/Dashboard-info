@@ -30,6 +30,8 @@ import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { MapBilboardBackupImportPanel } from "@/components/admin/map-bilboard-backup-import-panel";
 import { BillboardIntegrationImportPanel } from "@/components/admin/billboard-integration-import-panel";
+import { BillboardAdminAssignmentDialog } from "@/components/admin/billboard-admin-assignment-dialog";
+import { BillboardClientAssignmentDialog } from "@/components/admin/billboard-client-assignment-dialog";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { Badge } from "@/components/ui/badge";
@@ -57,11 +59,21 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+interface ContributorProfile {
+  province?: string | null;
+  city?: string | null;
+  email: string;
+  name: string;
+}
+
 interface BillboardsAdminProps {
   campaignId: string;
   initialBillboards: Billboard[];
   liveApiEnabled?: boolean;
   externalCampaignSlug?: string | null;
+  externalCampaignId?: string | null;
+  isFullAdmin?: boolean;
+  contributorProfile?: ContributorProfile | null;
 }
 
 export function BillboardsAdmin({
@@ -69,10 +81,15 @@ export function BillboardsAdmin({
   initialBillboards,
   liveApiEnabled = false,
   externalCampaignSlug = null,
+  externalCampaignId = null,
+  isFullAdmin = true,
+  contributorProfile = null,
 }: BillboardsAdminProps) {
   const router = useRouter();
   const [billboards, setBillboards] = useState(initialBillboards);
   const [open, setOpen] = useState(false);
+  const [adminAssignOpen, setAdminAssignOpen] = useState(false);
+  const [clientAssignOpen, setClientAssignOpen] = useState(false);
   const [editing, setEditing] = useState<Billboard | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -194,35 +211,64 @@ export function BillboardsAdmin({
     });
   };
 
+  const canUseMapBilboardForms = liveApiEnabled && Boolean(externalCampaignId);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">بیلبوردها</h1>
           <p className="text-sm text-muted-foreground">
-            بیلبوردهای دستی قابل ویرایش هستند.
-            {liveApiEnabled ? (
-              apiBillboardCount > 0 ? (
-                <> {apiBillboardCount} بیلبورد از Map Bilboard به‌صورت زنده نمایش داده می‌شود (فقط مشاهده).</>
+            {canUseMapBilboardForms ? (
+              isFullAdmin ? (
+                <>
+                  بیلبوردها از map-bilboard مدیریت می‌شوند. برای افزودن، بیلبورد موجود را به کمپین وصل کنید.
+                  {apiBillboardCount > 0 ? ` ${apiBillboardCount} مورد از API زنده نمایش داده می‌شود.` : ""}
+                </>
               ) : (
-                <> اتصال API فعال است — بیلبوردی از API دریافت نشد.</>
+                <>بیلبورد جدید را با فرم ثبت کنید تا در map-bilboard ساخته و به کمپین وصل شود.</>
               )
             ) : (
               <>
-                {" "}
-                برای دریافت زنده از Map Bilboard به{" "}
-                <Link href={`/admin/settings?campaign=${campaignId}`} className="text-primary hover:underline">
-                  تنظیمات کمپین
-                </Link>{" "}
-                بروید.
+                بیلبوردهای دستی قابل ویرایش هستند.
+                {liveApiEnabled ? (
+                  apiBillboardCount > 0 ? (
+                    <> {apiBillboardCount} بیلبورد از Map Bilboard به‌صورت زنده نمایش داده می‌شود (فقط مشاهده).</>
+                  ) : (
+                    <> اتصال API فعال است — بیلبوردی از API دریافت نشد.</>
+                  )
+                ) : (
+                  <>
+                    {" "}
+                    برای اتصال به Map Bilboard به{" "}
+                    <Link href={`/admin/settings?campaign=${campaignId}`} className="text-primary hover:underline">
+                      تنظیمات کمپین
+                    </Link>{" "}
+                    بروید.
+                  </>
+                )}
               </>
             )}
           </p>
         </div>
-        <Button onClick={openCreate}>
+        {canUseMapBilboardForms ? (
+          isFullAdmin ? (
+            <Button onClick={() => setAdminAssignOpen(true)}>
+              <Plus className="h-4 w-4" />
+              اتصال بیلبورد
+            </Button>
+          ) : contributorProfile ? (
+            <Button onClick={() => setClientAssignOpen(true)}>
+              <Plus className="h-4 w-4" />
+              ثبت بیلبورد جدید
+            </Button>
+          ) : null
+        ) : (
+          <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />
             افزودن
-        </Button>
+          </Button>
+        )}
       </div>
 
       <BillboardIntegrationImportPanel
@@ -236,6 +282,27 @@ export function BillboardsAdmin({
         externalCampaignSlug={externalCampaignSlug}
         onImported={() => router.refresh()}
       />
+
+      {canUseMapBilboardForms && externalCampaignId && isFullAdmin && (
+        <BillboardAdminAssignmentDialog
+          open={adminAssignOpen}
+          onOpenChange={setAdminAssignOpen}
+          campaignId={campaignId}
+          externalCampaignId={externalCampaignId}
+          onAssigned={() => router.refresh()}
+        />
+      )}
+
+      {canUseMapBilboardForms && externalCampaignId && contributorProfile && !isFullAdmin && (
+        <BillboardClientAssignmentDialog
+          open={clientAssignOpen}
+          onOpenChange={setClientAssignOpen}
+          campaignId={campaignId}
+          externalCampaignId={externalCampaignId}
+          contributorProfile={contributorProfile}
+          onAssigned={() => router.refresh()}
+        />
+      )}
 
       <AdminDataTable
         data={billboards}
