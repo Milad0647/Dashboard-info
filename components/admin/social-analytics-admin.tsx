@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
 import {
   deleteSocialPlatformStatAction,
@@ -167,6 +168,7 @@ export function SocialAnalyticsAdmin({
               </div>
             ),
           },
+          adminOwnerTableColumn<SocialPlatformStat>(),
           {
             key: "followers",
             label: "فالوور",

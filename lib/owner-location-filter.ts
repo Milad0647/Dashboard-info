@@ -13,12 +13,16 @@ export const DEFAULT_OWNER_LOCATION_FILTER: OwnerLocationFilter = {
   city: OWNER_LOCATION_ALL,
 };
 
+export function isOwnerLocationFilterActive(filter: OwnerLocationFilter): boolean {
+  return filter.province !== OWNER_LOCATION_ALL;
+}
+
 export function matchesOwnerLocation(
   item: Ownable,
   filter: OwnerLocationFilter
 ): boolean {
   if (filter.province === OWNER_LOCATION_ALL) return true;
-  if (!item.ownerUserId) return true;
+  if (!item.ownerUserId) return false;
   if (item.ownerProvince !== filter.province) return false;
   if (filter.city === OWNER_LOCATION_ALL) return true;
   return item.ownerCity === filter.city;

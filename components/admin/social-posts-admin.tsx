@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteSocialPostAction, saveSocialPostAction } from "@/lib/actions/extended-actions";
@@ -192,6 +193,7 @@ export function SocialPostsAdmin({ campaignId, initialPosts, embedded = false }:
         searchKeys={["title", "platform", "contentType"]}
         columns={[
           { key: "platform", label: "کانال", render: (item) => getStatusLabel(item.platform) },
+          adminOwnerTableColumn<SocialMediaPost>(),
           { key: "title", label: "عنوان / کاور" },
           { key: "views", label: "بازدید", render: (item) => formatPersianNumber(item.views) },
           { key: "contentType", label: "نوع", render: (item) => getStatusLabel(item.contentType) },

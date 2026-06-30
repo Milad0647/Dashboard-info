@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { Poster, PosterVersion } from "@/lib/types";
@@ -53,6 +54,7 @@ export function AdminPosterCompactCard({ poster, versions, onClick }: AdminPoste
       </div>
       <div className="space-y-1 p-2">
         <p className="truncate text-xs font-medium">{poster.title}</p>
+        <AdminOwnerBadge ownerUserId={poster.ownerUserId} ownerName={poster.ownerName} />
         {!displayVersion && (
           <p className="text-[10px] text-muted-foreground">بدون تصویر</p>
         )}

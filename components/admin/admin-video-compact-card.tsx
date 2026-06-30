@@ -2,6 +2,7 @@
 
 import { Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { Video, VideoVersion } from "@/lib/types";
@@ -59,6 +60,7 @@ export function AdminVideoCompactCard({ video, versions, onClick }: AdminVideoCo
       </div>
       <div className="space-y-1 p-2">
         <p className="truncate text-xs font-medium">{video.title}</p>
+        <AdminOwnerBadge ownerUserId={video.ownerUserId} ownerName={video.ownerName} />
         {!displayVersion && (
           <p className="text-[10px] text-muted-foreground">بدون ویدیو</p>
         )}

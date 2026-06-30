@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { activityTypeOptions, getActivityTypeLabel } from "@/lib/activity-types";
@@ -167,6 +168,7 @@ export function ActivitiesAdmin({ campaignId, initialActivities }: ActivitiesAdm
         searchKeys={["title", "location", "description", "activityType"]}
         columns={[
           { key: "title", label: "عنوان" },
+          adminOwnerTableColumn<CampaignActivity>(),
           {
             key: "activityType",
             label: "نوع",

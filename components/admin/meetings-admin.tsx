@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -376,6 +377,7 @@ export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword
         searchKeys={["title", "location", "discussionSummary"]}
         columns={[
           { key: "title", label: "عنوان" },
+          adminOwnerTableColumn<MeetingWithTasks>(),
           { key: "meetingDate", label: "تاریخ", render: (item) => formatPersianDate(item.meetingDate) },
           { key: "location", label: "مکان" },
           {

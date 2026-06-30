@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { saveAnalyticsAction, deleteAnalyticsAction } from "@/lib/actions/admin-actions";
 import { todayISO } from "@/lib/jalali";
@@ -108,6 +109,7 @@ export function AnalyticsAdmin({ campaignId, initialMetrics }: AnalyticsAdminPro
         searchKeys={["date", "city", "page"]}
         columns={[
           { key: "date", label: "تاریخ", render: (item) => formatPersianDate(item.date) },
+          adminOwnerTableColumn<AnalyticsMetric>(),
           { key: "visitors", label: "بازدید" },
           { key: "pageViews", label: "صفحات" },
           { key: "source", label: "منبع", render: (item) => (item.source ? getStatusLabel(item.source) : "—") },

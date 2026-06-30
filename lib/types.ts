@@ -260,11 +260,9 @@ export interface AuthSession {
   name?: string;
 }
 
-export interface SocialPlatformStat {
+export interface SocialPlatformStat extends Ownable {
   id: string;
   campaignId: string;
-  ownerUserId?: string | null;
-  ownerName?: string | null;
   platform: SocialPlatform;
   followers: number;
   posts: number;

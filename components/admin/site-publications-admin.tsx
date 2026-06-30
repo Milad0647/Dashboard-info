@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteSocialPostAction, saveSocialPostAction } from "@/lib/actions/extended-actions";
@@ -170,6 +171,7 @@ export function SitePublicationsAdmin({ campaignId, initialPosts }: SitePublicat
                 item.title
               ),
           },
+          adminOwnerTableColumn<SocialMediaPost>(),
           { key: "publishedDate", label: "تاریخ", render: (item) => formatPersianDate(item.publishedDate) },
           {
             key: "published",

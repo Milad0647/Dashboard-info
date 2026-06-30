@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { Badge } from "@/components/ui/badge";
@@ -233,6 +234,7 @@ export function BillboardsAdmin({
               ),
           },
           { key: "title", label: "عنوان" },
+          adminOwnerTableColumn<Billboard>(),
           { key: "city", label: "شهر" },
           {
             key: "status",

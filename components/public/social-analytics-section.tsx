@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { ExternalLink, FileText, Users } from "lucide-react";
 import { KPICard } from "@/components/public/kpi-card";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
@@ -9,6 +10,8 @@ import {
 } from "@/components/public/social-platform-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
+import { filterItemsByOwnerLocation } from "@/lib/owner-location-filter";
 import type { SocialAnalyticsSummary } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
 
@@ -17,7 +20,30 @@ interface SocialAnalyticsSectionProps {
 }
 
 export function SocialAnalyticsSection({ analytics }: SocialAnalyticsSectionProps) {
+  const { filter } = useOwnerLocationFilter();
+  const platforms = useMemo(
+    () => filterItemsByOwnerLocation(analytics.platforms, filter),
+    [analytics.platforms, filter]
+  );
+
+  const totalFollowers = platforms.reduce((sum, platform) => sum + platform.followers, 0);
+  const totalPosts = platforms.reduce((sum, platform) => sum + platform.posts, 0);
+
   if (!analytics.hasData) return null;
+
+  if (platforms.length === 0) {
+    return (
+      <CollapsibleSection
+        id="social-analytics"
+        title="آمار صفحات شبکه‌های اجتماعی"
+        description="فالوور و تعداد پست هر پلتفرم"
+      >
+        <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
+          موردی با فیلتر انتخاب‌شده وجود ندارد.
+        </div>
+      </CollapsibleSection>
+    );
+  }
 
   return (
     <CollapsibleSection
@@ -26,12 +52,12 @@ export function SocialAnalyticsSection({ analytics }: SocialAnalyticsSectionProp
       description="فالوور و تعداد پست هر پلتفرم"
     >
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <KPICard title="کل فالوورها" value={analytics.totalFollowers} icon={Users} />
-        <KPICard title="کل پست‌ها" value={analytics.totalPosts} icon={FileText} />
+        <KPICard title="کل فالوورها" value={totalFollowers} icon={Users} />
+        <KPICard title="کل پست‌ها" value={totalPosts} icon={FileText} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {analytics.platforms.map((platform) => (
+        {platforms.map((platform) => (
           <Card key={platform.id} className="overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-3">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -133,6 +134,7 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
         searchKeys={["title", "participantName", "submissionType"]}
         columns={[
           { key: "title", label: "عنوان" },
+          adminOwnerTableColumn<CampaignSubmission>(),
           { key: "participantName", label: "شرکت‌کننده" },
           { key: "submissionType", label: "نوع" },
           {

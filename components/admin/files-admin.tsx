@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Download, FileSpreadsheet, FileText, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -163,6 +164,7 @@ export function FilesAdmin({ campaignId, initialFiles }: FilesAdminProps) {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{file.title}</p>
+                      <AdminOwnerBadge ownerUserId={file.ownerUserId} ownerName={file.ownerName} />
                       <Badge variant={file.published ? "success" : "secondary"}>
                         {file.published ? "منتشر" : "پیش‌نویس"}
                       </Badge>

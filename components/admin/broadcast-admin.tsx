@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { DocumentUpload } from "@/components/ui/document-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteBroadcastReportAction, saveBroadcastReportAction } from "@/lib/actions/extended-actions";
@@ -139,6 +140,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
         searchKeys={["title", "fileName"]}
         columns={[
           { key: "title", label: "عنوان" },
+          adminOwnerTableColumn<BroadcastReport>(),
           { key: "reportDate", label: "تاریخ", render: (item) => formatPersianDate(item.reportDate) },
           { key: "fileName", label: "فایل" },
           { key: "published", label: "وضعیت", render: (item) => (item.published ? "منتشر" : "پیش‌نویس") },
