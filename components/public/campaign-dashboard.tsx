@@ -115,7 +115,10 @@ export function CampaignDashboard({ initialData, slug, exportMode = false }: Cam
         {sections.billboards && (
           <DeferredSection minHeight={360} forceRender={exportMode}>
             <section data-export-section data-export-label="بیلبوردها">
-              <BillboardSection billboards={data.billboards} />
+              <BillboardSection
+                billboards={data.billboards}
+                adminOwnerLabel={settings.adminOwnerLabel}
+              />
             </section>
           </DeferredSection>
         )}

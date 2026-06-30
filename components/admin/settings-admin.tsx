@@ -18,6 +18,7 @@ import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { updateSettingsAction } from "@/lib/actions/admin-actions";
 import { fetchExternalCampaignsAction } from "@/lib/actions/billboard-import-actions";
+import { DEFAULT_ADMIN_OWNER_LABEL } from "@/lib/owner-groups";
 import type { AnalyticsConfig, CampaignFeatures, CampaignSettings, ChannelAnalyticsConfig } from "@/lib/types";
 import type { ExternalCampaign } from "@/lib/models/billboard-api";
 
@@ -62,6 +63,7 @@ const schema = z.object({
   features: featuresSchema,
   externalCampaignId: z.string().optional(),
   externalCampaignSlug: z.string().optional(),
+  adminOwnerLabel: z.string().optional(),
   siteAnalytics: channelSchema,
   socialAnalyticsConfig: channelSchema,
 });
@@ -222,6 +224,7 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
       features: initialSettings.features,
       externalCampaignId: initialSettings.billboardConfig?.externalCampaignId ?? "",
       externalCampaignSlug: initialSettings.billboardConfig?.externalCampaignSlug ?? "",
+      adminOwnerLabel: initialSettings.adminOwnerLabel ?? DEFAULT_ADMIN_OWNER_LABEL,
       siteAnalytics: {
         source: initialSettings.analyticsConfig.site.source,
         metabase: {
@@ -289,6 +292,7 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
           externalCampaignId: data.externalCampaignId || null,
           externalCampaignSlug: data.externalCampaignSlug || null,
         },
+        adminOwnerLabel: data.adminOwnerLabel?.trim() || DEFAULT_ADMIN_OWNER_LABEL,
       });
       toast.success("تنظیمات ذخیره شد");
     });
@@ -311,6 +315,13 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
             <div><Label>عنوان</Label><Input {...form.register("title")} /></div>
             <div><Label>اسلاگ (URL)</Label><Input {...form.register("slug")} dir="ltr" /></div>
             <div><Label>توضیحات</Label><Textarea {...form.register("description")} rows={4} /></div>
+            <div>
+              <Label>برچسب محتوای مدیریت</Label>
+              <Input {...form.register("adminOwnerLabel")} placeholder={DEFAULT_ADMIN_OWNER_LABEL} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                نام گروه محتوایی که توسط ادمین (بدون کاربر) ثبت شده — در صفحه عمومی کمپین نمایش داده می‌شود.
+              </p>
+            </div>
             <div><Label>وضعیت</Label>
               <Select value={form.watch("status")} onValueChange={(v) => form.setValue("status", v as "live" | "completed" | "draft")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>

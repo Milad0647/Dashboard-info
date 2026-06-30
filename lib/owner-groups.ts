@@ -2,16 +2,24 @@ import type { DataOwnerGroup, Ownable } from "@/lib/types";
 
 const ADMIN_KEY = "admin";
 
+export const DEFAULT_ADMIN_OWNER_LABEL = "مدیریت";
+
+export function resolveAdminOwnerLabel(label?: string | null): string {
+  const trimmed = label?.trim();
+  return trimmed || DEFAULT_ADMIN_OWNER_LABEL;
+}
+
 export function groupByOwner<T extends Ownable>(
   items: T[],
-  adminLabel = "مدیریت"
+  adminLabel: string = DEFAULT_ADMIN_OWNER_LABEL
 ): DataOwnerGroup<T>[] {
+  const resolvedAdminLabel = resolveAdminOwnerLabel(adminLabel);
   const groups = new Map<string, DataOwnerGroup<T>>();
 
   for (const item of items) {
     const ownerUserId = item.ownerUserId ?? null;
     const key = ownerUserId ?? ADMIN_KEY;
-    const ownerLabel = ownerUserId ? (item.ownerName?.trim() || "کاربر") : adminLabel;
+    const ownerLabel = ownerUserId ? (item.ownerName?.trim() || "کاربر") : resolvedAdminLabel;
 
     const existing = groups.get(key);
     if (existing) {

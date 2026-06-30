@@ -77,6 +77,8 @@ export interface CampaignSettings {
   features: CampaignFeatures;
   analyticsConfig: AnalyticsConfig;
   billboardConfig: BillboardConfig;
+  /** Public label for admin-owned content groups (no contributor user). */
+  adminOwnerLabel?: string | null;
   meetingsViewPasswordHash?: string | null;
   updatedAt: string;
 }

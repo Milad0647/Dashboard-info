@@ -100,6 +100,7 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
       typeof row.billboard_config === "string"
         ? JSON.parse(row.billboard_config)
         : (row.billboard_config ?? {}),
+    adminOwnerLabel: row.admin_owner_label ?? "مدیریت",
     meetingsViewPasswordHash: row.meetings_view_password_hash ?? null,
     updatedAt: toIsoString(row.updated_at),
   };

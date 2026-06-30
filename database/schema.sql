@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS campaign_settings (
   features JSONB NOT NULL DEFAULT '{"billboards":true,"posters":true,"videos":true,"analytics":true,"socialAnalytics":true,"submissions":true,"files":true}',
   analytics_config JSONB NOT NULL DEFAULT '{"site":{"source":"manual"},"social":{"source":"manual"}}'::jsonb,
   billboard_config JSONB NOT NULL DEFAULT '{}'::jsonb,
+  admin_owner_label TEXT NOT NULL DEFAULT 'مدیریت',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -159,6 +160,9 @@ ALTER TABLE campaign_settings
 
 ALTER TABLE campaign_settings
   ADD COLUMN IF NOT EXISTS meetings_view_password_hash TEXT;
+
+ALTER TABLE campaign_settings
+  ADD COLUMN IF NOT EXISTS admin_owner_label TEXT NOT NULL DEFAULT 'مدیریت';
 
 ALTER TABLE billboards
   ADD COLUMN IF NOT EXISTS image_url TEXT,

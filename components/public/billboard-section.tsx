@@ -29,9 +29,10 @@ import { formatPersianNumber, getStatusLabel } from "@/lib/utils";
 
 interface BillboardSectionProps {
   billboards: Billboard[];
+  adminOwnerLabel?: string | null;
 }
 
-export function BillboardSection({ billboards }: BillboardSectionProps) {
+export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSectionProps) {
   const locationFilteredBillboards = useFilteredOwnableItems(billboards);
   const [cityFilter, setCityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -62,8 +63,8 @@ export function BillboardSection({ billboards }: BillboardSectionProps) {
 
   const visibleBillboards = filtered.slice(0, visibleCount);
   const visibleGroups = useMemo(
-    () => groupByOwner(visibleBillboards),
-    [visibleBillboards]
+    () => groupByOwner(visibleBillboards, adminOwnerLabel ?? undefined),
+    [visibleBillboards, adminOwnerLabel]
   );
 
   const openBillboard = (billboard: Billboard) => {

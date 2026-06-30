@@ -20,7 +20,7 @@ import type {
 } from "@/lib/types";
 import { truncateMeetingSummary } from "@/lib/meeting-preview";
 import { compareMeetingsByDateDesc } from "@/lib/meeting-tasks";
-import { groupByOwner } from "@/lib/owner-groups";
+import { groupByOwner, resolveAdminOwnerLabel } from "@/lib/owner-groups";
 import { splitSocialPosts } from "@/lib/social-posts";
 import { buildSocialAnalyticsSummary } from "@/lib/social-analytics";
 import { isPostgresConfigured, isSupabaseConfigured } from "@/lib/utils";
@@ -415,36 +415,38 @@ function assemblePublicData(
     files,
   });
 
+  const adminOwnerLabel = resolveAdminOwnerLabel(settings.adminOwnerLabel);
+
   return {
     settings,
     kpis,
     sections,
     billboards,
-    billboardGroups: groupByOwner(billboards),
+    billboardGroups: groupByOwner(billboards, adminOwnerLabel),
     posterCategories,
     posters,
-    posterGroups: groupByOwner(posters),
+    posterGroups: groupByOwner(posters, adminOwnerLabel),
     videoCategories,
     videos,
-    videoGroups: groupByOwner(videos),
+    videoGroups: groupByOwner(videos, adminOwnerLabel),
     analytics,
     socialAnalytics,
     socialPosts,
-    socialPostGroups: groupByOwner(socialPosts),
+    socialPostGroups: groupByOwner(socialPosts, adminOwnerLabel),
     sitePublications,
-    sitePublicationGroups: groupByOwner(sitePublications),
+    sitePublicationGroups: groupByOwner(sitePublications, adminOwnerLabel),
     broadcastReports,
-    broadcastReportGroups: groupByOwner(broadcastReports),
+    broadcastReportGroups: groupByOwner(broadcastReports, adminOwnerLabel),
     meetings,
-    meetingGroups: groupByOwner(meetings),
+    meetingGroups: groupByOwner(meetings, adminOwnerLabel),
     meetingsHasPassword,
     activities,
-    activityGroups: groupByOwner(activities),
+    activityGroups: groupByOwner(activities, adminOwnerLabel),
     submissions,
-    submissionGroups: groupByOwner(submissions),
+    submissionGroups: groupByOwner(submissions, adminOwnerLabel),
     submissionSummary,
     files,
-    fileGroups: groupByOwner(files),
+    fileGroups: groupByOwner(files, adminOwnerLabel),
     lastUpdated: new Date().toISOString(),
   };
 }

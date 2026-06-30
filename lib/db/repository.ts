@@ -204,7 +204,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
   await sql`
     INSERT INTO campaign_settings (
       id, slug, title, description, status, start_date, end_date,
-      cover_image_url, published, features, analytics_config, billboard_config, updated_at
+      cover_image_url, published, features, analytics_config, billboard_config, admin_owner_label, updated_at
     ) VALUES (
       ${id},
       ${data.slug ?? slugify(data.title ?? id)},
@@ -218,6 +218,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
       ${sql.json({ ...features })},
       ${sql.json(JSON.parse(JSON.stringify(serializeAnalyticsConfig(data.analyticsConfig ?? { site: { source: "manual" }, social: { source: "manual" } }))))},
       ${sql.json(JSON.parse(JSON.stringify(data.billboardConfig ?? {})))},
+      ${data.adminOwnerLabel?.trim() || "مدیریت"},
       ${now}
     )
     ON CONFLICT (id) DO UPDATE SET
@@ -232,6 +233,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
       features = EXCLUDED.features,
       analytics_config = EXCLUDED.analytics_config,
       billboard_config = EXCLUDED.billboard_config,
+      admin_owner_label = EXCLUDED.admin_owner_label,
       updated_at = EXCLUDED.updated_at
   `;
 
