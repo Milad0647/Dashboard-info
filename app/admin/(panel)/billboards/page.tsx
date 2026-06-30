@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAdminData } from "@/lib/data-access/admin";
+import { getAdminData, getAllUsers } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
 import { hasExternalBillboardConnection, resolveAdminBillboards, getExternalCampaignSlug } from "@/lib/billboards";
 import { BillboardsAdmin } from "@/components/admin/billboards-admin";
@@ -14,9 +14,10 @@ export default async function BillboardsPage({ searchParams }: PageProps) {
   const { campaignId } = await resolveAdminCampaignId(params.campaign);
   if (!campaignId) redirect("/admin/campaigns");
   const data = await getAdminData(campaignId);
+  const users = await getAllUsers();
   const dbBillboards = (data.billboards ?? []) as Billboard[];
   const billboards = data.settings
-    ? await resolveAdminBillboards(data.settings as CampaignSettings, dbBillboards)
+    ? await resolveAdminBillboards(data.settings as CampaignSettings, dbBillboards, users)
     : dbBillboards;
 
   return (

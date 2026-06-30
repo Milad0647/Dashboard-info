@@ -78,6 +78,16 @@ export interface IntegrationBillboardDesign {
   sort_order: number;
 }
 
+export interface IntegrationBillboardOwner {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  province: string | null;
+  city: string | null;
+  role: string;
+}
+
 export interface IntegrationBillboard {
   assignment_id: string;
   billboard_id: string;
@@ -85,6 +95,9 @@ export interface IntegrationBillboard {
   axis: string;
   code: string;
   address: string | null;
+  province?: string | null;
+  city?: string | null;
+  owner?: IntegrationBillboardOwner | null;
   latitude: number;
   longitude: number;
   image_url: string | null;

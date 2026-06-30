@@ -95,6 +95,7 @@ export interface CampaignListItem {
 export interface Ownable {
   ownerUserId?: string | null;
   ownerName?: string | null;
+  ownerEmail?: string | null;
   ownerProvince?: string | null;
   ownerCity?: string | null;
 }

@@ -22,9 +22,9 @@ import { SectionHeader } from "@/components/public/section-header";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import {
   computeFilteredCampaignKpis,
-  getOwnerLocationFilterLabel,
+  getOwnerFilterLabel,
 } from "@/lib/filtered-campaign-kpis";
-import { isOwnerLocationFilterActive } from "@/lib/owner-location-filter";
+import { isOwnerFilterActive } from "@/lib/owner-location-filter";
 import type { PublicCampaignData } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 
@@ -34,9 +34,9 @@ interface CampaignOverviewSectionProps {
 
 export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) {
   const { settings } = data;
-  const { filter } = useOwnerLocationFilter();
-  const locationFilterActive = isOwnerLocationFilterActive(filter);
-  const locationLabel = getOwnerLocationFilterLabel(filter);
+  const { filter, users: ownerUsers } = useOwnerLocationFilter();
+  const filterActive = isOwnerFilterActive(filter);
+  const filterLabel = getOwnerFilterLabel(filter, ownerUsers);
 
   const kpis = useMemo(
     () => computeFilteredCampaignKpis(data, filter),
@@ -47,7 +47,7 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
     billboards: settings.features.billboards,
     posters: settings.features.posters,
     videos: settings.features.videos,
-    analytics: settings.features.analytics && !locationFilterActive,
+    analytics: settings.features.analytics && !filterActive,
     socialAnalytics: settings.features.socialAnalytics,
     socialPosts: settings.features.socialPosts ?? true,
     sitePublications: settings.features.sitePublications ?? true,
@@ -78,8 +78,8 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
       <SectionHeader
         title="خلاصه کمپین"
         description={
-          locationLabel
-            ? `آمار محتوای کاربران در ${locationLabel}`
+          filterLabel
+            ? `آمار محتوای کاربران: ${filterLabel}`
             : settings.description
         }
       >

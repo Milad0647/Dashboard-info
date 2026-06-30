@@ -29,6 +29,7 @@ import {
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { MapBilboardBackupImportPanel } from "@/components/admin/map-bilboard-backup-import-panel";
+import { BillboardIntegrationImportPanel } from "@/components/admin/billboard-integration-import-panel";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { Badge } from "@/components/ui/badge";
@@ -223,6 +224,13 @@ export function BillboardsAdmin({
             افزودن
         </Button>
       </div>
+
+      <BillboardIntegrationImportPanel
+        campaignId={campaignId}
+        externalCampaignSlug={externalCampaignSlug}
+        existingBillboards={billboards}
+        onImported={() => router.refresh()}
+      />
 
       <MapBilboardBackupImportPanel
         campaignId={campaignId}

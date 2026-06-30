@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getAdminData } from "@/lib/data-access/admin";
+import { getAdminData, getAllUsers } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
 import { resolveAdminBillboards } from "@/lib/billboards";
 import type { Billboard, CampaignSettings } from "@/lib/types";
@@ -43,10 +43,12 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
   const canManageAll = session ? isFullAdmin(session) : true;
 
   const features = data.settings.features;
+  const users = await getAllUsers();
   const billboards = data.settings
     ? await resolveAdminBillboards(
         data.settings as CampaignSettings,
-        (data.billboards ?? []) as Billboard[]
+        (data.billboards ?? []) as Billboard[],
+        users
       )
     : [];
 

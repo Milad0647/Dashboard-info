@@ -4,7 +4,8 @@ import {
   mapExternalBillboardToBillboard,
   mapIntegrationBillboardToBillboard,
 } from "@/lib/services/billboard-api";
-import type { Billboard, CampaignSettings } from "@/lib/types";
+import { matchOwnerToUser } from "@/lib/services/owner-user-match";
+import type { AdminUser, Billboard, CampaignSettings } from "@/lib/types";
 
 export {
   BILLBOARD_PLACEHOLDER_IMAGE,
@@ -35,16 +36,22 @@ export function hasExternalBillboardConnection(settings: CampaignSettings): bool
   );
 }
 
-async function fetchLiveBillboards(settings: CampaignSettings): Promise<Billboard[]> {
+async function fetchLiveBillboards(
+  settings: CampaignSettings,
+  users: AdminUser[] = []
+): Promise<Billboard[]> {
   const integrationSlug = getExternalCampaignSlug(settings);
   if (integrationSlug) {
     const integration = await fetchCampaignIntegration(integrationSlug);
-    return integration.billboards.map((item, index) =>
-      mapIntegrationBillboardToBillboard(item, settings.id, {
+
+    return integration.billboards.map((item, index) => {
+      const matchedUser = item.owner ? matchOwnerToUser(item.owner, users) : null;
+      return mapIntegrationBillboardToBillboard(item, settings.id, {
         sortOrder: index + 1,
         published: true,
-      })
-    );
+        matchedUser,
+      });
+    });
   }
 
   const externalCampaignId = settings.billboardConfig?.externalCampaignId;
@@ -65,7 +72,8 @@ async function fetchLiveBillboards(settings: CampaignSettings): Promise<Billboar
 
 export async function resolveAdminBillboards(
   settings: CampaignSettings,
-  dbBillboards: Billboard[]
+  dbBillboards: Billboard[],
+  users: AdminUser[] = []
 ): Promise<Billboard[]> {
   const manualBillboards = dbBillboards
     .filter(isManualBillboard)
@@ -76,7 +84,7 @@ export async function resolveAdminBillboards(
   }
 
   try {
-    const liveBillboards = await fetchLiveBillboards(settings);
+    const liveBillboards = await fetchLiveBillboards(settings, users);
     return [
       ...manualBillboards,
       ...liveBillboards.map((billboard, index) => ({
@@ -92,7 +100,8 @@ export async function resolveAdminBillboards(
 
 export async function resolvePublicBillboards(
   settings: CampaignSettings,
-  dbBillboards: Billboard[]
+  dbBillboards: Billboard[],
+  users: AdminUser[] = []
 ): Promise<Billboard[]> {
   const manualBillboards = dbBillboards
     .filter((billboard) => billboard.published && isManualBillboard(billboard))
@@ -103,7 +112,7 @@ export async function resolvePublicBillboards(
   }
 
   try {
-    const liveBillboards = await fetchLiveBillboards(settings);
+    const liveBillboards = await fetchLiveBillboards(settings, users);
     return [
       ...manualBillboards,
       ...liveBillboards.map((billboard, index) => ({

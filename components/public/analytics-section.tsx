@@ -8,7 +8,7 @@ import { VisitsLineChart } from "@/components/charts/visits-line-chart";
 import { TrafficSourcesChart } from "@/components/charts/traffic-sources-chart";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
-import { isOwnerLocationFilterActive } from "@/lib/owner-location-filter";
+import { isOwnerFilterActive } from "@/lib/owner-location-filter";
 import type { AnalyticsSummary } from "@/lib/types";
 import { formatDuration } from "@/lib/utils";
 
@@ -18,7 +18,7 @@ interface AnalyticsSectionProps {
 
 export function AnalyticsSection({ analytics }: AnalyticsSectionProps) {
   const { filter } = useOwnerLocationFilter();
-  const locationFilterActive = isOwnerLocationFilterActive(filter);
+  const filterActive = isOwnerFilterActive(filter);
   const hasMetabaseDashboard = Boolean(analytics.metabaseEmbedUrl);
   const hasManualCharts =
     analytics.totalVisitors > 0 ||
@@ -36,9 +36,9 @@ export function AnalyticsSection({ analytics }: AnalyticsSectionProps) {
       }
       lazyMount
     >
-      {locationFilterActive ? (
+      {filterActive ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
-          آمار بازدید سایت برای فیلتر موقعیت در دسترس نیست.
+          آمار بازدید سایت با فیلتر کاربر یا موقعیت در دسترس نیست.
         </div>
       ) : (
         <>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   RefreshCw,
@@ -24,6 +24,7 @@ import { DeferredSection } from "@/components/public/deferred-section";
 import { CampaignScreenshotExporter } from "@/components/public/campaign-screenshot-exporter";
 import { CampaignExportProvider } from "@/lib/context/campaign-export-context";
 import { OwnerLocationFilterProvider } from "@/lib/context/owner-location-filter-context";
+import { collectOwnerFilterOptions } from "@/lib/owner-users";
 import type { PublicCampaignData } from "@/lib/types";
 import { formatPersianDateTime } from "@/lib/utils";
 
@@ -62,10 +63,11 @@ export function CampaignDashboard({ initialData, slug, exportMode = false }: Cam
   }, [refreshData, exportMode]);
 
   const { settings, sections } = data;
+  const ownerUsers = useMemo(() => collectOwnerFilterOptions(data), [data]);
 
   return (
     <CampaignExportProvider exportMode={exportMode}>
-    <OwnerLocationFilterProvider>
+    <OwnerLocationFilterProvider users={ownerUsers}>
     <div className="min-h-screen" data-campaign-export-root>
       {exportMode && <CampaignScreenshotExporter slug={slug} title={settings.title} />}
       <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-40">

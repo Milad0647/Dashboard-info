@@ -1,5 +1,6 @@
 import { getMockStore, getMockStoreForCampaign } from "@/lib/mock-data";
 import { resolvePublicBillboards } from "@/lib/billboards";
+import { getAllUsers } from "@/lib/data-access/admin";
 import type {
   AnalyticsChannel,
   AnalyticsMetric,
@@ -526,15 +527,20 @@ export async function getPublicCampaignData(slug: string): Promise<PublicCampaig
       const settings = await pg.pgGetPublishedCampaignBySlug(slug);
       if (!settings) return null;
       const campaignStore = await pg.pgGetPublicCampaignData(settings.id);
-      const [siteMetrics, billboards] = await Promise.all([
+      const [siteMetrics, users] = await Promise.all([
         resolveChannelAnalyticsMetrics(
           settings,
           campaignStore.analytics,
           "site",
           settings.analyticsConfig.site
         ),
-        resolvePublicBillboards(settings, campaignStore.billboards),
+        getAllUsers(),
       ]);
+      const billboards = await resolvePublicBillboards(
+        settings,
+        campaignStore.billboards,
+        users
+      );
       return assemblePublicData(
         settings,
         {
@@ -622,7 +628,7 @@ export async function getPublicCampaignData(slug: string): Promise<PublicCampaig
     return assemblePublicData(
       settings,
       campaignStore,
-      await resolvePublicBillboards(settings, campaignStore.billboards)
+      await resolvePublicBillboards(settings, campaignStore.billboards, await getAllUsers())
     );
   } catch {
     return getMockPublicDataBySlug(slug);

@@ -1,22 +1,45 @@
 import type { CampaignKPIs, PublicCampaignData } from "@/lib/types";
 import {
   filterItemsByOwnerLocation,
-  isOwnerLocationFilterActive,
+  isOwnerFilterActive,
   OWNER_LOCATION_ALL,
+  OWNER_USER_ALL,
   type OwnerLocationFilter,
 } from "@/lib/owner-location-filter";
+import type { OwnerFilterOption } from "@/lib/owner-users";
 
-export function getOwnerLocationFilterLabel(filter: OwnerLocationFilter): string | null {
-  if (filter.province === OWNER_LOCATION_ALL) return null;
-  if (filter.city === OWNER_LOCATION_ALL) return filter.province;
-  return `${filter.province} — ${filter.city}`;
+export function getOwnerFilterLabel(
+  filter: OwnerLocationFilter,
+  users: OwnerFilterOption[] = []
+): string | null {
+  const parts: string[] = [];
+
+  if (filter.userKey !== OWNER_USER_ALL) {
+    parts.push(users.find((user) => user.key === filter.userKey)?.label ?? "کاربر");
+  }
+
+  if (filter.province !== OWNER_LOCATION_ALL) {
+    parts.push(
+      filter.city === OWNER_LOCATION_ALL ? filter.province : `${filter.province} — ${filter.city}`
+    );
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+/** @deprecated Use getOwnerFilterLabel */
+export function getOwnerLocationFilterLabel(
+  filter: OwnerLocationFilter,
+  users: OwnerFilterOption[] = []
+): string | null {
+  return getOwnerFilterLabel(filter, users);
 }
 
 export function computeFilteredCampaignKpis(
   data: PublicCampaignData,
   filter: OwnerLocationFilter
 ): CampaignKPIs {
-  if (!isOwnerLocationFilterActive(filter)) {
+  if (!isOwnerFilterActive(filter)) {
     return data.kpis;
   }
 

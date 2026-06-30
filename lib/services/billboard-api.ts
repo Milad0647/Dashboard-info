@@ -8,7 +8,7 @@ import {
   type IntegrationBillboard,
 } from "@/lib/models/billboard-api";
 import { billboardApiRoutes } from "@/lib/routes/billboard-api";
-import type { Billboard } from "@/lib/types";
+import type { AdminUser, Billboard } from "@/lib/types";
 
 const BILLBOARD_API_TIMEOUT_MS = 8_000;
 
@@ -59,23 +59,64 @@ export async function fetchCampaignIntegration(slug: string) {
   return body.data;
 }
 
-function resolveCity(address: string): string {
+function resolveCityFromAddress(address: string): string {
   if (address.includes("تهران")) return "تهران";
   if (address.includes("مشهد")) return "مشهد";
   if (address.includes("اصفهان")) return "اصفهان";
   if (address.includes("شیراز")) return "شیراز";
   if (address.includes("تبریز")) return "تبریز";
-  return "تهران";
+  return "نامشخص";
+}
+
+function resolveIntegrationBillboardCity(external: IntegrationBillboard): string {
+  if (external.city?.trim()) return external.city.trim();
+  const address = external.address?.trim() ?? "";
+  return address ? resolveCityFromAddress(address) : "نامشخص";
 }
 
 function buildMapUrl(latitude: number, longitude: number): string {
   return `https://www.google.com/maps?q=${latitude},${longitude}`;
 }
 
+export interface IntegrationBillboardMappingOptions {
+  sortOrder?: number;
+  published?: boolean;
+  matchedUser?: AdminUser | null;
+  source?: Billboard["source"];
+}
+
+function resolveIntegrationOwnerFields(
+  external: IntegrationBillboard,
+  matchedUser: AdminUser | null | undefined
+): Pick<Billboard, "ownerUserId" | "ownerName" | "ownerEmail" | "ownerProvince" | "ownerCity"> {
+  const owner = external.owner ?? null;
+
+  if (!owner && !matchedUser) {
+    return {
+      ownerUserId: null,
+      ownerName: null,
+      ownerEmail: null,
+      ownerProvince: null,
+      ownerCity: null,
+    };
+  }
+
+  const ownerEmail = owner?.email?.trim() || owner?.username?.trim() || matchedUser?.email || null;
+
+  return {
+    ownerUserId: matchedUser?.id ?? null,
+    ownerName: matchedUser?.name ?? owner?.name ?? null,
+    ownerEmail,
+    ownerProvince:
+      owner?.province?.trim() || matchedUser?.province?.trim() || external.province?.trim() || null,
+    ownerCity: owner?.city?.trim() || matchedUser?.city?.trim() || external.city?.trim() || null,
+  };
+}
+
 export function mapIntegrationBillboardToBillboard(
   external: IntegrationBillboard,
   campaignId: string,
-  options?: { sortOrder?: number; published?: boolean }
+  options?: IntegrationBillboardMappingOptions
 ): Billboard {
   const cardImage = billboardApiRoutes.resolveAssetUrl(
     external.card_image_url ??
@@ -105,7 +146,7 @@ export function mapIntegrationBillboardToBillboard(
     campaignId,
     title,
     description: address || null,
-    city: resolveCity(address),
+    city: resolveIntegrationBillboardCity(external),
     location: address || external.axis || title,
     date: external.display_start ?? now.split("T")[0],
     thumbnailUrl: thumbnail,
@@ -113,7 +154,7 @@ export function mapIntegrationBillboardToBillboard(
     externalUrl: buildMapUrl(external.latitude, external.longitude),
     latitude: external.latitude,
     longitude: external.longitude,
-    source: "api",
+    source: options?.source ?? "api",
     externalId: external.billboard_id,
     status: "published",
     tags,
@@ -125,6 +166,7 @@ export function mapIntegrationBillboardToBillboard(
     providerName: external.provider_name,
     qualityTierLabel: external.quality_tier_label,
     billboardTypeLabel: external.billboard_type_label,
+    ...resolveIntegrationOwnerFields(external, options?.matchedUser),
     createdAt: now,
     updatedAt: now,
   };
@@ -160,7 +202,7 @@ export function mapExternalBillboardToBillboard(
     campaignId,
     title: `${external.code} — ${external.axis}`,
     description: external.address,
-    city: resolveCity(external.address),
+    city: resolveCityFromAddress(external.address),
     location: external.address,
     date: options?.date ?? now.split("T")[0],
     thumbnailUrl: thumbnail,
