@@ -16,11 +16,12 @@ import { ProvinceCityFields } from "@/components/admin/province-city-fields";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersImportPanel } from "@/components/admin/users-import-panel";
-import { normalizeStoredUserEmail } from "@/lib/auth/user-login";
+import { getLoginUsernameFromEmail, normalizeStoredUserEmail } from "@/lib/auth/user-login";
 import { deleteUserAction, deleteUsersAction, saveUserAction } from "@/lib/actions/extended-actions";
 import {
   contributorPermissionLabels,
   defaultContributorPermissions,
+  normalizeContributorPermissions,
   type ContributorPermissionKey,
   type ContributorPermissions,
 } from "@/lib/contributor-permissions";
@@ -63,7 +64,7 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
     },
   });
 
-  const selectedCampaignIds = form.watch("campaignIds");
+  const selectedCampaignIds = form.watch("campaignIds") ?? [];
   const selectedRole = form.watch("role");
   const selectedProvince = form.watch("province");
   const selectedCity = form.watch("city");
@@ -146,15 +147,23 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
 
   const openEdit = (user: AdminUser) => {
     setEditingId(user.id);
-    setCampaignPermissions(user.campaignPermissions);
+    const permissions = user.campaignPermissions ?? {};
+    setCampaignPermissions(
+      Object.fromEntries(
+        Object.entries(permissions).map(([campaignId, value]) => [
+          campaignId,
+          normalizeContributorPermissions(value),
+        ])
+      )
+    );
     form.reset({
-      email: user.email,
-      name: user.name,
-      role: user.role,
+      email: getLoginUsernameFromEmail(user.email ?? ""),
+      name: user.name ?? "",
+      role: user.role === "admin" ? "admin" : "contributor",
       password: "",
       province: user.province ?? "",
       city: user.city ?? "",
-      campaignIds: user.campaignIds,
+      campaignIds: user.campaignIds ?? [],
     });
     setOpen(true);
   };
@@ -188,7 +197,11 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
         searchKeys={["name", "email", "role", "province", "city"]}
         columns={[
           { key: "name", label: "نام" },
-          { key: "email", label: "نام کاربری / ایمیل" },
+          {
+            key: "email",
+            label: "نام کاربری",
+            render: (item) => getLoginUsernameFromEmail(item.email),
+          },
           { key: "province", label: "استان", render: (item) => item.province || "—" },
           { key: "city", label: "شهر", render: (item) => item.city || "—" },
           { key: "role", label: "نقش", render: (item) => (item.role === "admin" ? "مدیر" : "کاربر") },
@@ -247,8 +260,11 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2"><Label>نام</Label><Input {...form.register("name")} /></div>
             <div className="space-y-2">
-              <Label>نام کاربری یا ایمیل</Label>
-              <Input {...form.register("email")} dir="ltr" placeholder="BAZARBAYJAN یا user@example.com" />
+              <Label>نام کاربری</Label>
+              <Input {...form.register("email")} dir="ltr" placeholder="BAZARBAYJAN" />
+              <p className="text-xs text-muted-foreground">
+                فقط نام کاربری — بدون @example.com
+              </p>
             </div>
             <ProvinceCityFields
               province={selectedProvince ?? ""}
@@ -292,7 +308,9 @@ export function UsersAdmin({ initialUsers, campaigns }: UsersAdminProps) {
                 <Label>دسترسی به بخش‌های پنل (برای هر کمپین)</Label>
                 {selectedCampaignIds.map((campaignId) => {
                   const campaign = campaigns.find((item) => item.id === campaignId);
-                  const permissions = campaignPermissions[campaignId] ?? defaultContributorPermissions();
+                  const permissions = normalizeContributorPermissions(
+                    campaignPermissions[campaignId] ?? defaultContributorPermissions()
+                  );
                   return (
                     <div key={campaignId} className="rounded-lg border p-3 space-y-2">
                       <p className="text-sm font-medium">{campaign?.title ?? campaignId}</p>

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
+import { MapBilboardBackupImportPanel } from "@/components/admin/map-bilboard-backup-import-panel";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { Badge } from "@/components/ui/badge";
@@ -58,13 +60,16 @@ interface BillboardsAdminProps {
   campaignId: string;
   initialBillboards: Billboard[];
   liveApiEnabled?: boolean;
+  externalCampaignSlug?: string | null;
 }
 
 export function BillboardsAdmin({
   campaignId,
   initialBillboards,
   liveApiEnabled = false,
+  externalCampaignSlug = null,
 }: BillboardsAdminProps) {
+  const router = useRouter();
   const [billboards, setBillboards] = useState(initialBillboards);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Billboard | null>(null);
@@ -218,6 +223,12 @@ export function BillboardsAdmin({
             افزودن
         </Button>
       </div>
+
+      <MapBilboardBackupImportPanel
+        campaignId={campaignId}
+        externalCampaignSlug={externalCampaignSlug}
+        onImported={() => router.refresh()}
+      />
 
       <AdminDataTable
         data={billboards}

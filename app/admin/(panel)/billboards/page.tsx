@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAdminData } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
-import { hasExternalBillboardConnection, resolveAdminBillboards } from "@/lib/billboards";
+import { hasExternalBillboardConnection, resolveAdminBillboards, getExternalCampaignSlug } from "@/lib/billboards";
 import { BillboardsAdmin } from "@/components/admin/billboards-admin";
 import type { Billboard, CampaignSettings } from "@/lib/types";
 
@@ -26,6 +26,9 @@ export default async function BillboardsPage({ searchParams }: PageProps) {
       liveApiEnabled={Boolean(
         data.settings && hasExternalBillboardConnection(data.settings as CampaignSettings)
       )}
+      externalCampaignSlug={
+        data.settings ? getExternalCampaignSlug(data.settings as CampaignSettings) : null
+      }
     />
   );
 }

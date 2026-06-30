@@ -138,6 +138,7 @@ export async function pgSaveUser(data: {
   const province = data.province?.trim() || null;
   const city = data.city?.trim() || null;
 
+  try {
   if (data.id) {
     if (data.password) {
       const passwordHash = await hashPassword(data.password);
@@ -192,6 +193,13 @@ export async function pgSaveUser(data: {
   }
 
   return { success: true as const, id };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "ذخیره کاربر ناموفق بود";
+    if (message.includes("duplicate key") || message.includes("unique")) {
+      return { success: false as const, error: "این نام کاربری قبلاً ثبت شده است" };
+    }
+    throw error;
+  }
 }
 
 export async function pgImportUsersFromExcel(params: {
