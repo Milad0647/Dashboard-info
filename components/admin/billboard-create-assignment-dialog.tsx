@@ -58,7 +58,11 @@ export function BillboardCreateAssignmentDialog({
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [coords, setCoords] = useState({ latitude: 35.6892, longitude: 51.389 });
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState<{
+    lat: number;
+    lng: number;
+    revision?: number;
+  } | null>(null);
   const [periods, setPeriods] = useState<DisplayPeriodDraft[]>([createDisplayPeriod()]);
 
   useEffect(() => {
@@ -76,12 +80,12 @@ export function BillboardCreateAssignmentDialog({
     setAddress("");
     setNotes("");
     setCoords({ latitude: center.lat, longitude: center.lng });
-    setMapCenter({ lat: center.lat, lng: center.lng });
+    setMapCenter({ lat: center.lat, lng: center.lng, revision: Date.now() });
     setPeriods([createDisplayPeriod()]);
   }, [open, contributorProfile]);
 
   const handleLocationCenterChange = (center: { lat: number; lng: number }) => {
-    setMapCenter({ lat: center.lat, lng: center.lng });
+    setMapCenter({ lat: center.lat, lng: center.lng, revision: Date.now() });
     setCoords({ latitude: center.lat, longitude: center.lng });
   };
 

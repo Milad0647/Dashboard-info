@@ -7,7 +7,7 @@ import { configureLeafletDefaultIcon } from "@/lib/leaflet-default-icon";
 interface BillboardLocationMapPickerProps {
   latitude: number;
   longitude: number;
-  mapCenter?: { lat: number; lng: number } | null;
+  mapCenter?: { lat: number; lng: number; revision?: number } | null;
   onChange: (coords: { latitude: number; longitude: number }) => void;
 }
 
@@ -102,7 +102,7 @@ export function BillboardLocationMapPicker({
   useEffect(() => {
     if (!mapCenter) return;
     applyMapCenter(mapCenter);
-  }, [mapCenter?.lat, mapCenter?.lng]);
+  }, [mapCenter?.lat, mapCenter?.lng, mapCenter?.revision]);
 
   useEffect(() => {
     if (skipCoordsSyncRef.current || !markerRef.current) return;

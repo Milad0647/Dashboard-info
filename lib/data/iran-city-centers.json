@@ -1,1983 +1,4120 @@
 {
+  "آذربایجان شرقی::آذرشهر": {
+    "province": "آذربایجان شرقی",
+    "city": "آذرشهر",
+    "lat": 37.759,
+    "lng": 45.9783,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "6686970",
+    "score": 223.6085210227816
+  },
+  "آذربایجان شرقی::اسکو": {
+    "province": "آذربایجان شرقی",
+    "city": "اسکو",
+    "lat": 37.91504,
+    "lng": 46.12258,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "121781",
+    "score": 222.06492678675957
+  },
+  "آذربایجان شرقی::اهر": {
+    "province": "آذربایجان شرقی",
+    "city": "اهر",
+    "lat": 38.4774,
+    "lng": 47.0699,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "144616",
+    "score": 225
+  },
+  "آذربایجان شرقی::بستان آباد": {
+    "province": "آذربایجان شرقی",
+    "city": "بستان آباد",
+    "lat": 37.84633,
+    "lng": 46.83542,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "23290",
+    "score": 222.34863857810743
+  },
+  "آذربایجان شرقی::بناب": {
+    "province": "آذربایجان شرقی",
+    "city": "بناب",
+    "lat": 37.3404,
+    "lng": 46.0561,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "140889",
+    "score": 224.62015971230485
+  },
   "آذربایجان شرقی::تبریز": {
     "province": "آذربایجان شرقی",
     "city": "تبریز",
     "lat": 38.08,
     "lng": 46.2919,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "113646",
+    "score": 230
   },
-  "آذربایجان شرقی::مراغه": {
+  "آذربایجان شرقی::چاراویماق": {
     "province": "آذربایجان شرقی",
-    "city": "مراغه",
-    "lat": 38.08,
-    "lng": 46.2919,
-    "source": "seed"
-  },
-  "آذربایجان شرقی::مرند": {
-    "province": "آذربایجان شرقی",
-    "city": "مرند",
-    "lat": 38.08,
-    "lng": 46.2919,
-    "source": "seed"
-  },
-  "آذربایجان شرقی::میانه": {
-    "province": "آذربایجان شرقی",
-    "city": "میانه",
-    "lat": 38.08,
-    "lng": 46.2919,
-    "source": "seed"
-  },
-  "آذربایجان شرقی::اهر": {
-    "province": "آذربایجان شرقی",
-    "city": "اهر",
-    "lat": 38.08,
-    "lng": 46.2919,
-    "source": "seed"
-  },
-  "آذربایجان شرقی::بناب": {
-    "province": "آذربایجان شرقی",
-    "city": "بناب",
-    "lat": 38.08,
-    "lng": 46.2919,
-    "source": "seed"
+    "city": "چاراویماق",
+    "lat": 37.0742,
+    "lng": 47.4267,
+    "source": "manual"
   },
   "آذربایجان شرقی::سراب": {
     "province": "آذربایجان شرقی",
     "city": "سراب",
-    "lat": 38.08,
-    "lng": 46.2919,
-    "source": "seed"
+    "lat": 37.9408,
+    "lng": 47.5367,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "117368",
+    "score": 223.61408494260857
   },
   "آذربایجان شرقی::شبستر": {
     "province": "آذربایجان شرقی",
     "city": "شبستر",
-    "lat": 38.08,
-    "lng": 46.2919,
-    "source": "seed"
+    "lat": 38.1804,
+    "lng": 45.7028,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "116126",
+    "score": 222.384002803827
   },
-  "آذربایجان شرقی::هشترود": {
+  "آذربایجان شرقی::عجب شیر": {
     "province": "آذربایجان شرقی",
-    "city": "هشترود",
-    "lat": 38.08,
-    "lng": 46.2919,
-    "source": "seed"
+    "city": "عجب شیر",
+    "lat": 37.4776,
+    "lng": 45.8943,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "144443",
+    "score": 222.88962144963568
+  },
+  "آذربایجان شرقی::کلیبر": {
+    "province": "آذربایجان شرقی",
+    "city": "کلیبر",
+    "lat": 38.86509,
+    "lng": 47.03909,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "129201",
+    "score": 205
+  },
+  "آذربایجان شرقی::لیلان": {
+    "province": "آذربایجان شرقی",
+    "city": "لیلان",
+    "lat": 37.0129,
+    "lng": 46.2111,
+    "source": "manual"
+  },
+  "آذربایجان شرقی::مراغه": {
+    "province": "آذربایجان شرقی",
+    "city": "مراغه",
+    "lat": 37.39206,
+    "lng": 46.23909,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124877",
+    "score": 225
+  },
+  "آذربایجان شرقی::مرند": {
+    "province": "آذربایجان شرقی",
+    "city": "مرند",
+    "lat": 38.4329,
+    "lng": 45.7749,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124862",
+    "score": 225
   },
   "آذربایجان شرقی::ملکان": {
     "province": "آذربایجان شرقی",
     "city": "ملکان",
-    "lat": 38.08,
-    "lng": 46.2919,
-    "source": "seed"
+    "lat": 37.14258,
+    "lng": 46.10345,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125112",
+    "score": 222.75302988842756
+  },
+  "آذربایجان شرقی::میانه": {
+    "province": "آذربایجان شرقی",
+    "city": "میانه",
+    "lat": 37.421,
+    "lng": 47.715,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124082",
+    "score": 225
+  },
+  "آذربایجان شرقی::ورزقان": {
+    "province": "آذربایجان شرقی",
+    "city": "ورزقان",
+    "lat": 38.67549,
+    "lng": 46.11205,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "112121",
+    "score": 205
+  },
+  "آذربایجان شرقی::هریس": {
+    "province": "آذربایجان شرقی",
+    "city": "هریس",
+    "lat": 38.24816,
+    "lng": 47.11678,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "131528",
+    "score": 221.08740230973729
+  },
+  "آذربایجان شرقی::هشترود": {
+    "province": "آذربایجان شرقی",
+    "city": "هشترود",
+    "lat": 37.4779,
+    "lng": 47.0508,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142554",
+    "score": 222.2531905043475
+  },
+  "آذربایجان شرقی::هوراند": {
+    "province": "آذربایجان شرقی",
+    "city": "هوراند",
+    "lat": 38.7906,
+    "lng": 47.3634,
+    "source": "manual"
   },
   "آذربایجان غربی::ارومیه": {
     "province": "آذربایجان غربی",
     "city": "ارومیه",
     "lat": 37.55274,
     "lng": 45.07605,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "121801",
+    "score": 230
   },
-  "آذربایجان غربی::خوی": {
+  "آذربایجان غربی::اشنویه": {
     "province": "آذربایجان غربی",
-    "city": "خوی",
-    "lat": 37.55274,
-    "lng": 45.07605,
-    "source": "seed"
+    "city": "اشنویه",
+    "lat": 37.0397,
+    "lng": 45.0983,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "121795",
+    "score": 223.81872932230124
   },
-  "آذربایجان غربی::مهاباد": {
+  "آذربایجان غربی::باروق": {
     "province": "آذربایجان غربی",
-    "city": "مهاباد",
-    "lat": 37.55274,
-    "lng": 45.07605,
-    "source": "seed"
+    "city": "باروق",
+    "lat": 36.9583,
+    "lng": 46.3249,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "141190",
+    "score": 174.50371797086518
   },
   "آذربایجان غربی::بوکان": {
     "province": "آذربایجان غربی",
     "city": "بوکان",
-    "lat": 37.55274,
-    "lng": 45.07605,
-    "source": "seed"
+    "lat": 36.521,
+    "lng": 46.2089,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "139889",
+    "score": 225
   },
-  "آذربایجان غربی::میاندوآب": {
+  "آذربایجان غربی::پلدشت": {
     "province": "آذربایجان غربی",
-    "city": "میاندوآب",
-    "lat": 37.55274,
-    "lng": 45.07605,
-    "source": "seed"
-  },
-  "آذربایجان غربی::سلماس": {
-    "province": "آذربایجان غربی",
-    "city": "سلماس",
-    "lat": 37.55274,
-    "lng": 45.07605,
-    "source": "seed"
-  },
-  "آذربایجان غربی::نقده": {
-    "province": "آذربایجان غربی",
-    "city": "نقده",
-    "lat": 37.55274,
-    "lng": 45.07605,
-    "source": "seed"
+    "city": "پلدشت",
+    "lat": 39.348,
+    "lng": 45.071,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "120954",
+    "score": 223.50005559821005
   },
   "آذربایجان غربی::پیرانشهر": {
     "province": "آذربایجان غربی",
     "city": "پیرانشهر",
-    "lat": 37.55274,
-    "lng": 45.07605,
-    "source": "seed"
+    "lat": 36.701,
+    "lng": 45.1413,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "121110",
+    "score": 180
   },
-  "آذربایجان غربی::ماکو": {
+  "آذربایجان غربی::تکاب": {
     "province": "آذربایجان غربی",
-    "city": "ماکو",
-    "lat": 37.55274,
-    "lng": 45.07605,
-    "source": "seed"
+    "city": "تکاب",
+    "lat": 36.4009,
+    "lng": 47.1133,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "113508",
+    "score": 223.84864506641418
+  },
+  "آذربایجان غربی::چهاربرج": {
+    "province": "آذربایجان غربی",
+    "city": "چهاربرج",
+    "lat": 29.3415,
+    "lng": 51.0646,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "139724",
+    "score": 149.6864157074793
+  },
+  "آذربایجان غربی::خوی": {
+    "province": "آذربایجان غربی",
+    "city": "خوی",
+    "lat": 38.5503,
+    "lng": 44.9521,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "126972",
+    "score": 225
+  },
+  "آذربایجان غربی::سردشت": {
+    "province": "آذربایجان غربی",
+    "city": "سردشت",
+    "lat": 36.1552,
+    "lng": 45.4788,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "117111",
+    "score": 223.66655856338417
+  },
+  "آذربایجان غربی::سلماس": {
+    "province": "آذربایجان غربی",
+    "city": "سلماس",
+    "lat": 38.1973,
+    "lng": 44.7653,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "117656",
+    "score": 224.64690965124024
   },
   "آذربایجان غربی::شاهین دژ": {
     "province": "آذربایجان غربی",
     "city": "شاهین دژ",
-    "lat": 37.55274,
-    "lng": 45.07605,
-    "source": "seed"
+    "lat": 36.6793,
+    "lng": 46.5669,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "117793",
+    "score": 223.46980474334714
+  },
+  "آذربایجان غربی::شوط": {
+    "province": "آذربایجان غربی",
+    "city": "شوط",
+    "lat": 39.2192,
+    "lng": 44.77,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "401118",
+    "score": 222.618103359095
+  },
+  "آذربایجان غربی::ماکو": {
+    "province": "آذربایجان غربی",
+    "city": "ماکو",
+    "lat": 39.28992,
+    "lng": 44.46035,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125205",
+    "score": 223.67287252419843
+  },
+  "آذربایجان غربی::مهاباد": {
+    "province": "آذربایجان غربی",
+    "city": "مهاباد",
+    "lat": 36.7631,
+    "lng": 45.7222,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "125446",
+    "score": 180
+  },
+  "آذربایجان غربی::میاندوآب": {
+    "province": "آذربایجان غربی",
+    "city": "میاندوآب",
+    "lat": 36.96667,
+    "lng": 46.10961,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124085",
+    "score": 225
+  },
+  "آذربایجان غربی::میرآباد": {
+    "province": "آذربایجان غربی",
+    "city": "میرآباد",
+    "lat": 36.4053,
+    "lng": 45.372,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "3315",
+    "score": 220.1128945070644
+  },
+  "آذربایجان غربی::نقده": {
+    "province": "آذربایجان غربی",
+    "city": "نقده",
+    "lat": 36.9553,
+    "lng": 45.388,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "122698",
+    "score": 224.6467393459398
   },
   "اردبیل::اردبیل": {
     "province": "اردبیل",
     "city": "اردبیل",
     "lat": 38.2498,
     "lng": 48.2933,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "143083",
+    "score": 230
   },
-  "اردبیل::مشگین شهر": {
+  "اردبیل::اصلاندوز": {
     "province": "اردبیل",
-    "city": "مشگین شهر",
-    "lat": 38.2498,
-    "lng": 48.2933,
-    "source": "seed"
-  },
-  "اردبیل::پارس آباد": {
-    "province": "اردبیل",
-    "city": "پارس آباد",
-    "lat": 38.2498,
-    "lng": 48.2933,
-    "source": "seed"
-  },
-  "اردبیل::خلخال": {
-    "province": "اردبیل",
-    "city": "خلخال",
-    "lat": 38.2498,
-    "lng": 48.2933,
-    "source": "seed"
-  },
-  "اردبیل::گرمی": {
-    "province": "اردبیل",
-    "city": "گرمی",
-    "lat": 38.2498,
-    "lng": 48.2933,
-    "source": "seed"
-  },
-  "اردبیل::نمین": {
-    "province": "اردبیل",
-    "city": "نمین",
-    "lat": 38.2498,
-    "lng": 48.2933,
-    "source": "seed"
-  },
-  "اردبیل::نیر": {
-    "province": "اردبیل",
-    "city": "نیر",
-    "lat": 38.2498,
-    "lng": 48.2933,
-    "source": "seed"
+    "city": "اصلاندوز",
+    "lat": 39.4439,
+    "lng": 47.4056,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "142703",
+    "score": 175.2108213082974
   },
   "اردبیل::بیله سوار": {
     "province": "اردبیل",
     "city": "بیله سوار",
-    "lat": 38.2498,
-    "lng": 48.2933,
-    "source": "seed"
+    "lat": 39.37961,
+    "lng": 48.35463,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "140494",
+    "score": 221.58463622241928
+  },
+  "اردبیل::پارس آباد": {
+    "province": "اردبیل",
+    "city": "پارس آباد",
+    "lat": 39.6482,
+    "lng": 47.9174,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "121380",
+    "score": 224.88116429855637
+  },
+  "اردبیل::خلخال": {
+    "province": "اردبیل",
+    "city": "خلخال",
+    "lat": 37.61837,
+    "lng": 48.52928,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "128008",
+    "score": 223.83113205355244
   },
   "اردبیل::کوثر": {
     "province": "اردبیل",
     "city": "کوثر",
-    "lat": 38.2498,
-    "lng": 48.2933,
-    "source": "seed"
+    "lat": 37.6884,
+    "lng": 48.34799,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "126903",
+    "score": 160
+  },
+  "اردبیل::گرمی": {
+    "province": "اردبیل",
+    "city": "گرمی",
+    "lat": 39.0215,
+    "lng": 48.0801,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "133972",
+    "score": 222.8476740472358
+  },
+  "اردبیل::مشگین شهر": {
+    "province": "اردبیل",
+    "city": "مشگین شهر",
+    "lat": 38.399,
+    "lng": 47.682,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124210",
+    "score": 224.47950725306706
+  },
+  "اردبیل::نمین": {
+    "province": "اردبیل",
+    "city": "نمین",
+    "lat": 38.4269,
+    "lng": 48.4839,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "122721",
+    "score": 221.54180279738205
+  },
+  "اردبیل::نیر": {
+    "province": "اردبیل",
+    "city": "نیر",
+    "lat": 38.0346,
+    "lng": 47.9986,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "15269",
+    "score": 220.07573576874714
+  },
+  "اصفهان::آران و بیدگل": {
+    "province": "اصفهان",
+    "city": "آران و بیدگل",
+    "lat": 34.0578,
+    "lng": 51.4842,
+    "source": "manual"
+  },
+  "اصفهان::اردستان": {
+    "province": "اصفهان",
+    "city": "اردستان",
+    "lat": 33.37939,
+    "lng": 52.36981,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "143052",
+    "score": 221.82287399241238
   },
   "اصفهان::اصفهان": {
     "province": "اصفهان",
     "city": "اصفهان",
     "lat": 32.65246,
     "lng": 51.67462,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "418863",
+    "score": 230
   },
-  "اصفهان::کاشان": {
+  "اصفهان::چادگان": {
     "province": "اصفهان",
-    "city": "کاشان",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
+    "city": "چادگان",
+    "lat": 32.76825,
+    "lng": 50.62873,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "139780",
+    "score": 220.98692206174061
   },
   "اصفهان::خمینی شهر": {
     "province": "اصفهان",
     "city": "خمینی شهر",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
+    "lat": 32.6856,
+    "lng": 51.53609,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "418710",
+    "score": 225
   },
-  "اصفهان::نجف آباد": {
+  "اصفهان::خوانسار": {
     "province": "اصفهان",
-    "city": "نجف آباد",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
+    "city": "خوانسار",
+    "lat": 33.2206,
+    "lng": 50.315,
+    "source": "manual"
   },
-  "اصفهان::شاهین شهر": {
+  "اصفهان::دهاقان": {
     "province": "اصفهان",
-    "city": "شاهین شهر",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
-  },
-  "اصفهان::فلاورجان": {
-    "province": "اصفهان",
-    "city": "فلاورجان",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
-  },
-  "اصفهان::گلپایگان": {
-    "province": "اصفهان",
-    "city": "گلپایگان",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
-  },
-  "اصفهان::نطنز": {
-    "province": "اصفهان",
-    "city": "نطنز",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
-  },
-  "اصفهان::اردستان": {
-    "province": "اصفهان",
-    "city": "اردستان",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
-  },
-  "اصفهان::نایین": {
-    "province": "اصفهان",
-    "city": "نایین",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
+    "city": "دهاقان",
+    "lat": 31.93986,
+    "lng": 51.64731,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "137057",
+    "score": 222.01587065365985
   },
   "اصفهان::سمیرم": {
     "province": "اصفهان",
     "city": "سمیرم",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
+    "lat": 31.41667,
+    "lng": 51.56667,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "116406",
+    "score": 222.7217838044354
+  },
+  "اصفهان::شهرضا": {
+    "province": "اصفهان",
+    "city": "شهرضا",
+    "lat": 32.00877,
+    "lng": 51.86407,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "418533",
+    "score": 225
+  },
+  "اصفهان::فریدن": {
+    "province": "اصفهان",
+    "city": "فریدن",
+    "lat": 32.98741,
+    "lng": 50.4108,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "137929",
+    "score": 222.21096831889264
+  },
+  "اصفهان::فریدونشهر": {
+    "province": "اصفهان",
+    "city": "فریدونشهر",
+    "lat": 32.94195,
+    "lng": 50.11991,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134601",
+    "score": 221.53466649304275
+  },
+  "اصفهان::فلاورجان": {
+    "province": "اصفهان",
+    "city": "فلاورجان",
+    "lat": 32.5553,
+    "lng": 51.50973,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "418851",
+    "score": 223.79045154938945
+  },
+  "اصفهان::کاشان": {
+    "province": "اصفهان",
+    "city": "کاشان",
+    "lat": 34.00228,
+    "lng": 51.43879,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "6861211",
+    "score": 225
+  },
+  "اصفهان::کوهپایه": {
+    "province": "اصفهان",
+    "city": "کوهپایه",
+    "lat": 32.7167,
+    "lng": 52.4333,
+    "source": "manual"
+  },
+  "اصفهان::گلپایگان": {
+    "province": "اصفهان",
+    "city": "گلپایگان",
+    "lat": 33.4537,
+    "lng": 50.28836,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "133037",
+    "score": 224.08155210280455
+  },
+  "اصفهان::لنجان": {
+    "province": "اصفهان",
+    "city": "لنجان",
+    "lat": 32.475,
+    "lng": 51.3051,
+    "source": "manual"
   },
   "اصفهان::مبارکه": {
     "province": "اصفهان",
     "city": "مبارکه",
-    "lat": 32.65246,
-    "lng": 51.67462,
-    "source": "seed"
+    "lat": 32.34612,
+    "lng": 51.50205,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "418625",
+    "score": 224.36668900029454
+  },
+  "اصفهان::نجف آباد": {
+    "province": "اصفهان",
+    "city": "نجف آباد",
+    "lat": 32.63464,
+    "lng": 51.36525,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "418606",
+    "score": 225
+  },
+  "اصفهان::نطنز": {
+    "province": "اصفهان",
+    "city": "نطنز",
+    "lat": 33.51118,
+    "lng": 51.91808,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "122491",
+    "score": 223.5729418997613
+  },
+  "اصفهان::ورزنه": {
+    "province": "اصفهان",
+    "city": "ورزنه",
+    "lat": 32.9072,
+    "lng": 52.6556,
+    "source": "manual"
+  },
+  "اصفهان::هرند": {
+    "province": "اصفهان",
+    "city": "هرند",
+    "lat": 32.6181,
+    "lng": 52.4618,
+    "source": "manual"
+  },
+  "البرز::اشتهارد": {
+    "province": "البرز",
+    "city": "اشتهارد",
+    "lat": 35.7255,
+    "lng": 50.3662,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "135205",
+    "score": 222.90813754854494
+  },
+  "البرز::چهارباغ": {
+    "province": "البرز",
+    "city": "چهارباغ",
+    "lat": 35.8397,
+    "lng": 50.8481,
+    "source": "manual"
+  },
+  "البرز::ساوجبلاغ": {
+    "province": "البرز",
+    "city": "ساوجبلاغ",
+    "lat": 35.9578,
+    "lng": 50.6796,
+    "source": "manual"
+  },
+  "البرز::طالقان": {
+    "province": "البرز",
+    "city": "طالقان",
+    "lat": 36.17449,
+    "lng": 50.76908,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "9904",
+    "score": 219.02710214642659
+  },
+  "البرز::فردیس": {
+    "province": "البرز",
+    "city": "فردیس",
+    "lat": 35.7242,
+    "lng": 50.9883,
+    "source": "manual"
   },
   "البرز::کرج": {
     "province": "البرز",
     "city": "کرج",
     "lat": 35.83266,
     "lng": 50.99155,
-    "source": "seed"
-  },
-  "البرز::فردیس": {
-    "province": "البرز",
-    "city": "فردیس",
-    "lat": 35.83266,
-    "lng": 50.99155,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "128747",
+    "score": 230
   },
   "البرز::نظرآباد": {
     "province": "البرز",
     "city": "نظرآباد",
-    "lat": 35.83266,
-    "lng": 50.99155,
-    "source": "seed"
+    "lat": 35.95411,
+    "lng": 50.60607,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "122438",
+    "score": 225
   },
-  "البرز::ساوجبلاغ": {
-    "province": "البرز",
-    "city": "ساوجبلاغ",
-    "lat": 35.83266,
-    "lng": 50.99155,
-    "source": "seed"
-  },
-  "البرز::طالقان": {
-    "province": "البرز",
-    "city": "طالقان",
-    "lat": 35.83266,
-    "lng": 50.99155,
-    "source": "seed"
-  },
-  "البرز::اشتهارد": {
-    "province": "البرز",
-    "city": "اشتهارد",
-    "lat": 35.83266,
-    "lng": 50.99155,
-    "source": "seed"
-  },
-  "البرز::چهارباغ": {
-    "province": "البرز",
-    "city": "چهارباغ",
-    "lat": 35.83266,
-    "lng": 50.99155,
-    "source": "seed"
+  "ایلام::آبدانان": {
+    "province": "ایلام",
+    "city": "آبدانان",
+    "lat": 32.9926,
+    "lng": 47.4198,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "145233",
+    "score": 222.51700445679728
   },
   "ایلام::ایلام": {
     "province": "ایلام",
     "city": "ایلام",
     "lat": 33.6374,
     "lng": 46.4227,
-    "source": "seed"
-  },
-  "ایلام::دهلران": {
-    "province": "ایلام",
-    "city": "دهلران",
-    "lat": 33.6374,
-    "lng": 46.4227,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "130802",
+    "score": 230
   },
   "ایلام::ایوان": {
     "province": "ایلام",
     "city": "ایوان",
-    "lat": 33.6374,
-    "lng": 46.4227,
-    "source": "seed"
-  },
-  "ایلام::آبدانان": {
-    "province": "ایلام",
-    "city": "آبدانان",
-    "lat": 33.6374,
-    "lng": 46.4227,
-    "source": "seed"
-  },
-  "ایلام::دره شهر": {
-    "province": "ایلام",
-    "city": "دره شهر",
-    "lat": 33.6374,
-    "lng": 46.4227,
-    "source": "seed"
-  },
-  "ایلام::مهران": {
-    "province": "ایلام",
-    "city": "مهران",
-    "lat": 33.6374,
-    "lng": 46.4227,
-    "source": "seed"
-  },
-  "ایلام::چرداول": {
-    "province": "ایلام",
-    "city": "چرداول",
-    "lat": 33.6374,
-    "lng": 46.4227,
-    "source": "seed"
+    "lat": 33.8272,
+    "lng": 46.3097,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "129929",
+    "score": 222.9821773501858
   },
   "ایلام::بدره": {
     "province": "ایلام",
     "city": "بدره",
-    "lat": 33.6374,
-    "lng": 46.4227,
-    "source": "seed"
+    "lat": 33.30573,
+    "lng": 47.03708,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "415694",
+    "score": 205
+  },
+  "ایلام::چوار": {
+    "province": "ایلام",
+    "city": "چوار",
+    "lat": 33.6953,
+    "lng": 46.2979,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "138905",
+    "score": 175.06327006123968
+  },
+  "ایلام::دره شهر": {
+    "province": "ایلام",
+    "city": "دره شهر",
+    "lat": 33.14447,
+    "lng": 47.3799,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "137436",
+    "score": 222.58911751541436
+  },
+  "ایلام::دهلران": {
+    "province": "ایلام",
+    "city": "دهلران",
+    "lat": 32.6941,
+    "lng": 47.2679,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "136702",
+    "score": 223.65114461724474
+  },
+  "ایلام::مهران": {
+    "province": "ایلام",
+    "city": "مهران",
+    "lat": 33.1222,
+    "lng": 46.1646,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124291",
+    "score": 221.29223264395534
   },
   "بوشهر::بوشهر": {
     "province": "بوشهر",
     "city": "بوشهر",
     "lat": 28.96887,
     "lng": 50.83657,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "139817",
+    "score": 230
+  },
+  "بوشهر::تنگستان": {
+    "province": "بوشهر",
+    "city": "تنگستان",
+    "lat": 33.07446,
+    "lng": 48.97004,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "6738073",
+    "score": 140
   },
   "بوشهر::جم": {
     "province": "بوشهر",
     "city": "جم",
-    "lat": 28.96887,
-    "lng": 50.83657,
-    "source": "seed"
-  },
-  "بوشهر::گناوه": {
-    "province": "بوشهر",
-    "city": "گناوه",
-    "lat": 28.96887,
-    "lng": 50.83657,
-    "source": "seed"
-  },
-  "بوشهر::دیر": {
-    "province": "بوشهر",
-    "city": "دیر",
-    "lat": 28.96887,
-    "lng": 50.83657,
-    "source": "seed"
-  },
-  "بوشهر::کنگان": {
-    "province": "بوشهر",
-    "city": "کنگان",
-    "lat": 28.96887,
-    "lng": 50.83657,
-    "source": "seed"
-  },
-  "بوشهر::عسلویه": {
-    "province": "بوشهر",
-    "city": "عسلویه",
-    "lat": 28.96887,
-    "lng": 50.83657,
-    "source": "seed"
+    "lat": 27.82977,
+    "lng": 52.32518,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "130451",
+    "score": 222.9897643803079
   },
   "بوشهر::دشتستان": {
     "province": "بوشهر",
     "city": "دشتستان",
-    "lat": 28.96887,
-    "lng": 50.83657,
-    "source": "seed"
+    "lat": 29.266667,
+    "lng": 51.216667,
+    "source": "mhndev-unique"
   },
   "بوشهر::دشتی": {
     "province": "بوشهر",
     "city": "دشتی",
-    "lat": 28.96887,
-    "lng": 50.83657,
-    "source": "seed"
+    "lat": 27.178,
+    "lng": 53.0047,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "137219",
+    "score": 154.611305210244
+  },
+  "بوشهر::دیر": {
+    "province": "بوشهر",
+    "city": "دیر",
+    "lat": 27.8399,
+    "lng": 51.9378,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "136280",
+    "score": 222.52691447414043
+  },
+  "بوشهر::دیلم": {
+    "province": "بوشهر",
+    "city": "دیلم",
+    "lat": 31.77705,
+    "lng": 48.86675,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "136300",
+    "score": 140
+  },
+  "بوشهر::عسلویه": {
+    "province": "بوشهر",
+    "city": "عسلویه",
+    "lat": 27.47383,
+    "lng": 52.60782,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142857",
+    "score": 221.5287825182937
+  },
+  "بوشهر::کنگان": {
+    "province": "بوشهر",
+    "city": "کنگان",
+    "lat": 27.83434,
+    "lng": 52.06306,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "128847",
+    "score": 224.11803964919915
+  },
+  "بوشهر::گناوه": {
+    "province": "بوشهر",
+    "city": "گناوه",
+    "lat": 33.58885,
+    "lng": 48.35972,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "134215",
+    "score": 140
+  },
+  "تهران::اسلامشهر": {
+    "province": "تهران",
+    "city": "اسلامشهر",
+    "lat": 35.55222,
+    "lng": 51.23504,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "449504",
+    "score": 225
+  },
+  "تهران::بهارستان": {
+    "province": "تهران",
+    "city": "بهارستان",
+    "lat": 32.48814,
+    "lng": 51.77312,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "418943",
+    "score": 159.5910360352699
+  },
+  "تهران::پاکدشت": {
+    "province": "تهران",
+    "city": "پاکدشت",
+    "lat": 35.47854,
+    "lng": 51.6834,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "9478811",
+    "score": 225
+  },
+  "تهران::پردیس": {
+    "province": "تهران",
+    "city": "پردیس",
+    "lat": 35.74687,
+    "lng": 51.81222,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "6681051",
+    "score": 224.4619320087814
+  },
+  "تهران::پیشوا": {
+    "province": "تهران",
+    "city": "پیشوا",
+    "lat": 35.308,
+    "lng": 51.7267,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "120972",
+    "score": 223.924968632861
   },
   "تهران::تهران": {
     "province": "تهران",
     "city": "تهران",
     "lat": 35.6892,
     "lng": 51.389,
-    "source": "seed"
-  },
-  "تهران::شهریار": {
-    "province": "تهران",
-    "city": "شهریار",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
-  },
-  "تهران::اسلامشهر": {
-    "province": "تهران",
-    "city": "اسلامشهر",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
-  },
-  "تهران::ری": {
-    "province": "تهران",
-    "city": "ری",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
-  },
-  "تهران::پاکدشت": {
-    "province": "تهران",
-    "city": "پاکدشت",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
-  },
-  "تهران::ورامین": {
-    "province": "تهران",
-    "city": "ورامین",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
+    "source": "manual"
   },
   "تهران::دماوند": {
     "province": "تهران",
     "city": "دماوند",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
-  },
-  "تهران::فیروزکوه": {
-    "province": "تهران",
-    "city": "فیروزکوه",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
+    "lat": 35.71842,
+    "lng": 52.06958,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "138042",
+    "score": 222.85825623862186
   },
   "تهران::رباط کریم": {
     "province": "تهران",
     "city": "رباط کریم",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
+    "lat": 35.4846,
+    "lng": 51.0829,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "118367",
+    "score": 225
   },
-  "تهران::قدس": {
+  "تهران::ری": {
     "province": "تهران",
-    "city": "قدس",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
-  },
-  "تهران::ملارد": {
-    "province": "تهران",
-    "city": "ملارد",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
-  },
-  "تهران::پردیس": {
-    "province": "تهران",
-    "city": "پردیس",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
+    "city": "ری",
+    "lat": 35.59354,
+    "lng": 51.43997,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "9533872",
+    "score": 205
   },
   "تهران::شمیرانات": {
     "province": "تهران",
     "city": "شمیرانات",
-    "lat": 35.6892,
-    "lng": 51.389,
-    "source": "seed"
+    "lat": 35.9544,
+    "lng": 51.6067,
+    "source": "manual"
+  },
+  "تهران::شهریار": {
+    "province": "تهران",
+    "city": "شهریار",
+    "lat": 35.65884,
+    "lng": 51.05775,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "143860",
+    "score": 225
+  },
+  "تهران::فیروزکوه": {
+    "province": "تهران",
+    "city": "فیروزکوه",
+    "lat": 35.75674,
+    "lng": 52.77062,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134462",
+    "score": 221.9675798865228
+  },
+  "تهران::قدس": {
+    "province": "تهران",
+    "city": "قدس",
+    "lat": 35.7214,
+    "lng": 51.109,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "120292",
+    "score": 225
+  },
+  "تهران::قرچک": {
+    "province": "تهران",
+    "city": "قرچک",
+    "lat": 35.42873,
+    "lng": 51.57757,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "32767",
+    "score": 225
+  },
+  "تهران::ملارد": {
+    "province": "تهران",
+    "city": "ملارد",
+    "lat": 35.6659,
+    "lng": 50.9767,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125188",
+    "score": 224.015741014886
+  },
+  "تهران::ورامین": {
+    "province": "تهران",
+    "city": "ورامین",
+    "lat": 35.3242,
+    "lng": 51.6457,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "112214",
+    "score": 225
+  },
+  "چهارمحال و بختیاری::اردل": {
+    "province": "چهارمحال و بختیاری",
+    "city": "اردل",
+    "lat": 31.99969,
+    "lng": 50.66231,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "143070",
+    "score": 221.0196917971861
+  },
+  "چهارمحال و بختیاری::بروجن": {
+    "province": "چهارمحال و بختیاری",
+    "city": "بروجن",
+    "lat": 31.96523,
+    "lng": 51.2873,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "140046",
+    "score": 224.02569236797711
+  },
+  "چهارمحال و بختیاری::بن": {
+    "province": "چهارمحال و بختیاری",
+    "city": "بن",
+    "lat": 32.54037,
+    "lng": 50.74515,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "140891",
+    "score": 221.45202776000374
+  },
+  "چهارمحال و بختیاری::سامان": {
+    "province": "چهارمحال و بختیاری",
+    "city": "سامان",
+    "lat": 32.45014,
+    "lng": 50.91092,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "117627",
+    "score": 221.6082968110729
   },
   "چهارمحال و بختیاری::شهرکرد": {
     "province": "چهارمحال و بختیاری",
     "city": "شهرکرد",
     "lat": 32.32612,
     "lng": 50.8572,
-    "source": "seed"
-  },
-  "چهارمحال و بختیاری::بروجن": {
-    "province": "چهارمحال و بختیاری",
-    "city": "بروجن",
-    "lat": 32.32612,
-    "lng": 50.8572,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "115770",
+    "score": 230
   },
   "چهارمحال و بختیاری::فارسان": {
     "province": "چهارمحال و بختیاری",
     "city": "فارسان",
-    "lat": 32.32612,
-    "lng": 50.8572,
-    "source": "seed"
-  },
-  "چهارمحال و بختیاری::لردگان": {
-    "province": "چهارمحال و بختیاری",
-    "city": "لردگان",
-    "lat": 32.32612,
-    "lng": 50.8572,
-    "source": "seed"
-  },
-  "چهارمحال و بختیاری::اردل": {
-    "province": "چهارمحال و بختیاری",
-    "city": "اردل",
-    "lat": 32.32612,
-    "lng": 50.8572,
-    "source": "seed"
-  },
-  "چهارمحال و بختیاری::سامان": {
-    "province": "چهارمحال و بختیاری",
-    "city": "سامان",
-    "lat": 32.32612,
-    "lng": 50.8572,
-    "source": "seed"
+    "lat": 32.25694,
+    "lng": 50.56095,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134762",
+    "score": 222.93748411731363
   },
   "چهارمحال و بختیاری::کوهرنگ": {
     "province": "چهارمحال و بختیاری",
     "city": "کوهرنگ",
-    "lat": 32.32612,
-    "lng": 50.8572,
-    "source": "seed"
+    "lat": 32.5556,
+    "lng": 50.0083,
+    "source": "manual"
   },
-  "چهارمحال و بختیاری::بن": {
+  "چهارمحال و بختیاری::کیار": {
     "province": "چهارمحال و بختیاری",
-    "city": "بن",
-    "lat": 32.32612,
-    "lng": 50.8572,
-    "source": "seed"
+    "city": "کیار",
+    "lat": 31.995,
+    "lng": 50.3567,
+    "source": "manual"
+  },
+  "چهارمحال و بختیاری::لردگان": {
+    "province": "چهارمحال و بختیاری",
+    "city": "لردگان",
+    "lat": 31.51338,
+    "lng": 50.82672,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125609",
+    "score": 223.43106355290513
+  },
+  "خراسان جنوبی::بشرویه": {
+    "province": "خراسان جنوبی",
+    "city": "بشرویه",
+    "lat": 33.86845,
+    "lng": 57.42885,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "9480732",
+    "score": 221.74092166467025
   },
   "خراسان جنوبی::بیرجند": {
     "province": "خراسان جنوبی",
     "city": "بیرجند",
     "lat": 32.86628,
     "lng": 59.22114,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "140463",
+    "score": 230
   },
-  "خراسان جنوبی::قائنات": {
+  "خراسان جنوبی::خوسف": {
     "province": "خراسان جنوبی",
-    "city": "قائنات",
-    "lat": 32.86628,
-    "lng": 59.22114,
-    "source": "seed"
-  },
-  "خراسان جنوبی::فردوس": {
-    "province": "خراسان جنوبی",
-    "city": "فردوس",
-    "lat": 32.86628,
-    "lng": 59.22114,
-    "source": "seed"
-  },
-  "خراسان جنوبی::طبس": {
-    "province": "خراسان جنوبی",
-    "city": "طبس",
-    "lat": 32.86628,
-    "lng": 59.22114,
-    "source": "seed"
-  },
-  "خراسان جنوبی::نهبندان": {
-    "province": "خراسان جنوبی",
-    "city": "نهبندان",
-    "lat": 32.86628,
-    "lng": 59.22114,
-    "source": "seed"
+    "city": "خوسف",
+    "lat": 32.78108,
+    "lng": 58.89002,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "127098",
+    "score": 220.0286727688571
   },
   "خراسان جنوبی::درمیان": {
     "province": "خراسان جنوبی",
     "city": "درمیان",
-    "lat": 32.86628,
-    "lng": 59.22114,
-    "source": "seed"
+    "lat": 32.83692,
+    "lng": 59.90302,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "137705",
+    "score": 160
+  },
+  "خراسان جنوبی::زیرکوه": {
+    "province": "خراسان جنوبی",
+    "city": "زیرکوه",
+    "lat": 31.7632,
+    "lng": 50.11963,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "14690",
+    "score": 140
   },
   "خراسان جنوبی::سرایان": {
     "province": "خراسان جنوبی",
     "city": "سرایان",
-    "lat": 32.86628,
-    "lng": 59.22114,
-    "source": "seed"
+    "lat": 33.86017,
+    "lng": 58.52166,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "117232",
+    "score": 221.55901274278142
   },
-  "خراسان جنوبی::بشرویه": {
+  "خراسان جنوبی::سربیشه": {
     "province": "خراسان جنوبی",
-    "city": "بشرویه",
-    "lat": 32.86628,
-    "lng": 59.22114,
-    "source": "seed"
+    "city": "سربیشه",
+    "lat": 32.57566,
+    "lng": 59.79821,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "117204",
+    "score": 220.76126888629688
+  },
+  "خراسان جنوبی::طبس": {
+    "province": "خراسان جنوبی",
+    "city": "طبس",
+    "lat": 33.59586,
+    "lng": 56.92437,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "113659",
+    "score": 158.79567154348408
+  },
+  "خراسان جنوبی::فردوس": {
+    "province": "خراسان جنوبی",
+    "city": "فردوس",
+    "lat": 34.0185,
+    "lng": 58.17222,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134613",
+    "score": 222.84755410537588
+  },
+  "خراسان جنوبی::نهبندان": {
+    "province": "خراسان جنوبی",
+    "city": "نهبندان",
+    "lat": 31.54185,
+    "lng": 60.03648,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1160120",
+    "score": 222.05027893287019
+  },
+  "خراسان رضوی::بجستان": {
+    "province": "خراسان رضوی",
+    "city": "بجستان",
+    "lat": 34.51639,
+    "lng": 58.1845,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "141891",
+    "score": 205
+  },
+  "خراسان رضوی::بردسکن": {
+    "province": "خراسان رضوی",
+    "city": "بردسکن",
+    "lat": 35.26218,
+    "lng": 57.97075,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "141349",
+    "score": 222.80308964150953
+  },
+  "خراسان رضوی::تایباد": {
+    "province": "خراسان رضوی",
+    "city": "تایباد",
+    "lat": 34.74,
+    "lng": 60.7756,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1159384",
+    "score": 223.29677349630532
+  },
+  "خراسان رضوی::تربت جام": {
+    "province": "خراسان رضوی",
+    "city": "تربت جام",
+    "lat": 35.244,
+    "lng": 60.6225,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1159362",
+    "score": 224.0813162854621
+  },
+  "خراسان رضوی::تربت حیدریه": {
+    "province": "خراسان رضوی",
+    "city": "تربت حیدریه",
+    "lat": 35.27401,
+    "lng": 59.21949,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "112646",
+    "score": 225
+  },
+  "خراسان رضوی::جغتای": {
+    "province": "خراسان رضوی",
+    "city": "جغتای",
+    "lat": 36.63619,
+    "lng": 57.07284,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "130091",
+    "score": 205
+  },
+  "خراسان رضوی::جوین": {
+    "province": "خراسان رضوی",
+    "city": "جوین",
+    "lat": 28.56814,
+    "lng": 53.50321,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "129935",
+    "score": 140
+  },
+  "خراسان رضوی::چناران": {
+    "province": "خراسان رضوی",
+    "city": "چناران",
+    "lat": 36.64546,
+    "lng": 59.12123,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "138742",
+    "score": 223.92571034820378
+  },
+  "خراسان رضوی::خلیل آباد": {
+    "province": "خراسان رضوی",
+    "city": "خلیل آباد",
+    "lat": 35.25395,
+    "lng": 58.28566,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "128025",
+    "score": 221.42231321620815
+  },
+  "خراسان رضوی::خواف": {
+    "province": "خراسان رضوی",
+    "city": "خواف",
+    "lat": 34.5763,
+    "lng": 60.14093,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1160544",
+    "score": 223.0840290096344
+  },
+  "خراسان رضوی::خوشاب": {
+    "province": "خراسان رضوی",
+    "city": "خوشاب",
+    "lat": 36.42512,
+    "lng": 57.99064,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "7197",
+    "score": 160
+  },
+  "خراسان رضوی::داورزن": {
+    "province": "خراسان رضوی",
+    "city": "داورزن",
+    "lat": 36.35088,
+    "lng": 56.87547,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "137125",
+    "score": 205
+  },
+  "خراسان رضوی::درگز": {
+    "province": "خراسان رضوی",
+    "city": "درگز",
+    "lat": 37.44447,
+    "lng": 59.10809,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "137585",
+    "score": 223.26164377693726
+  },
+  "خراسان رضوی::رشتخوار": {
+    "province": "خراسان رضوی",
+    "city": "رشتخوار",
+    "lat": 34.97512,
+    "lng": 59.62482,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "118328",
+    "score": 205
+  },
+  "خراسان رضوی::زاوه": {
+    "province": "خراسان رضوی",
+    "city": "زاوه",
+    "lat": 35.27227,
+    "lng": 59.46597,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "111201",
+    "score": 160
+  },
+  "خراسان رضوی::سبزوار": {
+    "province": "خراسان رضوی",
+    "city": "سبزوار",
+    "lat": 36.2126,
+    "lng": 57.68191,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "118063",
+    "score": 180
+  },
+  "خراسان رضوی::سرخس": {
+    "province": "خراسان رضوی",
+    "city": "سرخس",
+    "lat": 36.5449,
+    "lng": 61.1577,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1159716",
+    "score": 223.6698118115598
+  },
+  "خراسان رضوی::ششتمد": {
+    "province": "خراسان رضوی",
+    "city": "ششتمد",
+    "lat": 35.95969,
+    "lng": 57.76673,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "115226",
+    "score": 218.97048288817277
+  },
+  "خراسان رضوی::صالح آباد": {
+    "province": "خراسان رضوی",
+    "city": "صالح آباد",
+    "lat": 34.9237,
+    "lng": 48.3427,
+    "source": "geonames",
+    "featureCode": "PPLA3",
+    "geonameId": "117708",
+    "score": 195.59050836516175
+  },
+  "خراسان رضوی::فریمان": {
+    "province": "خراسان رضوی",
+    "city": "فریمان",
+    "lat": 35.70685,
+    "lng": 59.85006,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134809",
+    "score": 205
+  },
+  "خراسان رضوی::فیروزه": {
+    "province": "خراسان رضوی",
+    "city": "فیروزه",
+    "lat": 36.28639,
+    "lng": 58.58586,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "31020",
+    "score": 205
+  },
+  "خراسان رضوی::قوچان": {
+    "province": "خراسان رضوی",
+    "city": "قوچان",
+    "lat": 37.106,
+    "lng": 58.50955,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "119115",
+    "score": 225
+  },
+  "خراسان رضوی::کاشمر": {
+    "province": "خراسان رضوی",
+    "city": "کاشمر",
+    "lat": 35.23831,
+    "lng": 58.46558,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "128447",
+    "score": 225
+  },
+  "خراسان رضوی::کلات": {
+    "province": "خراسان رضوی",
+    "city": "کلات",
+    "lat": 36.99532,
+    "lng": 59.76472,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "31265",
+    "score": 205
+  },
+  "خراسان رضوی::کوهسرخ": {
+    "province": "خراسان رضوی",
+    "city": "کوهسرخ",
+    "lat": 29.5404,
+    "lng": 51.1963,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "126363",
+    "score": 140
+  },
+  "خراسان رضوی::گلبهار": {
+    "province": "خراسان رضوی",
+    "city": "گلبهار",
+    "lat": 31.48941,
+    "lng": 48.28892,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "6687740",
+    "score": 140
+  },
+  "خراسان رضوی::گناباد": {
+    "province": "خراسان رضوی",
+    "city": "گناباد",
+    "lat": 34.35287,
+    "lng": 58.68365,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "132961",
+    "score": 223.55259870266738
   },
   "خراسان رضوی::مشهد": {
     "province": "خراسان رضوی",
     "city": "مشهد",
     "lat": 36.29807,
     "lng": 59.60567,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "124665",
+    "score": 230
+  },
+  "خراسان رضوی::مه ولات": {
+    "province": "خراسان رضوی",
+    "city": "مه ولات",
+    "lat": 35.0210829,
+    "lng": 58.7818116,
+    "source": "mhndev-unique"
   },
   "خراسان رضوی::نیشابور": {
     "province": "خراسان رضوی",
     "city": "نیشابور",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
+    "lat": 36.21329,
+    "lng": 58.79575,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "122285",
+    "score": 225
   },
-  "خراسان رضوی::سبزوار": {
-    "province": "خراسان رضوی",
-    "city": "سبزوار",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
-  },
-  "خراسان رضوی::تربت حیدریه": {
-    "province": "خراسان رضوی",
-    "city": "تربت حیدریه",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
-  },
-  "خراسان رضوی::قوچان": {
-    "province": "خراسان رضوی",
-    "city": "قوچان",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
-  },
-  "خراسان رضوی::کاشمر": {
-    "province": "خراسان رضوی",
-    "city": "کاشمر",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
-  },
-  "خراسان رضوی::تربت جام": {
-    "province": "خراسان رضوی",
-    "city": "تربت جام",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
-  },
-  "خراسان رضوی::چناران": {
-    "province": "خراسان رضوی",
-    "city": "چناران",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
-  },
-  "خراسان رضوی::گناباد": {
-    "province": "خراسان رضوی",
-    "city": "گناباد",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
-  },
-  "خراسان رضوی::تایباد": {
-    "province": "خراسان رضوی",
-    "city": "تایباد",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
-  },
-  "خراسان رضوی::خواف": {
-    "province": "خراسان رضوی",
-    "city": "خواف",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
-  },
-  "خراسان رضوی::سرخس": {
-    "province": "خراسان رضوی",
-    "city": "سرخس",
-    "lat": 36.29807,
-    "lng": 59.60567,
-    "source": "seed"
+  "خراسان شمالی::اسفراین": {
+    "province": "خراسان شمالی",
+    "city": "اسفراین",
+    "lat": 37.07645,
+    "lng": 57.51009,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "135298",
+    "score": 224.0978050766299
   },
   "خراسان شمالی::بجنورد": {
     "province": "خراسان شمالی",
     "city": "بجنورد",
     "lat": 37.47473,
     "lng": 57.32903,
-    "source": "seed"
-  },
-  "خراسان شمالی::شیروان": {
-    "province": "خراسان شمالی",
-    "city": "شیروان",
-    "lat": 37.47473,
-    "lng": 57.32903,
-    "source": "seed"
-  },
-  "خراسان شمالی::اسفراین": {
-    "province": "خراسان شمالی",
-    "city": "اسفراین",
-    "lat": 37.47473,
-    "lng": 57.32903,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "140380",
+    "score": 230
   },
   "خراسان شمالی::جاجرم": {
     "province": "خراسان شمالی",
     "city": "جاجرم",
-    "lat": 37.47473,
-    "lng": 57.32903,
-    "source": "seed"
+    "lat": 36.95012,
+    "lng": 56.38005,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "130524",
+    "score": 222.16733946966255
+  },
+  "خراسان شمالی::شیروان": {
+    "province": "خراسان شمالی",
+    "city": "شیروان",
+    "lat": 37.39669,
+    "lng": 57.92952,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "114930",
+    "score": 224.67193251318884
   },
   "خراسان شمالی::فاروج": {
     "province": "خراسان شمالی",
     "city": "فاروج",
-    "lat": 37.47473,
-    "lng": 57.32903,
-    "source": "seed"
+    "lat": 37.23121,
+    "lng": 58.219,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134745",
+    "score": 221.32567729653974
   },
   "خراسان شمالی::گرمه": {
     "province": "خراسان شمالی",
     "city": "گرمه",
-    "lat": 37.47473,
-    "lng": 57.32903,
-    "source": "seed"
+    "lat": 36.987,
+    "lng": 56.28942,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "133978",
+    "score": 205
+  },
+  "خوزستان::آبادان": {
+    "province": "خوزستان",
+    "city": "آبادان",
+    "lat": 30.3392,
+    "lng": 48.3043,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "145459",
+    "score": 180
+  },
+  "خوزستان::آغاجاری": {
+    "province": "خوزستان",
+    "city": "آغاجاری",
+    "lat": 30.7006,
+    "lng": 49.8315,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "144696",
+    "score": 177.35270999718614
+  },
+  "خوزستان::امیدیه": {
+    "province": "خوزستان",
+    "city": "امیدیه",
+    "lat": 30.76277,
+    "lng": 49.70226,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "121861",
+    "score": 224.3153611125701
+  },
+  "خوزستان::اندیمشک": {
+    "province": "خوزستان",
+    "city": "اندیمشک",
+    "lat": 32.4615,
+    "lng": 48.35368,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "143420",
+    "score": 225
   },
   "خوزستان::اهواز": {
     "province": "خوزستان",
     "city": "اهواز",
     "lat": 31.31901,
     "lng": 48.6842,
-    "source": "seed"
-  },
-  "خوزستان::آبادان": {
-    "province": "خوزستان",
-    "city": "آبادان",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
-  },
-  "خوزستان::خرمشهر": {
-    "province": "خوزستان",
-    "city": "خرمشهر",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
-  },
-  "خوزستان::دزفول": {
-    "province": "خوزستان",
-    "city": "دزفول",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
-  },
-  "خوزستان::اندیمشک": {
-    "province": "خوزستان",
-    "city": "اندیمشک",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
-  },
-  "خوزستان::بندرماهشهر": {
-    "province": "خوزستان",
-    "city": "بندرماهشهر",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
-  },
-  "خوزستان::بهبهان": {
-    "province": "خوزستان",
-    "city": "بهبهان",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
-  },
-  "خوزستان::شوش": {
-    "province": "خوزستان",
-    "city": "شوش",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
-  },
-  "خوزستان::شوشتر": {
-    "province": "خوزستان",
-    "city": "شوشتر",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "144448",
+    "score": 230
   },
   "خوزستان::ایذه": {
     "province": "خوزستان",
     "city": "ایذه",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
+    "lat": 31.83027,
+    "lng": 49.86756,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "130697",
+    "score": 225
   },
-  "خوزستان::مسجدسلیمان": {
+  "خوزستان::باغ ملک": {
     "province": "خوزستان",
-    "city": "مسجدسلیمان",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
+    "city": "باغ ملک",
+    "lat": 31.52398,
+    "lng": 49.88558,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142114",
+    "score": 222.6827268708154
+  },
+  "خوزستان::بندرماهشهر": {
+    "province": "خوزستان",
+    "city": "بندرماهشهر",
+    "lat": 30.55655,
+    "lng": 49.18852,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "141663",
+    "score": 225
+  },
+  "خوزستان::بهبهان": {
+    "province": "خوزستان",
+    "city": "بهبهان",
+    "lat": 30.5959,
+    "lng": 50.2417,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "140951",
+    "score": 225
+  },
+  "خوزستان::حمیدیه": {
+    "province": "خوزستان",
+    "city": "حمیدیه",
+    "lat": 31.48285,
+    "lng": 48.4332,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "132105",
+    "score": 222.3742645295445
+  },
+  "خوزستان::خرمشهر": {
+    "province": "خوزستان",
+    "city": "خرمشهر",
+    "lat": 30.44079,
+    "lng": 48.18428,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "127319",
+    "score": 225
+  },
+  "خوزستان::دزفول": {
+    "province": "خوزستان",
+    "city": "دزفول",
+    "lat": 32.38114,
+    "lng": 48.40581,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "136256",
+    "score": 225
+  },
+  "خوزستان::دشت آزادگان": {
+    "province": "خوزستان",
+    "city": "دشت آزادگان",
+    "lat": 31.5589,
+    "lng": 48.1831,
+    "source": "manual"
+  },
+  "خوزستان::رامشیر": {
+    "province": "خوزستان",
+    "city": "رامشیر",
+    "lat": 30.89315,
+    "lng": 49.40787,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "118805",
+    "score": 222.592454766922
   },
   "خوزستان::رامهرمز": {
     "province": "خوزستان",
     "city": "رامهرمز",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
+    "lat": 31.27997,
+    "lng": 49.60351,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "118826",
+    "score": 224.4836278959229
   },
-  "خوزستان::امیدیه": {
+  "خوزستان::شادگان": {
     "province": "خوزستان",
-    "city": "امیدیه",
-    "lat": 31.31901,
-    "lng": 48.6842,
-    "source": "seed"
+    "city": "شادگان",
+    "lat": 30.64924,
+    "lng": 48.66497,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "116102",
+    "score": 223.48196004684348
+  },
+  "خوزستان::شوش": {
+    "province": "خوزستان",
+    "city": "شوش",
+    "lat": 32.1942,
+    "lng": 48.2436,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "114593",
+    "score": 224.5493212045625
+  },
+  "خوزستان::شوشتر": {
+    "province": "خوزستان",
+    "city": "شوشتر",
+    "lat": 32.04972,
+    "lng": 48.84843,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "114584",
+    "score": 225
+  },
+  "خوزستان::صیدون": {
+    "province": "خوزستان",
+    "city": "صیدون",
+    "lat": 31.36682,
+    "lng": 50.08335,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "116318",
+    "score": 160
+  },
+  "خوزستان::کارون": {
+    "province": "خوزستان",
+    "city": "کارون",
+    "lat": 27.6847,
+    "lng": 52.6326,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "381511",
+    "score": 152.18129191514663
+  },
+  "خوزستان::گتوند": {
+    "province": "خوزستان",
+    "city": "گتوند",
+    "lat": 32.24585,
+    "lng": 48.81315,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "133884",
+    "score": 222.53648136709552
+  },
+  "خوزستان::لالی": {
+    "province": "خوزستان",
+    "city": "لالی",
+    "lat": 32.32981,
+    "lng": 49.09324,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125938",
+    "score": 222.06624375714736
+  },
+  "خوزستان::مسجدسلیمان": {
+    "province": "خوزستان",
+    "city": "مسجدسلیمان",
+    "lat": 31.9364,
+    "lng": 49.3039,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124620",
+    "score": 225
+  },
+  "خوزستان::هفتکل": {
+    "province": "خوزستان",
+    "city": "هفتکل",
+    "lat": 31.44686,
+    "lng": 49.52951,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "132428",
+    "score": 221.79495816041765
+  },
+  "خوزستان::هندیجان": {
+    "province": "خوزستان",
+    "city": "هندیجان",
+    "lat": 30.2364,
+    "lng": 49.7119,
+    "source": "manual"
+  },
+  "خوزستان::هویزه": {
+    "province": "خوزستان",
+    "city": "هویزه",
+    "lat": 31.4619,
+    "lng": 48.074,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "130821",
+    "score": 222.15853415603857
+  },
+  "زنجان::ابهر": {
+    "province": "زنجان",
+    "city": "ابهر",
+    "lat": 36.1468,
+    "lng": 49.218,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "145034",
+    "score": 224.3776601618953
+  },
+  "زنجان::ایجرود": {
+    "province": "زنجان",
+    "city": "ایجرود",
+    "lat": 36.4160928,
+    "lng": 48.2469249,
+    "source": "mhndev-unique"
+  },
+  "زنجان::خدابنده": {
+    "province": "زنجان",
+    "city": "خدابنده",
+    "lat": 36.11949,
+    "lng": 48.59089,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "6741193",
+    "score": 160
+  },
+  "زنجان::خرمدره": {
+    "province": "زنجان",
+    "city": "خرمدره",
+    "lat": 36.20777,
+    "lng": 49.19527,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "41210",
+    "score": 223.81416281347305
   },
   "زنجان::زنجان": {
     "province": "زنجان",
     "city": "زنجان",
     "lat": 36.67642,
     "lng": 48.49628,
-    "source": "seed"
-  },
-  "زنجان::ابهر": {
-    "province": "زنجان",
-    "city": "ابهر",
-    "lat": 36.67642,
-    "lng": 48.49628,
-    "source": "seed"
-  },
-  "زنجان::خرمدره": {
-    "province": "زنجان",
-    "city": "خرمدره",
-    "lat": 36.67642,
-    "lng": 48.49628,
-    "source": "seed"
-  },
-  "زنجان::خدابنده": {
-    "province": "زنجان",
-    "city": "خدابنده",
-    "lat": 36.67642,
-    "lng": 48.49628,
-    "source": "seed"
-  },
-  "زنجان::ماهنشان": {
-    "province": "زنجان",
-    "city": "ماهنشان",
-    "lat": 36.67642,
-    "lng": 48.49628,
-    "source": "seed"
-  },
-  "زنجان::طارم": {
-    "province": "زنجان",
-    "city": "طارم",
-    "lat": 36.67642,
-    "lng": 48.49628,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "111453",
+    "score": 230
   },
   "زنجان::سلطانیه": {
     "province": "زنجان",
     "city": "سلطانیه",
-    "lat": 36.67642,
-    "lng": 48.49628,
-    "source": "seed"
+    "lat": 34.49395,
+    "lng": 58.95184,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "29556",
+    "score": 140
   },
-  "زنجان::ایجرود": {
+  "زنجان::طارم": {
     "province": "زنجان",
-    "city": "ایجرود",
-    "lat": 36.67642,
-    "lng": 48.49628,
-    "source": "seed"
+    "city": "طارم",
+    "lat": 34.10284,
+    "lng": 47.65451,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "23446",
+    "score": 140
+  },
+  "زنجان::ماهنشان": {
+    "province": "زنجان",
+    "city": "ماهنشان",
+    "lat": 36.7444,
+    "lng": 47.6725,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125290",
+    "score": 205
+  },
+  "سمنان::آرادان": {
+    "province": "سمنان",
+    "city": "آرادان",
+    "lat": 35.24941,
+    "lng": 52.49422,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "143129",
+    "score": 220.18435371472268
+  },
+  "سمنان::دامغان": {
+    "province": "سمنان",
+    "city": "دامغان",
+    "lat": 36.1679,
+    "lng": 54.34292,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "138025",
+    "score": 224.3222263703033
+  },
+  "سمنان::سرخه": {
+    "province": "سمنان",
+    "city": "سرخه",
+    "lat": 35.4633,
+    "lng": 53.214,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "113952",
+    "score": 220.99164146938696
   },
   "سمنان::سمنان": {
     "province": "سمنان",
     "city": "سمنان",
     "lat": 35.57691,
     "lng": 53.39205,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "116402",
+    "score": 230
   },
   "سمنان::شاهرود": {
     "province": "سمنان",
     "city": "شاهرود",
-    "lat": 35.57691,
-    "lng": 53.39205,
-    "source": "seed"
-  },
-  "سمنان::دامغان": {
-    "province": "سمنان",
-    "city": "دامغان",
-    "lat": 35.57691,
-    "lng": 53.39205,
-    "source": "seed"
+    "lat": 36.41819,
+    "lng": 54.97628,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "135423",
+    "score": 180
   },
   "سمنان::گرمسار": {
     "province": "سمنان",
     "city": "گرمسار",
-    "lat": 35.57691,
-    "lng": 53.39205,
-    "source": "seed"
+    "lat": 35.21824,
+    "lng": 52.34085,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "133964",
+    "score": 223.74915246065044
   },
   "سمنان::مهدی شهر": {
     "province": "سمنان",
     "city": "مهدی شهر",
-    "lat": 35.57691,
-    "lng": 53.39205,
-    "source": "seed"
+    "lat": 35.71071,
+    "lng": 53.35394,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "7100777",
+    "score": 222.2889598997246
   },
   "سمنان::میامی": {
     "province": "سمنان",
     "city": "میامی",
-    "lat": 35.57691,
-    "lng": 53.39205,
-    "source": "seed"
+    "lat": 36.41092,
+    "lng": 55.65018,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "124562",
+    "score": 160
   },
-  "سمنان::سرخه": {
-    "province": "سمنان",
-    "city": "سرخه",
-    "lat": 35.57691,
-    "lng": 53.39205,
-    "source": "seed"
+  "سیستان و بلوچستان::ایرانشهر": {
+    "province": "سیستان و بلوچستان",
+    "city": "ایرانشهر",
+    "lat": 27.20245,
+    "lng": 60.68476,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1160939",
+    "score": 225
   },
-  "سمنان::آرادان": {
-    "province": "سمنان",
-    "city": "آرادان",
-    "lat": 35.57691,
-    "lng": 53.39205,
-    "source": "seed"
+  "سیستان و بلوچستان::بمپور": {
+    "province": "سیستان و بلوچستان",
+    "city": "بمپور",
+    "lat": 27.19439,
+    "lng": 60.45594,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "1161735",
+    "score": 176.34800048318397
+  },
+  "سیستان و بلوچستان::چاه بهار": {
+    "province": "سیستان و بلوچستان",
+    "city": "چاه بهار",
+    "lat": 25.2919,
+    "lng": 60.643,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1161724",
+    "score": 223.69900378536332
+  },
+  "سیستان و بلوچستان::خاش": {
+    "province": "سیستان و بلوچستان",
+    "city": "خاش",
+    "lat": 28.22107,
+    "lng": 61.21582,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1160571",
+    "score": 224.37053679338538
+  },
+  "سیستان و بلوچستان::دشتیاری": {
+    "province": "سیستان و بلوچستان",
+    "city": "دشتیاری",
+    "lat": 25.75046,
+    "lng": 60.83332,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "8184997",
+    "score": 160
+  },
+  "سیستان و بلوچستان::دلگان": {
+    "province": "سیستان و بلوچستان",
+    "city": "دلگان",
+    "lat": 27.48232,
+    "lng": 59.44656,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "7102155",
+    "score": 221.05016789110334
+  },
+  "سیستان و بلوچستان::راسک": {
+    "province": "سیستان و بلوچستان",
+    "city": "راسک",
+    "lat": 26.23682,
+    "lng": 61.39901,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1159836",
+    "score": 221.02003528268946
+  },
+  "سیستان و بلوچستان::زابل": {
+    "province": "سیستان و بلوچستان",
+    "city": "زابل",
+    "lat": 31.0306,
+    "lng": 61.4949,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1113217",
+    "score": 225
   },
   "سیستان و بلوچستان::زاهدان": {
     "province": "سیستان و بلوچستان",
     "city": "زاهدان",
     "lat": 29.4963,
     "lng": 60.8629,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "1159301",
+    "score": 230
   },
-  "سیستان و بلوچستان::چابهار": {
+  "سیستان و بلوچستان::زرآباد": {
     "province": "سیستان و بلوچستان",
-    "city": "چابهار",
-    "lat": 29.4963,
-    "lng": 60.8629,
-    "source": "seed"
+    "city": "زرآباد",
+    "lat": 25.58263,
+    "lng": 59.36161,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "111431",
+    "score": 160
   },
-  "سیستان و بلوچستان::زابل": {
+  "سیستان و بلوچستان::زهک": {
     "province": "سیستان و بلوچستان",
-    "city": "زابل",
-    "lat": 29.4963,
-    "lng": 60.8629,
-    "source": "seed"
-  },
-  "سیستان و بلوچستان::ایرانشهر": {
-    "province": "سیستان و بلوچستان",
-    "city": "ایرانشهر",
-    "lat": 29.4963,
-    "lng": 60.8629,
-    "source": "seed"
-  },
-  "سیستان و بلوچستان::خاش": {
-    "province": "سیستان و بلوچستان",
-    "city": "خاش",
-    "lat": 29.4963,
-    "lng": 60.8629,
-    "source": "seed"
+    "city": "زهک",
+    "lat": 30.894,
+    "lng": 61.6804,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1159302",
+    "score": 221.62437852255772
   },
   "سیستان و بلوچستان::سراوان": {
     "province": "سیستان و بلوچستان",
     "city": "سراوان",
-    "lat": 29.4963,
-    "lng": 60.8629,
-    "source": "seed"
+    "lat": 27.37089,
+    "lng": 62.33096,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1159713",
+    "score": 224.1130392417387
   },
-  "سیستان و بلوچستان::نیک شهر": {
+  "سیستان و بلوچستان::سرباز": {
     "province": "سیستان و بلوچستان",
-    "city": "نیک شهر",
-    "lat": 29.4963,
-    "lng": 60.8629,
-    "source": "seed"
+    "city": "سرباز",
+    "lat": 26.63228,
+    "lng": 61.25787,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1159709",
+    "score": 218.22226525406123
+  },
+  "سیستان و بلوچستان::سیب و سوران": {
+    "province": "سیستان و بلوچستان",
+    "city": "سیب و سوران",
+    "lat": 26.2831,
+    "lng": 61.9983,
+    "source": "manual"
+  },
+  "سیستان و بلوچستان::فنوج": {
+    "province": "سیستان و بلوچستان",
+    "city": "فنوج",
+    "lat": 26.575,
+    "lng": 59.6447,
+    "source": "manual"
+  },
+  "سیستان و بلوچستان::قصرقند": {
+    "province": "سیستان و بلوچستان",
+    "city": "قصرقند",
+    "lat": 26.2083,
+    "lng": 60.7422,
+    "source": "manual"
   },
   "سیستان و بلوچستان::کنارک": {
     "province": "سیستان و بلوچستان",
     "city": "کنارک",
-    "lat": 29.4963,
-    "lng": 60.8629,
-    "source": "seed"
+    "lat": 25.3604,
+    "lng": 60.3995,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1160500",
+    "score": 223.54430590326928
+  },
+  "سیستان و بلوچستان::گلشن": {
+    "province": "سیستان و بلوچستان",
+    "city": "گلشن",
+    "lat": 37.4534,
+    "lng": 49.65054,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "133029",
+    "score": 151.8131053466692
+  },
+  "سیستان و بلوچستان::مهرستان": {
+    "province": "سیستان و بلوچستان",
+    "city": "مهرستان",
+    "lat": 27.131,
+    "lng": 61.67445,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1159306",
+    "score": 221.35197702039886
   },
   "سیستان و بلوچستان::میرجاوه": {
     "province": "سیستان و بلوچستان",
     "city": "میرجاوه",
-    "lat": 29.4963,
-    "lng": 60.8629,
-    "source": "seed"
+    "lat": 29.0156,
+    "lng": 61.4497,
+    "source": "manual"
+  },
+  "سیستان و بلوچستان::نیک شهر": {
+    "province": "سیستان و بلوچستان",
+    "city": "نیک شهر",
+    "lat": 26.2258,
+    "lng": 60.2143,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "1160110",
+    "score": 221.92189786944465
+  },
+  "سیستان و بلوچستان::نیمروز": {
+    "province": "سیستان و بلوچستان",
+    "city": "نیمروز",
+    "lat": 31.0278,
+    "lng": 61.4947,
+    "source": "manual"
+  },
+  "سیستان و بلوچستان::هامون": {
+    "province": "سیستان و بلوچستان",
+    "city": "هامون",
+    "lat": 30.9297,
+    "lng": 61.555,
+    "source": "manual"
+  },
+  "سیستان و بلوچستان::هیرمند": {
+    "province": "سیستان و بلوچستان",
+    "city": "هیرمند",
+    "lat": 31.1489,
+    "lng": 61.7922,
+    "source": "manual"
+  },
+  "فارس::آباده": {
+    "province": "فارس",
+    "city": "آباده",
+    "lat": 31.1608,
+    "lng": 52.6506,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "145449",
+    "score": 224.08684954752113
+  },
+  "فارس::ارسنجان": {
+    "province": "فارس",
+    "city": "ارسنجان",
+    "lat": 29.9124,
+    "lng": 53.3085,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142958",
+    "score": 221.99257994915112
+  },
+  "فارس::استهبان": {
+    "province": "فارس",
+    "city": "استهبان",
+    "lat": 29.1266,
+    "lng": 54.0421,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "135094",
+    "score": 223.24493042664136
+  },
+  "فارس::اقلید": {
+    "province": "فارس",
+    "city": "اقلید",
+    "lat": 30.89885,
+    "lng": 52.69701,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "135355",
+    "score": 223.5872611104928
+  },
+  "فارس::اوز": {
+    "province": "فارس",
+    "city": "اوز",
+    "lat": 27.7622,
+    "lng": 54.00417,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "135053",
+    "score": 177.2030773630822
+  },
+  "فارس::بختگان": {
+    "province": "فارس",
+    "city": "بختگان",
+    "lat": 31.54331,
+    "lng": 49.94393,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "15200",
+    "score": 140
+  },
+  "فارس::بوانات": {
+    "province": "فارس",
+    "city": "بوانات",
+    "lat": 30.4551,
+    "lng": 53.651,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "113723",
+    "score": 222.2042068393809
+  },
+  "فارس::بیضا": {
+    "province": "فارس",
+    "city": "بیضا",
+    "lat": 29.9717,
+    "lng": 52.40059,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "116364",
+    "score": 160
+  },
+  "فارس::جویم": {
+    "province": "فارس",
+    "city": "جویم",
+    "lat": 28.2548,
+    "lng": 53.98112,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "129931",
+    "score": 220.614746926946
+  },
+  "فارس::جهرم": {
+    "province": "فارس",
+    "city": "جهرم",
+    "lat": 28.5,
+    "lng": 53.5605,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "130531",
+    "score": 225
+  },
+  "فارس::خرامه": {
+    "province": "فارس",
+    "city": "خرامه",
+    "lat": 29.49896,
+    "lng": 53.31199,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "127613",
+    "score": 205
+  },
+  "فارس::خرم بید": {
+    "province": "فارس",
+    "city": "خرم بید",
+    "lat": 30.125,
+    "lng": 53.18,
+    "source": "manual"
+  },
+  "فارس::خفر": {
+    "province": "فارس",
+    "city": "خفر",
+    "lat": 30.99876,
+    "lng": 51.48306,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "128135",
+    "score": 152.05976139917175
+  },
+  "فارس::خنج": {
+    "province": "فارس",
+    "city": "خنج",
+    "lat": 27.8913,
+    "lng": 53.4344,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "127382",
+    "score": 222.13483275618987
+  },
+  "فارس::داراب": {
+    "province": "فارس",
+    "city": "داراب",
+    "lat": 28.75171,
+    "lng": 54.54065,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "137956",
+    "score": 224.386164878741
+  },
+  "فارس::رستم": {
+    "province": "فارس",
+    "city": "رستم",
+    "lat": 30.3272,
+    "lng": 51.49,
+    "source": "manual"
+  },
+  "فارس::زرقان": {
+    "province": "فارس",
+    "city": "زرقان",
+    "lat": 29.77237,
+    "lng": 52.71891,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "111327",
+    "score": 178.03476514744304
+  },
+  "فارس::زرین دشت": {
+    "province": "فارس",
+    "city": "زرین دشت",
+    "lat": 37.0416,
+    "lng": 49.18814,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "37336",
+    "score": 140
+  },
+  "فارس::سپیدان": {
+    "province": "فارس",
+    "city": "سپیدان",
+    "lat": 30.2456,
+    "lng": 51.9922,
+    "source": "manual"
+  },
+  "فارس::سروستان": {
+    "province": "فارس",
+    "city": "سروستان",
+    "lat": 29.2735,
+    "lng": 53.2203,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "116725",
+    "score": 222.03913978213228
   },
   "فارس::شیراز": {
     "province": "فارس",
     "city": "شیراز",
     "lat": 29.61031,
     "lng": 52.53113,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "115019",
+    "score": 230
   },
-  "فارس::مرودشت": {
+  "فارس::فراشبند": {
     "province": "فارس",
-    "city": "مرودشت",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
-  },
-  "فارس::جهرم": {
-    "province": "فارس",
-    "city": "جهرم",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
+    "city": "فراشبند",
+    "lat": 28.8717,
+    "lng": 52.0936,
+    "source": "manual"
   },
   "فارس::فسا": {
     "province": "فارس",
     "city": "فسا",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
-  },
-  "فارس::کازرون": {
-    "province": "فارس",
-    "city": "کازرون",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
-  },
-  "فارس::لارستان": {
-    "province": "فارس",
-    "city": "لارستان",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
-  },
-  "فارس::داراب": {
-    "province": "فارس",
-    "city": "داراب",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
-  },
-  "فارس::آباده": {
-    "province": "فارس",
-    "city": "آباده",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
-  },
-  "فارس::نی ریز": {
-    "province": "فارس",
-    "city": "نی ریز",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
-  },
-  "فارس::اقلید": {
-    "province": "فارس",
-    "city": "اقلید",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
-  },
-  "فارس::استهبان": {
-    "province": "فارس",
-    "city": "استهبان",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
+    "lat": 28.9383,
+    "lng": 53.6482,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134721",
+    "score": 224.96600298619768
   },
   "فارس::فیروزآباد": {
     "province": "فارس",
     "city": "فیروزآباد",
-    "lat": 29.61031,
-    "lng": 52.53113,
-    "source": "seed"
+    "lat": 28.84459,
+    "lng": 52.57151,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134518",
+    "score": 224.26278904987788
+  },
+  "فارس::قیروکارزین": {
+    "province": "فارس",
+    "city": "قیروکارزین",
+    "lat": 28.4825,
+    "lng": 53.0346,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "119264",
+    "score": 222.20507516786427
+  },
+  "فارس::کازرون": {
+    "province": "فارس",
+    "city": "کازرون",
+    "lat": 29.61919,
+    "lng": 51.6535,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "128321",
+    "score": 224.9414184387667
+  },
+  "فارس::کوار": {
+    "province": "فارس",
+    "city": "کوار",
+    "lat": 29.1983,
+    "lng": 52.6858,
+    "source": "manual"
+  },
+  "فارس::گراش": {
+    "province": "فارس",
+    "city": "گراش",
+    "lat": 27.66966,
+    "lng": 54.13586,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "133595",
+    "score": 223.1497651336318
+  },
+  "فارس::لامرد": {
+    "province": "فارس",
+    "city": "لامرد",
+    "lat": 27.334,
+    "lng": 53.179,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125926",
+    "score": 222.8722662927184
+  },
+  "فارس::مرودشت": {
+    "province": "فارس",
+    "city": "مرودشت",
+    "lat": 29.87407,
+    "lng": 52.80258,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124721",
+    "score": 225
+  },
+  "فارس::ممسنی": {
+    "province": "فارس",
+    "city": "ممسنی",
+    "lat": 30.115,
+    "lng": 51.5217,
+    "source": "manual"
+  },
+  "فارس::مهر": {
+    "province": "فارس",
+    "city": "مهر",
+    "lat": 27.5521,
+    "lng": 52.88157,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "123485",
+    "score": 220.56503446761656
+  },
+  "فارس::نی ریز": {
+    "province": "فارس",
+    "city": "نی ریز",
+    "lat": 29.1988,
+    "lng": 54.3278,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "122289",
+    "score": 223.63231282421495
+  },
+  "قزوین::آبیک": {
+    "province": "قزوین",
+    "city": "آبیک",
+    "lat": 36.03993,
+    "lng": 50.53101,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "144795",
+    "score": 224.11572911094856
+  },
+  "قزوین::آوج": {
+    "province": "قزوین",
+    "city": "آوج",
+    "lat": 35.57959,
+    "lng": 49.22313,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142642",
+    "score": 205
+  },
+  "قزوین::البرز": {
+    "province": "قزوین",
+    "city": "البرز",
+    "lat": 36.1893,
+    "lng": 50.0643,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "10570",
+    "score": 224.81698933962704
+  },
+  "قزوین::تاکستان": {
+    "province": "قزوین",
+    "city": "تاکستان",
+    "lat": 36.07057,
+    "lng": 49.69571,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "113491",
+    "score": 224.41722416720432
   },
   "قزوین::قزوین": {
     "province": "قزوین",
     "city": "قزوین",
     "lat": 36.26877,
     "lng": 50.0041,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "119505",
+    "score": 230
   },
-  "قزوین::البرز": {
-    "province": "قزوین",
-    "city": "البرز",
-    "lat": 36.26877,
-    "lng": 50.0041,
-    "source": "seed"
-  },
-  "قزوین::آبیک": {
-    "province": "قزوین",
-    "city": "آبیک",
-    "lat": 36.26877,
-    "lng": 50.0041,
-    "source": "seed"
-  },
-  "قزوین::تاکستان": {
-    "province": "قزوین",
-    "city": "تاکستان",
-    "lat": 36.26877,
-    "lng": 50.0041,
-    "source": "seed"
-  },
-  "قزوین::آوج": {
-    "province": "قزوین",
-    "city": "آوج",
-    "lat": 36.26877,
-    "lng": 50.0041,
-    "source": "seed"
+  "قم::جعفرآباد": {
+    "province": "قم",
+    "city": "جعفرآباد",
+    "lat": 34.86778,
+    "lng": 50.63889,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "401549",
+    "score": 160
   },
   "قم::قم": {
     "province": "قم",
     "city": "قم",
     "lat": 34.6401,
     "lng": 50.8764,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "119208",
+    "score": 230
   },
   "قم::کهک": {
     "province": "قم",
     "city": "کهک",
-    "lat": 34.6401,
-    "lng": 50.8764,
-    "source": "seed"
+    "lat": 34.3938,
+    "lng": 50.8643,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "122026",
+    "score": 174.73866345610344
   },
-  "قم::جعفرآباد": {
-    "province": "قم",
-    "city": "جعفرآباد",
-    "lat": 34.6401,
-    "lng": 50.8764,
-    "source": "seed"
+  "کردستان::بانه": {
+    "province": "کردستان",
+    "city": "بانه",
+    "lat": 35.9975,
+    "lng": 45.8853,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "141584",
+    "score": 225
+  },
+  "کردستان::بیجار": {
+    "province": "کردستان",
+    "city": "بیجار",
+    "lat": 35.8668,
+    "lng": 47.60506,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "140521",
+    "score": 178.796401092565
+  },
+  "کردستان::دهگلان": {
+    "province": "کردستان",
+    "city": "دهگلان",
+    "lat": 35.278,
+    "lng": 47.4184,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "136773",
+    "score": 205
+  },
+  "کردستان::دیواندره": {
+    "province": "کردستان",
+    "city": "دیواندره",
+    "lat": 35.9139,
+    "lng": 47.0239,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "136156",
+    "score": 223.12632436783628
+  },
+  "کردستان::سروآباد": {
+    "province": "کردستان",
+    "city": "سروآباد",
+    "lat": 35.3126,
+    "lng": 46.3669,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "116739",
+    "score": 219.83775829652964
+  },
+  "کردستان::سقز": {
+    "province": "کردستان",
+    "city": "سقز",
+    "lat": 36.24992,
+    "lng": 46.2735,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "117392",
+    "score": 180
   },
   "کردستان::سنندج": {
     "province": "کردستان",
     "city": "سنندج",
     "lat": 35.31495,
     "lng": 46.99883,
-    "source": "seed"
-  },
-  "کردستان::سقز": {
-    "province": "کردستان",
-    "city": "سقز",
-    "lat": 35.31495,
-    "lng": 46.99883,
-    "source": "seed"
-  },
-  "کردستان::مریوان": {
-    "province": "کردستان",
-    "city": "مریوان",
-    "lat": 35.31495,
-    "lng": 46.99883,
-    "source": "seed"
-  },
-  "کردستان::بانه": {
-    "province": "کردستان",
-    "city": "بانه",
-    "lat": 35.31495,
-    "lng": 46.99883,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "117574",
+    "score": 230
   },
   "کردستان::قروه": {
     "province": "کردستان",
     "city": "قروه",
-    "lat": 35.31495,
-    "lng": 46.99883,
-    "source": "seed"
-  },
-  "کردستان::بیجار": {
-    "province": "کردستان",
-    "city": "بیجار",
-    "lat": 35.31495,
-    "lng": 46.99883,
-    "source": "seed"
+    "lat": 35.1664,
+    "lng": 47.80564,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "119161",
+    "score": 224.77702238090103
   },
   "کردستان::کامیاران": {
     "province": "کردستان",
     "city": "کامیاران",
-    "lat": 35.31495,
-    "lng": 46.99883,
-    "source": "seed"
+    "lat": 34.79535,
+    "lng": 46.93682,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "128905",
+    "score": 224.0258749885216
   },
-  "کردستان::دیواندره": {
+  "کردستان::مریوان": {
     "province": "کردستان",
-    "city": "دیواندره",
-    "lat": 35.31495,
-    "lng": 46.99883,
-    "source": "seed"
+    "city": "مریوان",
+    "lat": 35.51829,
+    "lng": 46.18298,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124778",
+    "score": 225
   },
-  "کردستان::دهگلان": {
-    "province": "کردستان",
-    "city": "دهگلان",
-    "lat": 35.31495,
-    "lng": 46.99883,
-    "source": "seed"
+  "کرمان::انار": {
+    "province": "کرمان",
+    "city": "انار",
+    "lat": 30.87066,
+    "lng": 55.27025,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "143499",
+    "score": 221.76502136898506
+  },
+  "کرمان::بافت": {
+    "province": "کرمان",
+    "city": "بافت",
+    "lat": 29.2331,
+    "lng": 56.6022,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142247",
+    "score": 223.15218249763657
+  },
+  "کرمان::بردسیر": {
+    "province": "کرمان",
+    "city": "بردسیر",
+    "lat": 29.92266,
+    "lng": 56.57433,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124647",
+    "score": 222.60235916325288
+  },
+  "کرمان::بم": {
+    "province": "کرمان",
+    "city": "بم",
+    "lat": 29.106,
+    "lng": 58.357,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "141736",
+    "score": 224.9872545879041
+  },
+  "کرمان::جیرفت": {
+    "province": "کرمان",
+    "city": "جیرفت",
+    "lat": 28.67806,
+    "lng": 57.74056,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "6925362",
+    "score": 225
+  },
+  "کرمان::رابر": {
+    "province": "کرمان",
+    "city": "رابر",
+    "lat": 29.2911,
+    "lng": 56.9131,
+    "source": "manual"
+  },
+  "کرمان::راور": {
+    "province": "کرمان",
+    "city": "راور",
+    "lat": 31.26562,
+    "lng": 56.80545,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "118704",
+    "score": 223.41552083346517
+  },
+  "کرمان::رفسنجان": {
+    "province": "کرمان",
+    "city": "رفسنجان",
+    "lat": 30.4067,
+    "lng": 55.9939,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "118994",
+    "score": 225
+  },
+  "کرمان::ریگان": {
+    "province": "کرمان",
+    "city": "ریگان",
+    "lat": 28.64937,
+    "lng": 59.01982,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "118509",
+    "score": 160
+  },
+  "کرمان::زرند": {
+    "province": "کرمان",
+    "city": "زرند",
+    "lat": 30.81271,
+    "lng": 56.56399,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "111421",
+    "score": 224.08293688358017
+  },
+  "کرمان::سیرجان": {
+    "province": "کرمان",
+    "city": "سیرجان",
+    "lat": 29.45137,
+    "lng": 55.6809,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "114259",
+    "score": 180
+  },
+  "کرمان::شهربابک": {
+    "province": "کرمان",
+    "city": "شهربابک",
+    "lat": 30.1165,
+    "lng": 55.1186,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "115781",
+    "score": 223.85130565370048
+  },
+  "کرمان::عنبرآباد": {
+    "province": "کرمان",
+    "city": "عنبرآباد",
+    "lat": 28.4789,
+    "lng": 57.8411,
+    "source": "manual"
+  },
+  "کرمان::فاریاب": {
+    "province": "کرمان",
+    "city": "فاریاب",
+    "lat": 28.0987,
+    "lng": 57.23181,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134735",
+    "score": 219.7479742650587
+  },
+  "کرمان::فهرج": {
+    "province": "کرمان",
+    "city": "فهرج",
+    "lat": 28.9489,
+    "lng": 58.885,
+    "source": "manual"
+  },
+  "کرمان::قلعه گنج": {
+    "province": "کرمان",
+    "city": "قلعه گنج",
+    "lat": 27.5236,
+    "lng": 57.8811,
+    "source": "manual"
   },
   "کرمان::کرمان": {
     "province": "کرمان",
     "city": "کرمان",
     "lat": 30.28321,
     "lng": 57.07879,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "128234",
+    "score": 230
   },
-  "کرمان::رفسنجان": {
+  "کرمان::کوهبنان": {
     "province": "کرمان",
-    "city": "رفسنجان",
-    "lat": 30.28321,
-    "lng": 57.07879,
-    "source": "seed"
-  },
-  "کرمان::سیرجان": {
-    "province": "کرمان",
-    "city": "سیرجان",
-    "lat": 30.28321,
-    "lng": 57.07879,
-    "source": "seed"
-  },
-  "کرمان::جیرفت": {
-    "province": "کرمان",
-    "city": "جیرفت",
-    "lat": 30.28321,
-    "lng": 57.07879,
-    "source": "seed"
-  },
-  "کرمان::بم": {
-    "province": "کرمان",
-    "city": "بم",
-    "lat": 30.28321,
-    "lng": 57.07879,
-    "source": "seed"
-  },
-  "کرمان::زرند": {
-    "province": "کرمان",
-    "city": "زرند",
-    "lat": 30.28321,
-    "lng": 57.07879,
-    "source": "seed"
+    "city": "کوهبنان",
+    "lat": 31.41029,
+    "lng": 56.28255,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "126411",
+    "score": 221.1275719508419
   },
   "کرمان::کهنوج": {
     "province": "کرمان",
     "city": "کهنوج",
-    "lat": 30.28321,
-    "lng": 57.07879,
-    "source": "seed"
+    "lat": 27.94034,
+    "lng": 57.69983,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "6961608",
+    "score": 223.8847684353749
   },
-  "کرمان::بردسیر": {
+  "کرمان::منوجان": {
     "province": "کرمان",
-    "city": "بردسیر",
-    "lat": 30.28321,
-    "lng": 57.07879,
-    "source": "seed"
+    "city": "منوجان",
+    "lat": 27.40698,
+    "lng": 57.50128,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124914",
+    "score": 221.77639154231582
   },
-  "کرمان::شهربابک": {
+  "کرمان::نرماشیر": {
     "province": "کرمان",
-    "city": "شهربابک",
-    "lat": 30.28321,
-    "lng": 57.07879,
-    "source": "seed"
+    "city": "نرماشیر",
+    "lat": 28.9511,
+    "lng": 58.6967,
+    "source": "manual"
   },
-  "کرمان::بافت": {
-    "province": "کرمان",
-    "city": "بافت",
-    "lat": 30.28321,
-    "lng": 57.07879,
-    "source": "seed"
+  "کرمانشاه::اسلام آبادغرب": {
+    "province": "کرمانشاه",
+    "city": "اسلام آبادغرب",
+    "lat": 34.1089,
+    "lng": 46.52988,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "135175",
+    "score": 224.8277456553768
+  },
+  "کرمانشاه::پاوه": {
+    "province": "کرمانشاه",
+    "city": "پاوه",
+    "lat": 35.0434,
+    "lng": 46.3565,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "121240",
+    "score": 222.64459249069722
+  },
+  "کرمانشاه::ثلاث باباجانی": {
+    "province": "کرمانشاه",
+    "city": "ثلاث باباجانی",
+    "lat": 34.7387,
+    "lng": 46.1496,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "6709058",
+    "score": 160
+  },
+  "کرمانشاه::جوانرود": {
+    "province": "کرمانشاه",
+    "city": "جوانرود",
+    "lat": 34.8067,
+    "lng": 46.4913,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "25883",
+    "score": 223.94095800031533
+  },
+  "کرمانشاه::دالاهو": {
+    "province": "کرمانشاه",
+    "city": "دالاهو",
+    "lat": 34.284167,
+    "lng": 46.242222,
+    "source": "mhndev-unique"
+  },
+  "کرمانشاه::روانسر": {
+    "province": "کرمانشاه",
+    "city": "روانسر",
+    "lat": 34.7153,
+    "lng": 46.6533,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "118705",
+    "score": 222.5586485500412
+  },
+  "کرمانشاه::سرپل ذهاب": {
+    "province": "کرمانشاه",
+    "city": "سرپل ذهاب",
+    "lat": 34.46109,
+    "lng": 45.86264,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "120931",
+    "score": 223.63135821543185
+  },
+  "کرمانشاه::سنقر": {
+    "province": "کرمانشاه",
+    "city": "سنقر",
+    "lat": 34.78187,
+    "lng": 47.59945,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "114049",
+    "score": 223.5839278862092
+  },
+  "کرمانشاه::صحنه": {
+    "province": "کرمانشاه",
+    "city": "صحنه",
+    "lat": 34.4813,
+    "lng": 47.6908,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "117835",
+    "score": 223.2013537677086
+  },
+  "کرمانشاه::قصرشیرین": {
+    "province": "کرمانشاه",
+    "city": "قصرشیرین",
+    "lat": 34.5156,
+    "lng": 45.5791,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "119586",
+    "score": 205
   },
   "کرمانشاه::کرمانشاه": {
     "province": "کرمانشاه",
     "city": "کرمانشاه",
     "lat": 34.31417,
     "lng": 47.065,
-    "source": "seed"
-  },
-  "کرمانشاه::اسلام آبادغرب": {
-    "province": "کرمانشاه",
-    "city": "اسلام آبادغرب",
-    "lat": 34.31417,
-    "lng": 47.065,
-    "source": "seed"
-  },
-  "کرمانشاه::سنقر": {
-    "province": "کرمانشاه",
-    "city": "سنقر",
-    "lat": 34.31417,
-    "lng": 47.065,
-    "source": "seed"
-  },
-  "کرمانشاه::هرسین": {
-    "province": "کرمانشاه",
-    "city": "هرسین",
-    "lat": 34.31417,
-    "lng": 47.065,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "128226",
+    "score": 230
   },
   "کرمانشاه::کنگاور": {
     "province": "کرمانشاه",
     "city": "کنگاور",
-    "lat": 34.31417,
-    "lng": 47.065,
-    "source": "seed"
-  },
-  "کرمانشاه::صحنه": {
-    "province": "کرمانشاه",
-    "city": "صحنه",
-    "lat": 34.31417,
-    "lng": 47.065,
-    "source": "seed"
-  },
-  "کرمانشاه::پاوه": {
-    "province": "کرمانشاه",
-    "city": "پاوه",
-    "lat": 34.31417,
-    "lng": 47.065,
-    "source": "seed"
-  },
-  "کرمانشاه::جوانرود": {
-    "province": "کرمانشاه",
-    "city": "جوانرود",
-    "lat": 34.31417,
-    "lng": 47.065,
-    "source": "seed"
-  },
-  "کرمانشاه::قصرشیرین": {
-    "province": "کرمانشاه",
-    "city": "قصرشیرین",
-    "lat": 34.31417,
-    "lng": 47.065,
-    "source": "seed"
+    "lat": 34.5043,
+    "lng": 47.9653,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "128831",
+    "score": 223.84226327920257
   },
   "کرمانشاه::گیلانغرب": {
     "province": "کرمانشاه",
     "city": "گیلانغرب",
-    "lat": 34.31417,
-    "lng": 47.065,
-    "source": "seed"
+    "lat": 34.1421,
+    "lng": 45.9203,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "133345",
+    "score": 205
   },
-  "کهگیلویه و بویراحمد::یاسوج": {
-    "province": "کهگیلویه و بویراحمد",
-    "city": "یاسوج",
-    "lat": 30.724586,
-    "lng": 50.8456323,
-    "source": "seed"
+  "کرمانشاه::هرسین": {
+    "province": "کرمانشاه",
+    "city": "هرسین",
+    "lat": 34.2721,
+    "lng": 47.5861,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "131962",
+    "score": 224.04313697911397
   },
-  "کهگیلویه و بویراحمد::گچساران": {
+  "کهگیلویه و بویراحمد::باشت": {
     "province": "کهگیلویه و بویراحمد",
-    "city": "گچساران",
-    "lat": 30.724586,
-    "lng": 50.8456323,
-    "source": "seed"
+    "city": "باشت",
+    "lat": 30.3622,
+    "lng": 51.1578,
+    "source": "manual"
   },
   "کهگیلویه و بویراحمد::بویراحمد": {
     "province": "کهگیلویه و بویراحمد",
     "city": "بویراحمد",
     "lat": 30.724586,
     "lng": 50.8456323,
-    "source": "seed"
+    "source": "mhndev-unique"
   },
   "کهگیلویه و بویراحمد::چرام": {
     "province": "کهگیلویه و بویراحمد",
     "city": "چرام",
-    "lat": 30.724586,
-    "lng": 50.8456323,
-    "source": "seed"
-  },
-  "کهگیلویه و بویراحمد::باشت": {
-    "province": "کهگیلویه و بویراحمد",
-    "city": "باشت",
-    "lat": 30.724586,
-    "lng": 50.8456323,
-    "source": "seed"
+    "lat": 30.755,
+    "lng": 50.7389,
+    "source": "manual"
   },
   "کهگیلویه و بویراحمد::دنا": {
     "province": "کهگیلویه و بویراحمد",
     "city": "دنا",
-    "lat": 30.724586,
-    "lng": 50.8456323,
-    "source": "seed"
+    "lat": 30.9947,
+    "lng": 51.4256,
+    "source": "manual"
+  },
+  "کهگیلویه و بویراحمد::گچساران": {
+    "province": "کهگیلویه و بویراحمد",
+    "city": "گچساران",
+    "lat": 30.3586,
+    "lng": 50.7981,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "136014",
+    "score": 179.94222679196068
   },
   "کهگیلویه و بویراحمد::لنده": {
     "province": "کهگیلویه و بویراحمد",
     "city": "لنده",
-    "lat": 30.724586,
-    "lng": 50.8456323,
-    "source": "seed"
+    "lat": 30.9822,
+    "lng": 50.4189,
+    "source": "manual"
   },
   "کهگیلویه و بویراحمد::مارگون": {
     "province": "کهگیلویه و بویراحمد",
     "city": "مارگون",
-    "lat": 30.724586,
-    "lng": 50.8456323,
-    "source": "seed"
+    "lat": 30.9931,
+    "lng": 51.0831,
+    "source": "manual"
+  },
+  "گلستان::آزادشهر": {
+    "province": "گلستان",
+    "city": "آزادشهر",
+    "lat": 37.08641,
+    "lng": 55.17222,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "110831",
+    "score": 223.71009932181482
+  },
+  "گلستان::آق قلا": {
+    "province": "گلستان",
+    "city": "آق قلا",
+    "lat": 37.0139,
+    "lng": 54.45504,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "7329809",
+    "score": 223.18206963040598
+  },
+  "گلستان::بندرگز": {
+    "province": "گلستان",
+    "city": "بندرگز",
+    "lat": 36.77409,
+    "lng": 53.94798,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "141673",
+    "score": 222.26748626939337
+  },
+  "گلستان::رامیان": {
+    "province": "گلستان",
+    "city": "رامیان",
+    "lat": 37.01598,
+    "lng": 55.14123,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "118824",
+    "score": 205
+  },
+  "گلستان::علی آباد کتول": {
+    "province": "گلستان",
+    "city": "علی آباد کتول",
+    "lat": 36.91011,
+    "lng": 54.86737,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "144038",
+    "score": 223.89181835926794
+  },
+  "گلستان::کردکوی": {
+    "province": "گلستان",
+    "city": "کردکوی",
+    "lat": 36.79307,
+    "lng": 54.11214,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "126572",
+    "score": 223.40310771663113
+  },
+  "گلستان::کلاله": {
+    "province": "گلستان",
+    "city": "کلاله",
+    "lat": 37.37899,
+    "lng": 55.493,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "129512",
+    "score": 223.11057115102702
+  },
+  "گلستان::گالیکش": {
+    "province": "گلستان",
+    "city": "گالیکش",
+    "lat": 37.27259,
+    "lng": 55.43394,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134282",
+    "score": 222.4764921981128
   },
   "گلستان::گرگان": {
     "province": "گلستان",
     "city": "گرگان",
     "lat": 36.8427,
     "lng": 54.44391,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "132892",
+    "score": 230
+  },
+  "گلستان::گمیشان": {
+    "province": "گلستان",
+    "city": "گمیشان",
+    "lat": 37.0718,
+    "lng": 54.07654,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "40047",
+    "score": 222.1324809398391
   },
   "گلستان::گنبدکاووس": {
     "province": "گلستان",
     "city": "گنبدکاووس",
-    "lat": 36.8427,
-    "lng": 54.44391,
-    "source": "seed"
+    "lat": 37.25004,
+    "lng": 55.16721,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "132938",
+    "score": 225
   },
-  "گلستان::علی آباد کتول": {
+  "گلستان::مراوه تپه": {
     "province": "گلستان",
-    "city": "علی آباد کتول",
-    "lat": 36.8427,
-    "lng": 54.44391,
-    "source": "seed"
-  },
-  "گلستان::آق قلا": {
-    "province": "گلستان",
-    "city": "آق قلا",
-    "lat": 36.8427,
-    "lng": 54.44391,
-    "source": "seed"
-  },
-  "گلستان::کردکوی": {
-    "province": "گلستان",
-    "city": "کردکوی",
-    "lat": 36.8427,
-    "lng": 54.44391,
-    "source": "seed"
-  },
-  "گلستان::ترکمن": {
-    "province": "گلستان",
-    "city": "ترکمن",
-    "lat": 36.8427,
-    "lng": 54.44391,
-    "source": "seed"
+    "city": "مراوه تپه",
+    "lat": 37.9041,
+    "lng": 55.95596,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "123295",
+    "score": 205
   },
   "گلستان::مینودشت": {
     "province": "گلستان",
     "city": "مینودشت",
-    "lat": 36.8427,
-    "lng": 54.44391,
-    "source": "seed"
+    "lat": 37.23015,
+    "lng": 55.37211,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "123927",
+    "score": 222.91345780467873
   },
-  "گلستان::کلاله": {
-    "province": "گلستان",
-    "city": "کلاله",
-    "lat": 36.8427,
-    "lng": 54.44391,
-    "source": "seed"
+  "گیلان::آستارا": {
+    "province": "گیلان",
+    "city": "آستارا",
+    "lat": 38.43084,
+    "lng": 48.86994,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142676",
+    "score": 223.36719578292215
   },
-  "گلستان::رامیان": {
-    "province": "گلستان",
-    "city": "رامیان",
-    "lat": 36.8427,
-    "lng": 54.44391,
-    "source": "seed"
+  "گیلان::آستانه اشرفیه": {
+    "province": "گیلان",
+    "city": "آستانه اشرفیه",
+    "lat": 37.26318,
+    "lng": 49.94325,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142679",
+    "score": 223.52516614530126
+  },
+  "گیلان::املش": {
+    "province": "گیلان",
+    "city": "املش",
+    "lat": 37.0966,
+    "lng": 50.18709,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "143539",
+    "score": 221.75515165054986
+  },
+  "گیلان::بندرانزلی": {
+    "province": "گیلان",
+    "city": "بندرانزلی",
+    "lat": 37.47318,
+    "lng": 49.45785,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "141679",
+    "score": 225
+  },
+  "گیلان::خمام": {
+    "province": "گیلان",
+    "city": "خمام",
+    "lat": 37.39016,
+    "lng": 49.65846,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "127415",
+    "score": 177.28041889936753
   },
   "گیلان::رشت": {
     "province": "گیلان",
     "city": "رشت",
     "lat": 37.27611,
     "lng": 49.58862,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "118743",
+    "score": 230
   },
-  "گیلان::بندرانزلی": {
+  "گیلان::رضوانشهر": {
     "province": "گیلان",
-    "city": "بندرانزلی",
-    "lat": 37.27611,
-    "lng": 49.58862,
-    "source": "seed"
-  },
-  "گیلان::لاهیجان": {
-    "province": "گیلان",
-    "city": "لاهیجان",
-    "lat": 37.27611,
-    "lng": 49.58862,
-    "source": "seed"
-  },
-  "گیلان::لنگرود": {
-    "province": "گیلان",
-    "city": "لنگرود",
-    "lat": 37.27611,
-    "lng": 49.58862,
-    "source": "seed"
-  },
-  "گیلان::رودسر": {
-    "province": "گیلان",
-    "city": "رودسر",
-    "lat": 37.27611,
-    "lng": 49.58862,
-    "source": "seed"
-  },
-  "گیلان::آستارا": {
-    "province": "گیلان",
-    "city": "آستارا",
-    "lat": 37.27611,
-    "lng": 49.58862,
-    "source": "seed"
-  },
-  "گیلان::طوالش": {
-    "province": "گیلان",
-    "city": "طوالش",
-    "lat": 37.27611,
-    "lng": 49.58862,
-    "source": "seed"
-  },
-  "گیلان::صومعه سرا": {
-    "province": "گیلان",
-    "city": "صومعه سرا",
-    "lat": 37.27611,
-    "lng": 49.58862,
-    "source": "seed"
-  },
-  "گیلان::فومن": {
-    "province": "گیلان",
-    "city": "فومن",
-    "lat": 37.27611,
-    "lng": 49.58862,
-    "source": "seed"
-  },
-  "گیلان::ماسال": {
-    "province": "گیلان",
-    "city": "ماسال",
-    "lat": 37.27611,
-    "lng": 49.58862,
-    "source": "seed"
+    "city": "رضوانشهر",
+    "lat": 37.54947,
+    "lng": 49.13736,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "118532",
+    "score": 222.1619192533227
   },
   "گیلان::رودبار": {
     "province": "گیلان",
     "city": "رودبار",
-    "lat": 37.27611,
-    "lng": 49.58862,
-    "source": "seed"
+    "lat": 36.8211,
+    "lng": 49.4264,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "41151",
+    "score": 205
+  },
+  "گیلان::رودسر": {
+    "province": "گیلان",
+    "city": "رودسر",
+    "lat": 37.1378,
+    "lng": 50.2881,
+    "source": "manual"
+  },
+  "گیلان::سیاهکل": {
+    "province": "گیلان",
+    "city": "سیاهکل",
+    "lat": 37.15328,
+    "lng": 49.87136,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "114489",
+    "score": 222.1975933202726
+  },
+  "گیلان::شفت": {
+    "province": "گیلان",
+    "city": "شفت",
+    "lat": 37.1702,
+    "lng": 49.3998,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "116076",
+    "score": 220.65207473499183
+  },
+  "گیلان::صومعه سرا": {
+    "province": "گیلان",
+    "city": "صومعه سرا",
+    "lat": 37.30134,
+    "lng": 49.31504,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "113860",
+    "score": 223.6914934041227
+  },
+  "گیلان::طوالش": {
+    "province": "گیلان",
+    "city": "طوالش",
+    "lat": 37,
+    "lng": 48.4222222,
+    "source": "mhndev-unique"
+  },
+  "گیلان::فومن": {
+    "province": "گیلان",
+    "city": "فومن",
+    "lat": 37.224,
+    "lng": 49.3125,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134441",
+    "score": 223.2175689419882
+  },
+  "گیلان::لاهیجان": {
+    "province": "گیلان",
+    "city": "لاهیجان",
+    "lat": 37.20416,
+    "lng": 50.00919,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "126015",
+    "score": 225
+  },
+  "گیلان::لنگرود": {
+    "province": "گیلان",
+    "city": "لنگرود",
+    "lat": 37.19548,
+    "lng": 50.15263,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125897",
+    "score": 224.33383794999057
+  },
+  "گیلان::ماسال": {
+    "province": "گیلان",
+    "city": "ماسال",
+    "lat": 37.3631,
+    "lng": 49.1329,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "141015",
+    "score": 222.01160621116938
+  },
+  "لرستان::ازنا": {
+    "province": "لرستان",
+    "city": "ازنا",
+    "lat": 33.45643,
+    "lng": 49.45646,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142497",
+    "score": 223.70640867832807
+  },
+  "لرستان::الیگودرز": {
+    "province": "لرستان",
+    "city": "الیگودرز",
+    "lat": 33.404,
+    "lng": 49.69179,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "143921",
+    "score": 224.80280267916874
+  },
+  "لرستان::بروجرد": {
+    "province": "لرستان",
+    "city": "بروجرد",
+    "lat": 33.8973,
+    "lng": 48.7516,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "140044",
+    "score": 225
+  },
+  "لرستان::پلدختر": {
+    "province": "لرستان",
+    "city": "پلدختر",
+    "lat": 33.15249,
+    "lng": 47.71014,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "120949",
+    "score": 222.68332024810445
+  },
+  "لرستان::چگنی": {
+    "province": "لرستان",
+    "city": "چگنی",
+    "lat": 33.5559,
+    "lng": 46.7772,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "28423",
+    "score": 140
   },
   "لرستان::خرم آباد": {
     "province": "لرستان",
     "city": "خرم آباد",
     "lat": 33.48778,
     "lng": 48.35583,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "127349",
+    "score": 230
   },
-  "لرستان::بروجرد": {
+  "لرستان::دلفان": {
     "province": "لرستان",
-    "city": "بروجرد",
-    "lat": 33.48778,
-    "lng": 48.35583,
-    "source": "seed"
+    "city": "دلفان",
+    "lat": 33.5494,
+    "lng": 48.5268,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "136412",
+    "score": 160
   },
   "لرستان::دورود": {
     "province": "لرستان",
     "city": "دورود",
-    "lat": 33.48778,
-    "lng": 48.35583,
-    "source": "seed"
+    "lat": 33.49218,
+    "lng": 49.0616,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "135878",
+    "score": 225
   },
-  "لرستان::الیگودرز": {
+  "لرستان::سلسله": {
     "province": "لرستان",
-    "city": "الیگودرز",
-    "lat": 33.48778,
-    "lng": 48.35583,
-    "source": "seed"
+    "city": "سلسله",
+    "lat": 35.12916,
+    "lng": 47.45224,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "116414",
+    "score": 140
   },
   "لرستان::کوهدشت": {
     "province": "لرستان",
     "city": "کوهدشت",
-    "lat": 33.48778,
-    "lng": 48.35583,
-    "source": "seed"
+    "lat": 33.53335,
+    "lng": 47.60999,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "126409",
+    "score": 224.79935483357332
   },
-  "لرستان::ازنا": {
+  "لرستان::معمولان": {
     "province": "لرستان",
-    "city": "ازنا",
-    "lat": 33.48778,
-    "lng": 48.35583,
-    "source": "seed"
+    "city": "معمولان",
+    "lat": 33.3793,
+    "lng": 47.9596,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "125016",
+    "score": 175.53623458837575
   },
-  "لرستان::پلدختر": {
-    "province": "لرستان",
-    "city": "پلدختر",
-    "lat": 33.48778,
-    "lng": 48.35583,
-    "source": "seed"
+  "مازندران::آمل": {
+    "province": "مازندران",
+    "city": "آمل",
+    "lat": 36.46961,
+    "lng": 52.35072,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "143534",
+    "score": 225
   },
-  "لرستان::چگنی": {
-    "province": "لرستان",
-    "city": "چگنی",
-    "lat": 33.48778,
-    "lng": 48.35583,
-    "source": "seed"
+  "مازندران::بابل": {
+    "province": "مازندران",
+    "city": "بابل",
+    "lat": 36.55102,
+    "lng": 52.6786,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142363",
+    "score": 225
+  },
+  "مازندران::بابلسر": {
+    "province": "مازندران",
+    "city": "بابلسر",
+    "lat": 36.69929,
+    "lng": 52.65011,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142358",
+    "score": 223.72684587360723
+  },
+  "مازندران::بهشهر": {
+    "province": "مازندران",
+    "city": "بهشهر",
+    "lat": 36.69235,
+    "lng": 53.55262,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "140918",
+    "score": 224.90545494717716
+  },
+  "مازندران::تنکابن": {
+    "province": "مازندران",
+    "city": "تنکابن",
+    "lat": 36.81626,
+    "lng": 50.87376,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "112656",
+    "score": 223.29621771792978
+  },
+  "مازندران::جویبار": {
+    "province": "مازندران",
+    "city": "جویبار",
+    "lat": 36.64088,
+    "lng": 52.91206,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "129933",
+    "score": 223.0701031345353
+  },
+  "مازندران::چالوس": {
+    "province": "مازندران",
+    "city": "چالوس",
+    "lat": 36.655,
+    "lng": 51.4204,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "139223",
+    "score": 224.256910449589
+  },
+  "مازندران::رامسر": {
+    "province": "مازندران",
+    "city": "رامسر",
+    "lat": 36.91796,
+    "lng": 50.64802,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "117773",
+    "score": 223.22511349050336
   },
   "مازندران::ساری": {
     "province": "مازندران",
     "city": "ساری",
     "lat": 36.56332,
     "lng": 53.06009,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "116996",
+    "score": 230
   },
-  "مازندران::بابل": {
+  "مازندران::سوادکوه": {
     "province": "مازندران",
-    "city": "بابل",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
+    "city": "سوادکوه",
+    "lat": 36.304,
+    "lng": 52.8852,
+    "source": "manual"
   },
-  "مازندران::آمل": {
+  "مازندران::سوادکوه شمالی": {
     "province": "مازندران",
-    "city": "آمل",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
+    "city": "سوادکوه شمالی",
+    "lat": 36.4561,
+    "lng": 52.865,
+    "source": "manual"
   },
-  "مازندران::قایم شهر": {
+  "مازندران::عباس آباد": {
     "province": "مازندران",
-    "city": "قایم شهر",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
+    "city": "عباس آباد",
+    "lat": 36.72769,
+    "lng": 51.10574,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "145303",
+    "score": 221.51914613808137
   },
-  "مازندران::بابلسر": {
+  "مازندران::فریدونکنار": {
     "province": "مازندران",
-    "city": "بابلسر",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
+    "city": "فریدونکنار",
+    "lat": 36.68489,
+    "lng": 52.51917,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134602",
+    "score": 223.1309156257135
   },
-  "مازندران::نوشهر": {
+  "مازندران::کلاردشت": {
     "province": "مازندران",
-    "city": "نوشهر",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
+    "city": "کلاردشت",
+    "lat": 36.51094,
+    "lng": 51.17343,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "8781",
+    "score": 221.5086784543996
   },
-  "مازندران::چالوس": {
+  "مازندران::گلوگاه": {
     "province": "مازندران",
-    "city": "چالوس",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
+    "city": "گلوگاه",
+    "lat": 36.72734,
+    "lng": 53.80888,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134255",
+    "score": 222.31783560023888
   },
-  "مازندران::تنکابن": {
+  "مازندران::محمودآباد": {
     "province": "مازندران",
-    "city": "تنکابن",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
-  },
-  "مازندران::رامسر": {
-    "province": "مازندران",
-    "city": "رامسر",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
+    "city": "محمودآباد",
+    "lat": 36.63191,
+    "lng": 52.26286,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125328",
+    "score": 223.01216501288673
   },
   "مازندران::نکا": {
     "province": "مازندران",
     "city": "نکا",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
+    "lat": 36.65079,
+    "lng": 53.29905,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "122397",
+    "score": 224.14109149848886
   },
-  "مازندران::بهشهر": {
+  "مازندران::نور": {
     "province": "مازندران",
-    "city": "بهشهر",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
+    "city": "نور",
+    "lat": 36.57168,
+    "lng": 52.0153,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "113797",
+    "score": 222.72210615472255
   },
-  "مازندران::جویبار": {
+  "مازندران::نوشهر": {
     "province": "مازندران",
-    "city": "جویبار",
-    "lat": 36.56332,
-    "lng": 53.06009,
-    "source": "seed"
+    "city": "نوشهر",
+    "lat": 36.64852,
+    "lng": 51.49621,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "121959",
+    "score": 223.4082833942172
+  },
+  "مرکزی::آشتیان": {
+    "province": "مرکزی",
+    "city": "آشتیان",
+    "lat": 34.52298,
+    "lng": 50.00608,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142744",
+    "score": 220.77080947555467
   },
   "مرکزی::اراک": {
     "province": "مرکزی",
     "city": "اراک",
     "lat": 34.09493,
     "lng": 49.69809,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "143127",
+    "score": 230
+  },
+  "مرکزی::تفرش": {
+    "province": "مرکزی",
+    "city": "تفرش",
+    "lat": 34.69307,
+    "lng": 50.01601,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "113636",
+    "score": 221.86930396090844
+  },
+  "مرکزی::خمین": {
+    "province": "مرکزی",
+    "city": "خمین",
+    "lat": 33.63889,
+    "lng": 50.08003,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "127403",
+    "score": 224.5555472928826
+  },
+  "مرکزی::خنداب": {
+    "province": "مرکزی",
+    "city": "خنداب",
+    "lat": 34.3928,
+    "lng": 49.1841,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "127389",
+    "score": 220.57082655122267
+  },
+  "مرکزی::دلیجان": {
+    "province": "مرکزی",
+    "city": "دلیجان",
+    "lat": 33.9905,
+    "lng": 50.6838,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "136399",
+    "score": 223.10064586998482
+  },
+  "مرکزی::زرندیه": {
+    "province": "مرکزی",
+    "city": "زرندیه",
+    "lat": 30.812778,
+    "lng": 56.563889,
+    "source": "mhndev-unique"
   },
   "مرکزی::ساوه": {
     "province": "مرکزی",
     "city": "ساوه",
     "lat": 34.09493,
     "lng": 49.69809,
-    "source": "seed"
-  },
-  "مرکزی::خمین": {
-    "province": "مرکزی",
-    "city": "خمین",
-    "lat": 34.09493,
-    "lng": 49.69809,
-    "source": "seed"
-  },
-  "مرکزی::محلات": {
-    "province": "مرکزی",
-    "city": "محلات",
-    "lat": 34.09493,
-    "lng": 49.69809,
-    "source": "seed"
-  },
-  "مرکزی::دلیجان": {
-    "province": "مرکزی",
-    "city": "دلیجان",
-    "lat": 34.09493,
-    "lng": 49.69809,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "143127",
+    "score": 230
   },
   "مرکزی::شازند": {
     "province": "مرکزی",
     "city": "شازند",
-    "lat": 34.09493,
-    "lng": 49.69809,
-    "source": "seed"
-  },
-  "مرکزی::تفرش": {
-    "province": "مرکزی",
-    "city": "تفرش",
-    "lat": 34.09493,
-    "lng": 49.69809,
-    "source": "seed"
-  },
-  "مرکزی::آشتیان": {
-    "province": "مرکزی",
-    "city": "آشتیان",
-    "lat": 34.09493,
-    "lng": 49.69809,
-    "source": "seed"
-  },
-  "مرکزی::زرندیه": {
-    "province": "مرکزی",
-    "city": "زرندیه",
-    "lat": 34.09493,
-    "lng": 49.69809,
-    "source": "seed"
+    "lat": 33.93132,
+    "lng": 49.40629,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142567",
+    "score": 222.3038678548057
   },
   "مرکزی::کمیجان": {
     "province": "مرکزی",
     "city": "کمیجان",
-    "lat": 34.09493,
-    "lng": 49.69809,
-    "source": "seed"
+    "lat": 34.72142,
+    "lng": 49.32653,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "126715",
+    "score": 220.4672752117042
+  },
+  "مرکزی::محلات": {
+    "province": "مرکزی",
+    "city": "محلات",
+    "lat": 33.91108,
+    "lng": 50.45317,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125438",
+    "score": 223.54378377591877
+  },
+  "هرمزگان::ابوموسی": {
+    "province": "هرمزگان",
+    "city": "ابوموسی",
+    "lat": 25.8797106,
+    "lng": 55.0328017,
+    "source": "mhndev-unique"
+  },
+  "هرمزگان::بستک": {
+    "province": "هرمزگان",
+    "city": "بستک",
+    "lat": 27.19908,
+    "lng": 54.36676,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "141104",
+    "score": 220.9930373536948
   },
   "هرمزگان::بندر عباس": {
     "province": "هرمزگان",
     "city": "بندر عباس",
     "lat": 27.1865,
     "lng": 56.2808,
-    "source": "seed"
-  },
-  "هرمزگان::قشم": {
-    "province": "هرمزگان",
-    "city": "قشم",
-    "lat": 27.1865,
-    "lng": 56.2808,
-    "source": "seed"
-  },
-  "هرمزگان::میناب": {
-    "province": "هرمزگان",
-    "city": "میناب",
-    "lat": 27.1865,
-    "lng": 56.2808,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "141681",
+    "score": 230
   },
   "هرمزگان::بندر لنگه": {
     "province": "هرمزگان",
     "city": "بندر لنگه",
-    "lat": 27.1865,
-    "lng": 56.2808,
-    "source": "seed"
-  },
-  "هرمزگان::جاسک": {
-    "province": "هرمزگان",
-    "city": "جاسک",
-    "lat": 27.1865,
-    "lng": 56.2808,
-    "source": "seed"
-  },
-  "هرمزگان::حاجی آباد": {
-    "province": "هرمزگان",
-    "city": "حاجی آباد",
-    "lat": 27.1865,
-    "lng": 56.2808,
-    "source": "seed"
-  },
-  "هرمزگان::رودان": {
-    "province": "هرمزگان",
-    "city": "رودان",
-    "lat": 27.1865,
-    "lng": 56.2808,
-    "source": "seed"
-  },
-  "هرمزگان::بستک": {
-    "province": "هرمزگان",
-    "city": "بستک",
-    "lat": 27.1865,
-    "lng": 56.2808,
-    "source": "seed"
+    "lat": 26.56207,
+    "lng": 54.88382,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "141665",
+    "score": 222.93355030171406
   },
   "هرمزگان::پارسیان": {
     "province": "هرمزگان",
     "city": "پارسیان",
-    "lat": 27.1865,
-    "lng": 56.2808,
-    "source": "seed"
+    "lat": 27.2918,
+    "lng": 56.1532,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "112944",
+    "score": 160
+  },
+  "هرمزگان::جاسک": {
+    "province": "هرمزگان",
+    "city": "جاسک",
+    "lat": 25.64533,
+    "lng": 57.77552,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "130276",
+    "score": 221.88888832944286
+  },
+  "هرمزگان::حاجی آباد": {
+    "province": "هرمزگان",
+    "city": "حاجی آباد",
+    "lat": 28.3091,
+    "lng": 55.9017,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "132382",
+    "score": 222.4701690940823
+  },
+  "هرمزگان::خمیر": {
+    "province": "هرمزگان",
+    "city": "خمیر",
+    "lat": 26.952222,
+    "lng": 55.585,
+    "source": "mhndev-unique"
+  },
+  "هرمزگان::رودان": {
+    "province": "هرمزگان",
+    "city": "رودان",
+    "lat": 27.44194,
+    "lng": 57.19198,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "120351",
+    "score": 223.23108715315695
+  },
+  "هرمزگان::سیریک": {
+    "province": "هرمزگان",
+    "city": "سیریک",
+    "lat": 26.5151,
+    "lng": 57.1032,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "48604",
+    "score": 160
+  },
+  "هرمزگان::قشم": {
+    "province": "هرمزگان",
+    "city": "قشم",
+    "lat": 26.9492,
+    "lng": 56.2691,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "119374",
+    "score": 222.59182952041556
+  },
+  "هرمزگان::میناب": {
+    "province": "هرمزگان",
+    "city": "میناب",
+    "lat": 27.13104,
+    "lng": 57.08716,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "123941",
+    "score": 224.45735596164042
+  },
+  "همدان::اسدآباد": {
+    "province": "همدان",
+    "city": "اسدآباد",
+    "lat": 34.78241,
+    "lng": 48.12012,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142872",
+    "score": 223.9835455286701
+  },
+  "همدان::بهار": {
+    "province": "همدان",
+    "city": "بهار",
+    "lat": 34.9072,
+    "lng": 48.4414,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142000",
+    "score": 222.8282559503504
+  },
+  "همدان::تویسرکان": {
+    "province": "همدان",
+    "city": "تویسرکان",
+    "lat": 34.551,
+    "lng": 48.44353,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "112422",
+    "score": 223.81165127194106
+  },
+  "همدان::رزن": {
+    "province": "همدان",
+    "city": "رزن",
+    "lat": 35.38625,
+    "lng": 49.0334,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "118681",
+    "score": 221.61842615713448
+  },
+  "همدان::فامنین": {
+    "province": "همدان",
+    "city": "فامنین",
+    "lat": 35.11593,
+    "lng": 48.97336,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "134906",
+    "score": 221.61025405702617
+  },
+  "همدان::کبودرآهنگ": {
+    "province": "همدان",
+    "city": "کبودرآهنگ",
+    "lat": 35.20924,
+    "lng": 48.72341,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "129904",
+    "score": 222.13474236056462
+  },
+  "همدان::ملایر": {
+    "province": "همدان",
+    "city": "ملایر",
+    "lat": 34.30158,
+    "lng": 48.82166,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "125185",
+    "score": 225
+  },
+  "همدان::نهاوند": {
+    "province": "همدان",
+    "city": "نهاوند",
+    "lat": 34.19088,
+    "lng": 48.37446,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "122915",
+    "score": 224.52898217458724
   },
   "همدان::همدان": {
     "province": "همدان",
     "city": "همدان",
     "lat": 34.79922,
     "lng": 48.51456,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "132144",
+    "score": 230
   },
-  "همدان::ملایر": {
-    "province": "همدان",
-    "city": "ملایر",
-    "lat": 34.79922,
-    "lng": 48.51456,
-    "source": "seed"
+  "یزد::ابرکوه": {
+    "province": "یزد",
+    "city": "ابرکوه",
+    "lat": 31.1289,
+    "lng": 53.2824,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "145427",
+    "score": 222.75890931057515
   },
-  "همدان::نهاوند": {
-    "province": "همدان",
-    "city": "نهاوند",
-    "lat": 34.79922,
-    "lng": 48.51456,
-    "source": "seed"
+  "یزد::اردکان": {
+    "province": "یزد",
+    "city": "اردکان",
+    "lat": 32.31001,
+    "lng": 54.01747,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "143073",
+    "score": 224.07854303115897
   },
-  "همدان::تویسرکان": {
-    "province": "همدان",
-    "city": "تویسرکان",
-    "lat": 34.79922,
-    "lng": 48.51456,
-    "source": "seed"
+  "یزد::اشکذر": {
+    "province": "یزد",
+    "city": "اشکذر",
+    "lat": 31.99679,
+    "lng": 54.20852,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "66250",
+    "score": 222.126314940095
   },
-  "همدان::کبودرآهنگ": {
-    "province": "همدان",
-    "city": "کبودرآهنگ",
-    "lat": 34.79922,
-    "lng": 48.51456,
-    "source": "seed"
+  "یزد::بافق": {
+    "province": "یزد",
+    "city": "بافق",
+    "lat": 31.6035,
+    "lng": 55.40249,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "142255",
+    "score": 223.63028843045097
   },
-  "همدان::اسدآباد": {
-    "province": "همدان",
-    "city": "اسدآباد",
-    "lat": 34.79922,
-    "lng": 48.51456,
-    "source": "seed"
+  "یزد::بهاباد": {
+    "province": "یزد",
+    "city": "بهاباد",
+    "lat": 31.87091,
+    "lng": 56.02433,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "9533956",
+    "score": 205
   },
-  "همدان::بهار": {
-    "province": "همدان",
-    "city": "بهار",
-    "lat": 34.79922,
-    "lng": 48.51456,
-    "source": "seed"
+  "یزد::تفت": {
+    "province": "یزد",
+    "city": "تفت",
+    "lat": 31.74384,
+    "lng": 54.20278,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "113632",
+    "score": 222.065397247948
   },
-  "همدان::رزن": {
-    "province": "همدان",
-    "city": "رزن",
-    "lat": 34.79922,
-    "lng": 48.51456,
-    "source": "seed"
+  "یزد::خاتم": {
+    "province": "یزد",
+    "city": "خاتم",
+    "lat": 28.1804287,
+    "lng": 55.7453367,
+    "source": "mhndev-unique"
   },
-  "همدان::فامنین": {
-    "province": "همدان",
-    "city": "فامنین",
-    "lat": 34.79922,
-    "lng": 48.51456,
-    "source": "seed"
+  "یزد::زارچ": {
+    "province": "یزد",
+    "city": "زارچ",
+    "lat": 31.99111,
+    "lng": 54.23194,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "111407",
+    "score": 221.27155522674158
+  },
+  "یزد::مروست": {
+    "province": "یزد",
+    "city": "مروست",
+    "lat": 30.47833,
+    "lng": 54.21167,
+    "source": "geonames",
+    "featureCode": "PPL",
+    "geonameId": "124724",
+    "score": 175.88881135351625
+  },
+  "یزد::مهریز": {
+    "province": "یزد",
+    "city": "مهریز",
+    "lat": 31.58428,
+    "lng": 54.4428,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124274",
+    "score": 223.13803355038348
+  },
+  "یزد::میبد": {
+    "province": "یزد",
+    "city": "میبد",
+    "lat": 32.25014,
+    "lng": 54.01658,
+    "source": "geonames",
+    "featureCode": "PPLA2",
+    "geonameId": "124193",
+    "score": 223.8598324388806
   },
   "یزد::یزد": {
     "province": "یزد",
     "city": "یزد",
     "lat": 31.89722,
     "lng": 54.3675,
-    "source": "seed"
-  },
-  "یزد::میبد": {
-    "province": "یزد",
-    "city": "میبد",
-    "lat": 31.89722,
-    "lng": 54.3675,
-    "source": "seed"
-  },
-  "یزد::اردکان": {
-    "province": "یزد",
-    "city": "اردکان",
-    "lat": 31.89722,
-    "lng": 54.3675,
-    "source": "seed"
-  },
-  "یزد::بافق": {
-    "province": "یزد",
-    "city": "بافق",
-    "lat": 31.89722,
-    "lng": 54.3675,
-    "source": "seed"
-  },
-  "یزد::مهریز": {
-    "province": "یزد",
-    "city": "مهریز",
-    "lat": 31.89722,
-    "lng": 54.3675,
-    "source": "seed"
-  },
-  "یزد::تفت": {
-    "province": "یزد",
-    "city": "تفت",
-    "lat": 31.89722,
-    "lng": 54.3675,
-    "source": "seed"
-  },
-  "یزد::ابرکوه": {
-    "province": "یزد",
-    "city": "ابرکوه",
-    "lat": 31.89722,
-    "lng": 54.3675,
-    "source": "seed"
-  },
-  "یزد::خاتم": {
-    "province": "یزد",
-    "city": "خاتم",
-    "lat": 31.89722,
-    "lng": 54.3675,
-    "source": "seed"
-  },
-  "یزد::اشکذر": {
-    "province": "یزد",
-    "city": "اشکذر",
-    "lat": 31.89722,
-    "lng": 54.3675,
-    "source": "seed"
+    "source": "geonames",
+    "featureCode": "PPLA",
+    "geonameId": "111822",
+    "score": 230
   }
 }

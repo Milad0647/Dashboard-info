@@ -1,5 +1,6 @@
 /**
  * Generates lib/iran-provinces-data.ts from lib/data/iran-city-centers.json
+ * Source of truth: Map-Bilboard iran-cities-coordinates.json (copy into lib/data/)
  * Run: node scripts/generate-iran-provinces-data.mjs
  */
 import fs from "node:fs";
