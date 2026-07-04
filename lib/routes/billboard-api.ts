@@ -18,6 +18,7 @@ export const billboardApiRoutes = {
     return `${getBillboardApiBaseUrl()}/api/v1/billboards${query ? `?${query}` : ""}`;
   },
   createBillboard: () => `${getBillboardApiBaseUrl()}/api/v1/billboards`,
+  authLogin: () => `${getBillboardApiBaseUrl()}/api/v1/auth/login`,
   campaignBillboards: (campaignId: string) =>
     `${getBillboardApiBaseUrl()}/api/v1/campaigns/${encodeURIComponent(campaignId)}/billboards`,
   campaignBillboardDesigns: (campaignId: string, assignmentId: string) =>

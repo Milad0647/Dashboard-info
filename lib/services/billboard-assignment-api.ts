@@ -1,5 +1,10 @@
 import { billboardApiRoutes } from "@/lib/routes/billboard-api";
 import { fetchCampaignIntegration } from "@/lib/services/billboard-api";
+import {
+  clearBillboardApiTokenCache,
+  formatBillboardApiError,
+  resolveBillboardApiToken,
+} from "@/lib/services/billboard-api-auth";
 
 const BILLBOARD_ASSIGNMENT_TIMEOUT_MS = 120_000;
 
@@ -18,17 +23,13 @@ export interface BillboardDisplayPeriodInput {
   billboardImage?: Blob | null;
 }
 
-function getBillboardApiToken(): string {
-  const token = process.env.BILLBOARD_API_TOKEN?.trim();
-  if (!token) {
-    throw new Error("BILLBOARD_API_TOKEN در سرور تنظیم نشده است");
-  }
-  return token;
-}
-
-function buildAuthHeaders(actingUser?: BillboardActingUser | null): HeadersInit {
+async function buildAuthHeaders(
+  actingUser?: BillboardActingUser | null,
+  forceRefresh?: boolean
+): Promise<HeadersInit> {
+  const token = await resolveBillboardApiToken({ forceRefresh });
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${getBillboardApiToken()}`,
+    Authorization: `Bearer ${token}`,
     Accept: "application/json",
   };
 
@@ -44,11 +45,53 @@ function buildAuthHeaders(actingUser?: BillboardActingUser | null): HeadersInit 
 }
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
+  const raw = await response.text();
+
   if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `خطای ${response.status} از سرویس بیلبورد`);
+    throw new Error(await formatBillboardApiError(response, raw));
   }
-  return response.json() as Promise<T>;
+
+  if (!raw) {
+    return {} as T;
+  }
+
+  return JSON.parse(raw) as T;
+}
+
+async function billboardApiFetch(
+  url: string,
+  init: RequestInit,
+  actingUser?: BillboardActingUser | null
+): Promise<Response> {
+  const headers = await buildAuthHeaders(actingUser);
+  const response = await fetch(url, {
+    ...init,
+    headers: {
+      ...headers,
+      ...(init.headers ?? {}),
+    },
+    signal: init.signal ?? AbortSignal.timeout(BILLBOARD_ASSIGNMENT_TIMEOUT_MS),
+  });
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  clearBillboardApiTokenCache();
+
+  try {
+    const retryHeaders = await buildAuthHeaders(actingUser, true);
+    return fetch(url, {
+      ...init,
+      headers: {
+        ...retryHeaders,
+        ...(init.headers ?? {}),
+      },
+      signal: init.signal ?? AbortSignal.timeout(BILLBOARD_ASSIGNMENT_TIMEOUT_MS),
+    });
+  } catch {
+    return response;
+  }
 }
 
 function extractId(body: unknown, keys: string[]): string {
@@ -94,12 +137,11 @@ export async function createSystemBillboard(params: {
   if (params.province?.trim()) formData.append("province", params.province.trim());
   if (params.city?.trim()) formData.append("city", params.city.trim());
 
-  const response = await fetch(billboardApiRoutes.createBillboard(), {
-    method: "POST",
-    headers: buildAuthHeaders(params.actingUser),
-    body: formData,
-    signal: AbortSignal.timeout(BILLBOARD_ASSIGNMENT_TIMEOUT_MS),
-  });
+  const response = await billboardApiFetch(
+    billboardApiRoutes.createBillboard(),
+    { method: "POST", body: formData },
+    params.actingUser
+  );
 
   const body = await parseJsonResponse<unknown>(response);
   return extractId(body, ["id", "billboard_id"]);
@@ -121,12 +163,11 @@ export async function attachBillboardToCampaign(params: {
   if (params.notes?.trim()) formData.append("notes", params.notes.trim());
   if (params.executionImage) formData.append("execution_image", params.executionImage);
 
-  const response = await fetch(billboardApiRoutes.campaignBillboards(params.externalCampaignId), {
-    method: "POST",
-    headers: buildAuthHeaders(params.actingUser),
-    body: formData,
-    signal: AbortSignal.timeout(BILLBOARD_ASSIGNMENT_TIMEOUT_MS),
-  });
+  const response = await billboardApiFetch(
+    billboardApiRoutes.campaignBillboards(params.externalCampaignId),
+    { method: "POST", body: formData },
+    params.actingUser
+  );
 
   const body = await parseJsonResponse<unknown>(response);
   return extractId(body, ["id", "assignment_id"]);
@@ -148,14 +189,10 @@ export async function addCampaignBillboardDesign(params: {
     formData.append("billboard_image", params.period.billboardImage);
   }
 
-  const response = await fetch(
+  const response = await billboardApiFetch(
     billboardApiRoutes.campaignBillboardDesigns(params.externalCampaignId, params.assignmentId),
-    {
-      method: "POST",
-      headers: buildAuthHeaders(params.actingUser),
-      body: formData,
-      signal: AbortSignal.timeout(BILLBOARD_ASSIGNMENT_TIMEOUT_MS),
-    }
+    { method: "POST", body: formData },
+    params.actingUser
   );
 
   await parseJsonResponse<unknown>(response);
