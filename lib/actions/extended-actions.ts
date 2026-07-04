@@ -68,12 +68,22 @@ export async function saveSocialPlatformStatAction(data: Partial<SocialPlatformS
     }
   }
 
-  const ownerUserId = isFullAdmin(session) ? (data.ownerUserId ?? null) : session.userId;
-  const payload = { ...data, ownerUserId };
-
   if (!isPostgresConfigured()) {
     return { success: false, error: "Database required" };
   }
+
+  if (data.id && !isFullAdmin(session)) {
+    const existing = await pgExt.pgGetSocialPlatformStatById(data.id);
+    if (!existing) {
+      return { success: false, error: "رکورد یافت نشد" };
+    }
+    if (existing.ownerUserId !== session.userId) {
+      return { success: false, error: "دسترسی ندارید" };
+    }
+  }
+
+  const ownerUserId = isFullAdmin(session) ? (data.ownerUserId ?? null) : session.userId;
+  const payload = { ...data, ownerUserId };
 
   const result = await pgExt.pgSaveSocialPlatformStat(payload);
   await revalidateExtended();
@@ -84,6 +94,17 @@ export async function deleteSocialPlatformStatAction(id: string) {
   const session = await getAuthSession();
   if (!session) return { success: false, error: "Unauthorized" };
   if (!isPostgresConfigured()) return { success: false, error: "Database required" };
+
+  if (!isFullAdmin(session)) {
+    const existing = await pgExt.pgGetSocialPlatformStatById(id);
+    if (!existing) {
+      return { success: false, error: "رکورد یافت نشد" };
+    }
+    if (existing.ownerUserId !== session.userId) {
+      return { success: false, error: "دسترسی ندارید" };
+    }
+  }
+
   await pgExt.pgDeleteSocialPlatformStat(id);
   await revalidateExtended();
   return { success: true };

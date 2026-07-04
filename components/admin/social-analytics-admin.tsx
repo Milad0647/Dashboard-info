@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,16 +56,23 @@ const schema = z.object({
 interface SocialAnalyticsAdminProps {
   campaignId: string;
   initialStats: SocialPlatformStat[];
+  isFullAdmin?: boolean;
 }
 
 export function SocialAnalyticsAdmin({
   campaignId,
   initialStats,
+  isFullAdmin = true,
 }: SocialAnalyticsAdminProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rows, setRows] = useState(initialStats);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setRows(initialStats);
+  }, [initialStats]);
 
   const usedPlatforms = new Set(rows.map((row) => row.platform));
   const availablePlatforms = platformOptions.filter(
@@ -112,30 +120,13 @@ export function SocialAnalyticsAdmin({
       });
 
       if (!result.success) {
-        toast.error("ذخیره نشد");
+        toast.error("error" in result && result.error ? result.error : "ذخیره نشد");
         return;
       }
 
-      const savedId = "id" in result ? result.id : (editingId ?? crypto.randomUUID());
-      const nextRow: SocialPlatformStat = {
-        id: savedId,
-        campaignId,
-        platform: data.platform,
-        followers: data.followers,
-        posts: data.posts,
-        profileUrl: data.profileUrl || null,
-        sortOrder: rows.length,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      setRows((prev) =>
-        editingId
-          ? prev.map((row) => (row.id === editingId ? { ...row, ...nextRow } : row))
-          : [...prev, nextRow]
-      );
       toast.success("ذخیره شد");
       setOpen(false);
+      router.refresh();
     });
   });
 
@@ -145,7 +136,9 @@ export function SocialAnalyticsAdmin({
         <div>
           <h2 className="text-lg font-semibold">آمار صفحات شبکه‌های اجتماعی</h2>
           <p className="text-sm text-muted-foreground">
-            تعداد فالوور و پست هر پلتفرم — جدا از آمار بازدید سایت
+            {isFullAdmin
+              ? "تعداد فالوور و پست هر پلتفرم برای هر کاربر"
+              : "آمار صفحات خودتان — هر پلتفرم یک‌بار ثبت می‌شود"}
           </p>
         </div>
         <Button onClick={openCreate} disabled={availablePlatforms.length === 0 && !editingId}>
@@ -168,7 +161,7 @@ export function SocialAnalyticsAdmin({
               </div>
             ),
           },
-          adminOwnerTableColumn<SocialPlatformStat>(),
+          ...(isFullAdmin ? [adminOwnerTableColumn<SocialPlatformStat>()] : []),
           {
             key: "followers",
             label: "فالوور",
@@ -183,9 +176,14 @@ export function SocialAnalyticsAdmin({
         onEdit={openEdit}
         onDelete={(item) => {
           startTransition(async () => {
-            await deleteSocialPlatformStatAction(item.id);
+            const result = await deleteSocialPlatformStatAction(item.id);
+            if (!result.success) {
+              toast.error("error" in result && result.error ? result.error : "حذف نشد");
+              return;
+            }
             setRows((prev) => prev.filter((row) => row.id !== item.id));
             toast.success("حذف شد");
+            router.refresh();
           });
         }}
       />
@@ -236,7 +234,7 @@ export function SocialAnalyticsAdmin({
             </div>
 
             <Button type="submit" disabled={isPending} className="w-full">
-              ذخیره
+              {isPending ? "در حال ذخیره..." : "ذخیره"}
             </Button>
           </form>
         </DialogContent>

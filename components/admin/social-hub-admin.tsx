@@ -9,12 +9,14 @@ interface SocialHubAdminProps {
   campaignId: string;
   initialPosts: SocialMediaPost[];
   initialPlatformStats: SocialPlatformStat[];
+  isFullAdmin?: boolean;
 }
 
 export function SocialHubAdmin({
   campaignId,
   initialPosts,
   initialPlatformStats,
+  isFullAdmin = true,
 }: SocialHubAdminProps) {
   return (
     <div className="space-y-6">
@@ -35,6 +37,7 @@ export function SocialHubAdmin({
           <SocialAnalyticsAdmin
             campaignId={campaignId}
             initialStats={initialPlatformStats}
+            isFullAdmin={isFullAdmin}
           />
         </TabsContent>
 

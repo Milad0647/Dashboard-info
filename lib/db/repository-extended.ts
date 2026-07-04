@@ -401,6 +401,18 @@ export async function pgDeleteSocialPost(id: string) {
   return { success: true };
 }
 
+export async function pgGetSocialPlatformStatById(id: string): Promise<SocialPlatformStat | null> {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT sps.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+    FROM social_platform_stats sps
+    LEFT JOIN users u ON u.id = sps.owner_user_id
+    WHERE sps.id = ${id}
+    LIMIT 1
+  `;
+  return rows[0] ? mapSocialPlatformStatFromDb(rows[0]) : null;
+}
+
 export async function pgGetSocialPlatformStats(
   campaignId: string,
   ownerUserId?: string | null
@@ -430,12 +442,67 @@ export async function pgGetSocialPlatformStats(
 export async function pgSaveSocialPlatformStat(data: Partial<SocialPlatformStat> & { id?: string }) {
   const sql = getSql();
   const now = new Date().toISOString();
-  const id = data.id ?? generateId();
+  const campaignId = data.campaignId ?? "";
+  const ownerUserId = data.ownerUserId ?? null;
+  const platform = data.platform ?? "instagram";
+  const followers = data.followers ?? 0;
+  const posts = data.posts ?? 0;
+  const profileUrl = data.profileUrl ?? null;
 
-  const countRows = await sql`
-    SELECT COUNT(*)::int AS count FROM social_platform_stats WHERE campaign_id = ${data.campaignId ?? ""}
-  `;
+  if (data.id) {
+    await sql`
+      UPDATE social_platform_stats SET
+        followers = ${followers},
+        posts = ${posts},
+        profile_url = ${profileUrl},
+        updated_at = ${now}
+      WHERE id = ${data.id}
+    `;
+    return { success: true, id: data.id };
+  }
+
+  const existingRows = ownerUserId
+    ? await sql`
+        SELECT id FROM social_platform_stats
+        WHERE campaign_id = ${campaignId}
+          AND platform = ${platform}
+          AND owner_user_id = ${ownerUserId}
+        LIMIT 1
+      `
+    : await sql`
+        SELECT id FROM social_platform_stats
+        WHERE campaign_id = ${campaignId}
+          AND platform = ${platform}
+          AND owner_user_id IS NULL
+        LIMIT 1
+      `;
+
+  if (existingRows[0]) {
+    const existingId = String(existingRows[0].id);
+    await sql`
+      UPDATE social_platform_stats SET
+        followers = ${followers},
+        posts = ${posts},
+        profile_url = ${profileUrl},
+        updated_at = ${now}
+      WHERE id = ${existingId}
+    `;
+    return { success: true, id: existingId };
+  }
+
+  const countRows = ownerUserId
+    ? await sql`
+        SELECT COUNT(*)::int AS count
+        FROM social_platform_stats
+        WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+      `
+    : await sql`
+        SELECT COUNT(*)::int AS count
+        FROM social_platform_stats
+        WHERE campaign_id = ${campaignId} AND owner_user_id IS NULL
+      `;
   const sortOrder = data.sortOrder ?? (Number(countRows[0]?.count) || 0) + 1;
+  const id = generateId();
 
   await sql`
     INSERT INTO social_platform_stats (
@@ -443,22 +510,16 @@ export async function pgSaveSocialPlatformStat(data: Partial<SocialPlatformStat>
       sort_order, created_at, updated_at
     ) VALUES (
       ${id},
-      ${data.campaignId ?? ""},
-      ${data.ownerUserId ?? null},
-      ${data.platform ?? "instagram"},
-      ${data.followers ?? 0},
-      ${data.posts ?? 0},
-      ${data.profileUrl ?? null},
+      ${campaignId},
+      ${ownerUserId},
+      ${platform},
+      ${followers},
+      ${posts},
+      ${profileUrl},
       ${sortOrder},
       ${now},
       ${now}
     )
-    ON CONFLICT (campaign_id, platform) DO UPDATE SET
-      followers = EXCLUDED.followers,
-      posts = EXCLUDED.posts,
-      profile_url = EXCLUDED.profile_url,
-      sort_order = EXCLUDED.sort_order,
-      updated_at = EXCLUDED.updated_at
   `;
 
   return { success: true, id };
