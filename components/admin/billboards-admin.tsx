@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -100,6 +99,8 @@ export function BillboardsAdmin({
 
   const manualBillboards = billboards.filter((billboard) => !isApiBillboard(billboard));
   const apiBillboardCount = billboards.length - manualBillboards.length;
+  const showExternalMigrationTools = isFullAdmin && liveApiEnabled && Boolean(externalCampaignSlug);
+  const showExternalPeriodTools = showExternalMigrationTools && Boolean(externalCampaignId);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -119,26 +120,6 @@ export function BillboardsAdmin({
       sortOrder: manualBillboards.length + 1,
     },
   });
-
-  const openCreate = () => {
-    setEditing(null);
-    form.reset({
-      title: "",
-      city: "",
-      location: "",
-      date: todayISO(),
-      thumbnailUrl: "",
-      externalUrl: "",
-      latitude: undefined,
-      longitude: undefined,
-      status: "draft",
-      tags: "",
-      notes: "",
-      published: false,
-      sortOrder: manualBillboards.length + 1,
-    });
-    setOpen(true);
-  };
 
   const openEdit = (item: Billboard) => {
     if (isApiBillboard(item)) return;
@@ -212,56 +193,25 @@ export function BillboardsAdmin({
     });
   };
 
-  const canUseMapBilboardForms = liveApiEnabled && Boolean(externalCampaignId);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">بیلبوردها</h1>
           <p className="text-sm text-muted-foreground">
-            {canUseMapBilboardForms ? (
-              <>
-                بیلبوردها در map-bilboard ثبت می‌شوند. هر بار بیلبورد جدید بسازید و در صورت نیاز بعداً دوره نمایش اضافه کنید.
-                {apiBillboardCount > 0 ? ` ${apiBillboardCount} مورد از API زنده نمایش داده می‌شود.` : ""}
-              </>
-            ) : (
-              <>
-                بیلبوردهای دستی قابل ویرایش هستند.
-                {liveApiEnabled ? (
-                  apiBillboardCount > 0 ? (
-                    <> {apiBillboardCount} بیلبورد از Map Bilboard به‌صورت زنده نمایش داده می‌شود (فقط مشاهده).</>
-                  ) : (
-                    <> اتصال API فعال است — بیلبوردی از API دریافت نشد.</>
-                  )
-                ) : (
-                  <>
-                    {" "}
-                    برای اتصال به Map Bilboard به{" "}
-                    <Link href={`/admin/settings?campaign=${campaignId}`} className="text-primary hover:underline">
-                      تنظیمات کمپین
-                    </Link>{" "}
-                    بروید.
-                  </>
-                )}
-              </>
-            )}
+            بیلبوردها در همین سامانه ثبت و مدیریت می‌شوند.
+            {apiBillboardCount > 0
+              ? ` ${apiBillboardCount} مورد قدیمی از Map-Bilboard فقط برای مشاهده نمایش داده می‌شود.`
+              : ""}
           </p>
         </div>
-        {canUseMapBilboardForms ? (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" />
-            ثبت بیلبورد جدید
-          </Button>
-        ) : (
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            افزودن
-          </Button>
-        )}
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="h-4 w-4" />
+          ثبت بیلبورد جدید
+        </Button>
       </div>
 
-      {isFullAdmin && (
+      {showExternalMigrationTools && (
         <>
           <BillboardIntegrationImportPanel
             campaignId={campaignId}
@@ -277,19 +227,16 @@ export function BillboardsAdmin({
         </>
       )}
 
-      {canUseMapBilboardForms && externalCampaignId && (
-        <BillboardCreateAssignmentDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          campaignId={campaignId}
-          externalCampaignId={externalCampaignId}
-          mode={isFullAdmin ? "admin" : "client"}
-          contributorProfile={contributorProfile}
-          onCreated={() => router.refresh()}
-        />
-      )}
+      <BillboardCreateAssignmentDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        campaignId={campaignId}
+        mode={isFullAdmin ? "admin" : "client"}
+        contributorProfile={contributorProfile}
+        onCreated={() => router.refresh()}
+      />
 
-      {canUseMapBilboardForms && externalCampaignId && (
+      {showExternalPeriodTools && externalCampaignId && (
         <BillboardAddPeriodDialog
           open={periodOpen}
           onOpenChange={setPeriodOpen}
@@ -332,7 +279,7 @@ export function BillboardsAdmin({
             ),
           },
           { key: "sortOrder", label: "ترتیب" },
-          ...(canUseMapBilboardForms
+          ...(showExternalPeriodTools
             ? [
                 {
                   key: "periods",

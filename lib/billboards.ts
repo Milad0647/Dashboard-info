@@ -224,5 +224,11 @@ export function shouldShowBillboardNotes(billboard: Billboard): boolean {
 
 export function getBillboardDateLabel(billboard: Billboard): string | null {
   if (billboard.displayDateRange) return billboard.displayDateRange;
+
+  const rangeTag = billboard.tags.find((tag) => tag.startsWith("display-range:"));
+  if (rangeTag) {
+    return rangeTag.slice("display-range:".length);
+  }
+
   return null;
 }

@@ -35,7 +35,6 @@ interface BillboardCreateAssignmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   campaignId: string;
-  externalCampaignId: string;
   mode: "admin" | "client";
   contributorProfile?: ContributorProfile | null;
   onCreated?: () => void;
@@ -45,7 +44,6 @@ export function BillboardCreateAssignmentDialog({
   open,
   onOpenChange,
   campaignId,
-  externalCampaignId,
   mode,
   contributorProfile = null,
   onCreated,
@@ -108,7 +106,6 @@ export function BillboardCreateAssignmentDialog({
     startTransition(async () => {
       const formData = new FormData();
       formData.append("campaignId", campaignId);
-      formData.append("externalCampaignId", externalCampaignId);
       formData.append("axis", axis.trim());
       formData.append("address", address.trim());
       formData.append("area_sqm", areaSqm.trim());
@@ -127,7 +124,7 @@ export function BillboardCreateAssignmentDialog({
       formData.append("periods", JSON.stringify(buildPeriodsFormPayload(periodsToSubmit)));
       appendPeriodFilesToFormData(formData, periodsToSubmit);
 
-      const response = await fetch("/api/billboard/create-assign", {
+      const response = await fetch("/api/billboard/create", {
         method: "POST",
         body: formData,
       });
@@ -137,7 +134,7 @@ export function BillboardCreateAssignmentDialog({
         return;
       }
 
-      toast.success("بیلبورد جدید ثبت و به کمپین وصل شد");
+      toast.success("بیلبورد جدید ثبت شد");
       onOpenChange(false);
       onCreated?.();
     });
@@ -218,7 +215,7 @@ export function BillboardCreateAssignmentDialog({
                 در حال ثبت...
               </>
             ) : (
-              "ثبت و اتصال به کمپین"
+              "ثبت بیلبورد"
             )}
           </Button>
         </div>
