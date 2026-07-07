@@ -13,8 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AdminDataTable } from "@/components/admin/admin-data-table";
-import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
+import { AdminActivityCompactCard } from "@/components/admin/admin-activity-compact-card";
+import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { fieldActivityTypeOptions, getActivityTypeLabel } from "@/lib/activity-types";
@@ -22,7 +22,6 @@ import { deleteCampaignActivityAction, saveCampaignActivityAction } from "@/lib/
 import { todayISO } from "@/lib/jalali";
 import { isPressPublication } from "@/lib/press-publications";
 import type { ActivityMediaItem, ActivityType, CampaignActivity } from "@/lib/types";
-import { formatPersianDate } from "@/lib/utils";
 
 const ACTIVITY_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 
@@ -187,34 +186,12 @@ export function ActivitiesAdmin({ campaignId, initialActivities }: ActivitiesAdm
         </Button>
       </div>
 
-      <AdminDataTable
-        data={rows}
-        searchKeys={["title", "location", "description", "activityType"]}
-        columns={[
-          { key: "title", label: "عنوان" },
-          adminOwnerTableColumn<CampaignActivity>(),
-          {
-            key: "activityType",
-            label: "نوع",
-            render: (item) => getActivityTypeLabel(item.activityType),
-          },
-          { key: "activityDate", label: "تاریخ", render: (item) => formatPersianDate(item.activityDate) },
-          { key: "location", label: "مکان", render: (item) => item.location || "—" },
-          {
-            key: "published",
-            label: "وضعیت",
-            render: (item) => (item.published ? "منتشر شده" : "پیش‌نویس"),
-          },
-        ]}
-        onEdit={openEdit}
-        onDelete={(activity) => {
-          startTransition(async () => {
-            await deleteCampaignActivityAction(activity.id);
-            setRows((prev) => prev.filter((row) => row.id !== activity.id));
-            toast.success("حذف شد");
-          });
-        }}
-      />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {rows.map((activity) => (
+          <AdminActivityCompactCard key={activity.id} activity={activity} onClick={() => openEdit(activity)} />
+        ))}
+        <AdminCompactAddCard onClick={openCreate} label="اقدام جدید" />
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -304,6 +281,24 @@ export function ActivitiesAdmin({ campaignId, initialActivities }: ActivitiesAdm
             <Button type="submit" disabled={isPending} className="w-full">
               ذخیره
             </Button>
+            {editingId && (
+              <Button
+                type="button"
+                variant="destructive"
+                className="w-full"
+                disabled={isPending}
+                onClick={() => {
+                  startTransition(async () => {
+                    await deleteCampaignActivityAction(editingId);
+                    setRows((prev) => prev.filter((row) => row.id !== editingId));
+                    toast.success("حذف شد");
+                    setOpen(false);
+                  });
+                }}
+              >
+                حذف اقدام
+              </Button>
+            )}
           </form>
         </DialogContent>
       </Dialog>

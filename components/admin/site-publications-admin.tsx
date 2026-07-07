@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ExternalLink, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,15 +12,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AdminDataTable } from "@/components/admin/admin-data-table";
-import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
+import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { AdminSitePublicationCompactCard } from "@/components/admin/admin-site-publication-compact-card";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteSocialPostAction, saveSocialPostAction } from "@/lib/actions/extended-actions";
 import { todayISO } from "@/lib/jalali";
 import { isSitePublication } from "@/lib/social-posts";
 import type { SocialMediaPost } from "@/lib/types";
-import { formatPersianDate } from "@/lib/utils";
 
 const schema = z.object({
   title: z.string().min(1, "عنوان الزامی است"),
@@ -148,46 +147,12 @@ export function SitePublicationsAdmin({ campaignId, initialPosts }: SitePublicat
         </Button>
       </div>
 
-      <AdminDataTable
-        data={rows}
-        searchKeys={["title", "link", "description"]}
-        columns={[
-          {
-            key: "title",
-            label: "عنوان",
-            render: (item) =>
-              item.link ? (
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-1"
-                  dir="ltr"
-                >
-                  {item.title}
-                  <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                </a>
-              ) : (
-                item.title
-              ),
-          },
-          adminOwnerTableColumn<SocialMediaPost>(),
-          { key: "publishedDate", label: "تاریخ", render: (item) => formatPersianDate(item.publishedDate) },
-          {
-            key: "published",
-            label: "وضعیت",
-            render: (item) => (item.published ? "منتشر شده" : "پیش‌نویس"),
-          },
-        ]}
-        onEdit={openEdit}
-        onDelete={(post) => {
-          startTransition(async () => {
-            await deleteSocialPostAction(post.id);
-            setRows((prev) => prev.filter((row) => row.id !== post.id));
-            toast.success("حذف شد");
-          });
-        }}
-      />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {rows.map((post) => (
+          <AdminSitePublicationCompactCard key={post.id} post={post} onClick={() => openEdit(post)} />
+        ))}
+        <AdminCompactAddCard onClick={openCreate} label="انتشار جدید" />
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -223,6 +188,24 @@ export function SitePublicationsAdmin({ campaignId, initialPosts }: SitePublicat
             <Button type="submit" disabled={isPending} className="w-full">
               ذخیره
             </Button>
+            {editingId && (
+              <Button
+                type="button"
+                variant="destructive"
+                className="w-full"
+                disabled={isPending}
+                onClick={() => {
+                  startTransition(async () => {
+                    await deleteSocialPostAction(editingId);
+                    setRows((prev) => prev.filter((row) => row.id !== editingId));
+                    toast.success("حذف شد");
+                    setOpen(false);
+                  });
+                }}
+              >
+                حذف انتشار
+              </Button>
+            )}
           </form>
         </DialogContent>
       </Dialog>

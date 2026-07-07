@@ -11,6 +11,7 @@ import {
   shouldShowBillboardNotes,
   shouldShowBillboardStatus,
 } from "@/lib/billboards";
+import { formatBillboardLocationLine } from "@/lib/billboard-location";
 import type { Billboard } from "@/lib/types";
 import { formatPersianDate, getStatusLabel } from "@/lib/utils";
 
@@ -51,7 +52,7 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
 
         <div className="flex items-start gap-1 text-sm text-muted-foreground">
           <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span className="line-clamp-2 min-h-[2.5rem]">{billboard.city} — {billboard.location}</span>
+          <span className="line-clamp-2 min-h-[2.5rem]">{formatBillboardLocationLine(billboard)}</span>
         </div>
 
         {dateLabel ? (

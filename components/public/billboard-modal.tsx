@@ -14,6 +14,7 @@ import {
   shouldShowBillboardStatus,
 } from "@/lib/billboards";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
+import { formatBillboardLocationLine } from "@/lib/billboard-location";
 import type { Billboard } from "@/lib/types";
 import { formatPersianDate, getStatusLabel, isValidUrl } from "@/lib/utils";
 
@@ -66,7 +67,7 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
         <div className="p-4 space-y-3 border-t">
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="h-3.5 w-3.5 shrink-0" />
-            <span>{billboard.city} — {billboard.location}</span>
+            <span>{formatBillboardLocationLine(billboard)}</span>
           </div>
 
           {billboard.description && (

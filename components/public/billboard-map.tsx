@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Map as LeafletMap } from "leaflet";
+import { formatBillboardLocationLine } from "@/lib/billboard-location";
 import { getBillboardDateLabel, hasBillboardCoordinates } from "@/lib/billboards";
 import { addLeafletTileLayer } from "@/lib/leaflet-tiles";
 import type { Billboard } from "@/lib/types";
@@ -51,7 +52,7 @@ export function BillboardMap({ billboards, onSelect }: BillboardMapProps) {
         });
 
         marker.bindTooltip(
-          `<strong>${billboard.title}</strong><br/>${billboard.city} — ${billboard.location}${
+          `<strong>${billboard.title}</strong><br/>${formatBillboardLocationLine(billboard)}${
             getBillboardDateLabel(billboard) ? `<br/>${getBillboardDateLabel(billboard)}` : ""
           }`,
           { direction: "top", opacity: 0.95 }

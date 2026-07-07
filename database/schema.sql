@@ -400,12 +400,26 @@ ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'contributor', 'client'));
 
 CREATE TABLE IF NOT EXISTS user_notification_reads (
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reader_key TEXT NOT NULL,
   content_key TEXT NOT NULL,
   seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   confirmed BOOLEAN NOT NULL DEFAULT false,
-  PRIMARY KEY (user_id, content_key)
+  PRIMARY KEY (reader_key, content_key)
 );
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'user_notification_reads'
+      AND column_name = 'user_id'
+  ) THEN
+    ALTER TABLE user_notification_reads DROP CONSTRAINT IF EXISTS user_notification_reads_user_id_fkey;
+    ALTER TABLE user_notification_reads RENAME COLUMN user_id TO reader_key;
+    ALTER TABLE user_notification_reads ALTER COLUMN reader_key TYPE TEXT USING reader_key::TEXT;
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS system_settings (
   key TEXT PRIMARY KEY,

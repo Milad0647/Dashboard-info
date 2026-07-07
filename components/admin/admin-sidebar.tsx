@@ -64,7 +64,7 @@ const allNavItems: {
   { href: "/admin/social-posts", label: "شبکه‌های اجتماعی", icon: Share2, permissionKey: "socialPosts" },
   { href: "/admin/press-publications", label: "مجله و روزنامه", icon: FileText, permissionKey: "activities" },
   { href: "/admin/activities", label: "اقدامات", icon: Sparkles, permissionKey: "activities" },
-  { href: "/admin/notifications", label: "اعلان‌ها", icon: Bell },
+  { href: "/admin/elanha", label: "اعلان‌ها", icon: Bell },
   { href: "/admin/broadcast", label: "پخش صدا و سیما", icon: Radio, permissionKey: "broadcast" },
   { href: "/admin/meetings", label: "جلسات و مصوبات", icon: ClipboardList, permissionKey: "meetings" },
   { href: "/admin/submissions", label: "مشارکت‌ها", icon: FileText, permissionKey: "submissions" },
@@ -129,7 +129,7 @@ export function AdminSidebar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const href = adminHref(item.href, campaignId);
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href === "/admin/elanha" && pathname === "/admin/notifications");
           return (
             <Link
               key={item.href}

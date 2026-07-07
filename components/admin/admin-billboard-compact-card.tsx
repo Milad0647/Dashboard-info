@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import { getBillboardCategoryLabel } from "@/lib/billboard-categories";
+import { formatBillboardCityLine } from "@/lib/billboard-location";
 import type { Billboard } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -46,8 +47,7 @@ export function AdminBillboardCompactCard({ billboard, onClick }: AdminBillboard
       <div className="space-y-1 p-2">
         <p className="truncate text-xs font-medium">{billboard.title}</p>
         <p className="truncate text-[10px] text-muted-foreground">
-          {billboard.province ? `${billboard.province} — ` : ""}
-          {billboard.city}
+          {formatBillboardCityLine(billboard)}
         </p>
         <AdminOwnerBadge ownerUserId={billboard.ownerUserId} ownerName={billboard.ownerName} />
       </div>

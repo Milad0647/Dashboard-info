@@ -685,8 +685,17 @@ export async function pgDeleteCampaignActivity(id: string) {
   return { success: true };
 }
 
+export async function pgGetNotificationReads(readerKey: string): Promise<string[]> {
+  const sql = getSql();
+  const rows = await sql<{ content_key: string }[]>`
+    SELECT content_key FROM user_notification_reads
+    WHERE reader_key = ${readerKey}
+  `;
+  return rows.map((row) => row.content_key);
+}
+
 export async function pgMarkNotificationReads(
-  userId: string,
+  readerKey: string,
   contentKeys: string[],
   confirmed = false
 ) {
@@ -696,9 +705,9 @@ export async function pgMarkNotificationReads(
 
   for (const contentKey of contentKeys) {
     await sql`
-      INSERT INTO user_notification_reads (user_id, content_key, seen_at, confirmed)
-      VALUES (${userId}, ${contentKey}, ${now}, ${confirmed})
-      ON CONFLICT (user_id, content_key) DO UPDATE SET
+      INSERT INTO user_notification_reads (reader_key, content_key, seen_at, confirmed)
+      VALUES (${readerKey}, ${contentKey}, ${now}, ${confirmed})
+      ON CONFLICT (reader_key, content_key) DO UPDATE SET
         seen_at = EXCLUDED.seen_at,
         confirmed = CASE WHEN EXCLUDED.confirmed THEN true ELSE user_notification_reads.confirmed END
     `;

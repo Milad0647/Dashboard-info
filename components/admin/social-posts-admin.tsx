@@ -13,15 +13,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AdminDataTable } from "@/components/admin/admin-data-table";
-import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
+import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { AdminSocialPostCompactCard } from "@/components/admin/admin-social-post-compact-card";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteSocialPostAction, saveSocialPostAction } from "@/lib/actions/extended-actions";
 import { todayISO } from "@/lib/jalali";
 import { isSitePublication } from "@/lib/social-posts";
 import type { SocialContentType, SocialMediaPost, SocialPlatform } from "@/lib/types";
-import { formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
+import { getStatusLabel } from "@/lib/utils";
 
 const schema = z.object({
   platform: z.enum(["instagram", "x", "telegram", "linkedin", "youtube", "aparat", "rubika", "eitaa", "bale", "other"]),
@@ -188,27 +188,12 @@ export function SocialPostsAdmin({ campaignId, initialPosts, embedded = false }:
         </div>
       )}
 
-      <AdminDataTable
-        data={rows}
-        searchKeys={["title", "platform", "contentType"]}
-        columns={[
-          { key: "platform", label: "کانال", render: (item) => getStatusLabel(item.platform) },
-          adminOwnerTableColumn<SocialMediaPost>(),
-          { key: "title", label: "عنوان / کاور" },
-          { key: "views", label: "بازدید", render: (item) => formatPersianNumber(item.views) },
-          { key: "contentType", label: "نوع", render: (item) => getStatusLabel(item.contentType) },
-          { key: "publishedDate", label: "تاریخ", render: (item) => formatPersianDate(item.publishedDate) },
-          { key: "published", label: "وضعیت", render: (item) => (item.published ? "منتشر" : "پیش‌نویس") },
-        ]}
-        onEdit={openEdit}
-        onDelete={(item) => {
-          startTransition(async () => {
-            await deleteSocialPostAction(item.id);
-            setRows((prev) => prev.filter((row) => row.id !== item.id));
-            toast.success("حذف شد");
-          });
-        }}
-      />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {rows.map((post) => (
+          <AdminSocialPostCompactCard key={post.id} post={post} onClick={() => openEdit(post)} />
+        ))}
+        <AdminCompactAddCard onClick={openCreate} label="پست جدید" />
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -278,6 +263,24 @@ export function SocialPostsAdmin({ campaignId, initialPosts, embedded = false }:
             </div>
 
             <Button type="submit" disabled={isPending} className="w-full">ذخیره</Button>
+            {editingId && (
+              <Button
+                type="button"
+                variant="destructive"
+                className="w-full"
+                disabled={isPending}
+                onClick={() => {
+                  startTransition(async () => {
+                    await deleteSocialPostAction(editingId);
+                    setRows((prev) => prev.filter((row) => row.id !== editingId));
+                    toast.success("حذف شد");
+                    setOpen(false);
+                  });
+                }}
+              >
+                حذف پست
+              </Button>
+            )}
           </form>
         </DialogContent>
       </Dialog>

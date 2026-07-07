@@ -215,7 +215,7 @@ export function shouldShowBillboardStatus(billboard: Billboard): boolean {
 }
 
 export function filterPublicBillboardTags(tags: string[]): string[] {
-  return tags.filter((tag) => !tag.startsWith("map:"));
+  return tags.filter((tag) => !tag.startsWith("map:") && !tag.startsWith("province:"));
 }
 
 export function shouldShowBillboardNotes(billboard: Billboard): boolean {
