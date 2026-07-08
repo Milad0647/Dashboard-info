@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Loader2, Plus, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,11 +53,36 @@ export function BillboardsAdmin({
   const [editingBillboard, setEditingBillboard] = useState<Billboard | null>(null);
   const [periodOpen, setPeriodOpen] = useState(false);
   const [periodBillboard, setPeriodBillboard] = useState<Billboard | null>(null);
+  const [isNormalizing, setIsNormalizing] = useState(false);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
     setBillboards(initialBillboards);
   }, [initialBillboards]);
+
+  const handleNormalizeApiBillboards = () => {
+    void (async () => {
+      setIsNormalizing(true);
+      try {
+        const response = await fetch("/api/billboard/normalize-locations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ campaignId }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          toast.error(result.error ?? "اصلاح استان/شهر ناموفق بود");
+          return;
+        }
+        toast.success(`اصلاح انجام شد: ${result.updated} بیلبورد`);
+        router.refresh();
+      } catch {
+        toast.error("اصلاح استان/شهر با خطا مواجه شد");
+      } finally {
+        setIsNormalizing(false);
+      }
+    })();
+  };
 
   const manualBillboards = billboards.filter((billboard) => !isApiBillboard(billboard));
   const apiBillboards = billboards.filter((billboard) => isApiBillboard(billboard));
@@ -126,6 +151,27 @@ export function BillboardsAdmin({
             externalCampaignSlug={externalCampaignSlug}
             onImported={() => router.refresh()}
           />
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isNormalizing}
+              onClick={handleNormalizeApiBillboards}
+              className="mt-3"
+            >
+              {isNormalizing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  در حال اصلاح...
+                </>
+              ) : (
+                <>
+                  <Wrench className="h-4 w-4" />
+                  اصلاح استان/شهر بیلبوردهای API
+                </>
+              )}
+            </Button>
+          </div>
         </>
       )}
 

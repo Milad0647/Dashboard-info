@@ -35,6 +35,9 @@ export interface ExternalBillboard {
   latitude: number;
   longitude: number;
   address: string;
+  province?: string | null;
+  city?: string | null;
+  full_address?: string | null;
   image_url: string | null;
   thumbnail_url: string | null;
   status: string;

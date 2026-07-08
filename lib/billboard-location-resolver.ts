@@ -120,12 +120,37 @@ function parseLocationFromFullAddress(fullAddress: string): {
   if (parts.length === 0) return { province: null, city: null };
 
   const firstProvince = resolveKnownProvince(parts[0] ?? "");
-  if (firstProvince && parts.length >= 2) {
+  if (firstProvince) {
+    // Map-Bilboard formats `full_address` as:
+    // - effectiveProvince
+    // - optionalCity (only when city != effectiveProvince)
+    // - detail
+    // So when the city part is not present, the 2nd segment is detail, not city.
+    if (parts.length <= 2) {
+      return { province: firstProvince, city: firstProvince };
+    }
+
     const cityPart = parts[1] ?? "";
-    const parsedCity = parseLocationFromAddress(cityPart);
+    const knownCity = resolveKnownCity(cityPart);
+    if (knownCity) {
+      return {
+        province: knownCity.province,
+        city: knownCity.city,
+      };
+    }
+
+    const fallback = parseLocationFromAddress(cityPart);
     return {
-      province: parsedCity.province ?? firstProvince,
-      city: parsedCity.city,
+      province: fallback.province ?? firstProvince,
+      city: fallback.city,
+    };
+  }
+
+  const firstCity = resolveKnownCity(parts[0] ?? "");
+  if (firstCity) {
+    return {
+      province: firstCity.province,
+      city: firstCity.city,
     };
   }
 

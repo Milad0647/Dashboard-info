@@ -126,7 +126,7 @@ export function mapIntegrationBillboardToBillboard(
   const imageUrl = fullImage ?? "";
   const title = external.name?.trim() || external.axis?.trim() || external.code;
   const address = external.address?.trim() ?? "";
-  const fullAddress = external.full_address?.trim() ?? "";
+  const fullAddress = external.full_address?.trim() ?? address;
   const axis = external.axis?.trim() ?? "";
   const { province, city } = resolveBillboardLocation({
     province: external.province,
@@ -206,9 +206,13 @@ export function mapExternalBillboardToBillboard(
   const tags = [external.code, external.axis, getExternalBillboardTag(external.id)].filter(Boolean);
   const now = new Date().toISOString();
   const address = external.address?.trim() ?? "";
+  const fullAddress = external.full_address?.trim() ?? address;
   const axis = external.axis?.trim() ?? "";
   const { province, city } = resolveBillboardLocation({
+    province: external.province,
+    city: external.city,
     address,
+    fullAddress,
     code: external.code,
   });
   const latitude = toCoordinate(external.latitude);
@@ -218,7 +222,7 @@ export function mapExternalBillboardToBillboard(
     id: `api-${external.id}`,
     campaignId,
     title: `${external.code} — ${axis}`,
-    description: address || null,
+    description: fullAddress || address || null,
     province,
     city,
     location: axis || address,
