@@ -93,7 +93,9 @@ export function normalizeImportedProvince(value: string | null): string | null {
     آذربایجان: "آذربایجان شرقی",
     خراسان: "خراسان رضوی",
     باختر: "کرمانشاه",
-    غرب: "همدان",
+    غرب: "کرمانشاه",
+    کهکیلویه: "کهگیلویه و بویراحمد",
+    "کهکیلویه و بویراحمد": "کهگیلویه و بویراحمد",
   };
 
   return aliases[trimmed] ?? trimmed;

@@ -10,23 +10,67 @@ import {
 } from "@/lib/models/billboard-api";
 import { billboardApiRoutes } from "@/lib/routes/billboard-api";
 import { IRAN_PROVINCES_DATA } from "@/lib/iran-provinces-data";
-import { isIranProvince, normalizeImportedProvince } from "@/lib/iran-locations";
 import type { AdminUser, Billboard } from "@/lib/types";
 
-// Maps every known city name to its province for reliable reverse lookup.
+// Normalizes Persian text the same way the billboard API project does, so
+// province/city names coming from the API reliably match our dataset:
+// unify Arabic vs Persian yeh/kaf, turn ZWNJ into a space, and collapse spaces.
+function normalizeLocationName(value: string): string {
+  return value
+    .trim()
+    .replace(/\u064A/g, "\u06CC")
+    .replace(/\u0643/g, "\u06A9")
+    .replace(/\u200C/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+// Non-standard province labels used by the API mapped to official names.
+const PROVINCE_ALIASES: Record<string, string> = {
+  کهکیلویه: "کهگیلویه و بویراحمد",
+  "کهکیلویه و بویراحمد": "کهگیلویه و بویراحمد",
+  آذربایجان: "آذربایجان شرقی",
+  باختر: "کرمانشاه",
+  غرب: "کرمانشاه",
+  خراسان: "خراسان رضوی",
+};
+
+// Maps every known (normalized) city name to its province for reverse lookup.
 // First occurrence wins for the rare cities that share a name across provinces.
 const CITY_TO_PROVINCE: Map<string, string> = (() => {
   const map = new Map<string, string>();
   for (const province of IRAN_PROVINCES_DATA) {
     for (const city of province.cities) {
-      if (!map.has(city.name)) map.set(city.name, province.name);
+      const key = normalizeLocationName(city.name);
+      if (!map.has(key)) map.set(key, province.name);
     }
   }
   return map;
 })();
 
-function isKnownCity(value: string): boolean {
-  return CITY_TO_PROVINCE.has(value);
+function resolveKnownProvince(value: string): string | null {
+  const normalized = normalizeLocationName(value);
+  if (!normalized) return null;
+
+  const alias = PROVINCE_ALIASES[normalized];
+  if (alias) return alias;
+
+  const exact = IRAN_PROVINCES_DATA.find((province) => province.name === normalized);
+  if (exact) return exact.name;
+
+  const fuzzy = IRAN_PROVINCES_DATA.find(
+    (province) => province.name.includes(normalized) || normalized.includes(province.name)
+  );
+  return fuzzy?.name ?? null;
+}
+
+function resolveKnownCity(value: string): { city: string; province: string } | null {
+  const normalized = normalizeLocationName(value);
+  if (!normalized) return null;
+
+  const province = CITY_TO_PROVINCE.get(normalized);
+  if (province) return { city: normalized, province };
+
+  return null;
 }
 
 const BILLBOARD_API_TIMEOUT_MS = 8_000;
@@ -83,37 +127,54 @@ interface ResolvedBillboardLocation {
   city: string;
 }
 
+function hasBoundedLocationMatch(text: string, term: string): boolean {
+  const idx = text.indexOf(term);
+  if (idx === -1) return false;
+  const beforeOk = idx === 0 || /[\s،,.]/.test(text[idx - 1] ?? "");
+  const afterIdx = idx + term.length;
+  const afterOk = afterIdx >= text.length || /[\s،,.]/.test(text[afterIdx] ?? "");
+  return beforeOk && afterOk;
+}
+
 // Parses province/city from a free-form Iranian address by matching against
-// the official province/city dataset. Prefers the longest city match to avoid
-// short substrings, and infers the province from the matched city when possible.
+// the official province/city dataset. Checks address tokens first, then falls
+// back to bounded substring matches to avoid false hits like "طالقان" in "طالقانی".
 function parseLocationFromAddress(address: string): {
   province: string | null;
   city: string | null;
 } {
-  const trimmed = address.trim();
+  const trimmed = normalizeLocationName(address);
   if (!trimmed) return { province: null, city: null };
 
-  let matchedProvince: string | null = null;
-  let matchedCity: string | null = null;
+  const tokens = trimmed
+    .split(/[،,.]+|\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  for (const token of tokens) {
+    const known = resolveKnownCity(token);
+    if (known) return known;
+  }
+
+  let bestMatch: { province: string; city: string; length: number } | null = null;
+  for (const [cityKey, province] of CITY_TO_PROVINCE) {
+    if (cityKey.length < 3) continue;
+    if (!hasBoundedLocationMatch(trimmed, cityKey)) continue;
+    if (!bestMatch || cityKey.length > bestMatch.length) {
+      bestMatch = { province, city: cityKey, length: cityKey.length };
+    }
+  }
+  if (bestMatch) {
+    return { province: bestMatch.province, city: bestMatch.city };
+  }
 
   for (const province of IRAN_PROVINCES_DATA) {
-    const provinceHit = trimmed.includes(province.name);
-    if (provinceHit && !matchedProvince) {
-      matchedProvince = province.name;
-    }
-
-    for (const city of province.cities) {
-      if (city.name.length < 3) continue;
-      if (!trimmed.includes(city.name)) continue;
-      if (!matchedCity || city.name.length > matchedCity.length) {
-        matchedCity = city.name;
-        if (!provinceHit) matchedProvince = matchedProvince ?? province.name;
-        else matchedProvince = province.name;
-      }
+    if (hasBoundedLocationMatch(trimmed, province.name)) {
+      return { province: province.name, city: null };
     }
   }
 
-  return { province: matchedProvince, city: matchedCity };
+  return { province: null, city: null };
 }
 
 // Resolves the physical province/city of a billboard while defending against
@@ -125,28 +186,41 @@ function resolveBillboardLocation(input: {
   province?: string | null;
   city?: string | null;
   address?: string | null;
+  code?: string | null;
 }): ResolvedBillboardLocation {
   const rawProvince = input.province?.trim() ?? "";
   const rawCity = input.city?.trim() ?? "";
   const parsed = parseLocationFromAddress(input.address?.trim() ?? "");
 
+  const knownRawCity = resolveKnownCity(rawCity);
   const rawCityIsReliable =
-    Boolean(rawCity) &&
-    isKnownCity(rawCity) &&
-    !(rawCity === rawProvince && parsed.city && parsed.city !== rawCity);
+    knownRawCity !== null &&
+    !(
+      normalizeLocationName(rawCity) === normalizeLocationName(rawProvince) &&
+      parsed.city &&
+      parsed.city !== knownRawCity.city
+    );
 
-  const city = rawCityIsReliable ? rawCity : parsed.city ?? "";
+  let city = rawCityIsReliable ? knownRawCity.city : parsed.city ?? "";
 
-  const cityProvince = city ? CITY_TO_PROVINCE.get(city) ?? null : null;
-  const normalizedRawProvince = rawProvince ? normalizeImportedProvince(rawProvince) : null;
+  const cityProvince = rawCityIsReliable
+    ? knownRawCity.province
+    : city
+      ? CITY_TO_PROVINCE.get(normalizeLocationName(city)) ?? null
+      : null;
 
   let province: string | null;
   if (cityProvince) {
     province = cityProvince;
-  } else if (normalizedRawProvince && isIranProvince(normalizedRawProvince)) {
-    province = normalizedRawProvince;
+  } else if (rawProvince) {
+    province = resolveKnownProvince(rawProvince) ?? parsed.province;
   } else {
-    province = parsed.province ? normalizeImportedProvince(parsed.province) : null;
+    province = parsed.province;
+  }
+
+  if (!city && /(?:^|[-_])(TH|TEH)(?:$|[-_])/i.test(input.code ?? "")) {
+    city = "تهران";
+    province = province ?? "تهران";
   }
 
   return {
@@ -162,11 +236,15 @@ function resolveIntegrationBillboardLocation(
     province: external.province ?? external.owner?.province,
     city: external.city ?? external.owner?.city,
     address: external.address,
+    code: external.code,
   });
 }
 
-function resolveExternalBillboardLocation(address: string): ResolvedBillboardLocation {
-  return resolveBillboardLocation({ address });
+function resolveExternalBillboardLocation(
+  address: string,
+  code?: string | null
+): ResolvedBillboardLocation {
+  return resolveBillboardLocation({ address, code });
 }
 
 function buildMapUrl(latitude: number, longitude: number): string {
@@ -297,7 +375,7 @@ export function mapExternalBillboardToBillboard(
   const now = new Date().toISOString();
   const address = external.address?.trim() ?? "";
   const axis = external.axis?.trim() ?? "";
-  const { province, city } = resolveExternalBillboardLocation(address);
+  const { province, city } = resolveExternalBillboardLocation(address, external.code);
 
   return {
     id: `api-${external.id}`,

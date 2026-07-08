@@ -1,5 +1,5 @@
-// Auto-generated — do not edit manually
-// Regenerate: node scripts/generate-iran-provinces-data.mjs
+// Auto-generated — synced from Map-Bilboard (billboard.pixlink.ir) dataset
+// Keep in sync with the billboard API project so province/city names match.
 
 export interface IranCity {
   name: string;
@@ -47,9 +47,19 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 46.2919
       },
       {
+        "name": "جلفا",
+        "lat": 38.9403,
+        "lng": 45.6308
+      },
+      {
         "name": "چاراویماق",
         "lat": 37.0742,
         "lng": 47.4267
+      },
+      {
+        "name": "خداآفرین",
+        "lat": 39.1375,
+        "lng": 46.9547
       },
       {
         "name": "سراب",
@@ -157,6 +167,16 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 47.1133
       },
       {
+        "name": "چالدران",
+        "lat": 39.0642,
+        "lng": 44.3844
+      },
+      {
+        "name": "چایپاره",
+        "lat": 38.8811,
+        "lng": 45.0261
+      },
+      {
         "name": "چهاربرج",
         "lat": 29.3415,
         "lng": 51.0646
@@ -227,6 +247,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 47.4056
       },
       {
+        "name": "انگوت",
+        "lat": 39.0522,
+        "lng": 48.2011
+      },
+      {
         "name": "بیله سوار",
         "lat": 39.37961,
         "lng": 48.35463
@@ -240,6 +265,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "خلخال",
         "lat": 37.61837,
         "lng": 48.52928
+      },
+      {
+        "name": "سرعین",
+        "lat": 38.3383,
+        "lng": 48.0706
       },
       {
         "name": "کوثر",
@@ -287,6 +317,26 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 51.67462
       },
       {
+        "name": "برخوار",
+        "lat": 32.3847,
+        "lng": 51.505
+      },
+      {
+        "name": "بویین و میاندشت",
+        "lat": 33.0833,
+        "lng": 50.1644
+      },
+      {
+        "name": "تیران وکرون",
+        "lat": 32.7036,
+        "lng": 51.1536
+      },
+      {
+        "name": "جرقویه",
+        "lat": 32.2722,
+        "lng": 52.085
+      },
+      {
         "name": "چادگان",
         "lat": 32.76825,
         "lng": 50.62873
@@ -302,6 +352,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 50.315
       },
       {
+        "name": "خور و بیابانک",
+        "lat": 33.775,
+        "lng": 55.0831
+      },
+      {
         "name": "دهاقان",
         "lat": 31.93986,
         "lng": 51.64731
@@ -310,6 +365,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "سمیرم",
         "lat": 31.41667,
         "lng": 51.56667
+      },
+      {
+        "name": "شاهین شهرو میمه",
+        "lat": 32.8579,
+        "lng": 51.5529
       },
       {
         "name": "شهرضا",
@@ -355,6 +415,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "مبارکه",
         "lat": 32.34612,
         "lng": 51.50205
+      },
+      {
+        "name": "نایین",
+        "lat": 32.8601,
+        "lng": 53.0875
       },
       {
         "name": "نجف آباد",
@@ -442,6 +507,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 47.03708
       },
       {
+        "name": "چرداول",
+        "lat": 33.7672,
+        "lng": 46.5667
+      },
+      {
         "name": "چوار",
         "lat": 33.6953,
         "lng": 46.2979
@@ -457,9 +527,24 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 47.2679
       },
       {
+        "name": "سیروان",
+        "lat": 33.2167,
+        "lng": 46.1667
+      },
+      {
+        "name": "ملکشاهی",
+        "lat": 33.3833,
+        "lng": 46.5833
+      },
+      {
         "name": "مهران",
         "lat": 33.1222,
         "lng": 46.1646
+      },
+      {
+        "name": "هلیلان",
+        "lat": 33.4917,
+        "lng": 46.7481
       }
     ]
   },
@@ -622,6 +707,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 50.74515
       },
       {
+        "name": "خانمیرزا",
+        "lat": 32.1031,
+        "lng": 50.5169
+      },
+      {
         "name": "سامان",
         "lat": 32.45014,
         "lng": 50.91092
@@ -635,6 +725,16 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "فارسان",
         "lat": 32.25694,
         "lng": 50.56095
+      },
+      {
+        "name": "فرخ شهر",
+        "lat": 32.2719,
+        "lng": 50.9781
+      },
+      {
+        "name": "فلارد",
+        "lat": 31.465,
+        "lng": 51.0281
       },
       {
         "name": "کوهرنگ",
@@ -702,6 +802,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 58.17222
       },
       {
+        "name": "قاینات",
+        "lat": 33.7265,
+        "lng": 59.1844
+      },
+      {
         "name": "نهبندان",
         "lat": 31.54185,
         "lng": 60.03648
@@ -711,6 +816,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
   {
     "name": "خراسان رضوی",
     "cities": [
+      {
+        "name": "باخرز",
+        "lat": 34.9928,
+        "lng": 60.3178
+      },
       {
         "name": "بجستان",
         "lat": 34.51639,
@@ -787,6 +897,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 59.46597
       },
       {
+        "name": "زبرخان",
+        "lat": 35.2383,
+        "lng": 58.5061
+      },
+      {
         "name": "سبزوار",
         "lat": 36.2126,
         "lng": 57.68191
@@ -805,6 +920,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "صالح آباد",
         "lat": 34.9237,
         "lng": 48.3427
+      },
+      {
+        "name": "طرقبه شاندیز",
+        "lat": 36.3139,
+        "lng": 59.375
       },
       {
         "name": "فریمان",
@@ -857,6 +977,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 58.7818116
       },
       {
+        "name": "میان جلگه",
+        "lat": 36.35,
+        "lng": 57.45
+      },
+      {
         "name": "نیشابور",
         "lat": 36.21329,
         "lng": 58.79575
@@ -872,6 +997,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 57.51009
       },
       {
+        "name": "بام و صفی آباد",
+        "lat": 36.9833,
+        "lng": 57.1333
+      },
+      {
         "name": "بجنورد",
         "lat": 37.47473,
         "lng": 57.32903
@@ -880,6 +1010,16 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "جاجرم",
         "lat": 36.95012,
         "lng": 56.38005
+      },
+      {
+        "name": "راز و جرگلان",
+        "lat": 37.4667,
+        "lng": 57.3333
+      },
+      {
+        "name": "سملقان",
+        "lat": 37.4167,
+        "lng": 56.5
       },
       {
         "name": "شیروان",
@@ -895,6 +1035,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "گرمه",
         "lat": 36.987,
         "lng": 56.28942
+      },
+      {
+        "name": "مانه",
+        "lat": 37.7333,
+        "lng": 56.4667
       }
     ]
   },
@@ -917,6 +1062,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 49.70226
       },
       {
+        "name": "اندیکا",
+        "lat": 32.3,
+        "lng": 49.4333
+      },
+      {
         "name": "اندیمشک",
         "lat": 32.4615,
         "lng": 48.35368
@@ -937,6 +1087,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 49.88558
       },
       {
+        "name": "باوی",
+        "lat": 31.25,
+        "lng": 48.85
+      },
+      {
         "name": "بندرماهشهر",
         "lat": 30.55655,
         "lng": 49.18852
@@ -955,6 +1110,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "خرمشهر",
         "lat": 30.44079,
         "lng": 48.18428
+      },
+      {
+        "name": "دزپارت",
+        "lat": 33.7833,
+        "lng": 49.8167
       },
       {
         "name": "دزفول",
@@ -1000,6 +1160,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "کارون",
         "lat": 27.6847,
         "lng": 52.6326
+      },
+      {
+        "name": "کرخه",
+        "lat": 32.35,
+        "lng": 48.65
       },
       {
         "name": "گتوند",
@@ -1137,6 +1302,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 60.45594
       },
       {
+        "name": "تفتان",
+        "lat": 28.6,
+        "lng": 61.15
+      },
+      {
         "name": "چاه بهار",
         "lat": 25.2919,
         "lng": 60.643
@@ -1217,6 +1387,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 49.65054
       },
       {
+        "name": "لاشار",
+        "lat": 26.45,
+        "lng": 59.8
+      },
+      {
         "name": "مهرستان",
         "lat": 27.131,
         "lng": 61.67445
@@ -1292,6 +1467,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 52.40059
       },
       {
+        "name": "پاسارگاد",
+        "lat": 30.0786,
+        "lng": 53.1397
+      },
+      {
         "name": "جویم",
         "lat": 28.2548,
         "lng": 53.98112
@@ -1347,6 +1527,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 51.9922
       },
       {
+        "name": "سرچهان",
+        "lat": 30.2667,
+        "lng": 53.1833
+      },
+      {
         "name": "سروستان",
         "lat": 29.2735,
         "lng": 53.2203
@@ -1387,9 +1572,19 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 52.6858
       },
       {
+        "name": "کوه چنار",
+        "lat": 30.0167,
+        "lng": 51.4333
+      },
+      {
         "name": "گراش",
         "lat": 27.66966,
         "lng": 54.13586
+      },
+      {
+        "name": "لارستان",
+        "lat": 27.6834,
+        "lng": 54.3417
       },
       {
         "name": "لامرد",
@@ -1435,6 +1630,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "البرز",
         "lat": 36.1893,
         "lng": 50.0643
+      },
+      {
+        "name": "بویین زهرا",
+        "lat": 35.7669,
+        "lng": 50.0578
       },
       {
         "name": "تاکستان",
@@ -1527,6 +1727,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
     "name": "کرمان",
     "cities": [
       {
+        "name": "ارزوییه",
+        "lat": 28.4411,
+        "lng": 56.3722
+      },
+      {
         "name": "انار",
         "lat": 30.87066,
         "lng": 55.27025
@@ -1547,6 +1752,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 58.357
       },
       {
+        "name": "جازموریان",
+        "lat": 28.8972,
+        "lng": 58.4167
+      },
+      {
         "name": "جیرفت",
         "lat": 28.67806,
         "lng": 57.74056
@@ -1565,6 +1775,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "رفسنجان",
         "lat": 30.4067,
         "lng": 55.9939
+      },
+      {
+        "name": "رودبارجنوب",
+        "lat": 27.89,
+        "lng": 57.8833
       },
       {
         "name": "ریگان",
@@ -1620,6 +1835,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "کهنوج",
         "lat": 27.94034,
         "lng": 57.69983
+      },
+      {
+        "name": "گنبکی",
+        "lat": 28.35,
+        "lng": 58.6833
       },
       {
         "name": "منوجان",
@@ -1722,6 +1942,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 50.8456323
       },
       {
+        "name": "بهمیی",
+        "lat": 30.9161,
+        "lng": 50.3831
+      },
+      {
         "name": "چرام",
         "lat": 30.755,
         "lng": 50.7389
@@ -1730,6 +1955,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "دنا",
         "lat": 30.9947,
         "lng": 51.4256
+      },
+      {
+        "name": "کهگیلویه",
+        "lat": 30.7934,
+        "lng": 50.5651
       },
       {
         "name": "گچساران",
@@ -1765,6 +1995,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "بندرگز",
         "lat": 36.77409,
         "lng": 53.94798
+      },
+      {
+        "name": "ترکمن",
+        "lat": 36.9031,
+        "lng": 54.075
       },
       {
         "name": "رامیان",
@@ -1952,6 +2187,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 49.0616
       },
       {
+        "name": "رومشکان",
+        "lat": 33.285,
+        "lng": 48.85
+      },
+      {
         "name": "سلسله",
         "lat": 35.12916,
         "lng": 47.45224
@@ -2027,6 +2267,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 52.865
       },
       {
+        "name": "سیمرغ",
+        "lat": 36.305,
+        "lng": 53.1833
+      },
+      {
         "name": "عباس آباد",
         "lat": 36.72769,
         "lng": 51.10574
@@ -2035,6 +2280,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "فریدونکنار",
         "lat": 36.68489,
         "lng": 52.51917
+      },
+      {
+        "name": "قایم شهر",
+        "lat": 36.4631,
+        "lng": 52.8601
       },
       {
         "name": "کلاردشت",
@@ -2050,6 +2300,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "محمودآباد",
         "lat": 36.63191,
         "lng": 52.26286
+      },
+      {
+        "name": "میاندورود",
+        "lat": 36.6833,
+        "lng": 53.3333
       },
       {
         "name": "نکا",
@@ -2108,13 +2363,18 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
       },
       {
         "name": "ساوه",
-        "lat": 34.09493,
-        "lng": 49.69809
+        "lat": 35.0213,
+        "lng": 50.3566
       },
       {
         "name": "شازند",
         "lat": 33.93132,
         "lng": 49.40629
+      },
+      {
+        "name": "فراهان",
+        "lat": 33.92,
+        "lng": 49.6
       },
       {
         "name": "کمیجان",
@@ -2140,6 +2400,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "بستک",
         "lat": 27.19908,
         "lng": 54.36676
+      },
+      {
+        "name": "بشاگرد",
+        "lat": 26.7833,
+        "lng": 57.8833
       },
       {
         "name": "بندر عباس",
@@ -2210,6 +2475,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "name": "تویسرکان",
         "lat": 34.551,
         "lng": 48.44353
+      },
+      {
+        "name": "درگزین",
+        "lat": 35.5833,
+        "lng": 48.85
       },
       {
         "name": "رزن",
