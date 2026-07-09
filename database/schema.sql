@@ -426,3 +426,13 @@ CREATE TABLE IF NOT EXISTS system_settings (
   value JSONB NOT NULL DEFAULT '{}'::jsonb,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE campaign_settings ADD COLUMN IF NOT EXISTS content_plans JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE billboards ADD COLUMN IF NOT EXISTS plan_label TEXT;
+ALTER TABLE posters ADD COLUMN IF NOT EXISTS plan_label TEXT;
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS plan_label TEXT;
+ALTER TABLE social_media_posts ADD COLUMN IF NOT EXISTS plan_label TEXT;
+ALTER TABLE campaign_activities ADD COLUMN IF NOT EXISTS plan_label TEXT;
+ALTER TABLE broadcast_reports ADD COLUMN IF NOT EXISTS plan_label TEXT;
+ALTER TABLE campaign_meetings ADD COLUMN IF NOT EXISTS plan_label TEXT;
+ALTER TABLE campaign_files ADD COLUMN IF NOT EXISTS plan_label TEXT;

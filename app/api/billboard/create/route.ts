@@ -105,6 +105,9 @@ export async function POST(request: Request) {
   const areaSqmRaw = String(formData.get("area_sqm") ?? "").trim();
   const areaSqm = areaSqmRaw ? Number(areaSqmRaw) : undefined;
   const notes = String(formData.get("notes") ?? "").trim() || null;
+  const published = String(formData.get("published") ?? "false") === "true";
+  const status = String(formData.get("status") ?? "draft").trim() || "draft";
+  const planLabel = String(formData.get("planLabel") ?? "").trim() || null;
 
   try {
     const periods = parseRequiredPeriods(formData);
@@ -121,6 +124,9 @@ export async function POST(request: Request) {
       city,
       category: category as BillboardCategory | null,
       notes,
+      published: fullAdmin ? published : false,
+      status: fullAdmin ? status : "draft",
+      planLabel,
       periods,
       ownerUserId,
     });

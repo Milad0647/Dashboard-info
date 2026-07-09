@@ -6,6 +6,7 @@ import { matchesDateFilter } from "@/lib/campaign-content-filter";
 export const OWNER_LOCATION_ALL = "all";
 export const OWNER_USER_ALL = "all";
 export const OWNER_DATE_ALL = "all";
+export const OWNER_PLAN_ALL = "all";
 
 export type CampaignDatePreset = "all" | "this_week" | "this_month" | "custom";
 export type CampaignContentSort = "default" | "newest" | "oldest";
@@ -20,6 +21,7 @@ export interface OwnerLocationFilter extends CampaignDateFilter {
   province: string;
   city: string;
   userKey: string;
+  planLabel: string;
   sortOrder: CampaignContentSort;
 }
 
@@ -27,6 +29,7 @@ export const DEFAULT_OWNER_LOCATION_FILTER: OwnerLocationFilter = {
   province: OWNER_LOCATION_ALL,
   city: OWNER_LOCATION_ALL,
   userKey: OWNER_USER_ALL,
+  planLabel: OWNER_PLAN_ALL,
   datePreset: OWNER_DATE_ALL,
   dateFrom: "",
   dateTo: "",
@@ -41,8 +44,17 @@ export function isOwnerUserFilterActive(filter: OwnerLocationFilter): boolean {
   return filter.userKey !== OWNER_USER_ALL;
 }
 
+export function isOwnerPlanFilterActive(filter: OwnerLocationFilter): boolean {
+  return filter.planLabel !== OWNER_PLAN_ALL;
+}
+
 export function isOwnerFilterActive(filter: OwnerLocationFilter): boolean {
-  return isOwnerLocationFilterActive(filter) || isOwnerUserFilterActive(filter);
+  return isOwnerLocationFilterActive(filter) || isOwnerUserFilterActive(filter) || isOwnerPlanFilterActive(filter);
+}
+
+function matchesPlanLabel(item: Ownable, filter: OwnerLocationFilter): boolean {
+  if (filter.planLabel === OWNER_PLAN_ALL) return true;
+  return (item.planLabel?.trim() ?? "") === filter.planLabel;
 }
 
 function matchesOwnerUser(item: Ownable, filter: OwnerLocationFilter): boolean {
@@ -64,6 +76,7 @@ export function matchesOwnerLocation(
   filter: OwnerLocationFilter,
   getItemDate?: (item: Ownable) => string | undefined
 ): boolean {
+  if (!matchesPlanLabel(item, filter)) return false;
   if (!matchesOwnerUser(item, filter)) return false;
 
   if (filter.province === OWNER_LOCATION_ALL) {

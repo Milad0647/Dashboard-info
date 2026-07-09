@@ -175,7 +175,7 @@ export async function resolvePublicBillboards(
   users: AdminUser[] = []
 ): Promise<Billboard[]> {
   const manualBillboards = dbBillboards
-    .filter((billboard) => billboard.published && isManualBillboard(billboard))
+    .filter(isManualBillboard)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   if (!hasExternalBillboardConnection(settings)) {

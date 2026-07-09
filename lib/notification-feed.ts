@@ -1,23 +1,40 @@
-import type { Billboard, CampaignActivity, Poster, SocialMediaPost, Video } from "@/lib/types";
+import type {
+  Billboard,
+  CampaignActivity,
+  Poster,
+  PosterVersion,
+  SocialMediaPost,
+  Video,
+  VideoVersion,
+} from "@/lib/types";
 
-export type NotificationRange = "day" | "week" | "month";
-export type NotificationSort = "upload" | "date";
+export type NotificationRange = "day" | "week" | "month" | "all";
+export type NotificationSort = "upload" | "date" | "owner" | "province";
+export type NotificationView = "new" | "seen";
 
 export interface NotificationFeedItem {
   key: string;
   title: string;
   ownerName?: string | null;
+  ownerProvince?: string | null;
+  ownerCity?: string | null;
+  planLabel?: string | null;
   typeLabel: string;
   date: string;
   eventAt: string;
   createdAt: string;
+  thumbnailUrl?: string | null;
+  published: boolean;
+  adminPath: string;
 }
 
 function eventTimestamp(createdAt: string, updatedAt?: string): string {
   return updatedAt && updatedAt > createdAt ? updatedAt : createdAt;
 }
 
-function startOfRange(range: NotificationRange): Date {
+function startOfRange(range: NotificationRange): Date | null {
+  if (range === "all") return null;
+
   const now = new Date();
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
@@ -31,13 +48,37 @@ function startOfRange(range: NotificationRange): Date {
   return start;
 }
 
+function posterThumbnail(posterId: string, versions: PosterVersion[]): string | null {
+  const versionsForPoster = versions
+    .filter((version) => version.posterId === posterId)
+    .sort((a, b) => b.versionNumber - a.versionNumber);
+  return versionsForPoster[0]?.thumbnailUrl ?? versionsForPoster[0]?.imageUrl ?? null;
+}
+
+function videoThumbnail(videoId: string, versions: VideoVersion[]): string | null {
+  const versionsForVideo = versions
+    .filter((version) => version.videoId === videoId)
+    .sort((a, b) => b.versionNumber - a.versionNumber);
+  return versionsForVideo[0]?.thumbnailUrl ?? null;
+}
+
+function activityThumbnail(activity: CampaignActivity): string | null {
+  if (activity.imageUrl) return activity.imageUrl;
+  const firstImage = activity.mediaItems.find((item) => item.type === "image");
+  return firstImage?.url ?? null;
+}
+
 export function buildNotificationFeed(input: {
   posters: Poster[];
   videos: Video[];
   billboards: Billboard[];
   activities: CampaignActivity[];
   socialPosts: SocialMediaPost[];
+  posterVersions?: PosterVersion[];
+  videoVersions?: VideoVersion[];
 }): NotificationFeedItem[] {
+  const posterVersions = input.posterVersions ?? [];
+  const videoVersions = input.videoVersions ?? [];
   const items: NotificationFeedItem[] = [];
 
   for (const poster of input.posters) {
@@ -46,10 +87,16 @@ export function buildNotificationFeed(input: {
       key: `poster:${poster.id}`,
       title: poster.title,
       ownerName: poster.ownerName,
+      ownerProvince: poster.ownerProvince,
+      ownerCity: poster.ownerCity,
+      planLabel: poster.planLabel,
       typeLabel: "پوستر",
       date: eventAt.slice(0, 10),
       eventAt,
       createdAt: poster.createdAt,
+      thumbnailUrl: posterThumbnail(poster.id, posterVersions),
+      published: poster.published,
+      adminPath: "/admin/posters",
     });
   }
 
@@ -59,10 +106,16 @@ export function buildNotificationFeed(input: {
       key: `video:${video.id}`,
       title: video.title,
       ownerName: video.ownerName,
+      ownerProvince: video.ownerProvince,
+      ownerCity: video.ownerCity,
+      planLabel: video.planLabel,
       typeLabel: "ویدیو",
       date: eventAt.slice(0, 10),
       eventAt,
       createdAt: video.createdAt,
+      thumbnailUrl: videoThumbnail(video.id, videoVersions),
+      published: video.published,
+      adminPath: "/admin/videos",
     });
   }
 
@@ -72,10 +125,16 @@ export function buildNotificationFeed(input: {
       key: `billboard:${billboard.id}`,
       title: billboard.title,
       ownerName: billboard.ownerName,
+      ownerProvince: billboard.ownerProvince ?? billboard.province,
+      ownerCity: billboard.ownerCity ?? billboard.city,
+      planLabel: billboard.planLabel,
       typeLabel: "تبلیغات محیطی",
       date: eventAt.slice(0, 10),
       eventAt,
       createdAt: billboard.createdAt,
+      thumbnailUrl: billboard.thumbnailUrl,
+      published: billboard.published,
+      adminPath: "/admin/billboards",
     });
   }
 
@@ -85,10 +144,16 @@ export function buildNotificationFeed(input: {
       key: `activity:${activity.id}`,
       title: activity.title,
       ownerName: activity.ownerName,
+      ownerProvince: activity.ownerProvince,
+      ownerCity: activity.ownerCity,
+      planLabel: activity.planLabel,
       typeLabel: "اقدام / مجله",
       date: eventAt.slice(0, 10),
       eventAt,
       createdAt: activity.createdAt,
+      thumbnailUrl: activityThumbnail(activity),
+      published: activity.published,
+      adminPath: "/admin/activities",
     });
   }
 
@@ -98,10 +163,16 @@ export function buildNotificationFeed(input: {
       key: `social:${post.id}`,
       title: post.title,
       ownerName: post.ownerName,
+      ownerProvince: post.ownerProvince,
+      ownerCity: post.ownerCity,
+      planLabel: post.planLabel,
       typeLabel: post.platform === "site" ? "انتشار در سایت" : "شبکه اجتماعی",
       date: eventAt.slice(0, 10),
       eventAt,
       createdAt: post.createdAt,
+      thumbnailUrl: post.coverImageUrl ?? post.mediaUrl,
+      published: post.published,
+      adminPath: post.platform === "site" ? "/admin/site-publications" : "/admin/social-posts",
     });
   }
 
@@ -113,6 +184,16 @@ export function sortNotificationFeed(
   sort: NotificationSort
 ): NotificationFeedItem[] {
   return [...feed].sort((a, b) => {
+    if (sort === "owner") {
+      return (b.ownerName ?? "").localeCompare(a.ownerName ?? "", "fa") || b.eventAt.localeCompare(a.eventAt);
+    }
+    if (sort === "province") {
+      return (
+        (b.ownerProvince ?? "").localeCompare(a.ownerProvince ?? "", "fa") ||
+        (b.ownerCity ?? "").localeCompare(a.ownerCity ?? "", "fa") ||
+        b.eventAt.localeCompare(a.eventAt)
+      );
+    }
     if (sort === "date") {
       return b.date.localeCompare(a.date) || b.eventAt.localeCompare(a.eventAt);
     }
@@ -124,6 +205,50 @@ export function filterNotificationFeed(
   feed: NotificationFeedItem[],
   range: NotificationRange
 ): NotificationFeedItem[] {
-  const start = startOfRange(range).toISOString();
-  return feed.filter((item) => item.eventAt >= start);
+  const start = startOfRange(range);
+  if (!start) return feed;
+  const startIso = start.toISOString();
+  return feed.filter((item) => item.eventAt >= startIso);
+}
+
+export function filterNotificationByProvince(
+  feed: NotificationFeedItem[],
+  province: string
+): NotificationFeedItem[] {
+  if (!province || province === "all") return feed;
+  return feed.filter((item) => item.ownerProvince === province);
+}
+
+export function filterNotificationByOwner(
+  feed: NotificationFeedItem[],
+  ownerName: string
+): NotificationFeedItem[] {
+  if (!ownerName || ownerName === "all") return feed;
+  return feed.filter((item) => item.ownerName === ownerName);
+}
+
+export function filterNotificationByPlan(
+  feed: NotificationFeedItem[],
+  planLabel: string
+): NotificationFeedItem[] {
+  if (!planLabel || planLabel === "all") return feed;
+  return feed.filter((item) => item.planLabel === planLabel);
+}
+
+export function collectNotificationProvinces(feed: NotificationFeedItem[]): string[] {
+  return [...new Set(feed.map((item) => item.ownerProvince?.trim()).filter(Boolean) as string[])].sort(
+    (a, b) => a.localeCompare(b, "fa")
+  );
+}
+
+export function collectNotificationOwners(feed: NotificationFeedItem[]): string[] {
+  return [...new Set(feed.map((item) => item.ownerName?.trim()).filter(Boolean) as string[])].sort(
+    (a, b) => a.localeCompare(b, "fa")
+  );
+}
+
+export function collectNotificationPlans(feed: NotificationFeedItem[]): string[] {
+  return [...new Set(feed.map((item) => item.planLabel?.trim()).filter(Boolean) as string[])].sort(
+    (a, b) => a.localeCompare(b, "fa")
+  );
 }

@@ -93,6 +93,8 @@ export interface CampaignSettings {
   features: CampaignFeatures;
   analyticsConfig: AnalyticsConfig;
   billboardConfig: BillboardConfig;
+  /** Campaign content plan names configured by admin (e.g. مهتاب، سامان). */
+  contentPlans?: string[];
   /** Public label for admin-owned content groups (no contributor user). */
   adminOwnerLabel?: string | null;
   meetingsViewPasswordHash?: string | null;
@@ -116,6 +118,7 @@ export interface Ownable {
   ownerEmail?: string | null;
   ownerProvince?: string | null;
   ownerCity?: string | null;
+  planLabel?: string | null;
 }
 
 export interface BillboardDisplayPeriod {
@@ -182,6 +185,7 @@ export interface Poster extends Ownable {
   description?: string | null;
   published: boolean;
   sortOrder: number;
+  planLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -207,6 +211,7 @@ export interface Video extends Ownable {
   description?: string | null;
   published: boolean;
   sortOrder: number;
+  planLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -269,6 +274,7 @@ export interface CampaignFile extends Ownable {
   fileSize: number;
   published: boolean;
   sortOrder: number;
+  planLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -319,6 +325,8 @@ export interface SocialMediaPost {
   campaignId: string;
   ownerUserId?: string | null;
   ownerName?: string | null;
+  ownerProvince?: string | null;
+  ownerCity?: string | null;
   platform: SocialPostPlatform;
   title: string;
   coverImageUrl?: string | null;
@@ -333,6 +341,7 @@ export interface SocialMediaPost {
   publishedDate: string;
   published: boolean;
   sortOrder: number;
+  planLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -375,6 +384,8 @@ export interface BroadcastReport {
   campaignId: string;
   ownerUserId?: string | null;
   ownerName?: string | null;
+  ownerProvince?: string | null;
+  ownerCity?: string | null;
   title: string;
   reportDate: string;
   pdfUrl: string;
@@ -382,6 +393,7 @@ export interface BroadcastReport {
   summaryData: BroadcastReportSummary;
   published: boolean;
   sortOrder: number;
+  planLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -397,6 +409,8 @@ export interface CampaignActivity {
   campaignId: string;
   ownerUserId?: string | null;
   ownerName?: string | null;
+  ownerProvince?: string | null;
+  ownerCity?: string | null;
   title: string;
   activityType: ActivityType;
   activityDate: string;
@@ -407,6 +421,7 @@ export interface CampaignActivity {
   description?: string | null;
   published: boolean;
   sortOrder: number;
+  planLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -435,6 +450,8 @@ export interface CampaignMeeting {
   campaignId: string;
   ownerUserId?: string | null;
   ownerName?: string | null;
+  ownerProvince?: string | null;
+  ownerCity?: string | null;
   title: string;
   meetingDate: string;
   location: string;
@@ -445,6 +462,7 @@ export interface CampaignMeeting {
   viewPasswordHash?: string | null;
   published: boolean;
   sortOrder: number;
+  planLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -17,6 +17,9 @@ export interface CreateLocalBillboardInput {
   city?: string | null;
   category?: BillboardCategory | string | null;
   notes?: string | null;
+  published?: boolean;
+  status?: string;
+  planLabel?: string | null;
   periods: BillboardDisplayPeriodInput[];
   ownerUserId?: string | null;
 }
@@ -144,7 +147,7 @@ export async function saveLocalBillboard(params: CreateLocalBillboardInput): Pro
     category: params.category ?? null,
     areaSqm: params.areaSqm ?? null,
     source: "manual",
-    status: "draft",
+    status: (params.status as "draft" | "published" | "completed") ?? "draft",
     tags,
     notes: buildNotes({
       notes: params.notes,
@@ -152,7 +155,8 @@ export async function saveLocalBillboard(params: CreateLocalBillboardInput): Pro
       confirmationImageUrl: primaryPeriod.confirmationImageUrl,
       periodTitle: primaryPeriod.title,
     }),
-    published: false,
+    published: params.published ?? false,
+    planLabel: params.planLabel ?? null,
     ownerUserId: params.ownerUserId ?? null,
   });
 

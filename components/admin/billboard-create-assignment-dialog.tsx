@@ -14,12 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { PlanLabelSelect } from "@/components/admin/plan-label-select";
 import { BillboardLocationMapPicker } from "@/components/admin/billboard-location-map-picker";
 import { ProvinceCityFields } from "@/components/admin/province-city-fields";
 import {
@@ -40,7 +42,7 @@ import {
   parseProvinceFromBillboard,
 } from "@/lib/billboard-form-utils";
 import { getLocationCenter, resolveLocationNames } from "@/lib/iran-location-center";
-import type { Billboard, BillboardDisplayPeriod } from "@/lib/types";
+import type { Billboard, BillboardDisplayPeriod, ItemStatus } from "@/lib/types";
 
 interface ContributorProfile {
   province?: string | null;
@@ -53,6 +55,7 @@ interface BillboardCreateAssignmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   campaignId: string;
+  contentPlans?: string[];
   mode: "admin" | "client";
   contributorProfile?: ContributorProfile | null;
   editingBillboard?: Billboard | null;
@@ -93,6 +96,7 @@ export function BillboardCreateAssignmentDialog({
   open,
   onOpenChange,
   campaignId,
+  contentPlans = [],
   mode,
   contributorProfile = null,
   editingBillboard = null,
@@ -113,6 +117,9 @@ export function BillboardCreateAssignmentDialog({
     revision?: number;
   } | null>(null);
   const [periods, setPeriods] = useState<DisplayPeriodDraft[]>([createDisplayPeriod()]);
+  const [published, setPublished] = useState(false);
+  const [status, setStatus] = useState<ItemStatus>("draft");
+  const [planLabel, setPlanLabel] = useState<string | null>(null);
 
   const isEditing = Boolean(editingBillboard);
 
@@ -132,6 +139,9 @@ export function BillboardCreateAssignmentDialog({
         setAreaSqm(parseAreaSqmFromBillboard(editingBillboard));
         setAddress(parseAddressFromBillboard(editingBillboard));
         setNotes(editingBillboard.notes ?? "");
+        setPublished(editingBillboard.published);
+        setStatus(editingBillboard.status);
+        setPlanLabel(editingBillboard.planLabel ?? null);
         setCoords({
           latitude: editingBillboard.latitude ?? center.lat,
           longitude: editingBillboard.longitude ?? center.lng,
@@ -170,6 +180,9 @@ export function BillboardCreateAssignmentDialog({
       setAreaSqm("");
       setAddress("");
       setNotes("");
+      setPublished(false);
+      setStatus("draft");
+      setPlanLabel(null);
       setCoords({ latitude: center.lat, longitude: center.lng });
       setMapCenter({ lat: center.lat, lng: center.lng, revision: Date.now() });
       setPeriods([createDisplayPeriod()]);
@@ -218,6 +231,9 @@ export function BillboardCreateAssignmentDialog({
       if (resolvedProvince) formData.append("province", resolvedProvince);
       if (resolvedCity) formData.append("city", resolvedCity);
       if (notes.trim()) formData.append("notes", notes.trim());
+      formData.append("published", String(published));
+      formData.append("status", status);
+      if (planLabel?.trim()) formData.append("planLabel", planLabel.trim());
 
       formData.append("periods", JSON.stringify(buildPeriodsFormPayload(periods)));
       appendPeriodFilesToFormData(formData, periods);
@@ -312,6 +328,37 @@ export function BillboardCreateAssignmentDialog({
             <div className="space-y-2">
               <Label>یادداشت داخلی</Label>
               <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} />
+            </div>
+          )}
+
+          <PlanLabelSelect
+            plans={contentPlans}
+            value={planLabel}
+            onChange={setPlanLabel}
+          />
+
+          {mode === "admin" && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>وضعیت</Label>
+                <Select value={status} onValueChange={(value) => setStatus(value as ItemStatus)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">پیش‌نویس</SelectItem>
+                    <SelectItem value="published">منتشرشده</SelectItem>
+                    <SelectItem value="completed">تکمیل‌شده</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <Label>انتشار در صفحه کمپین</Label>
+                  <p className="text-xs text-muted-foreground">نمایش عمومی بیلبورد</p>
+                </div>
+                <Switch checked={published} onCheckedChange={setPublished} />
+              </div>
             </div>
           )}
 

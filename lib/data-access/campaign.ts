@@ -318,11 +318,9 @@ function assemblePublicData(
   billboards: ReturnType<typeof getMockStoreForCampaign>["billboards"]
 ): PublicCampaignData {
   const posterCategories = store.posterCategories
-    .filter((c) => c.published)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const posters = store.posters
-    .filter((p) => p.published)
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((poster) => ({
       ...poster,
@@ -334,11 +332,9 @@ function assemblePublicData(
     .filter((p) => p.versions.length > 0);
 
   const videoCategories = store.videoCategories
-    .filter((c) => c.published)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const videos = store.videos
-    .filter((v) => v.published)
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((video) => ({
       ...video,
@@ -360,23 +356,19 @@ function assemblePublicData(
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   const files = (store.files ?? [])
-    .filter((file) => file.published)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const allSocialPosts = (store.socialPosts ?? [])
-    .filter((post) => post.published)
     .sort((a, b) => a.sortOrder - b.sortOrder || b.publishedDate.localeCompare(a.publishedDate));
 
   const { sitePublications, socialPosts } = splitSocialPosts(allSocialPosts);
 
   const broadcastReports = (store.broadcastReports ?? [])
-    .filter((report) => report.published)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const meetingsHasPassword = Boolean(settings.meetingsViewPasswordHash);
 
   const allActivities = (store.activities ?? [])
-    .filter((activity) => activity.published)
     .sort(
       (a, b) =>
         b.activityDate.localeCompare(a.activityDate) || a.sortOrder - b.sortOrder
@@ -386,7 +378,6 @@ function assemblePublicData(
 
   const meetings = normalizeMeetingPreviews(
     (store.meetings ?? [])
-      .filter((meeting) => ("published" in meeting ? meeting.published : true))
       .sort(compareMeetingsByDateDesc),
     meetingsHasPassword
   );
@@ -470,7 +461,6 @@ function getMockPublicDataBySlug(slug: string): PublicCampaignData | null {
   const campaignStore = getMockStoreForCampaign(settings.id);
   if (!campaignStore.settings) return null;
   const billboards = campaignStore.billboards
-    .filter((b) => b.published)
     .sort((a, b) => a.sortOrder - b.sortOrder);
   return assemblePublicData(campaignStore.settings, campaignStore, billboards);
 }

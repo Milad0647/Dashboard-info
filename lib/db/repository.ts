@@ -206,7 +206,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
   await sql`
     INSERT INTO campaign_settings (
       id, slug, title, description, status, start_date, end_date,
-      cover_image_url, published, features, analytics_config, billboard_config, admin_owner_label, updated_at
+      cover_image_url, published, features, analytics_config, billboard_config, admin_owner_label, content_plans, updated_at
     ) VALUES (
       ${id},
       ${data.slug ?? slugify(data.title ?? id)},
@@ -221,6 +221,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
       ${sql.json(JSON.parse(JSON.stringify(serializeAnalyticsConfig(data.analyticsConfig ?? { site: { source: "manual" }, social: { source: "manual" } }))))},
       ${sql.json(JSON.parse(JSON.stringify(data.billboardConfig ?? {})))},
       ${data.adminOwnerLabel?.trim() || "مدیریت"},
+      ${sql.json(data.contentPlans ?? [])},
       ${now}
     )
     ON CONFLICT (id) DO UPDATE SET
@@ -236,6 +237,7 @@ export async function pgSaveCampaign(data: Partial<CampaignSettings> & { id?: st
       analytics_config = EXCLUDED.analytics_config,
       billboard_config = EXCLUDED.billboard_config,
       admin_owner_label = EXCLUDED.admin_owner_label,
+      content_plans = EXCLUDED.content_plans,
       updated_at = EXCLUDED.updated_at
   `;
 
@@ -272,7 +274,7 @@ export async function pgSaveBillboard(data: Partial<Billboard> & { id?: string }
     INSERT INTO billboards (
       id, campaign_id, title, description, province, city, location, date,
       thumbnail_url, image_url, external_url, latitude, longitude, source, external_id,
-      category, area_sqm, status, tags, notes, published, sort_order, owner_user_id,
+      category, area_sqm, status, tags, notes, published, sort_order, owner_user_id, plan_label,
       created_at, updated_at
     ) VALUES (
       ${id},
@@ -298,6 +300,7 @@ export async function pgSaveBillboard(data: Partial<Billboard> & { id?: string }
       ${data.published ?? false},
       ${sortOrder},
       ${data.ownerUserId ?? null},
+      ${data.planLabel ?? null},
       ${now},
       ${now}
     )
@@ -322,6 +325,7 @@ export async function pgSaveBillboard(data: Partial<Billboard> & { id?: string }
       notes = EXCLUDED.notes,
       published = EXCLUDED.published,
       sort_order = EXCLUDED.sort_order,
+      plan_label = EXCLUDED.plan_label,
       updated_at = EXCLUDED.updated_at
   `;
 
@@ -446,7 +450,7 @@ export async function pgSavePoster(data: Partial<Poster> & { id?: string }) {
 
   await sql`
     INSERT INTO posters (
-      id, campaign_id, category_id, title, description, published, sort_order, owner_user_id, created_at, updated_at
+      id, campaign_id, category_id, title, description, published, sort_order, owner_user_id, plan_label, created_at, updated_at
     ) VALUES (
       ${id},
       ${data.campaignId ?? ""},
@@ -456,6 +460,7 @@ export async function pgSavePoster(data: Partial<Poster> & { id?: string }) {
       ${data.published ?? false},
       ${sortOrder},
       ${data.ownerUserId ?? null},
+      ${data.planLabel ?? null},
       ${now},
       ${now}
     )
@@ -465,6 +470,7 @@ export async function pgSavePoster(data: Partial<Poster> & { id?: string }) {
       description = EXCLUDED.description,
       published = EXCLUDED.published,
       sort_order = EXCLUDED.sort_order,
+      plan_label = EXCLUDED.plan_label,
       updated_at = EXCLUDED.updated_at
   `;
 
@@ -544,7 +550,7 @@ export async function pgSaveVideo(data: Partial<Video> & { id?: string }) {
 
   await sql`
     INSERT INTO videos (
-      id, campaign_id, category_id, title, description, published, sort_order, owner_user_id, created_at, updated_at
+      id, campaign_id, category_id, title, description, published, sort_order, owner_user_id, plan_label, created_at, updated_at
     ) VALUES (
       ${id},
       ${data.campaignId ?? ""},
@@ -554,6 +560,7 @@ export async function pgSaveVideo(data: Partial<Video> & { id?: string }) {
       ${data.published ?? false},
       ${sortOrder},
       ${data.ownerUserId ?? null},
+      ${data.planLabel ?? null},
       ${now},
       ${now}
     )
@@ -563,6 +570,7 @@ export async function pgSaveVideo(data: Partial<Video> & { id?: string }) {
       description = EXCLUDED.description,
       published = EXCLUDED.published,
       sort_order = EXCLUDED.sort_order,
+      plan_label = EXCLUDED.plan_label,
       updated_at = EXCLUDED.updated_at
   `;
 
@@ -818,35 +826,35 @@ export async function pgGetPublicCampaignData(campaignId: string) {
       SELECT b.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM billboards b
       LEFT JOIN users u ON u.id = b.owner_user_id
-      WHERE b.campaign_id = ${campaignId} AND b.published = true
+      WHERE b.campaign_id = ${campaignId}
       ORDER BY b.sort_order
     `,
-    sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'poster' AND published = true ORDER BY sort_order`,
+    sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'poster' ORDER BY sort_order`,
     sql`
       SELECT p.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM posters p
       LEFT JOIN users u ON u.id = p.owner_user_id
-      WHERE p.campaign_id = ${campaignId} AND p.published = true
+      WHERE p.campaign_id = ${campaignId}
       ORDER BY p.sort_order
     `,
     sql`
       SELECT pv.* FROM poster_versions pv
       INNER JOIN posters p ON p.id = pv.poster_id
-      WHERE p.campaign_id = ${campaignId} AND p.published = true
+      WHERE p.campaign_id = ${campaignId}
       ORDER BY pv.version_number
     `,
-    sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'video' AND published = true ORDER BY sort_order`,
+    sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'video' ORDER BY sort_order`,
     sql`
       SELECT v.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM videos v
       LEFT JOIN users u ON u.id = v.owner_user_id
-      WHERE v.campaign_id = ${campaignId} AND v.published = true
+      WHERE v.campaign_id = ${campaignId}
       ORDER BY v.sort_order
     `,
     sql`
       SELECT vv.* FROM video_versions vv
       INNER JOIN videos v ON v.id = vv.video_id
-      WHERE v.campaign_id = ${campaignId} AND v.published = true
+      WHERE v.campaign_id = ${campaignId}
       ORDER BY vv.version_number
     `,
     sql`
@@ -867,21 +875,21 @@ export async function pgGetPublicCampaignData(campaignId: string) {
       SELECT f.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM campaign_files f
       LEFT JOIN users u ON u.id = f.owner_user_id
-      WHERE f.campaign_id = ${campaignId} AND f.published = true
+      WHERE f.campaign_id = ${campaignId}
       ORDER BY f.sort_order
     `,
     sql`
       SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM social_media_posts sp
       LEFT JOIN users u ON u.id = sp.owner_user_id
-      WHERE sp.campaign_id = ${campaignId} AND sp.published = true
+      WHERE sp.campaign_id = ${campaignId}
       ORDER BY sp.sort_order
     `,
     sql`
       SELECT br.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
       FROM broadcast_reports br
       LEFT JOIN users u ON u.id = br.owner_user_id
-      WHERE br.campaign_id = ${campaignId} AND br.published = true
+      WHERE br.campaign_id = ${campaignId}
       ORDER BY br.sort_order, br.report_date DESC
     `,
     sql`
@@ -922,7 +930,7 @@ export async function pgSaveCampaignFile(data: Partial<CampaignFile> & { id?: st
   await sql`
     INSERT INTO campaign_files (
       id, campaign_id, title, description, file_url, file_name, mime_type, file_size,
-      published, sort_order, owner_user_id, created_at, updated_at
+      published, sort_order, owner_user_id, plan_label, created_at, updated_at
     ) VALUES (
       ${id},
       ${data.campaignId ?? ""},
@@ -935,6 +943,7 @@ export async function pgSaveCampaignFile(data: Partial<CampaignFile> & { id?: st
       ${data.published ?? false},
       ${data.sortOrder ?? 0},
       ${data.ownerUserId ?? null},
+      ${data.planLabel ?? null},
       ${now},
       ${now}
     )
@@ -947,6 +956,7 @@ export async function pgSaveCampaignFile(data: Partial<CampaignFile> & { id?: st
       file_size = EXCLUDED.file_size,
       published = EXCLUDED.published,
       sort_order = EXCLUDED.sort_order,
+      plan_label = EXCLUDED.plan_label,
       updated_at = EXCLUDED.updated_at
   `;
 

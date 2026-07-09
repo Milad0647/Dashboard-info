@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/public/kpi-card";
+import { UploadActivityChart } from "@/components/charts/upload-activity-chart";
 import { OwnerLocationFilterBar } from "@/components/public/owner-location-filter-bar";
 import { SectionHeader } from "@/components/public/section-header";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
@@ -25,6 +26,7 @@ import {
   getOwnerFilterLabel,
 } from "@/lib/filtered-campaign-kpis";
 import { isCampaignContentFilterActive } from "@/lib/campaign-content-filter";
+import { buildUploadActivityStats } from "@/lib/upload-activity-stats";
 import type { PublicCampaignData } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 
@@ -42,6 +44,8 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
     () => computeFilteredCampaignKpis(data, filter),
     [data, filter]
   );
+
+  const uploadStats = useMemo(() => buildUploadActivityStats(data), [data]);
 
   const kpiVisibility = {
     billboards: settings.features.billboards,
@@ -103,6 +107,10 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
           ))}
         </div>
       )}
+
+      <div className="mt-6">
+        <UploadActivityChart stats={uploadStats} />
+      </div>
     </section>
   );
 }

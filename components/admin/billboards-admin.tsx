@@ -31,6 +31,7 @@ interface ContributorProfile {
 interface BillboardsAdminProps {
   campaignId: string;
   initialBillboards: Billboard[];
+  contentPlans?: string[];
   liveApiEnabled?: boolean;
   externalCampaignSlug?: string | null;
   externalCampaignId?: string | null;
@@ -41,6 +42,7 @@ interface BillboardsAdminProps {
 export function BillboardsAdmin({
   campaignId,
   initialBillboards,
+  contentPlans = [],
   liveApiEnabled = false,
   externalCampaignSlug = null,
   externalCampaignId = null,
@@ -182,6 +184,7 @@ export function BillboardsAdmin({
           if (!open) setEditingBillboard(null);
         }}
         campaignId={campaignId}
+        contentPlans={contentPlans}
         mode={isFullAdmin ? "admin" : "client"}
         contributorProfile={contributorProfile}
         editingBillboard={editingBillboard}

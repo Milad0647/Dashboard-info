@@ -26,9 +26,11 @@ interface OwnerLocationFilterContextValue {
   setDateFrom: (dateFrom: string) => void;
   setDateTo: (dateTo: string) => void;
   setSortOrder: (sortOrder: CampaignContentSort) => void;
+  setPlanLabel: (planLabel: string) => void;
   resetFilters: () => void;
   provinces: string[];
   cities: string[];
+  plans: string[];
   users: OwnerFilterOption[];
 }
 
@@ -38,6 +40,7 @@ interface OwnerLocationFilterProviderProps {
   children: React.ReactNode;
   users?: OwnerFilterOption[];
   locations?: CampaignOwnerLocations;
+  plans?: string[];
 }
 
 function userMatchesLocation(user: OwnerFilterOption, province: string, city: string): boolean {
@@ -50,6 +53,7 @@ export function OwnerLocationFilterProvider({
   children,
   users = [],
   locations = { provinces: [], citiesByProvince: {} },
+  plans = [],
 }: OwnerLocationFilterProviderProps) {
   const [filter, setFilter] = useState<OwnerLocationFilter>(DEFAULT_OWNER_LOCATION_FILTER);
 
@@ -116,12 +120,14 @@ export function OwnerLocationFilterProvider({
       setDateFrom: (dateFrom) => setFilter((current) => ({ ...current, dateFrom })),
       setDateTo: (dateTo) => setFilter((current) => ({ ...current, dateTo })),
       setSortOrder: (sortOrder) => setFilter((current) => ({ ...current, sortOrder })),
+      setPlanLabel: (planLabel) => setFilter((current) => ({ ...current, planLabel })),
       resetFilters: () => setFilter(DEFAULT_OWNER_LOCATION_FILTER),
       provinces,
       cities,
+      plans,
       users: visibleUsers,
     }),
-    [filter, provinces, cities, visibleUsers, users]
+    [filter, provinces, cities, plans, visibleUsers, users]
   );
 
   return (
@@ -143,9 +149,11 @@ export function useOwnerLocationFilter(): OwnerLocationFilterContextValue {
       setDateFrom: () => undefined,
       setDateTo: () => undefined,
       setSortOrder: () => undefined,
+      setPlanLabel: () => undefined,
       resetFilters: () => undefined,
       provinces: [],
       cities: [],
+      plans: [],
       users: [],
     };
   }

@@ -13,6 +13,7 @@ import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-cont
 import {
   OWNER_DATE_ALL,
   OWNER_LOCATION_ALL,
+  OWNER_PLAN_ALL,
   OWNER_USER_ALL,
   type CampaignContentSort,
   type CampaignDatePreset,
@@ -28,8 +29,10 @@ export function OwnerLocationFilterBar() {
     setDateFrom,
     setDateTo,
     setSortOrder,
+    setPlanLabel,
     provinces,
     cities,
+    plans,
     users,
   } = useOwnerLocationFilter();
 
@@ -139,6 +142,22 @@ export function OwnerLocationFilterBar() {
             <SelectItem value="oldest">قدیمی‌ترین</SelectItem>
           </SelectContent>
         </Select>
+
+        {plans.length > 0 && (
+          <Select value={filter.planLabel} onValueChange={setPlanLabel}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="طرح" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={OWNER_PLAN_ALL}>همه طرح‌ها</SelectItem>
+              {plans.map((plan) => (
+                <SelectItem key={plan} value={plan}>
+                  {plan}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {filter.datePreset === "custom" && (

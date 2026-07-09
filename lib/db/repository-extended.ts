@@ -352,7 +352,7 @@ export async function pgSaveSocialPost(data: Partial<SocialMediaPost> & { id?: s
     INSERT INTO social_media_posts (
       id, campaign_id, owner_user_id, platform, title, cover_image_url,
       views, likes, comments, shares, link, content_type, media_url, description,
-      published_date, published, sort_order, created_at, updated_at
+      published_date, published, sort_order, plan_label, created_at, updated_at
     ) VALUES (
       ${id},
       ${data.campaignId ?? ""},
@@ -371,6 +371,7 @@ export async function pgSaveSocialPost(data: Partial<SocialMediaPost> & { id?: s
       ${data.publishedDate ?? now.split("T")[0]},
       ${data.published ?? false},
       ${sortOrder},
+      ${data.planLabel ?? null},
       ${now},
       ${now}
     )
@@ -389,6 +390,7 @@ export async function pgSaveSocialPost(data: Partial<SocialMediaPost> & { id?: s
       published_date = EXCLUDED.published_date,
       published = EXCLUDED.published,
       sort_order = EXCLUDED.sort_order,
+      plan_label = EXCLUDED.plan_label,
       updated_at = EXCLUDED.updated_at
   `;
 
@@ -570,7 +572,7 @@ export async function pgSaveBroadcastReport(data: Partial<BroadcastReport> & { i
   await sql`
     INSERT INTO broadcast_reports (
       id, campaign_id, owner_user_id, title, report_date, pdf_url, file_name,
-      summary_data, published, sort_order, created_at, updated_at
+      summary_data, published, sort_order, plan_label, created_at, updated_at
     ) VALUES (
       ${id},
       ${data.campaignId ?? ""},
@@ -582,6 +584,7 @@ export async function pgSaveBroadcastReport(data: Partial<BroadcastReport> & { i
       ${sql.json(JSON.parse(JSON.stringify(data.summaryData ?? {})))},
       ${data.published ?? false},
       ${sortOrder},
+      ${data.planLabel ?? null},
       ${now},
       ${now}
     )
@@ -593,6 +596,7 @@ export async function pgSaveBroadcastReport(data: Partial<BroadcastReport> & { i
       summary_data = EXCLUDED.summary_data,
       published = EXCLUDED.published,
       sort_order = EXCLUDED.sort_order,
+      plan_label = EXCLUDED.plan_label,
       updated_at = EXCLUDED.updated_at
   `;
 
@@ -644,7 +648,7 @@ export async function pgSaveCampaignActivity(data: Partial<CampaignActivity> & {
   await sql`
     INSERT INTO campaign_activities (
       id, campaign_id, owner_user_id, title, activity_type, activity_date,
-      location, image_url, video_url, media_items, description, published, sort_order, created_at, updated_at
+      location, image_url, video_url, media_items, description, published, sort_order, plan_label, created_at, updated_at
     ) VALUES (
       ${id},
       ${data.campaignId ?? ""},
@@ -659,6 +663,7 @@ export async function pgSaveCampaignActivity(data: Partial<CampaignActivity> & {
       ${data.description ?? null},
       ${data.published ?? false},
       ${sortOrder},
+      ${data.planLabel ?? null},
       ${now},
       ${now}
     )
@@ -673,6 +678,7 @@ export async function pgSaveCampaignActivity(data: Partial<CampaignActivity> & {
       description = EXCLUDED.description,
       published = EXCLUDED.published,
       sort_order = EXCLUDED.sort_order,
+      plan_label = EXCLUDED.plan_label,
       updated_at = EXCLUDED.updated_at
   `;
 
@@ -767,7 +773,7 @@ export async function pgGetPublicMeetingPreviews(campaignId: string): Promise<Me
       FROM campaign_meetings m
       INNER JOIN campaign_settings cs ON cs.id = m.campaign_id
       LEFT JOIN users u ON u.id = m.owner_user_id
-      WHERE m.campaign_id = ${campaignId} AND m.published = true
+      WHERE m.campaign_id = ${campaignId}
       ORDER BY m.meeting_date DESC, m.sort_order
     `;
 

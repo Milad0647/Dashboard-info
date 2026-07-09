@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { BillboardThumbnail } from "@/components/public/billboard-thumbnail";
+import { PublishStatusBadge } from "@/components/public/publish-status-badge";
 import {
   filterPublicBillboardTags,
   getBillboardDateLabel,
@@ -40,6 +41,11 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
             <Badge variant="outline" className="bg-background/90 text-xs">
               {billboard.code}
             </Badge>
+          </div>
+        )}
+        {!billboard.published && (
+          <div className="absolute top-3 left-3">
+            <PublishStatusBadge published={billboard.published} className="bg-background/90 text-xs" />
           </div>
         )}
       </div>

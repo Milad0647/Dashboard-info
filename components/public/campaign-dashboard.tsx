@@ -279,7 +279,11 @@ export function CampaignDashboard({ initialData, slug, exportMode = false }: Cam
 
   return (
     <CampaignExportProvider exportMode={exportMode}>
-      <OwnerLocationFilterProvider users={ownerUsers} locations={ownerLocations}>
+      <OwnerLocationFilterProvider
+        users={ownerUsers}
+        locations={ownerLocations}
+        plans={data.settings.contentPlans ?? []}
+      >
         <CampaignDashboardBody
           data={data}
           slug={slug}

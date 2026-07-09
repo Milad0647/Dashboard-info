@@ -4,6 +4,7 @@ import {
   filterItemsByOwnerLocation,
   OWNER_DATE_ALL,
   OWNER_LOCATION_ALL,
+  OWNER_PLAN_ALL,
   OWNER_USER_ALL,
   type OwnerLocationFilter,
 } from "@/lib/owner-location-filter";
@@ -42,6 +43,10 @@ export function getOwnerFilterLabel(
     } else {
       parts.push(DATE_PRESET_LABELS[filter.datePreset] ?? filter.datePreset);
     }
+  }
+
+  if (filter.planLabel !== OWNER_PLAN_ALL) {
+    parts.push(`طرح: ${filter.planLabel}`);
   }
 
   if (filter.sortOrder === "newest") parts.push("جدیدترین");

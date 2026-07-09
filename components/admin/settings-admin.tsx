@@ -211,6 +211,8 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
   const [isPending, startTransition] = useTransition();
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [externalCampaigns, setExternalCampaigns] = useState<ExternalCampaign[]>([]);
+  const [contentPlans, setContentPlans] = useState<string[]>(initialSettings.contentPlans ?? []);
+  const [newPlanName, setNewPlanName] = useState("");
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -295,6 +297,7 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
           externalCampaignSlug: data.externalCampaignSlug || null,
         },
         adminOwnerLabel: data.adminOwnerLabel?.trim() || DEFAULT_ADMIN_OWNER_LABEL,
+        contentPlans,
       });
       toast.success("تنظیمات ذخیره شد");
     });
@@ -324,6 +327,50 @@ export function SettingsAdmin({ initialSettings }: SettingsAdminProps) {
                 نام گروه محتوایی که توسط ادمین (بدون کاربر) ثبت شده — در صفحه عمومی کمپین نمایش داده می‌شود.
               </p>
             </div>
+
+            <div className="space-y-3 rounded-lg border p-4">
+              <div>
+                <Label>طرح‌های کمپین</Label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  نام طرح‌ها را اینجا تعریف کنید (مثلاً مهتاب، سامان) تا هنگام آپلود محتوا و فیلتر صفحه اصلی استفاده شوند.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newPlanName}
+                  onChange={(event) => setNewPlanName(event.target.value)}
+                  placeholder="نام طرح جدید"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const value = newPlanName.trim();
+                    if (!value || contentPlans.includes(value)) return;
+                    setContentPlans((current) => [...current, value]);
+                    setNewPlanName("");
+                  }}
+                >
+                  افزودن
+                </Button>
+              </div>
+              {contentPlans.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {contentPlans.map((plan) => (
+                    <Button
+                      key={plan}
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setContentPlans((current) => current.filter((item) => item !== plan))}
+                    >
+                      {plan} ×
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div><Label>وضعیت</Label>
               <Select value={form.watch("status")} onValueChange={(v) => form.setValue("status", v as "live" | "completed" | "draft")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>

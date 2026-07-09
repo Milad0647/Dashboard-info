@@ -44,6 +44,7 @@ function mapOwnerFromDb(row: any): Ownable {
     ownerName: row.owner_name ?? null,
     ownerProvince: row.owner_province ?? null,
     ownerCity: row.owner_city ?? null,
+    planLabel: row.plan_label ?? null,
   };
 }
 
@@ -103,9 +104,17 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
         ? JSON.parse(row.billboard_config)
         : (row.billboard_config ?? {}),
     adminOwnerLabel: row.admin_owner_label ?? "مدیریت",
+    contentPlans: parseContentPlans(row.content_plans),
     meetingsViewPasswordHash: row.meetings_view_password_hash ?? null,
     updatedAt: toIsoString(row.updated_at),
   };
+}
+
+function parseContentPlans(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item) => item.length > 0);
 }
 
 import type { ActivityMediaItem, BillboardDisplayPeriod } from "@/lib/types";

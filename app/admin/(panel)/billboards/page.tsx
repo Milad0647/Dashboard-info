@@ -53,6 +53,7 @@ export default async function BillboardsPage({ searchParams }: PageProps) {
     <BillboardsAdmin
       campaignId={campaignId}
       initialBillboards={billboards}
+      contentPlans={settings?.contentPlans ?? []}
       liveApiEnabled={Boolean(settings && hasExternalBillboardConnection(settings))}
       externalCampaignSlug={settings ? getExternalCampaignSlug(settings) : null}
       externalCampaignId={settings?.billboardConfig?.externalCampaignId ?? null}

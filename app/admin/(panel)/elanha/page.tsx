@@ -28,6 +28,8 @@ export default async function ElanhaPage({ searchParams }: PageProps) {
       billboards={data.billboards ?? []}
       activities={data.activities ?? []}
       socialPosts={data.socialPosts ?? []}
+      posterVersions={data.posterVersions ?? []}
+      videoVersions={data.videoVersions ?? []}
     />
   );
 }
