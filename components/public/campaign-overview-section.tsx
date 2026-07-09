@@ -17,8 +17,19 @@ import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/public/kpi-card";
 import { UploadActivityChart } from "@/components/charts/upload-activity-chart";
 import { OwnerLocationFilterBar } from "@/components/public/owner-location-filter-bar";
+import {
+  CampaignOverviewCharts,
+  CampaignProgressWidget,
+  RecentActivityFeed,
+} from "@/components/public/campaign-overview-widgets";
 import { SectionHeader } from "@/components/public/section-header";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
+import {
+  buildContentMixStats,
+  buildFilteredProvinceChartData,
+  buildRecentActivityFeed,
+  computeCampaignProgress,
+} from "@/lib/campaign-overview-insights";
 import {
   computeFilteredCampaignKpis,
   getOwnerFilterLabel,
@@ -46,6 +57,19 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
 
   const uploadStats = useMemo(() => buildUploadActivityStats(data), [data]);
   const todayDeltas = useMemo(() => computeKpiTodayDeltas(data, filter), [data, filter]);
+  const campaignProgress = useMemo(
+    () => computeCampaignProgress(settings.startDate, settings.endDate),
+    [settings.startDate, settings.endDate]
+  );
+  const contentMix = useMemo(() => buildContentMixStats(data, kpis), [data, kpis]);
+  const provinceChartData = useMemo(
+    () => buildFilteredProvinceChartData(data, filter),
+    [data, filter]
+  );
+  const recentActivity = useMemo(
+    () => buildRecentActivityFeed(data, filter),
+    [data, filter]
+  );
 
   const kpiVisibility = {
     billboards: settings.features.billboards,
@@ -128,6 +152,12 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
           ))}
         </div>
       )}
+
+      <div className="mt-6 space-y-4">
+        <CampaignProgressWidget progress={campaignProgress} />
+        <CampaignOverviewCharts contentMix={contentMix} provinceChartData={provinceChartData} />
+        <RecentActivityFeed items={recentActivity} />
+      </div>
 
       <div className="mt-6">
         <UploadActivityChart stats={uploadStats} />
