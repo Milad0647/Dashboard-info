@@ -19,7 +19,9 @@ export function KPICard({ title, value, icon: Icon, description, className }: KP
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold tracking-tight">{displayValue}</p>
+            <p className="max-w-full break-all text-2xl font-bold leading-tight tracking-tight xl:text-3xl">
+              {displayValue}
+            </p>
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}
