@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getAuthSession } from "@/lib/auth/get-session";
+import { canAccessNotifications } from "@/lib/auth/access";
 import { pgGetNotificationReads, pgMarkNotificationReads } from "@/lib/db/repository-extended";
 import { getNotificationReaderKey } from "@/lib/notification-reader";
 import { isPostgresConfigured } from "@/lib/utils";
@@ -9,6 +10,9 @@ import { isPostgresConfigured } from "@/lib/utils";
 export async function getNotificationReadsAction(): Promise<string[]> {
   const session = await getAuthSession();
   if (!session?.userId && session?.type !== "env_admin") {
+    return [];
+  }
+  if (!canAccessNotifications(session)) {
     return [];
   }
 
@@ -27,6 +31,9 @@ export async function markNotificationsSeenAction(
 ) {
   const session = await getAuthSession();
   if (!session?.userId && session?.type !== "env_admin") {
+    return { success: false, error: "Unauthorized" };
+  }
+  if (!canAccessNotifications(session)) {
     return { success: false, error: "Unauthorized" };
   }
 

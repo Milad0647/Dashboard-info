@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { canAccessNotifications } from "@/lib/auth/access";
 import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
 import { getAdminData } from "@/lib/data-access/admin";
@@ -11,6 +12,7 @@ interface PageProps {
 export default async function ElanhaPage({ searchParams }: PageProps) {
   const session = await getAuthSession();
   if (!session) redirect("/admin/login");
+  if (!canAccessNotifications(session)) redirect("/admin");
 
   const params = await searchParams;
   const { campaignId } = await resolveAdminCampaignId(params.campaign);

@@ -49,6 +49,7 @@ const allNavItems: {
   label: string;
   icon: typeof LayoutDashboard;
   adminOnly?: boolean;
+  adminOrClientOnly?: boolean;
   permissionKey?: ContributorPermissionKey;
 }[] = [
   { href: "/admin", label: "داشبورد", icon: LayoutDashboard },
@@ -64,7 +65,7 @@ const allNavItems: {
   { href: "/admin/social-posts", label: "شبکه‌های اجتماعی", icon: Share2, permissionKey: "socialPosts" },
   { href: "/admin/press-publications", label: "مجله و روزنامه", icon: FileText, permissionKey: "activities" },
   { href: "/admin/activities", label: "اقدامات", icon: Sparkles, permissionKey: "activities" },
-  { href: "/admin/elanha", label: "اعلان‌ها", icon: Bell },
+  { href: "/admin/elanha", label: "اعلان‌ها", icon: Bell, adminOrClientOnly: true },
   { href: "/admin/broadcast", label: "پخش صدا و سیما", icon: Radio, permissionKey: "broadcast" },
   { href: "/admin/meetings", label: "جلسات و مصوبات", icon: ClipboardList, permissionKey: "meetings" },
   { href: "/admin/submissions", label: "مشارکت‌ها", icon: FileText, permissionKey: "submissions" },
@@ -83,6 +84,7 @@ export function AdminSidebar() {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isFullAdminUser, setIsFullAdminUser] = useState(true);
+  const [isClientRole, setIsClientRole] = useState(false);
   const [permissions, setPermissions] = useState<ContributorPermissions | null>(null);
   const { campaignId, campaigns, currentCampaign, setCampaignId } = useAdminCampaign();
 
@@ -90,11 +92,15 @@ export function AdminSidebar() {
     getSessionContextAction(campaignId).then((session) => {
       if (!session) return;
       setIsFullAdminUser(session.type === "env_admin" || session.role === "admin");
+      setIsClientRole(session.role === "client");
       setPermissions(session.permissions ?? null);
     });
   }, [campaignId]);
 
   const navItems = allNavItems.filter((item) => {
+    if (item.adminOrClientOnly) {
+      return isFullAdminUser || isClientRole;
+    }
     if (isFullAdminUser) return true;
     if (item.adminOnly) return false;
     if (!item.permissionKey) return true;

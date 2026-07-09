@@ -24,6 +24,7 @@ import {
   getOwnerFilterLabel,
 } from "@/lib/filtered-campaign-kpis";
 import { isCampaignContentFilterActive } from "@/lib/campaign-content-filter";
+import { computeKpiTodayDeltas } from "@/lib/kpi-today-deltas";
 import { buildUploadActivityStats } from "@/lib/upload-activity-stats";
 import type { PublicCampaignData } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
@@ -44,6 +45,7 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
   );
 
   const uploadStats = useMemo(() => buildUploadActivityStats(data), [data]);
+  const todayDeltas = useMemo(() => computeKpiTodayDeltas(data, filter), [data, filter]);
 
   const kpiVisibility = {
     billboards: settings.features.billboards,
@@ -64,17 +66,19 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
     value: number;
     icon: LucideIcon;
     sectionId?: string;
+    todayDelta?: number;
+    compactValue?: boolean;
   }[] = [
-    { show: kpiVisibility.billboards, title: "بیلبوردها", value: kpis.totalBillboards, icon: LayoutGrid, sectionId: "billboards" },
-    { show: kpiVisibility.posters, title: "پوسترها", value: kpis.totalPosters, icon: ImageIcon, sectionId: "posters" },
-    { show: kpiVisibility.videos, title: "ویدیوها", value: kpis.totalVideos, icon: Video, sectionId: "videos" },
+    { show: kpiVisibility.billboards, title: "بیلبوردها", value: kpis.totalBillboards, icon: LayoutGrid, sectionId: "billboards", todayDelta: todayDeltas.billboards },
+    { show: kpiVisibility.posters, title: "پوسترها", value: kpis.totalPosters, icon: ImageIcon, sectionId: "posters", todayDelta: todayDeltas.posters },
+    { show: kpiVisibility.videos, title: "ویدیوها", value: kpis.totalVideos, icon: Video, sectionId: "videos", todayDelta: todayDeltas.videos },
     { show: kpiVisibility.socialAnalytics, title: "فالوور اجتماعی", value: kpis.totalSocialFollowers, icon: Share2, sectionId: "social-analytics" },
-    { show: kpiVisibility.socialPosts, title: "بازدید پست‌های اجتماعی", value: kpis.totalSocialPostViews, icon: Eye, sectionId: "social-posts" },
-    { show: kpiVisibility.socialPosts, title: "پست‌های اجتماعی", value: kpis.totalSocialPosts, icon: Share2, sectionId: "social-posts" },
-    { show: kpiVisibility.sitePublications, title: "انتشار در سایت", value: kpis.totalSitePublications, icon: Globe, sectionId: "site-publications" },
-    { show: kpiVisibility.activities, title: "اقدامات", value: kpis.totalActivities, icon: Megaphone, sectionId: "activities" },
+    { show: kpiVisibility.socialPosts, title: "بازدید پست‌های اجتماعی", value: kpis.totalSocialPostViews, icon: Eye, sectionId: "social-posts", compactValue: true },
+    { show: kpiVisibility.socialPosts, title: "پست‌های اجتماعی", value: kpis.totalSocialPosts, icon: Share2, sectionId: "social-posts", todayDelta: todayDeltas.socialPosts },
+    { show: kpiVisibility.sitePublications, title: "انتشار در سایت", value: kpis.totalSitePublications, icon: Globe, sectionId: "site-publications", todayDelta: todayDeltas.sitePublications },
+    { show: kpiVisibility.activities, title: "اقدامات", value: kpis.totalActivities, icon: Megaphone, sectionId: "activities", todayDelta: todayDeltas.activities },
     { show: kpiVisibility.submissions, title: "شرکت‌کنندگان", value: kpis.totalParticipants, icon: Users, sectionId: "submissions" },
-    { show: kpiVisibility.files, title: "فایل‌ها", value: kpis.totalFiles, icon: FileText, sectionId: "files" },
+    { show: kpiVisibility.files, title: "فایل‌ها", value: kpis.totalFiles, icon: FileText, sectionId: "files", todayDelta: todayDeltas.files },
   ].filter((item) => item.show);
 
   const scrollToSection = (sectionId: string) => {
@@ -117,6 +121,8 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
               title={kpi.title}
               value={kpi.value}
               icon={kpi.icon}
+              todayDelta={kpi.todayDelta}
+              compactValue={kpi.compactValue}
               onClick={kpi.sectionId ? () => scrollToSection(kpi.sectionId!) : undefined}
             />
           ))}

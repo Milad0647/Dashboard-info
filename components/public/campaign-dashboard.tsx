@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowRight, RefreshCw, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CampaignOverviewSection } from "@/components/public/campaign-overview-section";
 import { BillboardSection } from "@/components/public/billboard-section";
@@ -91,6 +91,12 @@ function CampaignDashboardBody({
             <p className="text-xs text-muted-foreground hidden sm:block">
               آخرین بروزرسانی: {formatPersianDateTime(lastRefresh.toISOString())}
             </p>
+            <Button variant="outline" size="sm" asChild data-export-hide>
+              <Link href={`/campaign/${slug}/cities`}>
+                <Trophy className="h-4 w-4" />
+                رتبه‌بندی شهرها
+              </Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing} data-export-hide>
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
               بروزرسانی
