@@ -1,7 +1,6 @@
 "use client";
 
 import { Clock, TrendingUp } from "lucide-react";
-import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { ContentMixChart } from "@/components/charts/content-mix-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type {
@@ -50,54 +49,45 @@ export function CampaignProgressWidget({ progress }: CampaignProgressWidgetProps
   );
 }
 
-interface CampaignOverviewChartsProps {
-  contentMix: ContentMixItem[];
-  provinceChartData: { label: string; value: number }[];
-}
-
-export function CampaignOverviewCharts({
-  contentMix,
-  provinceChartData,
-}: CampaignOverviewChartsProps) {
-  return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-      <ContentMixChart data={contentMix} />
-      <BarChartCard
-        data={provinceChartData}
-        title="امتیاز استان‌ها (۱۰ استان برتر)"
-        color="#2563eb"
-      />
-    </div>
-  );
+export function ContentMixOverviewChart({ data }: { data: ContentMixItem[] }) {
+  return <ContentMixChart data={data} />;
 }
 
 interface RecentActivityFeedProps {
   items: RecentActivityItem[];
+  limit?: number;
 }
 
-export function RecentActivityFeed({ items }: RecentActivityFeedProps) {
+export function RecentActivityFeed({ items, limit = 10 }: RecentActivityFeedProps) {
+  const visibleItems = items.slice(0, limit);
+
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Clock className="h-4 w-4 text-primary" />
-          فعالیت اخیر
+        <CardTitle className="flex items-center justify-between gap-2 text-base">
+          <span className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-primary" />
+            فعالیت اخیر
+          </span>
+          {visibleItems.length > 0 && (
+            <span className="text-xs font-normal text-muted-foreground">
+              {formatPersianNumber(visibleItems.length)} مورد اخیر
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {items.length === 0 ? (
+        {visibleItems.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             هنوز فعالیتی ثبت نشده است.
           </p>
         ) : (
           <ul className="divide-y">
-            {items.map((item) => (
+            {visibleItems.map((item) => (
               <li key={item.id} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-sm font-medium">
-                    {item.ownerName}
-                    <span className="font-normal text-muted-foreground"> — {item.typeLabel}</span>
-                  </p>
+                <div className="min-w-0 space-y-1">
+                  <p className="text-sm font-semibold">{item.ownerName}</p>
+                  <p className="text-sm text-muted-foreground">{item.typeLabel}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatPersianDateTime(item.timestamp)}
                   </p>

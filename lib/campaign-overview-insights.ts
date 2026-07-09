@@ -1,4 +1,3 @@
-import { buildProvinceLeaderboard } from "@/lib/city-leaderboard";
 import { parseISODateLocal } from "@/lib/jalali";
 import { filterItemsByOwnerLocation, type OwnerLocationFilter } from "@/lib/owner-location-filter";
 import { getSafeUploadTimestamp } from "@/lib/safe-dates";
@@ -114,21 +113,6 @@ function filterCampaignData(
   };
 }
 
-export function buildFilteredProvinceChartData(
-  data: PublicCampaignData,
-  filter: OwnerLocationFilter,
-  limit = 10
-): { label: string; value: number }[] {
-  const filtered = filterCampaignData(data, filter);
-
-  return buildProvinceLeaderboard(filtered)
-    .slice(0, limit)
-    .map((entry) => ({
-      label: entry.province,
-      value: entry.score,
-    }));
-}
-
 function pushActivity<T extends Ownable>(
   entries: RecentActivityItem[],
   items: T[],
@@ -151,7 +135,7 @@ function pushActivity<T extends Ownable>(
 export function buildRecentActivityFeed(
   data: PublicCampaignData,
   filter: OwnerLocationFilter,
-  limit = 12
+  limit = 10
 ): RecentActivityItem[] {
   const filtered = filterCampaignData(data, filter);
   const { sections } = data;

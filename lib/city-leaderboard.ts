@@ -31,6 +31,13 @@ export interface ProvinceContributorEntry {
   score: number;
 }
 
+export interface UserLeaderboardEntry extends ProvinceLeaderboardMetrics {
+  rank: number;
+  userName: string;
+  userKey: string;
+  province: string;
+}
+
 const SCORE_WEIGHTS = {
   billboards: 5,
   posters: 3,
@@ -51,6 +58,26 @@ function todayIso(): string {
 function resolveProvince(item: Ownable & { province?: string | null }): string {
   const raw = item.ownerProvince?.trim() || item.province?.trim() || "";
   return (normalizeImportedProvince(raw) ?? raw) || "نامشخص";
+}
+
+function resolveUserKey(item: Ownable): { userKey: string; userName: string } {
+  const userName = item.ownerName?.trim() || "کاربر";
+  const userKey = item.ownerUserId ?? item.ownerEmail ?? userName;
+  return { userKey, userName };
+}
+
+function resolvePrimaryProvince(counts: Map<string, number>): string {
+  let province = "نامشخص";
+  let maxCount = 0;
+
+  for (const [name, count] of counts) {
+    if (count > maxCount) {
+      province = name;
+      maxCount = count;
+    }
+  }
+
+  return province;
 }
 
 function emptyMetrics(): ProvinceLeaderboardMetrics {
@@ -113,36 +140,94 @@ function addContributor<T extends Ownable & { createdAt?: string | null; provinc
   map.set(contributorKey, current);
 }
 
+type UserAccumulator = ProvinceLeaderboardMetrics & {
+  userName: string;
+  provinceCounts: Map<string, number>;
+};
+
+function addUserItem<T extends Ownable & { createdAt?: string | null; province?: string | null }>(
+  map: Map<string, UserAccumulator>,
+  item: T,
+  field: MetricField
+) {
+  const { userKey, userName } = resolveUserKey(item);
+  const province = resolveProvince(item);
+  const current = map.get(userKey) ?? {
+    ...emptyMetrics(),
+    userName,
+    provinceCounts: new Map<string, number>(),
+  };
+
+  current[field]++;
+  current.totalUploads++;
+  current.score += SCORE_WEIGHTS[field];
+
+  if (isSameDay(getSafeUploadTimestamp(item), todayIso())) {
+    current.todayUploads++;
+  }
+
+  current.provinceCounts.set(province, (current.provinceCounts.get(province) ?? 0) + 1);
+  map.set(userKey, current);
+}
+
+function collectLeaderboardItems(
+  data: PublicCampaignData,
+  add: <T extends Ownable & { createdAt?: string | null; province?: string | null }>(
+    items: T[],
+    field: MetricField
+  ) => void
+) {
+  if (data.sections.billboards) add(data.billboards, "billboards");
+  if (data.sections.posters) add(data.posters, "posters");
+  if (data.sections.videos) add(data.videos, "videos");
+  if (data.sections.socialPosts) add(data.socialPosts, "socialPosts");
+  if (data.sections.sitePublications) add(data.sitePublications, "sitePublications");
+  if (data.sections.activities) {
+    add(data.activities, "activities");
+    add(data.pressPublications, "activities");
+  }
+  if (data.sections.files) add(data.files, "files");
+}
+
 export function buildProvinceLeaderboard(data: PublicCampaignData): ProvinceLeaderboardEntry[] {
   const map = new Map<string, ProvinceLeaderboardMetrics & { province: string }>();
 
-  if (data.sections.billboards) {
-    for (const item of data.billboards) addItem(map, item, "billboards");
-  }
-  if (data.sections.posters) {
-    for (const item of data.posters) addItem(map, item, "posters");
-  }
-  if (data.sections.videos) {
-    for (const item of data.videos) addItem(map, item, "videos");
-  }
-  if (data.sections.socialPosts) {
-    for (const item of data.socialPosts) addItem(map, item, "socialPosts");
-  }
-  if (data.sections.sitePublications) {
-    for (const item of data.sitePublications) addItem(map, item, "sitePublications");
-  }
-  if (data.sections.activities) {
-    for (const item of data.activities) addItem(map, item, "activities");
-    for (const item of data.pressPublications) addItem(map, item, "activities");
-  }
-  if (data.sections.files) {
-    for (const item of data.files) addItem(map, item, "files");
-  }
+  collectLeaderboardItems(data, (items, field) => {
+    for (const item of items) addItem(map, item, field);
+  });
 
   return [...map.entries()]
     .map(([provinceKey, metrics]) => ({
       provinceKey,
       province: metrics.province,
+      billboards: metrics.billboards,
+      posters: metrics.posters,
+      videos: metrics.videos,
+      socialPosts: metrics.socialPosts,
+      sitePublications: metrics.sitePublications,
+      activities: metrics.activities,
+      files: metrics.files,
+      todayUploads: metrics.todayUploads,
+      totalUploads: metrics.totalUploads,
+      score: metrics.score,
+      rank: 0,
+    }))
+    .sort((a, b) => b.score - a.score || b.totalUploads - a.totalUploads)
+    .map((entry, index) => ({ ...entry, rank: index + 1 }));
+}
+
+export function buildUserLeaderboard(data: PublicCampaignData): UserLeaderboardEntry[] {
+  const map = new Map<string, UserAccumulator>();
+
+  collectLeaderboardItems(data, (items, field) => {
+    for (const item of items) addUserItem(map, item, field);
+  });
+
+  return [...map.entries()]
+    .map(([userKey, metrics]) => ({
+      userKey,
+      userName: metrics.userName,
+      province: resolvePrimaryProvince(metrics.provinceCounts),
       billboards: metrics.billboards,
       posters: metrics.posters,
       videos: metrics.videos,
@@ -171,16 +256,7 @@ export function buildProvinceContributorLeaderboard(
     for (const item of items) addContributor(map, item, field);
   };
 
-  if (data.sections.billboards) addAll(data.billboards, "billboards");
-  if (data.sections.posters) addAll(data.posters, "posters");
-  if (data.sections.videos) addAll(data.videos, "videos");
-  if (data.sections.socialPosts) addAll(data.socialPosts, "socialPosts");
-  if (data.sections.sitePublications) addAll(data.sitePublications, "sitePublications");
-  if (data.sections.activities) {
-    addAll(data.activities, "activities");
-    addAll(data.pressPublications, "activities");
-  }
-  if (data.sections.files) addAll(data.files, "files");
+  collectLeaderboardItems(data, addAll);
 
   return [...map.values()]
     .sort((a, b) => b.score - a.score || b.totalUploads - a.totalUploads)
