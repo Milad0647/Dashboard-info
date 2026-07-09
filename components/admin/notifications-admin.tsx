@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { Check, ExternalLink } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -57,51 +58,84 @@ interface NotificationsAdminProps {
   videoVersions?: VideoVersion[];
 }
 
-function NotificationCard({ item }: { item: NotificationFeedItem }) {
+function NotificationCard({
+  item,
+  showConfirm,
+  confirming,
+  onConfirm,
+}: {
+  item: NotificationFeedItem;
+  showConfirm?: boolean;
+  confirming?: boolean;
+  onConfirm?: () => void;
+}) {
   return (
-    <Link
-      href={item.adminPath}
-      className="group flex flex-col overflow-hidden rounded-xl border bg-card transition hover:border-primary hover:shadow-md"
-    >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
-        {item.thumbnailUrl ? (
-          <Image
-            src={item.thumbnailUrl}
-            alt={item.title}
-            fill
-            className="object-cover transition-transform group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, 33vw"
-          />
-        ) : (
-          <MediaPlaceholder kind="poster" className="h-full w-full" />
-        )}
-        <div className="absolute top-2 right-2 flex flex-wrap gap-1 justify-end">
-          <Badge variant="secondary" className="text-[10px]">
-            {item.typeLabel}
-          </Badge>
-          {!item.published && (
-            <Badge variant="outline" className="text-[10px] bg-background/90">
-              پیش‌نویس
+    <div className="group flex flex-col overflow-hidden rounded-xl border bg-card transition hover:border-primary hover:shadow-md">
+      <Link
+        href={item.adminPath}
+        className="flex flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+          {item.thumbnailUrl ? (
+            <Image
+              src={item.thumbnailUrl}
+              alt={item.title}
+              fill
+              className="object-cover transition-transform group-hover:scale-105"
+              sizes="(max-width: 768px) 100vw, 33vw"
+            />
+          ) : (
+            <MediaPlaceholder kind="poster" className="h-full w-full" />
+          )}
+          <div className="absolute top-2 right-2 flex flex-wrap gap-1 justify-end">
+            <Badge variant="secondary" className="text-[10px]">
+              {item.typeLabel}
             </Badge>
-          )}
+            {!item.published && (
+              <Badge variant="outline" className="text-[10px] bg-background/90">
+                پیش‌نویس
+              </Badge>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <p className="font-medium leading-snug line-clamp-2">{item.title}</p>
-        <div className="space-y-1 text-xs text-muted-foreground">
-          <p>{item.ownerName ?? "کاربر"}</p>
-          {(item.ownerProvince || item.ownerCity) && (
-            <p>
-              {[item.ownerProvince, item.ownerCity].filter(Boolean).join(" / ")}
-            </p>
-          )}
-          {item.planLabel && <p>طرح: {item.planLabel}</p>}
+        <div className="flex flex-1 flex-col gap-2 p-4">
+          <p className="font-medium leading-snug line-clamp-2">{item.title}</p>
+          <div className="space-y-1 text-xs text-muted-foreground">
+            <p>{item.ownerName ?? "کاربر"}</p>
+            {(item.ownerProvince || item.ownerCity) && (
+              <p>
+                {[item.ownerProvince, item.ownerCity].filter(Boolean).join(" / ")}
+              </p>
+            )}
+            {item.planLabel && <p>طرح: {item.planLabel}</p>}
+          </div>
+          <p className="mt-auto text-[11px] text-muted-foreground">
+            {formatPersianDateTime(item.eventAt)}
+          </p>
         </div>
-        <p className="mt-auto text-[11px] text-muted-foreground">
-          {formatPersianDateTime(item.eventAt)}
-        </p>
-      </div>
-    </Link>
+      </Link>
+
+      {showConfirm && onConfirm && (
+        <div className="flex items-center gap-2 border-t p-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="flex-1 gap-2"
+            disabled={confirming}
+            onClick={onConfirm}
+          >
+            <Check className="h-4 w-4" />
+            تأیید مشاهده
+          </Button>
+          <Button type="button" variant="ghost" size="icon" className="shrink-0" asChild>
+            <Link href={item.adminPath} title="مشاهده در پنل">
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -124,6 +158,7 @@ export function NotificationsAdmin({
   const [planLabel, setPlanLabel] = useState("all");
   const [seenKeys, setSeenKeys] = useState<Set<string>>(new Set());
   const [readsLoaded, setReadsLoaded] = useState(false);
+  const [confirmingKey, setConfirmingKey] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const pendingSeenRef = useRef<string[]>([]);
 
@@ -197,8 +232,25 @@ export function NotificationsAdmin({
         return;
       }
       setSeenKeys((prev) => new Set([...prev, ...keys]));
-      pendingSeenRef.current = [];
+      pendingSeenRef.current = pendingSeenRef.current.filter((key) => !keys.includes(key));
       toast.success("موارد مشاهده‌شده تأیید شد");
+    });
+  };
+
+  const handleConfirmItem = (key: string) => {
+    if (view !== "new" || seenKeys.has(key)) return;
+
+    setConfirmingKey(key);
+    startTransition(async () => {
+      const result = await markNotificationsSeenAction(campaignId, [key], true);
+      setConfirmingKey(null);
+      if (!result.success) {
+        toast.error("ثبت تأیید ناموفق بود");
+        return;
+      }
+      setSeenKeys((prev) => new Set([...prev, key]));
+      pendingSeenRef.current = pendingSeenRef.current.filter((itemKey) => itemKey !== key);
+      toast.success("مشاهده تأیید شد");
     });
   };
 
@@ -297,7 +349,7 @@ export function NotificationsAdmin({
       <div className="rounded-xl border bg-card p-4">
         <p className="text-sm text-muted-foreground">
           {view === "new" ? "موارد جدید" : "دیده‌شده‌ها"}: {formatPersianNumber(filtered.length)}
-          {view === "new" && " — با خروج از صفحه، موارد نمایش‌داده‌شده به‌عنوان دیده‌شده ثبت می‌شوند."}
+          {view === "new" && " — روی هر کارت می‌توانید جداگانه «تأیید مشاهده» بزنید؛ با خروج از صفحه، موارد نمایش‌داده‌شده هم ثبت می‌شوند."}
         </p>
       </div>
 
@@ -314,7 +366,13 @@ export function NotificationsAdmin({
               <h2 className="text-sm font-semibold">{formatPersianDate(date)}</h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((item) => (
-                  <NotificationCard key={item.key} item={item} />
+                  <NotificationCard
+                    key={item.key}
+                    item={item}
+                    showConfirm={view === "new"}
+                    confirming={confirmingKey === item.key}
+                    onConfirm={() => handleConfirmItem(item.key)}
+                  />
                 ))}
               </div>
             </div>
