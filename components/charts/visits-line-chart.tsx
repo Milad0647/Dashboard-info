@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useChartTheme } from "@/lib/hooks/use-chart-theme";
 import { formatPersianDateShort, formatPersianNumber } from "@/lib/utils";
 
 interface VisitsLineChartProps {
@@ -18,6 +19,7 @@ interface VisitsLineChartProps {
 }
 
 export function VisitsLineChart({ data }: VisitsLineChartProps) {
+  const chartTheme = useChartTheme();
   const chartData = data.map((d) => ({
     ...d,
     label: formatPersianDateShort(d.date),
@@ -32,19 +34,24 @@ export function VisitsLineChart({ data }: VisitsLineChartProps) {
         <div className="h-[300px] w-full" dir="ltr">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatPersianNumber(v)} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: chartTheme.tick }} />
+              <YAxis
+                tick={{ fontSize: 12, fill: chartTheme.tick }}
+                tickFormatter={(v) => formatPersianNumber(v)}
+              />
               <Tooltip
                 formatter={(value: number) => formatPersianNumber(value)}
                 labelFormatter={(label) => `تاریخ: ${label}`}
+                contentStyle={chartTheme.tooltipContentStyle}
+                labelStyle={chartTheme.tooltipLabelStyle}
               />
-              <Legend />
+              <Legend wrapperStyle={chartTheme.legendStyle} />
               <Line
                 type="monotone"
                 dataKey="visitors"
                 name="بازدیدکنندگان"
-                stroke="#2563eb"
+                stroke="#3b82f6"
                 strokeWidth={2}
                 dot={{ r: 3 }}
               />
@@ -52,7 +59,7 @@ export function VisitsLineChart({ data }: VisitsLineChartProps) {
                 type="monotone"
                 dataKey="pageViews"
                 name="بازدید صفحات"
-                stroke="#16a34a"
+                stroke="#34d399"
                 strokeWidth={2}
                 dot={{ r: 3 }}
               />

@@ -78,7 +78,7 @@ export function UserContentScoreModal({
                         {item.typeLabel}
                       </Badge>
                     </div>
-                    <div className="inline-flex shrink-0 items-center gap-1 text-sm text-amber-700 dark:text-amber-400">
+                    <div className="inline-flex shrink-0 items-center gap-1 text-sm text-warning">
                       <Star className="h-3.5 w-3.5 fill-current" />
                       {item.score != null ? formatPersianNumber(item.score) : "—"}
                     </div>
@@ -111,7 +111,7 @@ export function UserContentScoreModal({
               )}
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">{selectedItem.typeLabel}</Badge>
-                <span className="inline-flex items-center gap-1 text-sm text-amber-700 dark:text-amber-400">
+                <span className="inline-flex items-center gap-1 text-sm text-warning">
                   <Star className="h-3.5 w-3.5 fill-current" />
                   {selectedItem.score != null ? formatPersianNumber(selectedItem.score) : "—"}
                 </span>

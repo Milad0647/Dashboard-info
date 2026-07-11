@@ -47,7 +47,7 @@ export function AdminItemActions({
             size={compact ? "icon" : "sm"}
             className={cn(
               compact ? "h-7 w-7" : undefined,
-              "hover:border-sky-500 hover:bg-sky-500/10 hover:text-sky-700"
+              "hover:border-sky-500 hover:bg-sky-500/10 hover:text-sky-700 dark:hover:text-sky-300"
             )}
             onClick={onView}
             title="نمایش"
@@ -64,7 +64,7 @@ export function AdminItemActions({
             size={compact ? "icon" : "sm"}
             className={cn(
               compact ? "h-7 w-7" : undefined,
-              "hover:border-amber-500 hover:bg-amber-500/10 hover:text-amber-700"
+              "hover:border-amber-500 hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-300"
             )}
             onClick={onEdit}
             title="ویرایش"

@@ -2,9 +2,10 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useChartTheme } from "@/lib/hooks/use-chart-theme";
 import { formatPersianNumber, getStatusLabel } from "@/lib/utils";
 
-const COLORS = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#64748b"];
+const COLORS = ["#3b82f6", "#34d399", "#fbbf24", "#f87171", "#a78bfa", "#94a3b8"];
 
 interface TrafficSourcesChartProps {
   data: { source: string; count: number }[];
@@ -12,6 +13,7 @@ interface TrafficSourcesChartProps {
 }
 
 export function TrafficSourcesChart({ data, title = "منابع ترافیک" }: TrafficSourcesChartProps) {
+  const chartTheme = useChartTheme();
   const chartData = data.map((d) => ({
     ...d,
     name: getStatusLabel(d.source),
@@ -40,8 +42,12 @@ export function TrafficSourcesChart({ data, title = "منابع ترافیک" }:
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: number) => formatPersianNumber(value)} />
-              <Legend />
+              <Tooltip
+                formatter={(value: number) => formatPersianNumber(value)}
+                contentStyle={chartTheme.tooltipContentStyle}
+                labelStyle={chartTheme.tooltipLabelStyle}
+              />
+              <Legend wrapperStyle={chartTheme.legendStyle} />
             </PieChart>
           </ResponsiveContainer>
         </div>

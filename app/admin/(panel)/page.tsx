@@ -159,7 +159,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
       )}
 
       {showSubmissionsAlert && pendingSubmissions > 0 && (
-        <Card className="border-amber-200 bg-amber-50">
+        <Card className="border-warning/30 bg-warning/10">
           <CardContent className="p-4 flex items-center justify-between">
             <p className="text-sm">
               {formatPersianNumber(pendingSubmissions)} ارسال در انتظار بررسی

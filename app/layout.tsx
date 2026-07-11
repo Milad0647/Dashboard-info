@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
-import { Toaster } from "sonner";
+import { ThemedToaster } from "@/components/themed-toaster";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -17,8 +17,14 @@ const themeInitScript = `
 (function () {
   try {
     var theme = localStorage.getItem("theme");
-    if (theme === "dark") document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
+    var root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+      root.style.colorScheme = "dark";
+    } else {
+      root.classList.remove("dark");
+      root.style.colorScheme = "light";
+    }
   } catch (e) {}
 })();
 `;
@@ -33,10 +39,11 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={`${vazirmatn.className} min-h-screen antialiased`}>
+      <body className={`${vazirmatn.className} min-h-screen bg-background text-foreground antialiased`}>
         {children}
-        <Toaster position="top-center" richColors dir="rtl" />
+        <ThemedToaster />
       </body>
     </html>
   );
 }
+

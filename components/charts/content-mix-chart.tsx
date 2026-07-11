@@ -3,9 +3,10 @@
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ContentMixItem } from "@/lib/campaign-overview-insights";
+import { useChartTheme } from "@/lib/hooks/use-chart-theme";
 import { formatPersianNumber } from "@/lib/utils";
 
-const COLORS = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#64748b"];
+const COLORS = ["#3b82f6", "#34d399", "#fbbf24", "#f87171", "#a78bfa", "#22d3ee", "#94a3b8"];
 
 interface ContentMixChartProps {
   data: ContentMixItem[];
@@ -13,6 +14,7 @@ interface ContentMixChartProps {
 }
 
 export function ContentMixChart({ data, title = "ترکیب انواع محتوا" }: ContentMixChartProps) {
+  const chartTheme = useChartTheme();
   const chartData = data.map((item) => ({
     name: item.label,
     count: item.count,
@@ -46,8 +48,12 @@ export function ContentMixChart({ data, title = "ترکیب انواع محتو�
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => formatPersianNumber(value)} />
-                <Legend />
+                <Tooltip
+                  formatter={(value: number) => formatPersianNumber(value)}
+                  contentStyle={chartTheme.tooltipContentStyle}
+                  labelStyle={chartTheme.tooltipLabelStyle}
+                />
+                <Legend wrapperStyle={chartTheme.legendStyle} />
               </PieChart>
             </ResponsiveContainer>
           </div>

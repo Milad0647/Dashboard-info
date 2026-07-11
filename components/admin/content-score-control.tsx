@@ -49,7 +49,7 @@ export function ContentScoreControl({
 
   if (!canScore) {
     return (
-      <div className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs text-amber-700 dark:text-amber-400">
+      <div className="inline-flex items-center gap-1 rounded-md bg-warning/10 px-2 py-1 text-xs text-warning">
         <Star className="h-3 w-3 fill-current" />
         امتیاز: {formatPersianNumber(score ?? 0)}
       </div>
@@ -105,7 +105,7 @@ export function ContentScoreControl({
   if (compact) {
     return (
       <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-        <Star className="h-3.5 w-3.5 text-amber-500" />
+        <Star className="h-3.5 w-3.5 text-warning" />
         {input}
         {isPending && <span className="text-[10px] text-muted-foreground">...</span>}
       </div>
@@ -114,11 +114,11 @@ export function ContentScoreControl({
 
   return (
     <div
-      className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3"
+      className="space-y-2 rounded-lg border border-warning/30 bg-warning/5 p-3"
       onClick={(e) => e.stopPropagation()}
     >
       <Label className="flex items-center gap-1.5 text-sm">
-        <Star className="h-3.5 w-3.5 text-amber-500" />
+        <Star className="h-3.5 w-3.5 text-warning" />
         امتیازدهی (ذخیره خودکار)
       </Label>
       <div className="flex items-center gap-2">

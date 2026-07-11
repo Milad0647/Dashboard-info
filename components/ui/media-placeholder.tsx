@@ -26,11 +26,11 @@ export function MediaPlaceholder({
   return (
     <div
       className={cn(
-        "flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 text-muted-foreground",
+        "flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-muted via-card to-muted text-muted-foreground",
         className
       )}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 shadow-sm">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background/80 shadow-sm ring-1 ring-border">
         <Icon className="h-6 w-6" />
       </div>
       <span className="text-xs font-medium">{label ?? defaultLabel}</span>

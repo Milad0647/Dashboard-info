@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, LogIn } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getCampaignList } from "@/lib/data-access/campaign";
 import { formatPersianDate } from "@/lib/utils";
 
@@ -13,22 +14,25 @@ export default async function HomePage() {
   const campaigns = await getCampaignList();
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <header className="border-b bg-card/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
             <div className="text-center sm:text-right">
-              <h1 className="text-3xl font-bold mb-2">گزارش زنده کمپین</h1>
-              <p className="text-muted-foreground max-w-xl">
+              <h1 className="mb-2 text-3xl font-bold">گزارش زنده کمپین</h1>
+              <p className="max-w-xl text-muted-foreground">
                 گزارش پیشرفت کمپین‌های تبلیغاتی — یک کمپین را انتخاب کنید
               </p>
             </div>
-            <Button asChild variant="outline" className="shrink-0">
-              <Link href="/admin/login">
-                <LogIn className="h-4 w-4" />
-                ورود به پنل
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button asChild variant="outline" className="shrink-0">
+                <Link href="/admin/login">
+                  <LogIn className="h-4 w-4" />
+                  ورود به پنل
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </header>

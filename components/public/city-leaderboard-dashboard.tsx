@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { SectionHeader } from "@/components/public/section-header";
 import { UserContentScoreModal } from "@/components/public/user-content-score-modal";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   buildProvinceContributorLeaderboard,
   buildProvinceLeaderboard,
@@ -202,11 +203,14 @@ export function CityLeaderboardDashboard({ data, slug }: CityLeaderboardDashboar
             </h1>
             <p className="text-sm text-muted-foreground">{settings.title}</p>
           </div>
-          <Badge variant="outline" className="gap-1">
-            <Trophy className="h-3.5 w-3.5" />
-            {formatPersianNumber(activeEntries.length)}{" "}
-            {isProvinceView ? "استان" : "کاربر"}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Badge variant="outline" className="gap-1">
+              <Trophy className="h-3.5 w-3.5" />
+              {formatPersianNumber(activeEntries.length)}{" "}
+              {isProvinceView ? "استان" : "کاربر"}
+            </Badge>
+          </div>
         </div>
       </header>
 
@@ -329,7 +333,7 @@ export function CityLeaderboardDashboard({ data, slug }: CityLeaderboardDashboar
                               </span>
                             )}
                             {entry.todayUploads > 0 && (
-                              <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                              <Badge className="bg-success/15 text-success hover:bg-success/20">
                                 +{formatPersianNumber(entry.todayUploads)} امروز
                               </Badge>
                             )}

@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useChartTheme } from "@/lib/hooks/use-chart-theme";
 import type { UploadActivitySummary } from "@/lib/upload-activity-stats";
 import { formatPersianDateShort, formatPersianNumber } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ interface UploadActivityChartProps {
 }
 
 export function UploadActivityChart({ stats }: UploadActivityChartProps) {
+  const chartTheme = useChartTheme();
   const chartData = stats.series.map((point) => ({
     ...point,
     label: formatPersianDateShort(point.date),
@@ -56,22 +58,28 @@ export function UploadActivityChart({ stats }: UploadActivityChartProps) {
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="uploadGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0.02} />
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} tickFormatter={(v) => formatPersianNumber(v)} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: chartTheme.tick }} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: chartTheme.tick }}
+                  allowDecimals={false}
+                  tickFormatter={(v) => formatPersianNumber(v)}
+                />
                 <Tooltip
                   formatter={(value: number) => formatPersianNumber(value)}
                   labelFormatter={(label) => `تاریخ: ${label}`}
+                  contentStyle={chartTheme.tooltipContentStyle}
+                  labelStyle={chartTheme.tooltipLabelStyle}
                 />
                 <Area
                   type="monotone"
                   dataKey="total"
                   name="آپلود"
-                  stroke="#2563eb"
+                  stroke="#3b82f6"
                   fill="url(#uploadGradient)"
                   strokeWidth={2}
                 />

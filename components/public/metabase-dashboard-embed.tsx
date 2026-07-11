@@ -54,6 +54,18 @@ interface MetabaseDashboardEmbedProps {
   reloadIntervalMs?: number;
 }
 
+function withMetabaseTheme(embedUrl: string, isDark: boolean): string {
+  const theme = isDark ? "night" : "transparent";
+  const [base, hash = ""] = embedUrl.split("#");
+  const params = new URLSearchParams(hash);
+  params.set("theme", theme);
+  if (!params.has("bordered")) params.set("bordered", "false");
+  if (!params.has("titled")) params.set("titled", "false");
+  if (!params.has("background")) params.set("background", "false");
+  if (!params.has("refresh")) params.set("refresh", "300");
+  return `${base}#${params.toString()}`;
+}
+
 export function MetabaseDashboardEmbed({
   embedUrl,
   title = "Metabase dashboard",
@@ -63,13 +75,24 @@ export function MetabaseDashboardEmbed({
   const [iframeKey, setIframeKey] = useState(0);
   const [height, setHeight] = useState(FALLBACK_HEIGHT);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setIsDark(document.documentElement.classList.contains("dark"));
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  const themedEmbedUrl = withMetabaseTheme(embedUrl, isDark);
 
   useEffect(() => {
     setIsLoading(true);
-  }, [embedUrl, iframeKey]);
+  }, [themedEmbedUrl, iframeKey]);
 
   useEffect(() => {
-    const origin = getMetabaseOrigin(embedUrl);
+    const origin = getMetabaseOrigin(themedEmbedUrl);
 
     const onMessage = (event: MessageEvent) => {
       if (origin && event.origin !== origin) return;
@@ -85,20 +108,20 @@ export function MetabaseDashboardEmbed({
 
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [embedUrl]);
+  }, [themedEmbedUrl]);
 
   useEffect(() => {
     setHeight(FALLBACK_HEIGHT);
-  }, [embedUrl, iframeKey]);
+  }, [themedEmbedUrl, iframeKey]);
 
   useEffect(() => {
     const timer = setInterval(() => setIframeKey((value) => value + 1), reloadIntervalMs);
     return () => clearInterval(timer);
-  }, [embedUrl, reloadIntervalMs]);
+  }, [themedEmbedUrl, reloadIntervalMs]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    const origin = getMetabaseOrigin(embedUrl);
+    const origin = getMetabaseOrigin(themedEmbedUrl);
     if (!iframe || !origin) return;
 
     let cancelled = false;
@@ -132,7 +155,7 @@ export function MetabaseDashboardEmbed({
     return () => {
       cancelled = true;
     };
-  }, [embedUrl, iframeKey]);
+  }, [themedEmbedUrl, iframeKey]);
 
   return (
     <div className="relative w-full overflow-hidden rounded-xl border bg-background">
@@ -148,8 +171,8 @@ export function MetabaseDashboardEmbed({
       )}
       <iframe
         ref={iframeRef}
-        key={iframeKey}
-        src={embedUrl}
+        key={`${iframeKey}-${isDark ? "dark" : "light"}`}
+        src={themedEmbedUrl}
         title={title}
         className={cn("block w-full border-0 transition-opacity", isLoading ? "opacity-0" : "opacity-100")}
         style={{

@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useChartTheme } from "@/lib/hooks/use-chart-theme";
 import { formatPersianNumber, getStatusLabel } from "@/lib/utils";
 
 interface BarChartCardProps {
@@ -44,13 +45,15 @@ function MultiLineYTick({
   x,
   y,
   payload,
+  fill,
 }: {
   x?: number;
   y?: number;
   payload?: { value?: string };
+  fill?: string;
 }) {
   const lines = String(payload?.value ?? "").split("\n");
-  const startY = (y ?? 0) - ((lines.length - 1) * 6);
+  const startY = (y ?? 0) - (lines.length - 1) * 6;
 
   return (
     <g transform={`translate(${x},${startY})`}>
@@ -61,7 +64,7 @@ function MultiLineYTick({
           y={index * 12}
           dy={4}
           textAnchor="end"
-          fill="currentColor"
+          fill={fill ?? "currentColor"}
           fontSize={11}
         >
           {line}
@@ -71,7 +74,8 @@ function MultiLineYTick({
   );
 }
 
-export function BarChartCard({ data, title, color = "#2563eb" }: BarChartCardProps) {
+export function BarChartCard({ data, title, color = "#3b82f6" }: BarChartCardProps) {
+  const chartTheme = useChartTheme();
   const chartData = data.map((d) => {
     const fullName = getStatusLabel(d.label) !== d.label ? getStatusLabel(d.label) : d.label;
     return {
@@ -111,16 +115,16 @@ export function BarChartCard({ data, title, color = "#2563eb" }: BarChartCardPro
                 margin={{ left: 4, right: 16, top: 8, bottom: 8 }}
                 barCategoryGap="24%"
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
                 <XAxis
                   type="number"
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 12, fill: chartTheme.tick }}
                   tickFormatter={(v) => formatPersianNumber(v)}
                 />
                 <YAxis
                   type="category"
                   dataKey="name"
-                  tick={<MultiLineYTick />}
+                  tick={<MultiLineYTick fill={chartTheme.tick} />}
                   width={yAxisWidth}
                   interval={0}
                 />
@@ -130,6 +134,8 @@ export function BarChartCard({ data, title, color = "#2563eb" }: BarChartCardPro
                     const fullName = payload?.[0]?.payload?.fullName;
                     return typeof fullName === "string" ? fullName : "";
                   }}
+                  contentStyle={chartTheme.tooltipContentStyle}
+                  labelStyle={chartTheme.tooltipLabelStyle}
                 />
                 <Bar dataKey="value" fill={color} radius={[0, 4, 4, 0]} barSize={18} />
               </BarChart>
