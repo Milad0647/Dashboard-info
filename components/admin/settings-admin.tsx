@@ -93,7 +93,7 @@ const featureLabels: { key: keyof CampaignFeatures; label: string }[] = [
   { key: "pressPublications", label: "مجله و روزنامه" },
   { key: "submissions", label: "مشارکت کاربران" },
   { key: "files", label: "فایل‌های کمپین" },
-  { key: "rawMedia", label: "ارسال رویش" },
+  { key: "rawMedia", label: "راش تصویر" },
 ];
 
 function buildChannelAnalyticsConfig(

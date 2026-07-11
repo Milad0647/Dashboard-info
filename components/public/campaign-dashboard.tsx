@@ -246,7 +246,7 @@ function CampaignDashboardBody({
 
         {sections.rawMedia && (
           <DeferredSection minHeight={240} forceRender={forceRender}>
-            <section data-export-section data-export-label="ارسال رویش">
+            <section data-export-section data-export-label="راش تصویر">
               <RawMediaSection
                 items={data.rawMedia}
                 groups={data.rawMediaGroups}

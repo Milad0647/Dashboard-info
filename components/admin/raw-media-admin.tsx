@@ -155,7 +155,7 @@ export function RawMediaAdmin({
         },
         ...prev,
       ]);
-      toast.success("ارسال رویش ذخیره شد");
+      toast.success("راش تصویر ذخیره شد");
       setDialogOpen(false);
       resetForm();
     });
@@ -173,7 +173,7 @@ export function RawMediaAdmin({
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">ارسال رویش</h1>
+          <h1 className="text-2xl font-bold">راش تصویر</h1>
           <p className="text-sm text-muted-foreground">
             آپلود عکس و فیلم خام با حجم بالا — قابل دانلود توسط مدیر/کارفرما
           </p>
@@ -191,7 +191,7 @@ export function RawMediaAdmin({
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <HardDrive className="h-4 w-4 text-primary" />
-            فضای ذخیره‌سازی ارسال رویش
+            فضای ذخیره‌سازی راش تصویر
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -229,7 +229,7 @@ export function RawMediaAdmin({
 
       {filteredItems.length === 0 ? (
         <div className="rounded-xl border py-12 text-center text-muted-foreground">
-          هنوز موردی برای ارسال رویش آپلود نشده است.
+          هنوز موردی برای راش تصویر آپلود نشده است.
         </div>
       ) : viewMode === "list" ? (
         <div className="overflow-hidden rounded-xl border">
@@ -324,7 +324,7 @@ export function RawMediaAdmin({
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>آپلود ارسال رویش</DialogTitle>
+            <DialogTitle>آپلود راش تصویر</DialogTitle>
             <DialogDescription>
               عکس یا فیلم خام با حجم بالا — حداکثر هر فایل {formatStorageBytes(RAW_MEDIA_MAX_FILE_BYTES)}
             </DialogDescription>

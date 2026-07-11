@@ -35,7 +35,7 @@ export const contributorPermissionLabels: Record<ContributorPermissionKey, strin
   posters: "پوسترها",
   videos: "ویدیوها",
   files: "فایل‌ها",
-  rawMedia: "ارسال رویش",
+  rawMedia: "راش تصویر",
   analytics: "آمار سایت",
   socialPosts: "شبکه‌های اجتماعی",
   sitePublications: "انتشار در سایت",

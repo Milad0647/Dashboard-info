@@ -62,7 +62,7 @@ const allNavItems: {
   { href: "/admin/posters", label: "پوسترها", icon: ImageIcon, permissionKey: "posters" },
   { href: "/admin/videos", label: "ویدیوها", icon: Video, permissionKey: "videos" },
   { href: "/admin/files", label: "فایل‌ها", icon: FileStack, permissionKey: "files" },
-  { href: "/admin/raw-media", label: "ارسال رویش", icon: HardDrive, permissionKey: "rawMedia" },
+  { href: "/admin/raw-media", label: "راش تصویر", icon: HardDrive, permissionKey: "rawMedia" },
   { href: "/admin/analytics", label: "آمار سایت", icon: BarChart3, permissionKey: "analytics" },
   { href: "/admin/site-publications", label: "انتشار در سایت", icon: Globe, permissionKey: "sitePublications" },
   { href: "/admin/social-posts", label: "شبکه‌های اجتماعی", icon: Share2, permissionKey: "socialPosts" },
