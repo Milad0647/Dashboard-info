@@ -25,8 +25,10 @@ import { BillboardCreateAssignmentDialog } from "@/components/admin/billboard-cr
 import { BillboardAddPeriodDialog } from "@/components/admin/billboard-add-period-dialog";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
+import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { deleteBillboardAction } from "@/lib/actions/admin-actions";
 import { canManageBillboardPeriods, isApiBillboard } from "@/lib/billboards";
+import { getBillboardDisplayImage } from "@/lib/billboard-media";
 import type { ContentTopic } from "@/lib/content-topics";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import type { Billboard } from "@/lib/types";
@@ -69,6 +71,7 @@ export function BillboardsAdmin({
   const [billboards, setBillboards] = useState(initialBillboards);
   const [formOpen, setFormOpen] = useState(false);
   const [editingBillboard, setEditingBillboard] = useState<Billboard | null>(null);
+  const [previewBillboard, setPreviewBillboard] = useState<Billboard | null>(null);
   const [periodOpen, setPeriodOpen] = useState(false);
   const [periodBillboard, setPeriodBillboard] = useState<Billboard | null>(null);
   const [isNormalizing, setIsNormalizing] = useState(false);
@@ -239,7 +242,7 @@ export function BillboardsAdmin({
               key={billboard.id}
               billboard={billboard}
               onClick={() => openEdit(billboard)}
-              onView={() => openEdit(billboard)}
+              onView={() => setPreviewBillboard(billboard)}
               onEdit={() => openEdit(billboard)}
               onDelete={handleDelete}
               canScore={canScore}
@@ -264,7 +267,7 @@ export function BillboardsAdmin({
                 <p className="text-xs text-muted-foreground">{formatBillboardCityLine(billboard)}</p>
               </div>
               <AdminItemActions
-                onView={() => openEdit(billboard)}
+                onView={() => setPreviewBillboard(billboard)}
                 onEdit={() => openEdit(billboard)}
                 onDelete={() => handleDelete(billboard)}
               />
@@ -321,6 +324,27 @@ export function BillboardsAdmin({
           isReadOnly={isApiBillboard}
         />
       )}
+
+      <AdminContentPreviewDialog
+        open={Boolean(previewBillboard)}
+        onOpenChange={(open) => !open && setPreviewBillboard(null)}
+        title={previewBillboard?.title ?? "نمایش تبلیغات محیطی"}
+        description={previewBillboard?.description}
+        imageUrl={previewBillboard ? getBillboardDisplayImage(previewBillboard) : null}
+        meta={
+          previewBillboard ? (
+            <p className="text-xs text-muted-foreground">{formatBillboardCityLine(previewBillboard)}</p>
+          ) : null
+        }
+        onEdit={
+          previewBillboard
+            ? () => {
+                setPreviewBillboard(null);
+                openEdit(previewBillboard);
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }

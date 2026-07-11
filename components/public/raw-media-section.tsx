@@ -5,6 +5,7 @@ import { Download, Film, HardDrive, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
+import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { flattenOwnerGroupsInSortOrder } from "@/lib/owner-groups";
@@ -133,6 +134,7 @@ export function RawMediaSection({ items, groups, storage }: RawMediaSectionProps
       title="ارسال رویش"
       description="عکس و فیلم خام با حجم بالا — قابل دانلود توسط مدیر و کارفرما"
     >
+      <SectionTopCompaniesBox groups={filteredGroups} />
       <StorageMeter storage={storage} />
       {filteredItems.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">

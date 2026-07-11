@@ -6,6 +6,7 @@ import type { DataOwnerGroup, SocialMediaPost } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
+import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { flattenOwnerGroupsInSortOrder } from "@/lib/owner-groups";
@@ -111,6 +112,7 @@ export function SitePublicationsSection({ publications, groups }: SitePublicatio
       title="انتشار در سایت"
       description="مطالب منتشرشده در سایت کمپین — عنوان هر مورد لینک مستقیم به صفحه است"
     >
+      <SectionTopCompaniesBox groups={filteredGroups} />
       {filteredPublications.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
           مطلبی با فیلتر انتخاب‌شده یافت نشد.

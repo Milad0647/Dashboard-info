@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BillboardThumbnail } from "@/components/public/billboard-thumbnail";
+import { ImageZoom } from "@/components/ui/image-zoom";
 import {
   filterPublicBillboardTags,
   getBillboardDateLabel,
@@ -57,11 +58,20 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
         </DialogHeader>
 
         <div className="relative aspect-[4/3] w-full bg-muted">
-          <BillboardThumbnail
-            billboard={billboard}
-            alt={billboard.title}
-            sizes="(max-width: 768px) 100vw, 768px"
-          />
+          {canDownload ? (
+            <ImageZoom
+              src={getBillboardDisplayImage(billboard)}
+              alt={billboard.title}
+              className="absolute inset-0 h-full w-full"
+              imgClassName="object-cover"
+            />
+          ) : (
+            <BillboardThumbnail
+              billboard={billboard}
+              alt={billboard.title}
+              sizes="(max-width: 768px) 100vw, 768px"
+            />
+          )}
         </div>
 
         <div className="p-4 space-y-3 border-t">

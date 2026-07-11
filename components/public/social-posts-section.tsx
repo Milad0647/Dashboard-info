@@ -5,6 +5,7 @@ import type { DataOwnerGroup, SocialMediaPost } from "@/lib/types";
 import { formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
+import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { Badge } from "@/components/ui/badge";
@@ -152,6 +153,7 @@ export function SocialPostsSection({ posts, groups }: SocialPostsSectionProps) {
       title="شبکه‌های اجتماعی"
       description={`${formatPersianNumber(filteredPosts.length)} پست — اینستاگرام، تلگرام و سایر شبکه‌ها`}
     >
+      <SectionTopCompaniesBox groups={filteredGroups} />
       <div className="space-y-4">
         <OwnerGroupedSection groups={visibleGroups}>
           {(groupPosts) => (

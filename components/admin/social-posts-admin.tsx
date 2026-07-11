@@ -21,6 +21,7 @@ import {
 } from "@/components/admin/admin-content-filter-bar";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
+import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { AdminSocialPostCompactCard } from "@/components/admin/admin-social-post-compact-card";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
@@ -86,6 +87,7 @@ export function SocialPostsAdmin({
 }: SocialPostsAdminProps) {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [previewPost, setPreviewPost] = useState<SocialMediaPost | null>(null);
   const [planLabels, setPlanLabels] = useState<string[]>([]);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("social-posts");
@@ -259,7 +261,7 @@ export function SocialPostsAdmin({
               key={post.id}
               post={post}
               onClick={() => openEdit(post)}
-              onView={() => openEdit(post)}
+              onView={() => setPreviewPost(post)}
               onEdit={() => openEdit(post)}
               onDelete={() => handleDelete(post)}
             />
@@ -280,7 +282,7 @@ export function SocialPostsAdmin({
                 </p>
               </div>
               <AdminItemActions
-                onView={() => openEdit(post)}
+                onView={() => setPreviewPost(post)}
                 onEdit={() => openEdit(post)}
                 onDelete={() => handleDelete(post)}
               />
@@ -291,6 +293,29 @@ export function SocialPostsAdmin({
           )}
         </div>
       )}
+
+      <AdminContentPreviewDialog
+        open={Boolean(previewPost)}
+        onOpenChange={(open) => !open && setPreviewPost(null)}
+        title={previewPost?.title ?? "نمایش پست"}
+        description={previewPost?.description}
+        imageUrl={previewPost?.mediaUrl || previewPost?.coverImageUrl}
+        meta={
+          previewPost ? (
+            <p className="text-xs text-muted-foreground">
+              {getStatusLabel(previewPost.platform)} · {previewPost.ownerName ?? "—"}
+            </p>
+          ) : null
+        }
+        onEdit={
+          previewPost
+            ? () => {
+                setPreviewPost(null);
+                openEdit(previewPost);
+              }
+            : undefined
+        }
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

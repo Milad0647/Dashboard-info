@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
+import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
 import { BillboardCard } from "@/components/public/billboard-card";
 import { BillboardMap } from "@/components/public/billboard-map";
 import {
@@ -97,6 +98,12 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
     return groupItems;
   }, [visibleBillboards, adminOwnerLabel, effectiveSort]);
 
+  const rankingGroups = useMemo(() => {
+    return effectiveSort !== "default"
+      ? groupByOwnerPreservingOrder(filtered, adminOwnerLabel ?? undefined)
+      : groupByOwner(filtered, adminOwnerLabel ?? undefined);
+  }, [filtered, adminOwnerLabel, effectiveSort]);
+
   const openBillboard = (billboard: Billboard) => {
     setSelectedBillboard(billboard);
     setModalOpen(true);
@@ -165,6 +172,7 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
         description="نمایش تبلیغات محیطی کمپین روی نقشه و کارت‌ها"
         controls={controls}
       >
+        <SectionTopCompaniesBox groups={rankingGroups} />
         <div className="mb-6 space-y-3">
           <div className="flex justify-end">
             <BillboardMapExpandButton

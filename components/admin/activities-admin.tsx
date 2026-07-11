@@ -22,6 +22,7 @@ import {
 import { AdminActivityCompactCard } from "@/components/admin/admin-activity-compact-card";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
+import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
@@ -82,6 +83,7 @@ export function ActivitiesAdmin({
 }: ActivitiesAdminProps) {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [previewActivity, setPreviewActivity] = useState<CampaignActivity | null>(null);
   const [mediaItems, setMediaItems] = useState<ActivityMediaItem[]>([]);
   const [planLabels, setPlanLabels] = useState<string[]>([]);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
@@ -248,7 +250,7 @@ export function ActivitiesAdmin({
               key={activity.id}
               activity={activity}
               onClick={() => openEdit(activity)}
-              onView={() => openEdit(activity)}
+              onView={() => setPreviewActivity(activity)}
               onEdit={() => openEdit(activity)}
               onDelete={() => handleDelete(activity)}
             />
@@ -269,7 +271,7 @@ export function ActivitiesAdmin({
                 </p>
               </div>
               <AdminItemActions
-                onView={() => openEdit(activity)}
+                onView={() => setPreviewActivity(activity)}
                 onEdit={() => openEdit(activity)}
                 onDelete={() => handleDelete(activity)}
               />
@@ -280,6 +282,33 @@ export function ActivitiesAdmin({
           )}
         </div>
       )}
+
+      <AdminContentPreviewDialog
+        open={Boolean(previewActivity)}
+        onOpenChange={(open) => !open && setPreviewActivity(null)}
+        title={previewActivity?.title ?? "نمایش اقدام"}
+        description={previewActivity?.location}
+        imageUrl={
+          previewActivity?.imageUrl ||
+          previewActivity?.mediaItems?.find((item) => item.url)?.url ||
+          null
+        }
+        meta={
+          previewActivity ? (
+            <p className="text-xs text-muted-foreground">
+              {getActivityTypeLabel(previewActivity.activityType)} · {previewActivity.ownerName ?? "—"}
+            </p>
+          ) : null
+        }
+        onEdit={
+          previewActivity
+            ? () => {
+                setPreviewActivity(null);
+                openEdit(previewActivity);
+              }
+            : undefined
+        }
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">

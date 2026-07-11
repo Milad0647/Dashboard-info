@@ -5,6 +5,7 @@ import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
+import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { flattenOwnerGroupsInSortOrder } from "@/lib/owner-groups";
@@ -108,6 +109,7 @@ export function CampaignFilesSection({ files, groups }: CampaignFilesSectionProp
       title="فایل‌های کمپین"
       description="دانلود PDF، Word، Excel و سایر فایل‌های مرتبط با کمپین"
     >
+      <SectionTopCompaniesBox groups={filteredGroups} />
       {filteredFiles.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
           فایلی با فیلتر انتخاب‌شده یافت نشد.

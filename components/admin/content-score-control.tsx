@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveContentScoreAction } from "@/lib/actions/score-actions";
@@ -31,6 +30,20 @@ export function ContentScoreControl({
 }: ContentScoreControlProps) {
   const [value, setValue] = useState(score != null ? String(score) : "");
   const [isPending, startTransition] = useTransition();
+  const lastSavedRef = useRef(score != null ? String(score) : "");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const next = score != null ? String(score) : "";
+    setValue(next);
+    lastSavedRef.current = next;
+  }, [score, contentId]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   if (!canScore && (score == null || Number.isNaN(score))) return null;
 
@@ -43,8 +56,9 @@ export function ContentScoreControl({
     );
   }
 
-  const handleSave = () => {
-    const parsed = value.trim() === "" ? null : Number(value);
+  const persist = (raw: string) => {
+    if (raw === lastSavedRef.current) return;
+    const parsed = raw.trim() === "" ? null : Number(raw);
     if (parsed != null && (!Number.isFinite(parsed) || parsed < 0)) {
       toast.error("امتیاز باید عدد معتبر باشد");
       return;
@@ -61,52 +75,55 @@ export function ContentScoreControl({
         toast.error(result.error ?? "ذخیره امتیاز ناموفق بود");
         return;
       }
+      lastSavedRef.current = raw;
       onScoreSaved?.(parsed);
-      toast.success("امتیاز ذخیره شد");
     });
   };
+
+  const scheduleSave = (raw: string) => {
+    setValue(raw);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => persist(raw), 500);
+  };
+
+  const input = (
+    <Input
+      type="number"
+      min={0}
+      step={1}
+      value={value}
+      onChange={(e) => scheduleSave(e.target.value)}
+      onBlur={() => persist(value)}
+      dir="ltr"
+      placeholder="—"
+      className={compact ? "h-7 w-16 px-1 text-xs" : "max-w-[140px]"}
+      disabled={isPending}
+      aria-label="امتیاز"
+    />
+  );
 
   if (compact) {
     return (
       <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
         <Star className="h-3.5 w-3.5 text-amber-500" />
-        <Input
-          type="number"
-          min={0}
-          step={1}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="h-7 w-16 px-1 text-xs"
-          dir="ltr"
-          placeholder="—"
-        />
-        <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-[10px]" disabled={isPending} onClick={handleSave}>
-          ذخیره
-        </Button>
+        {input}
+        {isPending && <span className="text-[10px] text-muted-foreground">...</span>}
       </div>
     );
   }
 
   return (
-    <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3"
+      onClick={(e) => e.stopPropagation()}
+    >
       <Label className="flex items-center gap-1.5 text-sm">
         <Star className="h-3.5 w-3.5 text-amber-500" />
-        امتیازدهی (فقط مدیر و کارفرما)
+        امتیازدهی (ذخیره خودکار)
       </Label>
       <div className="flex items-center gap-2">
-        <Input
-          type="number"
-          min={0}
-          step={1}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          dir="ltr"
-          placeholder="عدد امتیاز"
-          className="max-w-[140px]"
-        />
-        <Button type="button" disabled={isPending} onClick={handleSave}>
-          ذخیره امتیاز
-        </Button>
+        {input}
+        {isPending && <span className="text-xs text-muted-foreground">در حال ذخیره...</span>}
       </div>
     </div>
   );

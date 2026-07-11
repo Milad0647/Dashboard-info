@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { Download, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ImageZoom } from "@/components/ui/image-zoom";
 import { getActivityTypeLabel } from "@/lib/activity-types";
 import {
   downloadMedia,
@@ -32,6 +32,9 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
   const canPlayVideo = hasVideo && isEmbeddableVideoUrl(activity.videoUrl!);
   const videoSrc = canPlayVideo ? resolveAbsoluteMediaUrl(resolveVideoEmbedUrl(activity.videoUrl!)) : "";
   const isDirectVideo = canPlayVideo && isDirectVideoUrl(videoSrc);
+  const galleryImages =
+    activity.mediaItems?.filter((item) => item.url?.trim() && item.type !== "video").map((item) => item.url) ??
+    [];
 
   const handleDownloadImage = () => {
     if (!activity.imageUrl) return;
@@ -51,7 +54,7 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto p-0">
+      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto overflow-x-hidden p-0">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="flex flex-wrap items-center gap-2 text-base">
             {activity.title}
@@ -90,14 +93,27 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
         )}
 
         {!hasVideo && hasImage && (
-          <div className="relative mx-4 aspect-video max-h-[60vh] w-auto bg-muted">
-            <Image
+          <div className="p-4 pt-2">
+            <ImageZoom
               src={activity.imageUrl!}
               alt={activity.title}
-              fill
-              className="object-contain"
-              sizes="(max-width: 768px) 100vw, 768px"
+              className="w-full rounded-lg bg-muted"
+              imgClassName="max-h-[60vh] w-full object-contain"
             />
+          </div>
+        )}
+
+        {!hasVideo && !hasImage && galleryImages.length > 0 && (
+          <div className="grid gap-3 p-4 sm:grid-cols-2">
+            {galleryImages.map((url) => (
+              <ImageZoom
+                key={url}
+                src={url}
+                alt={activity.title}
+                className="w-full rounded-lg bg-muted"
+                imgClassName="max-h-64 w-full object-contain"
+              />
+            ))}
           </div>
         )}
 

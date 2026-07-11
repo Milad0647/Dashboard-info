@@ -23,6 +23,7 @@ import { MeetingsSection } from "@/components/public/meetings-section";
 import { DeferredSection } from "@/components/public/deferred-section";
 import { CampaignScreenshotExporter } from "@/components/public/campaign-screenshot-exporter";
 import { CampaignExportProvider } from "@/lib/context/campaign-export-context";
+import { CampaignScrollProvider, useCampaignScroll } from "@/lib/context/campaign-scroll-context";
 import { ContentScoreProvider } from "@/lib/context/content-score-context";
 import {
   collectCampaignOwnerLocations,
@@ -74,7 +75,9 @@ function CampaignDashboardBody({
 }) {
   const { settings, sections } = data;
   const { filter } = useOwnerLocationFilter();
+  const { forceSectionsMounted } = useCampaignScroll();
   const contentFilterActive = isCampaignContentFilterActive(filter);
+  const forceRender = exportMode || forceSectionsMounted;
 
   return (
     <div className="min-h-screen" data-campaign-export-root>
@@ -113,11 +116,11 @@ function CampaignDashboardBody({
         </div>
       </header>
 
-      <main className="container mx-auto space-y-8 px-4 py-8 max-w-[1280px]">
+      <main className="container mx-auto max-w-[1280px] space-y-8 overflow-x-hidden px-4 py-8">
         <CampaignOverviewSection data={data} />
 
         {sections.analytics && !contentFilterActive && (
-          <DeferredSection minHeight={320} forceRender={exportMode}>
+          <DeferredSection minHeight={320} forceRender={forceRender}>
             <section data-export-section data-export-label="آمار سایت کمپین">
               <AnalyticsSection analytics={data.analytics} />
             </section>
@@ -125,7 +128,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.billboards && (
-          <DeferredSection minHeight={360} forceRender={exportMode}>
+          <DeferredSection minHeight={360} forceRender={forceRender}>
             <section data-export-section data-export-label="تبلیغات محیطی">
               <BillboardSection
                 billboards={data.billboards}
@@ -136,7 +139,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.posters && (
-          <DeferredSection minHeight={400} forceRender={exportMode}>
+          <DeferredSection minHeight={400} forceRender={forceRender}>
             <section data-export-section data-export-label="پوسترها">
               <PostersSection
                 categories={data.posterCategories}
@@ -148,7 +151,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.videos && (
-          <DeferredSection minHeight={400} forceRender={exportMode}>
+          <DeferredSection minHeight={400} forceRender={forceRender}>
             <section data-export-section data-export-label="ویدیوها">
               <VideosSection
                 categories={data.videoCategories}
@@ -160,7 +163,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.sitePublications && (
-          <DeferredSection minHeight={240} forceRender={exportMode}>
+          <DeferredSection minHeight={240} forceRender={forceRender}>
             <section data-export-section data-export-label="انتشار در سایت">
               <SitePublicationsSection
                 publications={data.sitePublications}
@@ -171,7 +174,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.socialAnalytics && (
-          <DeferredSection minHeight={280} forceRender={exportMode}>
+          <DeferredSection minHeight={280} forceRender={forceRender}>
             <section data-export-section data-export-label="آمار شبکه‌های اجتماعی">
               <SocialAnalyticsSection
                 analytics={data.socialAnalytics}
@@ -182,7 +185,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.socialPosts && (
-          <DeferredSection minHeight={280} forceRender={exportMode}>
+          <DeferredSection minHeight={280} forceRender={forceRender}>
             <section data-export-section data-export-label="پست‌های شبکه اجتماعی">
               <SocialPostsSection posts={data.socialPosts} groups={data.socialPostGroups} />
             </section>
@@ -190,7 +193,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.pressPublications && (
-          <DeferredSection minHeight={320} forceRender={exportMode}>
+          <DeferredSection minHeight={320} forceRender={forceRender}>
             <section data-export-section data-export-label="مجله و روزنامه">
               <PressPublicationsSection
                 publications={data.pressPublications}
@@ -201,7 +204,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.activities && (
-          <DeferredSection minHeight={320} forceRender={exportMode}>
+          <DeferredSection minHeight={320} forceRender={forceRender}>
             <section data-export-section data-export-label="اقدامات">
               <ActivitiesSection
                 activities={data.activities}
@@ -213,7 +216,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.broadcastReports && (
-          <DeferredSection minHeight={240} forceRender={exportMode}>
+          <DeferredSection minHeight={240} forceRender={forceRender}>
             <section data-export-section data-export-label="پخش صدا و سیما">
               <BroadcastSection reports={data.broadcastReports} groups={data.broadcastReportGroups} />
             </section>
@@ -221,7 +224,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.meetings && (
-          <DeferredSection minHeight={280} forceRender={exportMode}>
+          <DeferredSection minHeight={280} forceRender={forceRender}>
             <section data-export-section data-export-label="جلسات و مصوبات">
               <MeetingsSection
                 meetings={data.meetings}
@@ -234,7 +237,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.files && (
-          <DeferredSection minHeight={200} forceRender={exportMode}>
+          <DeferredSection minHeight={200} forceRender={forceRender}>
             <section data-export-section data-export-label="فایل‌ها">
               <CampaignFilesSection files={data.files} groups={data.fileGroups} />
             </section>
@@ -242,7 +245,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.rawMedia && (
-          <DeferredSection minHeight={240} forceRender={exportMode}>
+          <DeferredSection minHeight={240} forceRender={forceRender}>
             <section data-export-section data-export-label="ارسال رویش">
               <RawMediaSection
                 items={data.rawMedia}
@@ -254,7 +257,7 @@ function CampaignDashboardBody({
         )}
 
         {sections.submissions && !contentFilterActive && (
-          <DeferredSection minHeight={280} forceRender={exportMode}>
+          <DeferredSection minHeight={280} forceRender={forceRender}>
             <section data-export-section data-export-label="مشارکت‌ها">
               <SubmissionsSection
                 submissions={data.submissions}
@@ -314,22 +317,24 @@ export function CampaignDashboard({
 
   return (
     <CampaignExportProvider exportMode={exportMode}>
-      <ContentScoreProvider canScore={canScore} campaignId={data.settings.id}>
-        <OwnerLocationFilterProvider
-          users={ownerUsers}
-          locations={ownerLocations}
-          plans={data.settings.contentPlans ?? []}
-        >
-          <CampaignDashboardBody
-            data={data}
-            slug={slug}
-            exportMode={exportMode}
-            lastRefresh={lastRefresh}
-            isRefreshing={isRefreshing}
-            onRefresh={refreshData}
-          />
-        </OwnerLocationFilterProvider>
-      </ContentScoreProvider>
+      <CampaignScrollProvider>
+        <ContentScoreProvider canScore={canScore} campaignId={data.settings.id}>
+          <OwnerLocationFilterProvider
+            users={ownerUsers}
+            locations={ownerLocations}
+            plans={data.settings.contentPlans ?? []}
+          >
+            <CampaignDashboardBody
+              data={data}
+              slug={slug}
+              exportMode={exportMode}
+              lastRefresh={lastRefresh}
+              isRefreshing={isRefreshing}
+              onRefresh={refreshData}
+            />
+          </OwnerLocationFilterProvider>
+        </ContentScoreProvider>
+      </CampaignScrollProvider>
     </CampaignExportProvider>
   );
 }

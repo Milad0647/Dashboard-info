@@ -23,6 +23,7 @@ import {
   ContentMixAndActivitySection,
 } from "@/components/public/campaign-overview-widgets";
 import { SectionHeader } from "@/components/public/section-header";
+import { useCampaignScroll } from "@/lib/context/campaign-scroll-context";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import {
   buildContentMixStats,
@@ -46,6 +47,7 @@ interface CampaignOverviewSectionProps {
 export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) {
   const { settings } = data;
   const { filter, users: ownerUsers } = useOwnerLocationFilter();
+  const { scrollToSection } = useCampaignScroll();
   const filterActive = isCampaignContentFilterActive(filter);
   const filterLabel = getOwnerFilterLabel(filter, ownerUsers);
 
@@ -101,15 +103,6 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
     { show: kpiVisibility.submissions, title: "شرکت‌کنندگان", value: kpis.totalParticipants, icon: Users, sectionId: "submissions", todayDelta: todayDeltas.submissions },
     { show: kpiVisibility.files, title: "فایل‌ها", value: kpis.totalFiles, icon: FileText, sectionId: "files", todayDelta: todayDeltas.files },
   ].filter((item) => item.show);
-
-  const scrollToSection = (sectionId: string) => {
-    const target = document.getElementById(sectionId);
-    if (!target) return;
-
-    const collapsedToggle = target.querySelector<HTMLButtonElement>('button[aria-expanded="false"]');
-    collapsedToggle?.click();
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
   return (
     <section id="overview" data-export-section data-export-label="خلاصه کمپین">

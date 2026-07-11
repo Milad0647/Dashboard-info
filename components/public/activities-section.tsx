@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
+import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
 import { ActivityMediaDialog } from "@/components/public/activity-media-dialog";
 import { PUBLIC_MEDIA_GRID_CLASS } from "@/lib/public-media-section";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
@@ -177,6 +178,7 @@ export function ActivitiesSection({
       title={title}
       description={description}
     >
+      <SectionTopCompaniesBox groups={filteredGroups} />
       <>
           <OwnerGroupedSection groups={visibleGroups}>
             {(groupActivities) => <ActivityCards activities={groupActivities} />}

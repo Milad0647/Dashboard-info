@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
+import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
 import { PosterCard } from "@/components/public/poster-card";
 import {
   posterHasDisplayContent,
@@ -129,6 +130,7 @@ export function PostersSection({ categories: _categories, posters, groups }: Pos
       description="در مودال مشاهده، بین نسخه‌ها جابه‌جا شوید"
       controls={controls}
     >
+      <SectionTopCompaniesBox groups={filteredGroups} />
       <div className="space-y-4">
           <OwnerGroupedSection groups={visibleGroups}>
             {(groupPosters) => (

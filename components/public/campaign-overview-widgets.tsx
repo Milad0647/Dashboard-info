@@ -10,6 +10,7 @@ import type {
   ContentMixItem,
   RecentActivityItem,
 } from "@/lib/campaign-overview-insights";
+import { useCampaignScroll } from "@/lib/context/campaign-scroll-context";
 import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
 const RECENT_ACTIVITY_INITIAL_LIMIT = 5;
@@ -85,12 +86,19 @@ interface RecentActivityFeedProps {
   expandedLimit?: number;
 }
 
+function sectionIdFromHref(href?: string): string | null {
+  if (!href?.startsWith("#")) return null;
+  const id = href.slice(1).trim();
+  return id || null;
+}
+
 export function RecentActivityFeed({
   items,
   initialLimit = RECENT_ACTIVITY_INITIAL_LIMIT,
   expandedLimit = RECENT_ACTIVITY_EXPANDED_LIMIT,
 }: RecentActivityFeedProps) {
   const [expanded, setExpanded] = useState(false);
+  const { scrollToSection } = useCampaignScroll();
   const visibleLimit = expanded ? expandedLimit : initialLimit;
   const visibleItems = items.slice(0, visibleLimit);
   const remaining = Math.max(0, Math.min(items.length, expandedLimit) - visibleItems.length);
@@ -118,34 +126,34 @@ export function RecentActivityFeed({
         ) : (
           <>
             <ul className="divide-y">
-              {visibleItems.map((item) => (
-                <li key={item.id} className="py-3 first:pt-0 last:pb-0">
-                  {item.href ? (
-                    <a
-                      href={item.href}
-                      className="flex items-start justify-between gap-3 rounded-md transition-colors hover:bg-muted/50"
-                    >
-                      <div className="min-w-0 space-y-1">
-                        <p className="text-sm font-semibold">{item.ownerName}</p>
-                        <p className="text-sm text-muted-foreground">{item.typeLabel}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatPersianDateTime(item.timestamp)}
-                        </p>
-                      </div>
-                    </a>
-                  ) : (
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1">
-                        <p className="text-sm font-semibold">{item.ownerName}</p>
-                        <p className="text-sm text-muted-foreground">{item.typeLabel}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatPersianDateTime(item.timestamp)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </li>
-              ))}
+              {visibleItems.map((item) => {
+                const sectionId = sectionIdFromHref(item.href);
+                const content = (
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm font-semibold">{item.ownerName}</p>
+                    <p className="text-sm text-muted-foreground">{item.typeLabel}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatPersianDateTime(item.timestamp)}
+                    </p>
+                  </div>
+                );
+
+                return (
+                  <li key={item.id} className="py-3 first:pt-0 last:pb-0">
+                    {sectionId ? (
+                      <button
+                        type="button"
+                        onClick={() => scrollToSection(sectionId)}
+                        className="flex w-full items-start justify-between gap-3 rounded-md text-right transition-colors hover:bg-muted/50"
+                      >
+                        {content}
+                      </button>
+                    ) : (
+                      <div className="flex items-start justify-between gap-3">{content}</div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
             {!expanded && remaining > 0 && (
               <div className="mt-4">

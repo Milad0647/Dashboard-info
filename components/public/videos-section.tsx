@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
+import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
 import { VideoCard } from "@/components/public/video-card";
 import {
   videoHasDisplayContent,
@@ -131,6 +132,7 @@ export function VideosSection({ categories: _categories, videos, groups }: Video
       description={`${formatPersianNumber(videos.length)} ویدیو`}
       controls={controls}
     >
+      <SectionTopCompaniesBox groups={filteredGroups} />
       {filteredVideos.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
           ویدیویی یافت نشد.

@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ImageZoom } from "@/components/ui/image-zoom";
 import { deletePosterAction } from "@/lib/actions/admin-actions";
 import type { ContentTopic } from "@/lib/content-topics";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
@@ -258,14 +259,14 @@ export function PostersAdmin({
           </DialogHeader>
           {previewPoster && (
             <div className="space-y-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <ImageZoom
                 src={
                   resolveDisplayVersion(versionsByPosterId.get(previewPoster.id) ?? [])?.imageUrl ??
                   ""
                 }
                 alt={previewPoster.title}
-                className="max-h-80 w-full rounded-lg object-contain bg-muted"
+                className="w-full rounded-lg bg-muted"
+                imgClassName="max-h-80 w-full object-contain"
               />
               <p className="text-sm text-muted-foreground">{previewPoster.description || "بدون توضیحات"}</p>
               <AdminItemActions

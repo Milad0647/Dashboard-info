@@ -22,7 +22,7 @@ export const billboardCategoryLabels: Record<BillboardCategory, string> = {
   monitor: "مانیتور",
   bridge: "پل عابرپیاده",
   bus_shelter: "ایستگاه اتوبوس",
-  darbast: "دربست",
+  darbast: "داربست",
   narde: "نرده",
   sakhteman: "ساختمان",
   other: "سایر",
