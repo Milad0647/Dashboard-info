@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 interface CampaignScrollContextValue {
   forceSectionsMounted: boolean;
@@ -16,6 +16,7 @@ export function CampaignScrollProvider({ children }: { children: React.ReactNode
   const [forceSectionsMounted, setForceSectionsMounted] = useState(false);
 
   const scrollToSection = useCallback((sectionId: string) => {
+    if (!sectionId) return;
     setForceSectionsMounted(true);
 
     const run = () => {
@@ -32,8 +33,20 @@ export function CampaignScrollProvider({ children }: { children: React.ReactNode
     requestAnimationFrame(() => {
       requestAnimationFrame(run);
       window.setTimeout(run, 120);
+      window.setTimeout(run, 400);
     });
   }, []);
+
+  useEffect(() => {
+    const applyHash = () => {
+      const sectionId = window.location.hash.replace(/^#/, "").trim();
+      if (sectionId) scrollToSection(sectionId);
+    };
+
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, [scrollToSection]);
 
   return (
     <CampaignScrollContext.Provider value={{ forceSectionsMounted, scrollToSection }}>

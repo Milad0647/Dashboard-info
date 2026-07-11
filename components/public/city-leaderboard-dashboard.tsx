@@ -31,7 +31,24 @@ interface CityLeaderboardDashboardProps {
   slug: string;
 }
 
-function MetricsBreakdown({ entry }: { entry: ProvinceLeaderboardMetrics }) {
+const SECTION_HREF_BY_METRIC_LABEL: Record<string, string> = {
+  "تبلیغات محیطی": "billboards",
+  متراژ: "billboards",
+  پوستر: "posters",
+  ویدیو: "videos",
+  "شبکه اجتماعی": "social-posts",
+  "انتشار سایت": "site-publications",
+  اقدام: "activities",
+  فایل: "files",
+};
+
+function MetricsBreakdown({
+  entry,
+  slug,
+}: {
+  entry: ProvinceLeaderboardMetrics;
+  slug: string;
+}) {
   const items = [
     { label: "تبلیغات محیطی", value: entry.billboards },
     { label: "متراژ", value: entry.totalAreaSqm },
@@ -45,11 +62,34 @@ function MetricsBreakdown({ entry }: { entry: ProvinceLeaderboardMetrics }) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {items.map((item) => (
-        <Badge key={item.label} variant="outline" className="text-[11px]">
-          {item.label}: {formatPersianNumber(item.value)}
-        </Badge>
-      ))}
+      {items.map((item) => {
+        const sectionId = SECTION_HREF_BY_METRIC_LABEL[item.label];
+        const label = `${item.label}: ${formatPersianNumber(item.value)}`;
+
+        if (!sectionId) {
+          return (
+            <Badge key={item.label} variant="outline" className="text-[11px]">
+              {label}
+            </Badge>
+          );
+        }
+
+        return (
+          <Link
+            key={item.label}
+            href={`/campaign/${slug}#${sectionId}`}
+            onClick={(event) => event.stopPropagation()}
+            className="inline-flex"
+          >
+            <Badge
+              variant="outline"
+              className="cursor-pointer text-[11px] transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+            >
+              {label}
+            </Badge>
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -338,7 +378,7 @@ export function CityLeaderboardDashboard({ data, slug }: CityLeaderboardDashboar
                               </Badge>
                             )}
                           </div>
-                          <MetricsBreakdown entry={entry} />
+                          <MetricsBreakdown entry={entry} slug={slug} />
                         </div>
                         <div className="flex shrink-0 flex-wrap gap-2">
                           {view === "rating" ? (

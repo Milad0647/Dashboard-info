@@ -1,31 +1,35 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-/* Bind Tailwind dark: utilities to html.dark class (not prefers-color-scheme). */
+/* Class-based dark mode (html.dark), not prefers-color-scheme. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+  Use @theme inline with var() indirection so utilities stay cascade-overridable.
+  (@theme inline with raw hex bakes colors into utilities and breaks dark mode.)
+*/
 @theme inline {
-  --color-background: #f8fafc;
-  --color-foreground: #0f172a;
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-  --color-popover: #ffffff;
-  --color-popover-foreground: #0f172a;
-  --color-primary: #2563eb;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #f1f5f9;
-  --color-secondary-foreground: #1e293b;
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
-  --color-accent: #f1f5f9;
-  --color-accent-foreground: #1e293b;
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #ffffff;
-  --color-border: #e2e8f0;
-  --color-input: #e2e8f0;
-  --color-ring: #2563eb;
-  --color-success: #16a34a;
-  --color-warning: #d97706;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
@@ -33,43 +37,70 @@
   --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
 }
 
-html.dark {
-  color-scheme: dark;
-  --color-background: #070b16;
-  --color-foreground: #e8eef9;
-  --color-card: #0f172a;
-  --color-card-foreground: #e8eef9;
-  --color-popover: #12203a;
-  --color-popover-foreground: #e8eef9;
-  --color-primary: #3b82f6;
-  --color-primary-foreground: #f8fafc;
-  --color-secondary: #152238;
-  --color-secondary-foreground: #e8eef9;
-  --color-muted: #152238;
-  --color-muted-foreground: #94a3b8;
-  --color-accent: #1a2d4d;
-  --color-accent-foreground: #e8eef9;
-  --color-destructive: #f87171;
-  --color-destructive-foreground: #0f172a;
-  --color-border: #243b5c;
-  --color-input: #243b5c;
-  --color-ring: #60a5fa;
-  --color-success: #34d399;
-  --color-warning: #fbbf24;
-}
+@layer base {
+  :root {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #2563eb;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #1e293b;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #f1f5f9;
+    --accent-foreground: #1e293b;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #2563eb;
+    --success: #16a34a;
+    --warning: #d97706;
+    color-scheme: light;
+  }
 
-* {
-  border-color: var(--color-border);
-}
+  .dark {
+    --background: #070b16;
+    --foreground: #e8eef9;
+    --card: #0f172a;
+    --card-foreground: #e8eef9;
+    --popover: #12203a;
+    --popover-foreground: #e8eef9;
+    --primary: #3b82f6;
+    --primary-foreground: #f8fafc;
+    --secondary: #152238;
+    --secondary-foreground: #e8eef9;
+    --muted: #152238;
+    --muted-foreground: #94a3b8;
+    --accent: #1a2d4d;
+    --accent-foreground: #e8eef9;
+    --destructive: #f87171;
+    --destructive-foreground: #0f172a;
+    --border: #243b5c;
+    --input: #243b5c;
+    --ring: #60a5fa;
+    --success: #34d399;
+    --warning: #fbbf24;
+    color-scheme: dark;
+  }
 
-body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans);
-}
+  * {
+    border-color: var(--border);
+  }
 
-html {
-  scroll-behavior: smooth;
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @keyframes shimmer {
@@ -78,7 +109,7 @@ html {
 }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--color-muted) 25%, var(--color-border) 50%, var(--color-muted) 75%);
+  background: linear-gradient(90deg, var(--muted) 25%, var(--border) 50%, var(--muted) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -86,16 +117,16 @@ html {
 .leaflet-container {
   font-family: var(--font-sans);
   z-index: 0;
-  background: var(--color-muted);
+  background: var(--muted);
 }
 
-html.dark .leaflet-tile-pane {
+.dark .leaflet-tile-pane {
   filter: brightness(0.72) contrast(1.15) saturate(0.7) hue-rotate(195deg);
 }
 
-html.dark .leaflet-control-attribution {
-  background: color-mix(in srgb, var(--color-card) 88%, transparent) !important;
-  color: var(--color-muted-foreground) !important;
+.dark .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--card) 88%, transparent) !important;
+  color: var(--muted-foreground) !important;
 }
 
 .leaflet-tooltip-pane {
@@ -103,26 +134,26 @@ html.dark .leaflet-control-attribution {
 }
 
 .leaflet-tooltip.billboard-map-tooltip {
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 0;
   box-shadow: 0 14px 32px rgba(7, 11, 22, 0.45);
   pointer-events: none;
-  color: var(--color-foreground);
+  color: var(--foreground);
   z-index: 1000 !important;
   overflow: hidden;
 }
 
 .leaflet-tooltip.billboard-map-tooltip::before {
-  border-top-color: var(--color-card);
+  border-top-color: var(--card);
 }
 
 .billboard-map-tooltip-content {
   width: 200px;
   overflow: hidden;
   border-radius: 12px;
-  background: var(--color-card);
+  background: var(--card);
 }
 
 .billboard-map-tooltip-content img {
@@ -130,7 +161,7 @@ html.dark .leaflet-control-attribution {
   width: 100%;
   height: 110px;
   object-fit: cover;
-  background: var(--color-muted);
+  background: var(--muted);
 }
 
 .billboard-map-tooltip-content .meta {
@@ -147,7 +178,7 @@ html.dark .leaflet-control-attribution {
 }
 
 .billboard-map-tooltip-content .meta .muted {
-  color: var(--color-muted-foreground);
+  color: var(--muted-foreground);
   word-break: break-word;
 }
 

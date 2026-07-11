@@ -15,6 +15,8 @@ function applyTheme(theme: "light" | "dark") {
     root.classList.remove("dark");
     root.style.colorScheme = "light";
   }
+  // Notify listeners (charts/toasts) that theme tokens changed.
+  window.dispatchEvent(new CustomEvent("themechange", { detail: theme }));
 }
 
 export function ThemeToggle({ className }: { className?: string }) {
