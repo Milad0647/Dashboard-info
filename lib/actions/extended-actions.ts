@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getAuthSession, getOwnerFilter, isFullAdmin } from "@/lib/auth/get-session";
+import { isClientUser } from "@/lib/auth/access";
 import {
   defaultContributorPermissions,
   hasContributorPermission,
@@ -258,6 +259,7 @@ export async function saveProfileAction(data: {
   name: string;
   province?: string | null;
   city?: string | null;
+  accountManagerName?: string | null;
 }) {
   const session = await getAuthSession();
   if (!session?.userId) {
@@ -279,6 +281,8 @@ export async function saveProfileAction(data: {
     role: user.role,
     province: data.province,
     city: data.city,
+    region: user.region,
+    accountManagerName: data.accountManagerName,
     campaignIds: user.campaignIds,
     campaignPermissions: user.campaignPermissions,
   });
@@ -294,6 +298,8 @@ export async function saveUserAction(data: {
   password?: string;
   province?: string | null;
   city?: string | null;
+  region?: string | null;
+  accountManagerName?: string | null;
   campaignIds?: string[];
   campaignPermissions?: Record<string, ContributorPermissions>;
 }) {
@@ -302,7 +308,35 @@ export async function saveUserAction(data: {
     return { success: false, error: "Unauthorized" };
   }
   if (!isPostgresConfigured()) return { success: false, error: "Database required" };
-  const result = await pgExt.pgSaveUser(data);
+
+  let accountManagerName = data.accountManagerName;
+  if (data.id) {
+    const existing = await pgExt.pgGetUserById(data.id);
+    // Preserve profile-owned field unless explicitly provided
+    if (accountManagerName === undefined) {
+      accountManagerName = existing?.accountManagerName ?? null;
+    }
+  }
+
+  const result = await pgExt.pgSaveUser({
+    ...data,
+    accountManagerName,
+  });
+  await revalidateExtended();
+  return result;
+}
+
+export async function saveUserRegionAction(data: {
+  userId: string;
+  region: string | null;
+}) {
+  const session = await getAuthSession();
+  if (!session || (!isFullAdmin(session) && !isClientUser(session))) {
+    return { success: false, error: "Unauthorized" };
+  }
+  if (!isPostgresConfigured()) return { success: false, error: "Database required" };
+
+  const result = await pgExt.pgUpdateUserRegion(data.userId, data.region);
   await revalidateExtended();
   return result;
 }

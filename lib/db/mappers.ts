@@ -543,6 +543,10 @@ export function mapUserFromDb(
     role: row.role,
     province: row.province ?? null,
     city: row.city ?? null,
+    region: row.region === "north" || row.region === "south" || row.region === "east" || row.region === "west"
+      ? row.region
+      : null,
+    accountManagerName: row.account_manager_name ?? null,
     campaignIds: campaignAccess.map((access) => access.campaignId),
     campaignPermissions: Object.fromEntries(
       campaignAccess.map((access) => [access.campaignId, access.permissions])

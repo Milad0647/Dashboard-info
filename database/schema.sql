@@ -205,6 +205,11 @@ CREATE TABLE IF NOT EXISTS users (
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS province TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS region TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS account_manager_name TEXT;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_region_check;
+ALTER TABLE users ADD CONSTRAINT users_region_check
+  CHECK (region IS NULL OR region IN ('north', 'south', 'east', 'west'));
 
 CREATE TABLE IF NOT EXISTS user_campaign_access (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

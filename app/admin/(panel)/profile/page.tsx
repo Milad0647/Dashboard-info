@@ -26,7 +26,7 @@ export default async function ProfilePage() {
       <div>
         <h1 className="text-2xl font-bold">پروفایل من</h1>
         <p className="text-sm text-muted-foreground">
-          نام، استان و شهر شما در بیلبوردها و گزارش‌ها نمایش داده می‌شود.
+          نام، مسئول اکانت و استان شما در گزارش‌ها و لیست کاربران نمایش داده می‌شود.
         </p>
       </div>
 
@@ -39,6 +39,8 @@ export default async function ProfilePage() {
             initialName={user.name}
             initialProvince={user.province}
             initialCity={user.city}
+            initialAccountManagerName={user.accountManagerName}
+            initialRegion={user.region}
             email={user.email}
           />
         </CardContent>

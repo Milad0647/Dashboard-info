@@ -138,6 +138,8 @@ export async function pgSaveUser(data: {
   password?: string;
   province?: string | null;
   city?: string | null;
+  region?: string | null;
+  accountManagerName?: string | null;
   campaignIds?: string[];
   campaignPermissions?: Record<string, ContributorPermissions>;
 }) {
@@ -147,6 +149,14 @@ export async function pgSaveUser(data: {
   const now = new Date().toISOString();
   const province = data.province?.trim() || null;
   const city = data.city?.trim() || null;
+  const region =
+    data.region === "north" ||
+    data.region === "south" ||
+    data.region === "east" ||
+    data.region === "west"
+      ? data.region
+      : null;
+  const accountManagerName = data.accountManagerName?.trim() || null;
 
   try {
   if (data.id) {
@@ -159,6 +169,8 @@ export async function pgSaveUser(data: {
           role = ${data.role},
           province = ${province},
           city = ${city},
+          region = ${region},
+          account_manager_name = ${accountManagerName},
           password_hash = ${passwordHash}
         WHERE id = ${id}
       `;
@@ -169,7 +181,9 @@ export async function pgSaveUser(data: {
           name = ${data.name},
           role = ${data.role},
           province = ${province},
-          city = ${city}
+          city = ${city},
+          region = ${region},
+          account_manager_name = ${accountManagerName}
         WHERE id = ${id}
       `;
     }
@@ -179,8 +193,8 @@ export async function pgSaveUser(data: {
     }
     const passwordHash = await hashPassword(data.password);
     await sql`
-      INSERT INTO users (id, email, password_hash, name, role, province, city, created_at)
-      VALUES (${id}, ${email}, ${passwordHash}, ${data.name}, ${data.role}, ${province}, ${city}, ${now})
+      INSERT INTO users (id, email, password_hash, name, role, province, city, region, account_manager_name, created_at)
+      VALUES (${id}, ${email}, ${passwordHash}, ${data.name}, ${data.role}, ${province}, ${city}, ${region}, ${accountManagerName}, ${now})
     `;
   }
 
@@ -208,8 +222,18 @@ export async function pgSaveUser(data: {
     if (message.includes("duplicate key") || message.includes("unique")) {
       return { success: false as const, error: "این نام کاربری قبلاً ثبت شده است" };
     }
-    throw error;
+    return { success: false as const, error: message };
   }
+}
+
+export async function pgUpdateUserRegion(userId: string, region: string | null) {
+  const sql = getSql();
+  const normalized =
+    region === "north" || region === "south" || region === "east" || region === "west"
+      ? region
+      : null;
+  await sql`UPDATE users SET region = ${normalized} WHERE id = ${userId}`;
+  return { success: true as const };
 }
 
 export async function pgImportUsersFromExcel(params: {

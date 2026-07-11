@@ -71,7 +71,7 @@ const allNavItems: {
   { href: "/admin/broadcast", label: "پخش صدا و سیما", icon: Radio, permissionKey: "broadcast" },
   { href: "/admin/meetings", label: "جلسات و مصوبات", icon: ClipboardList, permissionKey: "meetings" },
   { href: "/admin/submissions", label: "مشارکت‌ها", icon: FileText, permissionKey: "submissions" },
-  { href: "/admin/users", label: "کاربران", icon: Users, adminOnly: true },
+  { href: "/admin/users", label: "کاربران", icon: Users, adminOrClientOnly: true },
 ];
 
 const managementNavHrefs = new Set([

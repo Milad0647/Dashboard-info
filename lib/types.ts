@@ -335,6 +335,10 @@ export interface AdminUser {
   role: AdminRole;
   province?: string | null;
   city?: string | null;
+  /** Geographic zone set by admin/client: north/south/east/west. */
+  region?: import("./user-regions").UserRegion | null;
+  /** Account manager name set by the user in their profile. */
+  accountManagerName?: string | null;
   campaignIds: string[];
   campaignPermissions: Record<string, ContributorPermissions>;
   createdAt: string;

@@ -10,11 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProvinceCityFields } from "@/components/admin/province-city-fields";
 import { saveProfileAction } from "@/lib/actions/extended-actions";
+import { getUserRegionLabel } from "@/lib/user-regions";
+import type { UserRegion } from "@/lib/user-regions";
 
 const schema = z.object({
   name: z.string().min(1, "نام الزامی است"),
   province: z.string().optional(),
   city: z.string().optional(),
+  accountManagerName: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -23,6 +26,8 @@ interface ProfileSettingsFormProps {
   initialName: string;
   initialProvince?: string | null;
   initialCity?: string | null;
+  initialAccountManagerName?: string | null;
+  initialRegion?: UserRegion | null;
   email: string;
 }
 
@@ -30,6 +35,8 @@ export function ProfileSettingsForm({
   initialName,
   initialProvince,
   initialCity,
+  initialAccountManagerName,
+  initialRegion,
   email,
 }: ProfileSettingsFormProps) {
   const [isPending, startTransition] = useTransition();
@@ -40,6 +47,7 @@ export function ProfileSettingsForm({
       name: initialName,
       province: initialProvince ?? "",
       city: initialCity ?? "",
+      accountManagerName: initialAccountManagerName ?? "",
     },
   });
 
@@ -52,6 +60,7 @@ export function ProfileSettingsForm({
         name: data.name,
         province: data.province || null,
         city: data.city || null,
+        accountManagerName: data.accountManagerName?.trim() || null,
       });
       if (!result.success) {
         toast.error(result.error ?? "ذخیره پروفایل ناموفق بود");
@@ -77,6 +86,17 @@ export function ProfileSettingsForm({
         <p className="text-xs text-muted-foreground">نام کاربری قابل تغییر نیست.</p>
       </div>
 
+      <div className="space-y-2">
+        <Label>اسم مسئول اکانت</Label>
+        <Input
+          {...form.register("accountManagerName")}
+          placeholder="نام مسئول اکانت خود را وارد کنید"
+        />
+        <p className="text-xs text-muted-foreground">
+          این فیلد را خودتان تنظیم می‌کنید و در لیست کاربران برای مدیر/کارفرما نمایش داده می‌شود.
+        </p>
+      </div>
+
       <ProvinceCityFields
         province={selectedProvince ?? ""}
         city={selectedCity ?? ""}
@@ -84,6 +104,14 @@ export function ProfileSettingsForm({
         onCityChange={(value) => form.setValue("city", value)}
         hideCity
       />
+
+      <div className="space-y-2">
+        <Label>دسته‌بندی منطقه‌ای</Label>
+        <Input value={getUserRegionLabel(initialRegion)} disabled />
+        <p className="text-xs text-muted-foreground">
+          این دسته را فقط مدیر یا کارفرما برای شما تعیین می‌کند.
+        </p>
+      </div>
 
       <Button type="submit" disabled={isPending}>
         {isPending ? "در حال ذخیره..." : "ذخیره پروفایل"}
