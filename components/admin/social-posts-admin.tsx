@@ -256,6 +256,7 @@ export function SocialPostsAdmin({
 
       {viewMode === "grid" ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <AdminCompactAddCard onClick={openCreate} label="پست جدید" />
           {filteredRows.map((post) => (
             <AdminSocialPostCompactCard
               key={post.id}
@@ -266,7 +267,6 @@ export function SocialPostsAdmin({
               onDelete={() => handleDelete(post)}
             />
           ))}
-          <AdminCompactAddCard onClick={openCreate} label="پست جدید" />
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border">

@@ -237,6 +237,7 @@ export function BillboardsAdmin({
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <AdminBillboardAddCard onClick={openCreate} />
           {manualBillboards.map((billboard) => (
             <AdminBillboardCompactCard
               key={billboard.id}
@@ -253,7 +254,6 @@ export function BillboardsAdmin({
               }}
             />
           ))}
-          <AdminBillboardAddCard onClick={openCreate} />
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border">

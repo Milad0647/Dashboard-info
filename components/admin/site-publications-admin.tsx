@@ -187,10 +187,10 @@ export function SitePublicationsAdmin({
       />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <AdminCompactAddCard onClick={openCreate} label="انتشار جدید" />
         {filteredRows.map((post) => (
           <AdminSitePublicationCompactCard key={post.id} post={post} onClick={() => openEdit(post)} />
         ))}
-        <AdminCompactAddCard onClick={openCreate} label="انتشار جدید" />
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

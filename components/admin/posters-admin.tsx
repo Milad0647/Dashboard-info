@@ -162,6 +162,7 @@ export function PostersAdmin({
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <AdminPosterAddCard onClick={handleCreatePoster} />
           {filteredPosters.map((poster) => (
             <AdminPosterCompactCard
               key={poster.id}
@@ -179,7 +180,6 @@ export function PostersAdmin({
               }}
             />
           ))}
-          <AdminPosterAddCard onClick={handleCreatePoster} />
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border">
