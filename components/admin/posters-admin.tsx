@@ -154,10 +154,10 @@ export function PostersAdmin({
       />
 
       {filteredPosters.length === 0 && posters.length === 0 ? (
-        <div className="rounded-xl border py-12 text-center text-muted-foreground">
+        <div className="rounded-xl border px-4 py-8 text-center text-sm text-muted-foreground">
           هنوز پوستری ثبت نشده است.
-          <div className="mt-4 flex justify-center">
-            <AdminPosterAddCard onClick={handleCreatePoster} />
+          <div className="mt-3 flex justify-center">
+            <AdminPosterAddCard compact onClick={handleCreatePoster} />
           </div>
         </div>
       ) : viewMode === "grid" ? (

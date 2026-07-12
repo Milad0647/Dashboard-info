@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaUpload } from "@/components/ui/media-upload";
@@ -32,6 +33,7 @@ import {
 } from "@/lib/media-utils";
 import type { MediaCategory, Video, VideoVersion } from "@/lib/types";
 import { cn, formatPersianDate, formatPersianNumber } from "@/lib/utils";
+import { pickDefaultVideoCategoryId, videoTypeSelectOptions } from "@/lib/video-types";
 
 interface VideoVersionDraft {
   localId: string;
@@ -116,20 +118,30 @@ export function AdminVideoEditor({
   );
   const [editTitle, setEditTitle] = useState(video.title);
   const [editDescription, setEditDescription] = useState(video.description ?? "");
-  const [editCategoryId, setEditCategoryId] = useState(video.categoryId);
+  const [editCategoryId, setEditCategoryId] = useState(
+    () => video.categoryId || pickDefaultVideoCategoryId(categories)
+  );
   const [editPlanLabels, setEditPlanLabels] = useState<string[]>(() =>
     normalizePlanLabels(video.planLabels, video.planLabel)
   );
   const [editScore, setEditScore] = useState<number | null | undefined>(video.score);
 
+  const typeOptions = useMemo(() => videoTypeSelectOptions(categories), [categories]);
+  const selectOptions = useMemo(() => {
+    if (!editCategoryId) return typeOptions;
+    if (typeOptions.some((category) => category.id === editCategoryId)) return typeOptions;
+    const current = categories.find((category) => category.id === editCategoryId);
+    return current ? [current, ...typeOptions] : typeOptions;
+  }, [categories, editCategoryId, typeOptions]);
+
   useEffect(() => {
     setEditTitle(video.title);
     setEditDescription(video.description ?? "");
-    setEditCategoryId(video.categoryId);
+    setEditCategoryId(video.categoryId || pickDefaultVideoCategoryId(categories));
     setEditPlanLabels(normalizePlanLabels(video.planLabels, video.planLabel));
     setEditScore(video.score);
     setVersionDrafts(buildVideoVersionDrafts(versions));
-  }, [video.id, video.title, video.description, video.categoryId, video.planLabel, video.planLabels, video.score, versions.length]);
+  }, [video.id, video.title, video.description, video.categoryId, video.planLabel, video.planLabels, video.score, versions.length, categories]);
 
   useLayoutEffect(() => {
     if (!shouldScrollToBottomRef.current) return;
@@ -185,6 +197,10 @@ export function AdminVideoEditor({
   };
 
   const handleSaveAll = () => {
+    if (!editCategoryId) {
+      toast.error("نوع ویدیو را انتخاب کنید");
+      return;
+    }
     const draftsToSave = versionDrafts.filter((item) => item.videoUrl.trim());
     if (draftsToSave.length === 0) {
       toast.error("حداقل یک embed یا ویدیو لازم است");
@@ -303,7 +319,25 @@ export function AdminVideoEditor({
               placeholder="توضیحات (اختیاری)"
             />
           </div>
-          {/* Category select hidden from UX; categoryId still persisted for DB compatibility. */}
+          <div>
+            <Label>نوع ویدیو</Label>
+            <Select
+              value={editCategoryId || undefined}
+              onValueChange={setEditCategoryId}
+              disabled={selectOptions.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="تیزر، انیمیشن یا موشن‌گرافیک" />
+              </SelectTrigger>
+              <SelectContent>
+                {selectOptions.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <PlanLabelSelect
             topics={contentTopics}
             plans={contentPlans}

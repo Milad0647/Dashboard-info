@@ -108,27 +108,41 @@ export function AdminPosterCompactCard({
 interface AdminPosterAddCardProps {
   onClick: () => void;
   disabled?: boolean;
+  compact?: boolean;
 }
 
-export function AdminPosterAddCard({ onClick, disabled }: AdminPosterAddCardProps) {
+export function AdminPosterAddCard({
+  onClick,
+  disabled,
+  compact = false,
+}: AdminPosterAddCardProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "group w-full overflow-hidden rounded-xl border-2 border-dashed bg-muted/30 text-muted-foreground transition-all",
+        "group overflow-hidden rounded-xl border-2 border-dashed bg-muted/30 text-muted-foreground transition-all",
         "hover:border-primary hover:bg-primary/5 hover:text-primary",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        "disabled:pointer-events-none disabled:opacity-50"
+        "disabled:pointer-events-none disabled:opacity-50",
+        compact ? "h-28 w-24" : "w-full"
       )}
     >
-      <div className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-2">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-current text-2xl leading-none">
+      <div
+        className={cn(
+          "flex w-full flex-col items-center justify-center gap-2",
+          compact ? "h-full p-2" : "aspect-[3/4]"
+        )}
+      >
+        <span
+          className={cn(
+            "flex items-center justify-center rounded-full border-2 border-current leading-none",
+            compact ? "h-7 w-7 text-lg" : "h-10 w-10 text-2xl"
+          )}
+        >
           +
         </span>
-      </div>
-      <div className="p-2">
         <p className="truncate text-center text-xs font-medium">پوستر جدید</p>
       </div>
     </button>

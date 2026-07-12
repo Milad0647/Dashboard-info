@@ -3,6 +3,7 @@ import { getAdminData } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
 import { canScoreContent } from "@/lib/auth/access";
 import { getAuthSession } from "@/lib/auth/get-session";
+import { ensureVideoTypeCategories } from "@/lib/ensure-video-type-categories";
 import { VideosAdmin } from "@/components/admin/videos-admin";
 
 interface PageProps {
@@ -15,7 +16,11 @@ export default async function VideosPage({ searchParams }: PageProps) {
   if (!campaignId) redirect("/admin/campaigns");
   const session = await getAuthSession();
   const canScore = Boolean(session && canScoreContent(session));
-  const data = await getAdminData(campaignId);
+  let data = await getAdminData(campaignId);
+  const seeded = await ensureVideoTypeCategories(campaignId, data.videoCategories);
+  if (seeded) {
+    data = await getAdminData(campaignId);
+  }
   return (
     <VideosAdmin
       campaignId={campaignId}

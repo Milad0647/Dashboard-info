@@ -109,22 +109,33 @@ export function AdminVideoCompactCard({
 interface AdminVideoAddCardProps {
   onClick: () => void;
   disabled?: boolean;
+  compact?: boolean;
 }
 
-export function AdminVideoAddCard({ onClick, disabled }: AdminVideoAddCardProps) {
+export function AdminVideoAddCard({
+  onClick,
+  disabled,
+  compact = false,
+}: AdminVideoAddCardProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-muted/30 text-muted-foreground transition-colors",
+        "flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed bg-muted/30 text-muted-foreground transition-colors",
         "hover:border-primary hover:bg-primary/5 hover:text-primary",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        "disabled:pointer-events-none disabled:opacity-50"
+        "disabled:pointer-events-none disabled:opacity-50",
+        compact ? "h-24 w-28" : "aspect-video w-full"
       )}
     >
-      <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-current text-2xl leading-none">
+      <span
+        className={cn(
+          "flex items-center justify-center rounded-full border-2 border-current leading-none",
+          compact ? "h-7 w-7 text-lg" : "h-10 w-10 text-2xl"
+        )}
+      >
         +
       </span>
       <span className="text-xs font-medium">ویدیو جدید</span>

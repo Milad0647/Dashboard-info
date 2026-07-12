@@ -26,6 +26,7 @@ import type { ContentTopic } from "@/lib/content-topics";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { MediaCategory, Video, VideoVersion } from "@/lib/types";
+import { pickDefaultVideoCategoryId } from "@/lib/video-types";
 
 interface VideosAdminProps {
   campaignId: string;
@@ -104,7 +105,7 @@ export function VideosAdmin({
 
   const handleCreateVideo = () => {
     const videoId = crypto.randomUUID();
-    const categoryId = initialCategories[0]?.id ?? "";
+    const categoryId = pickDefaultVideoCategoryId(initialCategories);
     const now = new Date().toISOString();
     const newVideo: Video = {
       id: videoId,
@@ -153,10 +154,10 @@ export function VideosAdmin({
       />
 
       {filteredVideos.length === 0 && videos.length === 0 ? (
-        <div className="rounded-xl border py-12 text-center text-muted-foreground">
+        <div className="rounded-xl border px-4 py-8 text-center text-sm text-muted-foreground">
           هنوز ویدیویی ثبت نشده است.
-          <div className="mt-4 flex justify-center">
-            <AdminVideoAddCard onClick={handleCreateVideo} />
+          <div className="mt-3 flex justify-center">
+            <AdminVideoAddCard compact onClick={handleCreateVideo} />
           </div>
         </div>
       ) : viewMode === "grid" ? (
