@@ -24,7 +24,7 @@ export default async function BillboardsPage({ searchParams }: PageProps) {
   await requireContributorAccess(campaignId, "billboards");
 
   const session = await getAuthSession();
-  const fullAdmin = session ? isFullAdmin(session) : true;
+  const fullAdmin = Boolean(session && isFullAdmin(session));
   const canScore = Boolean(session && canScoreContent(session));
   const ownerUserId = session ? getOwnerFilter(session) : undefined;
   let contributorProfile = null;

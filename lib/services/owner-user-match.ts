@@ -1,6 +1,5 @@
 import {
   buildLoginEmailCandidates,
-  getLoginUsernameFromEmail,
   normalizeStoredUserEmail,
 } from "@/lib/auth/user-login";
 import type { IntegrationBillboardOwner } from "@/lib/models/billboard-api";
@@ -51,19 +50,8 @@ export function matchOwnerToUser(
       const normalizedUserName = normalizeOrganizationName(user.name);
       if (!normalizedUserName) continue;
 
-      if (
-        normalizedUserName === normalizedOwnerName ||
-        normalizedOwnerName.includes(normalizedUserName) ||
-        normalizedUserName.includes(normalizedOwnerName)
-      ) {
-        return user;
-      }
-
-      const username = normalizeOrganizationName(getLoginUsernameFromEmail(user.email));
-      if (
-        username &&
-        (normalizedOwnerName.includes(username) || username.includes(normalizedOwnerName))
-      ) {
+      // Exact name match only — substring matching incorrectly assigns other companies.
+      if (normalizedUserName === normalizedOwnerName) {
         return user;
       }
     }

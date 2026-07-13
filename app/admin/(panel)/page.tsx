@@ -38,7 +38,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
   const data = await getAdminData(campaignId);
   if (!data.settings) redirect("/admin/campaigns");
   const session = await getAuthSession();
-  const canManageAll = session ? isFullAdmin(session) : true;
+  const canManageAll = Boolean(session && isFullAdmin(session));
   const ownerUserId = session ? getOwnerFilter(session) : undefined;
 
   const features = data.settings.features;

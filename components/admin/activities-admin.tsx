@@ -250,7 +250,7 @@ export function ActivitiesAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={filterUsers}
+        users={isFullAdmin ? filterUsers : []}
         plans={contentPlans}
       />
 

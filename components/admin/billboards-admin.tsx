@@ -71,7 +71,7 @@ export function BillboardsAdmin({
   liveApiEnabled = false,
   externalCampaignSlug = null,
   externalCampaignId = null,
-  isFullAdmin = true,
+  isFullAdmin = false,
   users = [],
   contributorProfile = null,
 }: BillboardsAdminProps) {
@@ -174,7 +174,7 @@ export function BillboardsAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={filterUsers}
+        users={isFullAdmin ? filterUsers : []}
         plans={contentPlans}
       />
 

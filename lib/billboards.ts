@@ -73,14 +73,14 @@ export function getBillboardUploadActivityDate(billboard: Billboard): string {
 
 export function billboardBelongsToUser(
   billboard: Billboard,
-  ownerUserId: string
+  ownerUserId: string | null
 ): boolean {
-  return billboard.ownerUserId === ownerUserId;
+  return (billboard.ownerUserId ?? null) === ownerUserId;
 }
 
 export function filterBillboardsByOwnerUser(
   billboards: Billboard[],
-  ownerUserId: string
+  ownerUserId: string | null
 ): Billboard[] {
   return billboards.filter((billboard) => billboardBelongsToUser(billboard, ownerUserId));
 }
@@ -180,7 +180,8 @@ export async function resolveAdminBillboards(
     }
   }
 
-  if (ownerUserId) {
+  // undefined = admin/client (unscoped). null/string = contributor scope.
+  if (ownerUserId !== undefined) {
     return filterBillboardsByOwnerUser(resolved, ownerUserId);
   }
 

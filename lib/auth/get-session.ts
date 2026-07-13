@@ -21,7 +21,15 @@ export function isFullAdmin(session: AuthSession): boolean {
   return session.type === "env_admin" || session.role === "admin";
 }
 
+/**
+ * Owner scope for admin panel data.
+ * - Admin: no filter (see all)
+ * - Client (کارفرما): no filter (needs all content for scoring/oversight)
+ * - Contributor: only their own `userId` rows
+ */
 export function getOwnerFilter(session: AuthSession): string | null | undefined {
   if (isFullAdmin(session)) return undefined;
-  return session.userId;
+  if (session.role === "client") return undefined;
+  // Missing userId must not fall through as "unscoped" (undefined).
+  return session.userId ?? null;
 }

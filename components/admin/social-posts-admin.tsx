@@ -261,7 +261,7 @@ export function SocialPostsAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={filterUsers}
+        users={isFullAdmin ? filterUsers : []}
         plans={contentPlans}
       />
 

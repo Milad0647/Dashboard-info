@@ -91,7 +91,11 @@ export async function pgGetCampaignById(id: string): Promise<CampaignSettings | 
 
 export async function pgGetAdminData(campaignId: string, ownerUserId?: string | null) {
   const sql = getSql();
-  const ownerFilter = ownerUserId === undefined ? sql`` : sql`AND owner_user_id IS NOT DISTINCT FROM ${ownerUserId}`;
+  // Qualify column so JOIN aliases never leak other owners' rows.
+  const ownerFilter =
+    ownerUserId === undefined
+      ? sql``
+      : sql`AND owner_user_id IS NOT DISTINCT FROM ${ownerUserId}`;
 
   const [
     campaigns,

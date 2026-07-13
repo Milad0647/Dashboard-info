@@ -46,15 +46,16 @@ export async function getAdminData(campaignId: string) {
   const session = await getAuthSession();
   const ownerFilter = session ? getOwnerFilter(session) : undefined;
 
+  const filterByOwner = <T extends { ownerUserId?: string | null }>(items: T[]) =>
+    ownerFilter === undefined
+      ? items
+      : items.filter((item) => (item.ownerUserId ?? null) === ownerFilter);
+
   if (isPostgresConfigured()) {
     return pg.pgGetAdminData(campaignId, ownerFilter);
   }
   if (!isSupabaseConfigured()) {
     const store = getMockStoreForCampaign(campaignId);
-    const filterByOwner = <T extends { ownerUserId?: string | null }>(items: T[]) =>
-      ownerFilter === undefined
-        ? items
-        : items.filter((item) => (item.ownerUserId ?? null) === ownerFilter);
 
     return {
       settings: store.settings ?? null,
@@ -104,15 +105,15 @@ export async function getAdminData(campaignId: string) {
     return {
       settings: settings.data,
       campaigns: campaigns.data ?? [],
-      billboards: billboards.data ?? [],
+      billboards: filterByOwner(billboards.data ?? []),
       posterCategories: posterCategories.data ?? [],
-      posters: posters.data ?? [],
+      posters: filterByOwner(posters.data ?? []),
       posterVersions: posterVersions.data ?? [],
       videoCategories: videoCategories.data ?? [],
-      videos: videos.data ?? [],
+      videos: filterByOwner(videos.data ?? []),
       videoVersions: videoVersions.data ?? [],
-      analytics: analytics.data ?? [],
-      submissions: submissions.data ?? [],
+      analytics: filterByOwner(analytics.data ?? []),
+      submissions: filterByOwner(submissions.data ?? []),
       files: [],
       socialPosts: [],
       broadcastReports: [],
@@ -122,7 +123,23 @@ export async function getAdminData(campaignId: string) {
       rawMedia: [],
     };
   } catch {
-    return getAdminDataMock(campaignId);
+    const mock = getAdminDataMock(campaignId);
+    if (ownerFilter === undefined) return mock;
+    return {
+      ...mock,
+      billboards: filterByOwner(mock.billboards),
+      posters: filterByOwner(mock.posters),
+      videos: filterByOwner(mock.videos),
+      analytics: filterByOwner(mock.analytics),
+      submissions: filterByOwner(mock.submissions),
+      files: filterByOwner(mock.files ?? []),
+      socialPosts: filterByOwner(mock.socialPosts ?? []),
+      broadcastReports: filterByOwner(mock.broadcastReports ?? []),
+      socialPlatformStats: filterByOwner(mock.socialPlatformStats ?? []),
+      meetings: filterByOwner(mock.meetings ?? []),
+      activities: filterByOwner(mock.activities ?? []),
+      rawMedia: filterByOwner(mock.rawMedia ?? []),
+    };
   }
 }
 

@@ -162,7 +162,7 @@ export function PostersAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={filterUsers}
+        users={isFullAdmin ? filterUsers : []}
         plans={contentPlans}
       />
 
