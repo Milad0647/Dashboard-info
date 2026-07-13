@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveContentScoreAction } from "@/lib/actions/score-actions";
+import { parseScoreInput } from "@/lib/content-score";
 import type { ScoreableContentType } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
 
@@ -19,6 +20,10 @@ interface ContentScoreControlProps {
   compact?: boolean;
 }
 
+function scoreToInputValue(score: number | null | undefined): string {
+  return typeof score === "number" && Number.isFinite(score) ? String(score) : "";
+}
+
 export function ContentScoreControl({
   campaignId,
   contentType,
@@ -28,13 +33,13 @@ export function ContentScoreControl({
   onScoreSaved,
   compact = false,
 }: ContentScoreControlProps) {
-  const [value, setValue] = useState(score != null ? String(score) : "");
+  const [value, setValue] = useState(() => scoreToInputValue(score));
   const [isPending, startTransition] = useTransition();
-  const lastSavedRef = useRef(score != null ? String(score) : "");
+  const lastSavedRef = useRef(scoreToInputValue(score));
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const next = score != null ? String(score) : "";
+    const next = scoreToInputValue(score);
     setValue(next);
     lastSavedRef.current = next;
   }, [score, contentId]);
@@ -45,22 +50,23 @@ export function ContentScoreControl({
     };
   }, []);
 
-  if (!canScore && (score == null || Number.isNaN(score))) return null;
-
+  // Contributors and anonymous users: show score only when set (including 0).
   if (!canScore) {
+    if (typeof score !== "number" || !Number.isFinite(score)) return null;
     return (
       <div className="inline-flex items-center gap-1 rounded-md bg-warning/10 px-2 py-1 text-xs text-warning">
         <Star className="h-3 w-3 fill-current" />
-        امتیاز: {formatPersianNumber(score ?? 0)}
+        امتیاز: {formatPersianNumber(score)}
       </div>
     );
   }
 
   const persist = (raw: string) => {
     if (raw === lastSavedRef.current) return;
-    const parsed = raw.trim() === "" ? null : Number(raw);
-    if (parsed != null && (!Number.isFinite(parsed) || parsed < 0)) {
-      toast.error("امتیاز باید عدد معتبر باشد");
+
+    const parsed = parseScoreInput(raw);
+    if (!parsed.ok) {
+      toast.error(parsed.error);
       return;
     }
 
@@ -69,14 +75,14 @@ export function ContentScoreControl({
         campaignId,
         contentType,
         contentId,
-        score: parsed,
+        score: parsed.value,
       });
       if (!result.success) {
         toast.error(result.error ?? "ذخیره امتیاز ناموفق بود");
         return;
       }
       lastSavedRef.current = raw;
-      onScoreSaved?.(parsed);
+      onScoreSaved?.(parsed.value);
     });
   };
 

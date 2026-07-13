@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { canScoreContent } from "@/lib/auth/access";
-import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
+import { getAuthSession } from "@/lib/auth/get-session";
+import { normalizeScoreValue } from "@/lib/content-score";
 import { getSql } from "@/lib/db/client";
 import type { ScoreableContentType } from "@/lib/types";
 import { isPostgresConfigured } from "@/lib/utils";
@@ -38,8 +39,11 @@ export async function saveContentScoreAction(input: {
   const table = TABLE_BY_TYPE[input.contentType];
   if (!table) return { success: false, error: "نوع محتوا نامعتبر است" };
 
-  const score =
-    input.score == null || Number.isNaN(input.score) ? null : Math.max(0, Number(input.score));
+  const normalized = normalizeScoreValue(input.score);
+  if (!normalized.ok) {
+    return { success: false, error: normalized.error };
+  }
+  const score = normalized.value;
 
   const sql = getSql();
   const now = new Date().toISOString();
@@ -67,6 +71,5 @@ export async function saveContentScoreAction(input: {
 
   revalidatePath(`/admin`);
   revalidatePath(`/campaign`);
-  void isFullAdmin;
   return { success: true };
 }

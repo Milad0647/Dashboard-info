@@ -9,7 +9,9 @@ export function canAccessNotifications(session: AuthSession): boolean {
   return isFullAdmin(session) || isClientUser(session);
 }
 
-/** Only admin and client (کارفرما) can score content. */
+/** Only admin and client (کارفرما) can score. Contributors never can. */
 export function canScoreContent(session: AuthSession): boolean {
-  return isFullAdmin(session) || isClientUser(session);
+  if (isFullAdmin(session)) return true;
+  if (isClientUser(session)) return true;
+  return false;
 }
