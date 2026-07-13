@@ -61,15 +61,15 @@ export function SectionTopCompaniesBox({
         {companies.map((company, index) => (
           <div
             key={company.key}
-            className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2"
+            className="flex items-start gap-2 rounded-lg border bg-card px-3 py-2"
           >
-            <Badge variant="secondary" className="shrink-0 tabular-nums">
+            <Badge variant="secondary" className="mt-0.5 shrink-0 tabular-nums">
               {formatPersianNumber(index + 1)}
             </Badge>
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-1 truncate text-sm font-medium">
-                <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="truncate">{company.name}</span>
+              <p className="flex items-start gap-1 text-sm font-medium leading-snug">
+                <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="break-words">{company.name}</span>
               </p>
               <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                 <span>{formatPersianNumber(company.count)} محتوا</span>
