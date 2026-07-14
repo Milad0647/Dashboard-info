@@ -151,7 +151,14 @@ function parseActivityMediaItems(value: unknown): ActivityMediaItem[] {
       if (!item || typeof item !== "object") return null;
       const record = item as Record<string, unknown>;
       const url = typeof record.url === "string" ? record.url.trim() : "";
-      const type = record.type === "video" ? "video" : record.type === "image" ? "image" : null;
+      const type =
+        record.type === "video"
+          ? "video"
+          : record.type === "audio"
+            ? "audio"
+            : record.type === "image"
+              ? "image"
+              : null;
       const id = typeof record.id === "string" ? record.id : crypto.randomUUID();
       if (!url || !type) return null;
       return { id, type, url };

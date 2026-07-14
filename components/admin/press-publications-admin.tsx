@@ -121,7 +121,7 @@ export function PressPublicationsAdmin({
     setOpen(true);
   };
 
-  const addMediaItem = (type: "image" | "video") => {
+  const addMediaItem = (type: ActivityMediaItem["type"]) => {
     if (mediaItems.length >= MAX_MEDIA_ITEMS) {
       toast.error(`حداکثر ${MAX_MEDIA_ITEMS} فایل مجاز است`);
       return;
@@ -261,14 +261,17 @@ export function PressPublicationsAdmin({
               <Input {...form.register("location")} />
             </div>
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <Label>رسانه‌ها (حداکثر {MAX_MEDIA_ITEMS})</Label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={() => addMediaItem("image")}>
                     + تصویر
                   </Button>
                   <Button type="button" variant="outline" size="sm" onClick={() => addMediaItem("video")}>
                     + ویدیو
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => addMediaItem("audio")}>
+                    + صوت
                   </Button>
                 </div>
               </div>
@@ -276,7 +279,7 @@ export function PressPublicationsAdmin({
                 <div key={item.id} className="space-y-2 rounded-lg border p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
-                      {item.type === "image" ? "تصویر" : "ویدیو"}
+                      {item.type === "image" ? "تصویر" : item.type === "audio" ? "صوت" : "ویدیو"}
                     </span>
                     <Button
                       type="button"
@@ -294,12 +297,20 @@ export function PressPublicationsAdmin({
                         prev.map((media) => (media.id === item.id ? { ...media, url } : media))
                       )
                     }
-                    label={item.type === "image" ? "تصویر" : "ویدیو"}
-                    kind={item.type === "image" ? "image" : "video"}
-                    uploadKind={item.type === "image" ? "image" : "activity-video"}
-                    fileOnly={item.type === "video"}
+                    label={item.type === "image" ? "تصویر" : item.type === "audio" ? "صوت" : "ویدیو"}
+                    kind={item.type === "image" ? "image" : item.type === "audio" ? "audio" : "video"}
+                    uploadKind={
+                      item.type === "image" ? "image" : item.type === "audio" ? "audio" : "activity-video"
+                    }
+                    fileOnly={item.type === "video" || item.type === "audio"}
                     maxFileSizeBytes={item.type === "video" ? ACTIVITY_VIDEO_MAX_BYTES : undefined}
-                    accept={item.type === "image" ? "image/*" : "video/mp4,video/webm,video/quicktime"}
+                    accept={
+                      item.type === "image"
+                        ? "image/*"
+                        : item.type === "audio"
+                          ? "audio/*"
+                          : "video/mp4,video/webm,video/quicktime"
+                    }
                   />
                 </div>
               ))}

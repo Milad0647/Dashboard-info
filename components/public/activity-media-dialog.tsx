@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, MapPin } from "lucide-react";
+import { Download, MapPin, Music } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,8 +33,10 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
   const videoSrc = canPlayVideo ? resolveAbsoluteMediaUrl(resolveVideoEmbedUrl(activity.videoUrl!)) : "";
   const isDirectVideo = canPlayVideo && isDirectVideoUrl(videoSrc);
   const galleryImages =
-    activity.mediaItems?.filter((item) => item.url?.trim() && item.type !== "video").map((item) => item.url) ??
+    activity.mediaItems?.filter((item) => item.url?.trim() && item.type === "image").map((item) => item.url) ??
     [];
+  const audioItems =
+    activity.mediaItems?.filter((item) => item.url?.trim() && item.type === "audio") ?? [];
 
   const handleDownloadImage = () => {
     if (!activity.imageUrl) return;
@@ -50,6 +52,10 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
       activity.videoUrl,
       getFilenameFromUrl(activity.videoUrl, `${activity.title}.mp4`)
     );
+  };
+
+  const handleDownloadAudio = (url: string, index: number) => {
+    void downloadMedia(url, getFilenameFromUrl(url, `${activity.title}-${index + 1}.mp3`));
   };
 
   return (
@@ -113,6 +119,37 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
                 className="w-full rounded-lg bg-muted"
                 imgClassName="max-h-64 w-full object-contain"
               />
+            ))}
+          </div>
+        )}
+
+        {audioItems.length > 0 && (
+          <div className="space-y-3 px-4 pt-2">
+            {audioItems.map((item, index) => (
+              <div
+                key={item.id}
+                className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 sm:flex-row sm:items-center"
+              >
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Music className="h-4 w-4 shrink-0" />
+                  <span>فایل صوتی {audioItems.length > 1 ? index + 1 : ""}</span>
+                </div>
+                <audio
+                  src={resolveAbsoluteMediaUrl(item.url)}
+                  controls
+                  preload="metadata"
+                  className="w-full flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadAudio(item.url, index)}
+                  className="gap-2 shrink-0"
+                >
+                  <Download className="h-4 w-4" />
+                  دانلود
+                </Button>
+              </div>
             ))}
           </div>
         )}

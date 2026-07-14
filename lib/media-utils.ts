@@ -76,6 +76,13 @@ export function isDirectVideoUrl(url: string): boolean {
   return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed);
 }
 
+export function isDirectAudioUrl(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+  if (/^\/api\/files\/.+\.(mp3|wav|ogg|m4a|aac|webm|mpeg)(\?.*)?$/i.test(trimmed)) return true;
+  return /\.(mp3|wav|ogg|m4a|aac|mpeg)(\?.*)?$/i.test(trimmed);
+}
+
 export function resolveAbsoluteMediaUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return trimmed;

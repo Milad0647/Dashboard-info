@@ -246,7 +246,7 @@ CREATE TABLE IF NOT EXISTS social_media_posts (
   comments INT NOT NULL DEFAULT 0,
   shares INT NOT NULL DEFAULT 0,
   link TEXT NOT NULL DEFAULT '',
-  content_type TEXT NOT NULL DEFAULT 'image' CHECK (content_type IN ('image', 'text', 'video', 'carousel', 'story', 'reel')),
+  content_type TEXT NOT NULL DEFAULT 'image' CHECK (content_type IN ('image', 'text', 'video', 'carousel', 'story', 'reel', 'audio')),
   media_url TEXT,
   description TEXT,
   published_date DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -486,4 +486,8 @@ ALTER TABLE broadcast_reports ADD COLUMN IF NOT EXISTS score DOUBLE PRECISION;
 ALTER TABLE campaign_meetings ADD COLUMN IF NOT EXISTS score DOUBLE PRECISION;
 ALTER TABLE campaign_files ADD COLUMN IF NOT EXISTS score DOUBLE PRECISION;
 ALTER TABLE raw_media_uploads ADD COLUMN IF NOT EXISTS score DOUBLE PRECISION;
+
+ALTER TABLE social_media_posts DROP CONSTRAINT IF EXISTS social_media_posts_content_type_check;
+ALTER TABLE social_media_posts ADD CONSTRAINT social_media_posts_content_type_check
+  CHECK (content_type IN ('image', 'text', 'video', 'carousel', 'story', 'reel', 'audio'));
 

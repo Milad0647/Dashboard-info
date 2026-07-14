@@ -50,7 +50,7 @@ const schema = z.object({
   comments: z.coerce.number().min(0),
   shares: z.coerce.number().min(0),
   link: z.string().optional(),
-  contentType: z.enum(["image", "text", "video", "carousel", "story", "reel"]),
+  contentType: z.enum(["image", "text", "video", "carousel", "story", "reel", "audio"]),
   mediaUrl: z.string().optional(),
   description: z.string().optional(),
   publishedDate: z.string(),
@@ -71,7 +71,7 @@ const platformOptions: SocialPlatform[] = [
   "other",
 ];
 
-const contentTypeOptions: SocialContentType[] = ["image", "text", "video", "carousel", "story", "reel"];
+const contentTypeOptions: SocialContentType[] = ["image", "text", "video", "carousel", "story", "reel", "audio"];
 
 interface SocialPostsAdminProps {
   campaignId: string;
@@ -434,7 +434,32 @@ export function SocialPostsAdmin({
             <PersianDateField control={form.control} name="publishedDate" label="تاریخ انتشار" />
 
             <MediaUpload label="تصویر کاور" value={form.watch("coverImageUrl") ?? ""} onChange={(value) => form.setValue("coverImageUrl", value)} kind="image" />
-            <MediaUpload label="رسانه (ویدیو/تصویر)" value={form.watch("mediaUrl") ?? ""} onChange={(value) => form.setValue("mediaUrl", value)} />
+            {form.watch("contentType") === "audio" ? (
+              <MediaUpload
+                label="فایل صوتی"
+                value={form.watch("mediaUrl") ?? ""}
+                onChange={(value) => form.setValue("mediaUrl", value)}
+                kind="audio"
+                uploadKind="audio"
+                accept="audio/*"
+                fileOnly
+              />
+            ) : form.watch("contentType") === "video" || form.watch("contentType") === "reel" ? (
+              <MediaUpload
+                label="رسانه (ویدیو)"
+                value={form.watch("mediaUrl") ?? ""}
+                onChange={(value) => form.setValue("mediaUrl", value)}
+                kind="video"
+                accept="video/*"
+              />
+            ) : (
+              <MediaUpload
+                label="رسانه (تصویر/ویدیو)"
+                value={form.watch("mediaUrl") ?? ""}
+                onChange={(value) => form.setValue("mediaUrl", value)}
+                kind="image"
+              />
+            )}
 
             <div className="space-y-2">
               <Label>توضیحات</Label>

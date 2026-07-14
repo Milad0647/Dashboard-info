@@ -37,27 +37,40 @@ function toLocalDate(dateStr: string): Date {
   return new Date(dateStr);
 }
 
+function isValidDate(date: Date): boolean {
+  return !Number.isNaN(date.getTime());
+}
+
 export function formatPersianDate(dateStr: string): string {
+  if (!dateStr?.trim()) return "—";
   try {
-    return persianDateFormatter.format(toLocalDate(dateStr));
+    const date = toLocalDate(dateStr);
+    if (!isValidDate(date)) return "—";
+    return persianDateFormatter.format(date);
   } catch {
-    return dateStr;
+    return "—";
   }
 }
 
 export function formatPersianDateShort(dateStr: string): string {
+  if (!dateStr?.trim()) return "—";
   try {
-    return persianDateShortFormatter.format(toLocalDate(dateStr));
+    const date = toLocalDate(dateStr);
+    if (!isValidDate(date)) return "—";
+    return persianDateShortFormatter.format(date);
   } catch {
-    return dateStr;
+    return "—";
   }
 }
 
 export function formatPersianDateTime(dateStr: string): string {
+  if (!dateStr?.trim()) return "—";
   try {
-    return persianDateTimeFormatter.format(new Date(dateStr));
+    const date = toLocalDate(dateStr);
+    if (!isValidDate(date)) return "—";
+    return persianDateTimeFormatter.format(date);
   } catch {
-    return dateStr;
+    return "—";
   }
 }
 
@@ -114,6 +127,7 @@ export function getStatusLabel(status: string): string {
     carousel: "کاروسل",
     story: "استوری",
     reel: "ریلز",
+    audio: "صوتی",
     direct: "مستقیم",
     google: "گوگل",
     referral: "ارجاع",

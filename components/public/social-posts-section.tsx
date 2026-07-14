@@ -10,14 +10,14 @@ import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Music } from "lucide-react";
 import { PUBLIC_MEDIA_GRID_CLASS } from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { flattenOwnerGroupsInSortOrder } from "@/lib/owner-groups";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
-import { isDirectVideoUrl } from "@/lib/media-utils";
+import { isDirectAudioUrl, isDirectVideoUrl, resolveAbsoluteMediaUrl } from "@/lib/media-utils";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 
 interface SocialPostsSectionProps {
@@ -34,6 +34,24 @@ function SocialPostCover({ post }: { post: SocialMediaPost }) {
         className="h-full w-full"
         imgClassName="transition-transform group-hover:scale-105"
       />
+    );
+  }
+
+  const isAudio =
+    post.contentType === "audio" || (Boolean(post.mediaUrl) && isDirectAudioUrl(post.mediaUrl!));
+
+  if (isAudio && post.mediaUrl) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted px-3 py-4">
+        <Music className="h-8 w-8 text-muted-foreground" />
+        <audio
+          src={resolveAbsoluteMediaUrl(post.mediaUrl)}
+          controls
+          preload="metadata"
+          className="w-full max-w-full"
+          onClick={(event) => event.stopPropagation()}
+        />
+      </div>
     );
   }
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { MapPin, Play } from "lucide-react";
+import { MapPin, Music, Play } from "lucide-react";
 import { getActivityTypeLabel } from "@/lib/activity-types";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
@@ -44,6 +44,10 @@ function ActivityCard({
 }) {
   const hasMedia = hasActivityMedia(activity);
   const hasVideo = Boolean(activity.videoUrl?.trim());
+  const audioOnly =
+    !hasVideo &&
+    !activity.imageUrl?.trim() &&
+    Boolean(activity.mediaItems?.some((item) => item.type === "audio" && item.url.trim()));
 
   return (
     <Card className="h-full w-full overflow-hidden py-0 gap-0">
@@ -71,15 +75,24 @@ function ActivityCard({
             className="object-cover transition-transform group-hover:scale-105"
             sizes="(max-width: 1280px) 16vw, 200px"
           />
+        ) : audioOnly ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-2 text-muted-foreground">
+            <Music className="h-8 w-8" />
+            <span className="text-xs">فایل صوتی</span>
+          </div>
         ) : (
           <div className="flex h-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
             {getActivityTypeLabel(activity.activityType)}
           </div>
         )}
 
-        {hasVideo && hasMedia && (
+        {(hasVideo || audioOnly) && hasMedia && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-            <Play className="h-10 w-10 text-white drop-shadow" />
+            {hasVideo ? (
+              <Play className="h-10 w-10 text-white drop-shadow" />
+            ) : (
+              <Music className="h-10 w-10 text-white drop-shadow" />
+            )}
           </div>
         )}
 

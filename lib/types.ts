@@ -18,7 +18,7 @@ export type ActivityType =
   | "painting"
   | "exhibition"
   | "other";
-export type SocialContentType = "image" | "text" | "video" | "carousel" | "story" | "reel";
+export type SocialContentType = "image" | "text" | "video" | "carousel" | "story" | "reel" | "audio";
 export type SessionRole = "admin" | "contributor" | "client";
 
 export interface CampaignFeatures {
@@ -443,7 +443,7 @@ export interface BroadcastReport extends Ownable {
 
 export interface ActivityMediaItem {
   id: string;
-  type: "image" | "video";
+  type: "image" | "video" | "audio";
   url: string;
 }
 
