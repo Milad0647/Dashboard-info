@@ -30,6 +30,7 @@ import { deleteVideoAction } from "@/lib/actions/admin-actions";
 import type { ContentTopic } from "@/lib/content-topics";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { resolveDisplayVersion } from "@/lib/media-utils";
+import { VideoModal } from "@/components/media/video-modal";
 import type { AdminUser, MediaCategory, Video, VideoVersion } from "@/lib/types";
 import { pickDefaultVideoCategoryId } from "@/lib/video-types";
 
@@ -297,33 +298,20 @@ export function VideosAdmin({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(previewVideo)} onOpenChange={(open) => !open && setPreviewVideo(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{previewVideo?.title ?? "نمایش ویدیو"}</DialogTitle>
-            <DialogDescription className="sr-only">پیش‌نمایش ویدیو</DialogDescription>
-          </DialogHeader>
-          {previewVideo && (
-            <div className="space-y-3">
-              {resolveDisplayVersion(versionsByVideoId.get(previewVideo.id) ?? [])?.videoUrl ? (
-                <video
-                  src={resolveDisplayVersion(versionsByVideoId.get(previewVideo.id) ?? [])?.videoUrl}
-                  controls
-                  className="max-h-80 w-full rounded-lg bg-muted"
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">ویدیویی برای پیش‌نمایش وجود ندارد.</p>
-              )}
-              <AdminItemActions
-                onEdit={() => {
-                  setPreviewVideo(null);
-                  openEditor(previewVideo.id);
-                }}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {previewVideo && (() => {
+        const previewVersions = versionsByVideoId.get(previewVideo.id) ?? [];
+        const display = resolveDisplayVersion(previewVersions);
+        if (!display) return null;
+        return (
+          <VideoModal
+            open
+            onOpenChange={(open) => !open && setPreviewVideo(null)}
+            title={previewVideo.title}
+            versions={previewVersions}
+            initialVersionId={display.id}
+          />
+        );
+      })()}
     </div>
   );
 }

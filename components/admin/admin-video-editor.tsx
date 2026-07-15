@@ -28,6 +28,7 @@ import {
   extractAparatVideoHash,
   getAparatThumbnailUrl,
   isAparatVideoInput,
+  isDirectVideoUrl,
   resolveDisplayVersion,
   resolveVideoThumbnail,
 } from "@/lib/media-utils";
@@ -277,15 +278,18 @@ export function AdminVideoEditor({
     <div className="flex min-h-0 flex-1 flex-col">
       <div ref={scrollAreaRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain pr-1">
       <div className="relative mx-auto aspect-video max-h-56 w-full overflow-hidden rounded-xl bg-muted">
-        {previewCover ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={previewCover} alt={editTitle} className="h-full w-full object-contain" />
-        ) : displayVersion ? (
-          <VideoThumbnail
-            videoUrl={displayVersion.videoUrl}
-            thumbnailUrl={displayVersion.thumbnailUrl}
-            alt={editTitle}
-          />
+        {displayVersion ? (
+          previewCover ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={previewCover} alt={editTitle} className="h-full w-full object-contain" />
+          ) : (
+            <VideoThumbnail
+              videoUrl={displayVersion.videoUrl}
+              thumbnailUrl={displayVersion.thumbnailUrl}
+              alt={editTitle}
+              className="object-contain"
+            />
+          )
         ) : null}
         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
           <Play className="h-12 w-12 text-white" />
@@ -385,9 +389,10 @@ export function AdminVideoEditor({
 
           {versionDrafts.map((draft, index) => {
             const isAparat = isAparatVideoInput(draft.videoUrl);
-            const draftPreview = draft.videoUrl
+            const draftCover = draft.videoUrl
               ? resolveVideoThumbnail(draft.videoUrl, draft.thumbnailUrl || null)
               : null;
+            const isDirect = Boolean(draft.videoUrl && isDirectVideoUrl(draft.videoUrl));
 
             return (
               <div key={draft.localId} className="space-y-3 rounded-lg border p-3">
@@ -419,10 +424,20 @@ export function AdminVideoEditor({
                   </Button>
                 </div>
 
-                {draftPreview && (
-                  <div className="relative aspect-video max-h-32 overflow-hidden rounded-lg border bg-muted">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={draftPreview} alt="" className="h-full w-full object-contain" />
+                {(draftCover || isDirect) && (
+                  <div className="relative aspect-video max-h-40 overflow-hidden rounded-lg border bg-muted">
+                    {isDirect ? (
+                      <video
+                        src={draft.videoUrl}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="h-full w-full object-contain bg-black"
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={draftCover!} alt="" className="h-full w-full object-contain" />
+                    )}
                   </div>
                 )}
 

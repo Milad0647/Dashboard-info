@@ -29,10 +29,6 @@ interface VideoModalProps {
   initialVersionId: string;
 }
 
-function isDirectVideo(url: string): boolean {
-  return isDirectVideoUrl(url);
-}
-
 export function VideoModal({
   open,
   onOpenChange,
@@ -60,6 +56,7 @@ export function VideoModal({
   const canPlay = isEmbeddableVideoUrl(activeVersion.videoUrl);
   const embedUrl = canPlay ? resolveVideoEmbedUrl(activeVersion.videoUrl) : "";
   const videoSrc = resolveAbsoluteMediaUrl(embedUrl);
+  const playAsFile = isDirectVideoUrl(activeVersion.videoUrl) || isDirectVideoUrl(videoSrc);
   const suffix = `-v${activeVersion.versionNumber}`;
   const coverUrl = resolveVideoThumbnail(activeVersion.videoUrl, activeVersion.thumbnailUrl);
   const showCoverDownload = Boolean(coverUrl && hasDistinctThumbnail(coverUrl, activeVersion.videoUrl));
@@ -100,7 +97,7 @@ export function VideoModal({
 
         <div className="relative aspect-video w-full bg-black">
           {canPlay ? (
-            isDirectVideo(videoSrc) ? (
+            playAsFile ? (
               <video
                 key={activeVersion.id}
                 src={videoSrc}

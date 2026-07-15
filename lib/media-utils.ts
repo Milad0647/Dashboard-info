@@ -46,23 +46,32 @@ export function resolveVideoThumbnail(
   videoUrl: string,
   thumbnailUrl?: string | null
 ): string | null {
-  if (thumbnailUrl && hasDistinctThumbnail(thumbnailUrl, videoUrl)) {
-    return thumbnailUrl;
+  const customCover = thumbnailUrl?.trim() || "";
+  // Never treat a video file path as an image cover (breaks <img> previews).
+  if (
+    customCover &&
+    hasDistinctThumbnail(customCover, videoUrl) &&
+    !isDirectVideoUrl(customCover)
+  ) {
+    return customCover;
   }
 
   const hash = extractAparatVideoHash(videoUrl);
   if (hash) return getAparatThumbnailUrl(hash);
 
-  return thumbnailUrl || null;
+  return null;
 }
 
 export function buildVideoVersionMedia(videoUrl: string, thumbnailUrl?: string) {
   const trimmedVideoUrl = videoUrl.trim();
-  const customCover = thumbnailUrl?.trim();
+  const customCover = thumbnailUrl?.trim() || "";
   const hash = extractAparatVideoHash(trimmedVideoUrl);
   const resolvedThumbnail =
-    customCover ||
-    (hash ? getAparatThumbnailUrl(hash) : trimmedVideoUrl);
+    customCover && !isDirectVideoUrl(customCover) && customCover !== trimmedVideoUrl
+      ? customCover
+      : hash
+        ? getAparatThumbnailUrl(hash)
+        : "";
 
   return {
     videoUrl: trimmedVideoUrl,
@@ -72,8 +81,15 @@ export function buildVideoVersionMedia(videoUrl: string, thumbnailUrl?: string) 
 
 export function isDirectVideoUrl(url: string): boolean {
   const trimmed = url.trim();
+  if (!trimmed) return false;
   if (/^\/api\/files\/.+\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed)) return true;
-  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed);
+  try {
+    const pathname = new URL(trimmed, "https://local.invalid").pathname;
+    if (/^\/api\/files\/.+\.(mp4|webm|ogg|mov)$/i.test(pathname)) return true;
+    return /\.(mp4|webm|ogg|mov)$/i.test(pathname);
+  } catch {
+    return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed);
+  }
 }
 
 export function isDirectAudioUrl(url: string): boolean {

@@ -235,11 +235,17 @@ export function MediaUpload({
 
       {kind === "video" && (
         <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
-          {videoPreviewUrl ? (
+          {value && isDirectVideoUrl(value) ? (
+            <video
+              src={value}
+              className="h-full w-full object-cover"
+              controls
+              playsInline
+              preload="metadata"
+            />
+          ) : videoPreviewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={videoPreviewUrl} alt="" className="h-full w-full object-cover" />
-          ) : value && isDirectVideoUrl(value) ? (
-            <video src={value} className="h-full w-full object-cover" muted playsInline preload="metadata" />
           ) : (
             <MediaPlaceholder kind="video" className="h-full" />
           )}
