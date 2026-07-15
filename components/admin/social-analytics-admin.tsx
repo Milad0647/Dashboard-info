@@ -50,6 +50,7 @@ const schema = z.object({
     "bale",
     "other",
   ]),
+  title: z.string().optional(),
   followers: z.coerce.number().min(0),
   posts: z.coerce.number().min(0),
   profileUrl: z.string().optional(),
@@ -76,15 +77,11 @@ export function SocialAnalyticsAdmin({
     setRows(initialStats);
   }, [initialStats]);
 
-  const usedPlatforms = new Set(rows.map((row) => row.platform));
-  const availablePlatforms = platformOptions.filter(
-    (platform) => !usedPlatforms.has(platform) || rows.find((row) => row.id === editingId)?.platform === platform
-  );
-
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      platform: availablePlatforms[0] ?? "instagram",
+      platform: "instagram" as SocialPlatform,
+      title: "",
       followers: 0,
       posts: 0,
       profileUrl: "",
@@ -94,7 +91,8 @@ export function SocialAnalyticsAdmin({
   const openCreate = () => {
     setEditingId(null);
     form.reset({
-      platform: availablePlatforms[0] ?? "instagram",
+      platform: "instagram",
+      title: "",
       followers: 0,
       posts: 0,
       profileUrl: "",
@@ -106,6 +104,7 @@ export function SocialAnalyticsAdmin({
     setEditingId(stat.id);
     form.reset({
       platform: stat.platform,
+      title: stat.title ?? "",
       followers: stat.followers,
       posts: stat.posts,
       profileUrl: stat.profileUrl ?? "",
@@ -117,6 +116,7 @@ export function SocialAnalyticsAdmin({
     startTransition(async () => {
       const result = await saveSocialPlatformStatAction({
         ...data,
+        title: data.title?.trim() || null,
         campaignId,
         id: editingId ?? undefined,
       });
@@ -139,27 +139,32 @@ export function SocialAnalyticsAdmin({
           <h2 className="text-lg font-semibold">آمار صفحات شبکه‌های اجتماعی</h2>
           <p className="text-sm text-muted-foreground">
             {isFullAdmin
-              ? "تعداد فالوور و پست هر پلتفرم برای هر کاربر"
-              : "آمار صفحات خودتان — هر پلتفرم یک‌بار ثبت می‌شود"}
+              ? "هر کاربر می‌تواند چند کانال ثبت کند (حتی چند کانال از یک پلتفرم)"
+              : "می‌توانید چند کانال اضافه کنید — حتی چند کانال از یک پلتفرم"}
           </p>
         </div>
-        <Button onClick={openCreate} disabled={availablePlatforms.length === 0 && !editingId}>
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
-          افزودن پلتفرم
+          افزودن کانال
         </Button>
       </div>
 
       <AdminDataTable
         data={rows}
-        searchKeys={["platform"]}
+        searchKeys={["platform", "title", "profileUrl"]}
         columns={[
           {
             key: "platform",
-            label: "پلتفرم",
+            label: "کانال",
             render: (item) => (
               <div className="flex items-center gap-2">
                 <SocialPlatformIcon platform={item.platform} size="sm" />
-                <span>{getSocialPlatformLabel(item.platform)}</span>
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{getSocialPlatformLabel(item.platform)}</p>
+                  {item.title?.trim() && (
+                    <p className="truncate text-xs text-muted-foreground">{item.title}</p>
+                  )}
+                </div>
               </div>
             ),
           },
@@ -193,7 +198,7 @@ export function SocialAnalyticsAdmin({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingId ? "ویرایش آمار پلتفرم" : "پلتفرم جدید"}</DialogTitle>
+            <DialogTitle>{editingId ? "ویرایش کانال" : "کانال جدید"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -201,22 +206,26 @@ export function SocialAnalyticsAdmin({
               <Select
                 value={form.watch("platform")}
                 onValueChange={(value) => form.setValue("platform", value as SocialPlatform)}
-                disabled={Boolean(editingId)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(editingId
-                    ? platformOptions.filter((platform) => platform === form.watch("platform"))
-                    : availablePlatforms
-                  ).map((platform) => (
+                  {platformOptions.map((platform) => (
                     <SelectItem key={platform} value={platform}>
                       {getSocialPlatformLabel(platform)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>نام کانال (اختیاری)</Label>
+              <Input
+                {...form.register("title")}
+                placeholder="مثلاً کانال اصلی، کانال خبری، ..."
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

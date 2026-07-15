@@ -364,6 +364,7 @@ export function mapSocialPlatformStatFromDb(row: any): SocialPlatformStat {
     campaignId: row.campaign_id,
     ...mapOwnerFromDb(row),
     platform: row.platform,
+    title: row.title ?? null,
     followers: Number(row.followers ?? 0),
     posts: Number(row.posts ?? 0),
     profileUrl: row.profile_url ?? null,

@@ -485,6 +485,7 @@ export async function pgSaveSocialPlatformStat(data: Partial<SocialPlatformStat>
   const campaignId = data.campaignId ?? "";
   const ownerUserId = data.ownerUserId ?? null;
   const platform = data.platform ?? "instagram";
+  const title = data.title?.trim() || null;
   const followers = data.followers ?? 0;
   const posts = data.posts ?? 0;
   const profileUrl = data.profileUrl ?? null;
@@ -492,6 +493,8 @@ export async function pgSaveSocialPlatformStat(data: Partial<SocialPlatformStat>
   if (data.id) {
     await sql`
       UPDATE social_platform_stats SET
+        platform = ${platform},
+        title = ${title},
         followers = ${followers},
         posts = ${posts},
         profile_url = ${profileUrl},
@@ -499,35 +502,6 @@ export async function pgSaveSocialPlatformStat(data: Partial<SocialPlatformStat>
       WHERE id = ${data.id}
     `;
     return { success: true, id: data.id };
-  }
-
-  const existingRows = ownerUserId
-    ? await sql`
-        SELECT id FROM social_platform_stats
-        WHERE campaign_id = ${campaignId}
-          AND platform = ${platform}
-          AND owner_user_id = ${ownerUserId}
-        LIMIT 1
-      `
-    : await sql`
-        SELECT id FROM social_platform_stats
-        WHERE campaign_id = ${campaignId}
-          AND platform = ${platform}
-          AND owner_user_id IS NULL
-        LIMIT 1
-      `;
-
-  if (existingRows[0]) {
-    const existingId = String(existingRows[0].id);
-    await sql`
-      UPDATE social_platform_stats SET
-        followers = ${followers},
-        posts = ${posts},
-        profile_url = ${profileUrl},
-        updated_at = ${now}
-      WHERE id = ${existingId}
-    `;
-    return { success: true, id: existingId };
   }
 
   const countRows = ownerUserId
@@ -546,13 +520,14 @@ export async function pgSaveSocialPlatformStat(data: Partial<SocialPlatformStat>
 
   await sql`
     INSERT INTO social_platform_stats (
-      id, campaign_id, owner_user_id, platform, followers, posts, profile_url,
+      id, campaign_id, owner_user_id, platform, title, followers, posts, profile_url,
       sort_order, created_at, updated_at
     ) VALUES (
       ${id},
       ${campaignId},
       ${ownerUserId},
       ${platform},
+      ${title},
       ${followers},
       ${posts},
       ${profileUrl},

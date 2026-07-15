@@ -35,6 +35,9 @@ function PlatformStatCard({ platform }: { platform: SocialPlatformStat }) {
             <SocialPlatformIcon platform={platform.platform} size="lg" />
             <div>
               <h3 className="font-semibold">{getSocialPlatformLabel(platform.platform)}</h3>
+              {platform.title?.trim() && (
+                <p className="text-sm text-muted-foreground">{platform.title}</p>
+              )}
               {platform.profileUrl && (
                 <p className="text-xs text-muted-foreground truncate max-w-[180px]" dir="ltr">
                   {platform.profileUrl}

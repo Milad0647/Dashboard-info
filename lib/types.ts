@@ -358,6 +358,8 @@ export interface SocialPlatformStat extends Ownable {
   id: string;
   campaignId: string;
   platform: SocialPlatform;
+  /** Optional display name to distinguish multiple channels on the same platform. */
+  title?: string | null;
   followers: number;
   posts: number;
   profileUrl?: string | null;

@@ -263,6 +263,7 @@ CREATE TABLE IF NOT EXISTS social_platform_stats (
   campaign_id UUID NOT NULL REFERENCES campaign_settings(id) ON DELETE CASCADE,
   owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   platform TEXT NOT NULL CHECK (platform IN ('instagram', 'x', 'telegram', 'linkedin', 'youtube', 'aparat', 'rubika', 'eitaa', 'soroush', 'bale', 'other')),
+  title TEXT,
   followers INT NOT NULL DEFAULT 0,
   posts INT NOT NULL DEFAULT 0,
   profile_url TEXT,
@@ -270,14 +271,6 @@ CREATE TABLE IF NOT EXISTS social_platform_stats (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_social_platform_stats_per_owner
-  ON social_platform_stats (campaign_id, platform, owner_user_id)
-  WHERE owner_user_id IS NOT NULL;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_social_platform_stats_global
-  ON social_platform_stats (campaign_id, platform)
-  WHERE owner_user_id IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_social_platform_stats_campaign ON social_platform_stats(campaign_id, sort_order);
 
@@ -354,12 +347,7 @@ ALTER TABLE social_media_posts ADD CONSTRAINT social_media_posts_platform_check
 ALTER TABLE social_platform_stats DROP CONSTRAINT IF EXISTS social_platform_stats_campaign_id_platform_key;
 DROP INDEX IF EXISTS idx_social_platform_stats_per_owner;
 DROP INDEX IF EXISTS idx_social_platform_stats_global;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_social_platform_stats_per_owner
-  ON social_platform_stats (campaign_id, platform, owner_user_id)
-  WHERE owner_user_id IS NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_social_platform_stats_global
-  ON social_platform_stats (campaign_id, platform)
-  WHERE owner_user_id IS NULL;
+ALTER TABLE social_platform_stats ADD COLUMN IF NOT EXISTS title TEXT;
 ALTER TABLE social_platform_stats DROP CONSTRAINT IF EXISTS social_platform_stats_platform_check;
 ALTER TABLE social_platform_stats ADD CONSTRAINT social_platform_stats_platform_check
   CHECK (platform IN ('instagram', 'x', 'telegram', 'linkedin', 'youtube', 'aparat', 'rubika', 'eitaa', 'soroush', 'bale', 'other'));
