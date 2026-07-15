@@ -40,6 +40,19 @@ const billboardCategoryLookup = new Map<string, BillboardCategory>(
   ])
 );
 
+/** Extra aliases seen in imports / free text (Latin + Persian variants). */
+const billboardCategoryAliases: Record<string, BillboardCategory> = {
+  "estra board": "straboard",
+  estraboard: "straboard",
+  "estra-board": "straboard",
+  "استرا بورد": "straboard",
+  استرابرد: "straboard",
+  "bill board": "billboard",
+  "بیلبورد شهری": "billboard",
+  "light box": "lightbox",
+  "لایت باکس": "lightbox",
+};
+
 export function matchBillboardCategoryKey(
   value: string | null | undefined
 ): BillboardCategory | null {
@@ -51,7 +64,17 @@ export function matchBillboardCategoryKey(
     return slug as BillboardCategory;
   }
 
-  return billboardCategoryLookup.get(normalized) ?? billboardCategoryLookup.get(slug) ?? null;
+  const aliasKey = normalized.toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ").trim();
+  if (billboardCategoryAliases[aliasKey]) {
+    return billboardCategoryAliases[aliasKey];
+  }
+
+  return (
+    billboardCategoryLookup.get(normalized) ??
+    billboardCategoryLookup.get(slug) ??
+    billboardCategoryLookup.get(aliasKey) ??
+    null
+  );
 }
 
 function findCategoryLabelInTags(tags: string[]): string | null {

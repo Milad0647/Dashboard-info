@@ -36,6 +36,7 @@ import { groupByOwnerPreservingOrder } from "@/lib/owner-groups";
 import { hasBillboardCoordinates } from "@/lib/billboards";
 import type { Billboard } from "@/lib/types";
 import { formatPersianNumber, getStatusLabel } from "@/lib/utils";
+import { resolveBillboardCategoryDisplay } from "@/lib/billboard-categories";
 
 function getBillboardUploadDate(billboard: Billboard): string {
   return billboard.updatedAt || billboard.createdAt;
@@ -48,6 +49,11 @@ function matchesBillboardStatusFilter(billboard: Billboard, statusFilter: string
   return billboard.status === statusFilter;
 }
 
+function matchesBillboardCategoryFilter(billboard: Billboard, categoryFilter: string): boolean {
+  if (categoryFilter === "all") return true;
+  return resolveBillboardCategoryDisplay(billboard) === categoryFilter;
+}
+
 interface BillboardSectionProps {
   billboards: Billboard[];
   adminOwnerLabel?: string | null;
@@ -57,6 +63,7 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
   const { filter } = useOwnerLocationFilter();
   const locationFilteredBillboards = useFilteredOwnableItems(billboards, (billboard) => billboard.date);
   const [cityFilter, setCityFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sort, setSort] = useState<PublicMediaSort>("default");
   const [search, setSearch] = useState("");
@@ -65,15 +72,23 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
   const [mapExpanded, setMapExpanded] = useState(false);
 
   const cities = useMemo(
-    () => [...new Set(locationFilteredBillboards.map((billboard) => billboard.city))],
+    () => [...new Set(locationFilteredBillboards.map((billboard) => billboard.city).filter(Boolean))],
     [locationFilteredBillboards]
   );
+
+  const categories = useMemo(() => {
+    const labels = locationFilteredBillboards
+      .map((billboard) => resolveBillboardCategoryDisplay(billboard))
+      .filter((label): label is string => Boolean(label));
+    return [...new Set(labels)].sort((a, b) => a.localeCompare(b, "fa"));
+  }, [locationFilteredBillboards]);
 
   const effectiveSort = resolvePublicMediaSort(filter.sortOrder, sort);
 
   const filtered = useMemo(() => {
     const items = locationFilteredBillboards.filter((billboard) => {
       if (cityFilter !== "all" && billboard.city !== cityFilter) return false;
+      if (!matchesBillboardCategoryFilter(billboard, categoryFilter)) return false;
       if (!matchesBillboardStatusFilter(billboard, statusFilter)) return false;
       if (search && !billboard.title.includes(search) && !billboard.city.includes(search)) return false;
       if (effectiveSort !== "default" && !billboardHasDisplayContent(billboard)) return false;
@@ -82,13 +97,13 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
     // Default view surfaces newest uploads so contributor content is not buried.
     const sortForList: PublicMediaSort = effectiveSort === "default" ? "newest" : effectiveSort;
     return sortByPublicMediaOrder(items, sortForList, getBillboardUploadDate);
-  }, [locationFilteredBillboards, cityFilter, statusFilter, search, effectiveSort]);
+  }, [locationFilteredBillboards, cityFilter, categoryFilter, statusFilter, search, effectiveSort]);
 
   const sectionVisible = useCampaignSectionVisibility(billboards.length, filtered.length);
 
   const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
     filtered.length,
-    `${cityFilter}:${statusFilter}:${search}:${sort}`
+    `${cityFilter}:${categoryFilter}:${statusFilter}:${search}:${sort}`
   );
 
   const visibleBillboards = filtered.slice(0, visibleCount);
@@ -144,6 +159,21 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
           ))}
         </SelectContent>
       </Select>
+      {categories.length > 0 && (
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="دسته‌بندی" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">همه دسته‌ها</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       <Select value={statusFilter} onValueChange={setStatusFilter}>
         <SelectTrigger className="w-32">
           <SelectValue placeholder="وضعیت" />

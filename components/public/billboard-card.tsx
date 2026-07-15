@@ -38,8 +38,6 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
   const city = billboard.city?.trim() || "";
   const showCity = Boolean(city && city !== province);
   const categoryLabel = resolveBillboardCategoryDisplay(billboard);
-  const typeLabel = billboard.billboardTypeLabel?.trim() || "";
-  const showTypeLabel = Boolean(typeLabel && categoryLabel && typeLabel !== categoryLabel);
   const address = resolveBillboardAddress(billboard);
   const dateLabel = getBillboardDateLabel(billboard);
   const displayDays = getBillboardDisplayDays(billboard);
@@ -63,27 +61,22 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
             imageClassName="transition-transform group-hover:scale-105"
           />
         )}
-        <div className="absolute top-1.5 right-1.5 flex max-w-[calc(100%-0.75rem)] flex-wrap gap-1 justify-end">
-          {categoryLabel && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shadow-sm">
-              {categoryLabel}
-            </Badge>
-          )}
-          {showCity && (
+        {showCity && (
+          <div className="absolute top-1.5 right-1.5 flex max-w-[calc(100%-0.75rem)] flex-wrap gap-1 justify-end">
             <Badge variant="outline" className="bg-background/90 text-[10px] px-1.5 py-0 shadow-sm">
               {city}
             </Badge>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <CardContent className="flex flex-1 flex-col space-y-3 p-4">
         <h3 className="line-clamp-2 min-h-[2.5rem] font-semibold leading-tight">{billboard.title}</h3>
 
-        {showTypeLabel && (
+        {categoryLabel && (
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="secondary" className="text-xs">
-              {typeLabel}
+              {categoryLabel}
             </Badge>
           </div>
         )}
