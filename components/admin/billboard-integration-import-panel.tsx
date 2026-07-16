@@ -42,7 +42,9 @@ export function BillboardIntegrationImportPanel({
         `${result.imported} بیلبورد وارد شد`,
         result.updated ? `${result.updated} مورد موجود به‌روزرسانی شد` : null,
         result.matchedUsers ? `${result.matchedUsers} مورد به کاربران متصل شد` : null,
-        result.skippedAdmin ? `${result.skippedAdmin} مورد ثبت‌شده توسط ادمین نادیده گرفته شد` : null,
+        result.assignedToAdminOwner
+          ? `${result.assignedToAdminOwner} مورد ادمین به توانیر وصل شد`
+          : null,
         result.unmatchedOwners?.length
           ? `${result.unmatchedOwners.length} مالک بدون کاربر متناظر`
           : null,
@@ -66,8 +68,9 @@ export function BillboardIntegrationImportPanel({
           بیلبوردها از endpoint integration دریافت می‌شوند. تطابق کاربر با{" "}
           <code className="text-xs">owner.username</code> /{" "}
           <code className="text-xs">owner.email</code> انجام می‌شود. بیلبوردهای ثبت‌شده توسط
-          ادمین (<code className="text-xs">owner: null</code>) وارد نمی‌شوند. بیلبوردهایی که قبلاً
-          وارد شده‌اند دوباره دریافت و به‌روزرسانی می‌شوند (استان/شهر و اطلاعات از API تازه می‌شود).
+          ادمین (<code className="text-xs">owner: null</code>) به حساب توانیر وصل می‌شوند.
+          بیلبوردهایی که قبلاً وارد شده‌اند دوباره دریافت و به‌روزرسانی می‌شوند (استان/شهر و
+          اطلاعات از API تازه می‌شود).
           {externalCampaignSlug ? (
             <>
               {" "}

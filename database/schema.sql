@@ -479,7 +479,7 @@ ALTER TABLE social_media_posts DROP CONSTRAINT IF EXISTS social_media_posts_cont
 ALTER TABLE social_media_posts ADD CONSTRAINT social_media_posts_content_type_check
   CHECK (content_type IN ('image', 'text', 'video', 'carousel', 'story', 'reel', 'audio'));
 
--- Idempotent: attach orphan posters/videos on the live campaign to tavanir@example.com
+-- Idempotent: attach orphan admin content on the live campaign to tavanir@example.com
 DO $$
 DECLARE
   target_user_id UUID;
@@ -495,6 +495,12 @@ BEGIN
     RETURN;
   END IF;
 
+  UPDATE billboards
+  SET owner_user_id = target_user_id,
+      updated_at = now()
+  WHERE campaign_id = target_campaign_id
+    AND owner_user_id IS NULL;
+
   UPDATE posters
   SET owner_user_id = target_user_id,
       updated_at = now()
@@ -502,6 +508,53 @@ BEGIN
     AND owner_user_id IS NULL;
 
   UPDATE videos
+  SET owner_user_id = target_user_id,
+      updated_at = now()
+  WHERE campaign_id = target_campaign_id
+    AND owner_user_id IS NULL;
+
+  UPDATE campaign_files
+  SET owner_user_id = target_user_id,
+      updated_at = now()
+  WHERE campaign_id = target_campaign_id
+    AND owner_user_id IS NULL;
+
+  UPDATE raw_media_uploads
+  SET owner_user_id = target_user_id,
+      updated_at = now()
+  WHERE campaign_id = target_campaign_id
+    AND owner_user_id IS NULL;
+
+  UPDATE social_media_posts
+  SET owner_user_id = target_user_id,
+      updated_at = now()
+  WHERE campaign_id = target_campaign_id
+    AND owner_user_id IS NULL;
+
+  UPDATE campaign_activities
+  SET owner_user_id = target_user_id,
+      updated_at = now()
+  WHERE campaign_id = target_campaign_id
+    AND owner_user_id IS NULL;
+
+  UPDATE broadcast_reports
+  SET owner_user_id = target_user_id,
+      updated_at = now()
+  WHERE campaign_id = target_campaign_id
+    AND owner_user_id IS NULL;
+
+  UPDATE campaign_meetings
+  SET owner_user_id = target_user_id,
+      updated_at = now()
+  WHERE campaign_id = target_campaign_id
+    AND owner_user_id IS NULL;
+
+  UPDATE analytics_metrics
+  SET owner_user_id = target_user_id
+  WHERE campaign_id = target_campaign_id
+    AND owner_user_id IS NULL;
+
+  UPDATE campaign_submissions
   SET owner_user_id = target_user_id,
       updated_at = now()
   WHERE campaign_id = target_campaign_id
