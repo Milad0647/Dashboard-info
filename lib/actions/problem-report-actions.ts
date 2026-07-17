@@ -8,7 +8,7 @@ import type {
   ProblemReportCategory,
   ProblemReportStatus,
 } from "@/lib/audit/problem-types";
-import { PROBLEM_REPORT_CATEGORY_LABELS } from "@/lib/audit/problem-types";
+import { PROBLEM_REPORT_CATEGORY_LABELS, PROBLEM_REPORT_STATUS_LABELS } from "@/lib/audit/problem-types";
 import { pgGetUserById } from "@/lib/db/repository-extended";
 import {
   pgInsertProblemReport,
@@ -108,37 +108,48 @@ export async function updateProblemReportStatusAction(input: {
   status: ProblemReportStatus;
   adminNote?: string;
 }): Promise<{ success: boolean; error?: string }> {
-  const session = await getAuthSession();
-  if (!session || !isFullAdmin(session)) {
-    return { success: false, error: "فقط ادمین می‌تواند گزارش را رسیدگی کند" };
-  }
-  if (!isPostgresConfigured()) {
-    return { success: false, error: "دیتابیس فعال نیست" };
-  }
-  if (!VALID_STATUSES.has(input.status)) {
-    return { success: false, error: "وضعیت نامعتبر است" };
-  }
+  try {
+    const session = await getAuthSession();
+    if (!session || !isFullAdmin(session)) {
+      return { success: false, error: "فقط ادمین می‌تواند گزارش را رسیدگی کند" };
+    }
+    if (!isPostgresConfigured()) {
+      return { success: false, error: "دیتابیس فعال نیست" };
+    }
+    if (!VALID_STATUSES.has(input.status)) {
+      return { success: false, error: "وضعیت نامعتبر است" };
+    }
+    if (!input.id?.trim()) {
+      return { success: false, error: "شناسه گزارش نامعتبر است" };
+    }
 
-  const updated = await pgUpdateProblemReportStatus({
-    id: input.id,
-    status: input.status,
-    adminNote: input.adminNote,
-    resolvedByUserId: session.userId,
-  });
+    const updated = await pgUpdateProblemReportStatus({
+      id: input.id.trim(),
+      status: input.status,
+      adminNote: input.adminNote,
+      // Env admin sessions have no users FK row — leave resolver null.
+      resolvedByUserId: session.type === "db_user" ? session.userId : null,
+    });
 
-  if (!updated) {
-    return { success: false, error: "گزارش یافت نشد یا به‌روزرسانی نشد" };
+    if (!updated) {
+      return { success: false, error: "گزارش یافت نشد یا به‌روزرسانی نشد" };
+    }
+
+    await logAuditForSession(session, {
+      category: "admin",
+      action: "problem.triage",
+      entityType: "problem_report",
+      entityId: updated.id,
+      label: `${PROBLEM_REPORT_CATEGORY_LABELS[updated.category] ?? updated.category} → ${
+        PROBLEM_REPORT_STATUS_LABELS[input.status] ?? input.status
+      }`,
+      metadata: { status: input.status },
+    });
+
+    revalidatePath("/admin/audit");
+    return { success: true };
+  } catch (error) {
+    console.error("updateProblemReportStatusAction failed:", error);
+    return { success: false, error: "خطا در به‌روزرسانی گزارش" };
   }
-
-  await logAuditForSession(session, {
-    category: "admin",
-    action: "problem.triage",
-    entityType: "problem_report",
-    entityId: updated.id,
-    label: `${PROBLEM_REPORT_CATEGORY_LABELS[updated.category]} → ${input.status}`,
-    metadata: { status: input.status },
-  });
-
-  revalidatePath("/admin/audit");
-  return { success: true };
 }

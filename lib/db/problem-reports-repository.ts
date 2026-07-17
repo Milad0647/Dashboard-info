@@ -131,31 +131,42 @@ export async function pgUpdateProblemReportStatus(input: {
   if (!isPostgresConfigured()) return null;
 
   const sql = getSql();
-  const now = new Date().toISOString();
   const isClosed = input.status === "resolved" || input.status === "dismissed";
-  const hasNote = input.adminNote !== undefined;
-  const adminNote = hasNote ? input.adminNote?.trim() || null : null;
+  // Env admin has no users-row id; only persist FK when we have a real user UUID.
+  const resolvedByUserId = isClosed && input.resolvedByUserId ? input.resolvedByUserId : null;
+  const resolvedAt = isClosed ? new Date().toISOString() : null;
 
-  const rows = await sql`
-    UPDATE user_problem_reports
-    SET
-      status = ${input.status},
-      admin_note = CASE
-        WHEN ${hasNote} THEN ${adminNote}
-        ELSE admin_note
-      END,
-      resolved_by_user_id = CASE
-        WHEN ${isClosed} THEN ${input.resolvedByUserId ?? null}
-        ELSE NULL
-      END,
-      resolved_at = CASE
-        WHEN ${isClosed} THEN ${now}::timestamptz
-        ELSE NULL
-      END,
-      updated_at = ${now}::timestamptz
-    WHERE id = ${input.id}
-    RETURNING *
-  `;
+  try {
+    if (input.adminNote !== undefined) {
+      const adminNote = input.adminNote?.trim() || null;
+      const rows = await sql`
+        UPDATE user_problem_reports
+        SET
+          status = ${input.status},
+          admin_note = ${adminNote},
+          resolved_by_user_id = ${resolvedByUserId},
+          resolved_at = ${resolvedAt},
+          updated_at = now()
+        WHERE id = ${input.id}::uuid
+        RETURNING *
+      `;
+      return rows[0] ? mapReportRow(rows[0] as Record<string, unknown>) : null;
+    }
 
-  return rows[0] ? mapReportRow(rows[0] as Record<string, unknown>) : null;
+    const rows = await sql`
+      UPDATE user_problem_reports
+      SET
+        status = ${input.status},
+        resolved_by_user_id = ${resolvedByUserId},
+        resolved_at = ${resolvedAt},
+        updated_at = now()
+      WHERE id = ${input.id}::uuid
+      RETURNING *
+    `;
+    return rows[0] ? mapReportRow(rows[0] as Record<string, unknown>) : null;
+  } catch (error) {
+    console.error("pgUpdateProblemReportStatus failed:", error);
+    throw error;
+  }
 }
+

@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "82ce82b7d2e33654ede9f610fbd7e65c7f446f96",
+      "committedAt": "2026-07-17T17:52:15+03:30",
+      "title": "قفل امنیتی روی عملیات ادمین بدون ورود",
+      "subject": "Require auth on unprotected admin server actions"
+    },
+    {
       "hash": "c22255e409622926adfe73230dd5a1080a8fb59b",
       "committedAt": "2026-07-17T17:51:21+03:30",
       "title": "بزرگ‌تر شدن بخش آپلود پوستر و ویدیو در عرض مودال",

@@ -89,7 +89,8 @@ export function AuditProblemsPanel({
         return;
       }
       toast.success("وضعیت گزارش به‌روز شد");
-    } catch {
+    } catch (error) {
+      console.error("handleStatus failed:", error);
       toast.error("خطا در به‌روزرسانی گزارش");
     } finally {
       setBusyId(null);
