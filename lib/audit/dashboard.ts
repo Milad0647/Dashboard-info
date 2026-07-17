@@ -9,7 +9,22 @@ import {
   pgGetUserContentContributions,
   pgListAuditEvents,
 } from "@/lib/db/audit-repository";
+import {
+  pgCountOpenProblemReports,
+  pgListProblemReports,
+} from "@/lib/db/problem-reports-repository";
+import { pgGetStuckBehaviorSignals } from "@/lib/db/stuck-signals-repository";
 import type { AuditDashboardData } from "@/lib/audit/types";
+import type { ProblemReport, StuckBehaviorSignal } from "@/lib/audit/problem-types";
+
+async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error("Audit dashboard partial load failed:", error);
+    return fallback;
+  }
+}
 
 export async function getAuditDashboardData(): Promise<AuditDashboardData> {
   const [
@@ -23,6 +38,9 @@ export async function getAuditDashboardData(): Promise<AuditDashboardData> {
     recentEvents,
     contentByUser,
     logins,
+    problemReports,
+    openProblemReports,
+    stuckSignals,
   ] = await Promise.all([
     pgGetAuditSummaryCounts(),
     pgGetAuditDailySeries(14),
@@ -34,12 +52,17 @@ export async function getAuditDashboardData(): Promise<AuditDashboardData> {
     pgListAuditEvents({ limit: 200 }),
     pgGetUserContentContributions(),
     pgListAuditEvents({ action: "auth.login", limit: 50 }),
+    safe<ProblemReport[]>(() => pgListProblemReports({ limit: 100 }), []),
+    safe(() => pgCountOpenProblemReports(), 0),
+    safe<StuckBehaviorSignal[]>(() => pgGetStuckBehaviorSignals(), []),
   ]);
 
   return {
     summary: {
       ...summary,
       onlineUsers: onlineUsers.length,
+      openProblemReports,
+      stuckSignals: stuckSignals.length,
     },
     dailySeries,
     topActors,
@@ -51,5 +74,7 @@ export async function getAuditDashboardData(): Promise<AuditDashboardData> {
     recentEvents: recentEvents.filter((event) => event.action !== "presence.heartbeat"),
     contentByUser,
     logins,
+    problemReports,
+    stuckSignals,
   };
 }

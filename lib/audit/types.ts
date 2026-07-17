@@ -134,6 +134,8 @@ export interface AuditDashboardData {
     failedLoginsToday: number;
     activeUsersToday: number;
     onlineUsers: number;
+    openProblemReports: number;
+    stuckSignals: number;
     contentChangesToday: number;
     pageViewsToday: number;
     clicksToday: number;
@@ -147,5 +149,7 @@ export interface AuditDashboardData {
   recentEvents: AuditEvent[];
   contentByUser: UserContentContribution[];
   logins: AuditEvent[];
+  problemReports: import("./problem-types").ProblemReport[];
+  stuckSignals: import("./problem-types").StuckBehaviorSignal[];
 }
 

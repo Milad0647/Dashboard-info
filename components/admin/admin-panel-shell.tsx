@@ -10,6 +10,7 @@ import {
   AdminCampaignProviderStatic,
 } from "@/components/admin/admin-campaign-provider";
 import { AuditTracker } from "@/components/admin/audit-tracker";
+import { ProblemReportButton } from "@/components/admin/problem-report-button";
 import { ScrollToTopButton } from "@/components/ui/scroll-to-top-button";
 import type { CampaignSettings } from "@/lib/types";
 
@@ -77,6 +78,9 @@ function PanelChrome({
       ) : null}
       <AdminSidebar />
       <AdminElanhaButton />
+      <Suspense fallback={null}>
+        <ProblemReportButton />
+      </Suspense>
       <Suspense fallback={null}>
         <NavigationPendingOverlay />
       </Suspense>

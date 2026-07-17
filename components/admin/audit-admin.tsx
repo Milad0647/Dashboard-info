@@ -3,12 +3,14 @@
 import { useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
+  AlertTriangle,
   FileStack,
   LogIn,
   MousePointerClick,
   Navigation,
   Radio,
   ShieldAlert,
+  TriangleAlert,
   Users,
 } from "lucide-react";
 import {
@@ -29,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AuditProblemsPanel } from "@/components/admin/audit-problems-panel";
 import { useChartTheme } from "@/lib/hooks/use-chart-theme";
 import {
   formatPersianDateShort,
@@ -328,6 +331,18 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
           icon={Radio}
           hint="فعال در ۵ دقیقه اخیر"
         />
+        <StatCard
+          label="گزارش مشکل باز"
+          value={summary.openProblemReports}
+          icon={AlertTriangle}
+          hint="در انتظار یا در حال بررسی"
+        />
+        <StatCard
+          label="هشدار رفتار"
+          value={summary.stuckSignals}
+          icon={TriangleAlert}
+          hint="احتمال گیر کردن کاربر"
+        />
         <StatCard label="کاربران فعال امروز" value={summary.activeUsersToday} icon={Users} />
         <StatCard label="ورود امروز" value={summary.loginsToday} icon={LogIn} />
         <StatCard label="تغییرات محتوا امروز" value={summary.contentChangesToday} icon={FileStack} />
@@ -401,11 +416,26 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">نمای کلی</TabsTrigger>
+          <TabsTrigger value="problems">
+            مشکلات
+            {(summary.openProblemReports > 0 || summary.stuckSignals > 0) && (
+              <Badge variant="warning" className="mr-1.5">
+                {formatPersianNumber(summary.openProblemReports + summary.stuckSignals)}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="users">کاربران</TabsTrigger>
           <TabsTrigger value="content">محتوای هر کاربر</TabsTrigger>
           <TabsTrigger value="logins">ورودها</TabsTrigger>
           <TabsTrigger value="events">رویدادها</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="problems">
+          <AuditProblemsPanel
+            reports={data.problemReports ?? []}
+            signals={data.stuckSignals ?? []}
+          />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">
           <Card>

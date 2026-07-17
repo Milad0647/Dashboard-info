@@ -620,3 +620,45 @@ CREATE TABLE IF NOT EXISTS user_tutorial_completions (
 CREATE INDEX IF NOT EXISTS idx_user_tutorial_completions_section
   ON user_tutorial_completions(section_key, tutorial_version);
 
+-- User-submitted problem reports (triaged by admin in audit panel)
+CREATE TABLE IF NOT EXISTS user_problem_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reporter_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  reporter_type TEXT NOT NULL DEFAULT 'db_user'
+    CHECK (reporter_type IN ('env_admin', 'db_user', 'anonymous')),
+  reporter_email TEXT,
+  reporter_name TEXT,
+  reporter_role TEXT,
+  category TEXT NOT NULL DEFAULT 'other'
+    CHECK (category IN (
+      'ui_bug',
+      'cant_find',
+      'upload',
+      'permission',
+      'data',
+      'performance',
+      'other'
+    )),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  path TEXT,
+  campaign_id UUID REFERENCES campaign_settings(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'in_progress', 'resolved', 'dismissed')),
+  admin_note TEXT,
+  resolved_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  resolved_at TIMESTAMPTZ,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_problem_reports_status
+  ON user_problem_reports(status, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_user_problem_reports_reporter
+  ON user_problem_reports(reporter_user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_user_problem_reports_created
+  ON user_problem_reports(created_at DESC);
+
