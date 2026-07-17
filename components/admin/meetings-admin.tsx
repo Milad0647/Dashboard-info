@@ -314,14 +314,14 @@ export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-1">
           <h1 className="text-2xl font-bold">جلسات و مصوبات</h1>
           <p className="text-sm text-muted-foreground">
             ثبت جلسه با رمز مشترک، حاضرین، صوت، مصوبات و تصمیم‌ها
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="shrink-0 self-start">
           <Plus className="h-4 w-4" />
           افزودن جلسه
         </Button>
@@ -494,13 +494,13 @@ export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword
                 {tasks.map((task, index) => (
                   <div
                     key={task.id ?? `task-${index}`}
-                    className="flex items-center gap-2 rounded-md border px-3 py-2 bg-muted/30"
+                    className="flex items-start gap-2 rounded-md border bg-muted/30 px-3 py-2"
                   >
                     <input
                       type="checkbox"
                       checked={task.completed}
                       onChange={() => toggleTask(index)}
-                      className="h-4 w-4 rounded border shrink-0"
+                      className="mt-1 h-4 w-4 shrink-0 rounded border"
                     />
                     {editingTaskIndex === index ? (
                       <Input
@@ -508,12 +508,12 @@ export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword
                         onChange={(event) => updateTaskTitle(index, event.target.value)}
                         onBlur={() => setEditingTaskIndex(null)}
                         autoFocus
-                        className="h-8"
+                        className="h-8 min-w-0 flex-1"
                       />
                     ) : (
                       <span
                         className={cn(
-                          "flex-1 text-sm",
+                          "min-w-0 flex-1 break-words text-sm",
                           task.completed && "line-through text-muted-foreground"
                         )}
                       >
@@ -583,7 +583,7 @@ export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword
                 {decisions.map((decision, index) => (
                   <div
                     key={decision.id ?? `decision-${index}`}
-                    className="flex items-center gap-2 rounded-md border px-3 py-2 bg-muted/30"
+                    className="flex items-start gap-2 rounded-md border bg-muted/30 px-3 py-2"
                   >
                     {editingDecisionIndex === index ? (
                       <Input
@@ -591,10 +591,12 @@ export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword
                         onChange={(event) => updateDecisionTitle(index, event.target.value)}
                         onBlur={() => setEditingDecisionIndex(null)}
                         autoFocus
-                        className="h-8 flex-1"
+                        className="h-8 min-w-0 flex-1"
                       />
                     ) : (
-                      <span className="flex-1 text-sm">{decision.title || "—"}</span>
+                      <span className="min-w-0 flex-1 break-words text-sm">
+                        {decision.title || "—"}
+                      </span>
                     )}
                     <Button
                       type="button"

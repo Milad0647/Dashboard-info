@@ -89,15 +89,16 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+        <div className="min-w-0 space-y-1">
           <h1 className="text-2xl font-bold">مشارکت کاربران</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="break-words text-sm text-muted-foreground">
             بررسی ارسال‌ها یا import از فایل Excel (ستون‌های uuid، title، caption، media_type، author_name و ...)
           </p>
         </div>
         <Button
           type="button"
           variant="outline"
+          className="shrink-0 self-start"
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
         >
@@ -160,32 +161,80 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
       />
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>جزئیات ارسال</DialogTitle></DialogHeader>
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>جزئیات ارسال</DialogTitle>
+          </DialogHeader>
           {selected && (
-            <div className="space-y-4 text-sm">
-              <div><span className="text-muted-foreground">عنوان: </span>{selected.title}</div>
-              <div><span className="text-muted-foreground">نوع: </span>{selected.submissionType}</div>
-              <div><span className="text-muted-foreground">شرکت‌کننده: </span>{selected.participantName}</div>
-              <div><span className="text-muted-foreground">تلفن: </span>{maskPhone(selected.participantPhone)}</div>
-              <div><span className="text-muted-foreground">ایمیل: </span>{maskEmail(selected.participantEmail)}</div>
-              <div><span className="text-muted-foreground">متن: </span>{selected.text}</div>
+            <div className="space-y-3 text-sm">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">عنوان</p>
+                <p className="break-words font-medium">{selected.title || "—"}</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">نوع</p>
+                  <p className="break-words">{selected.submissionType || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">شرکت‌کننده</p>
+                  <p className="break-words">{selected.participantName || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">تلفن</p>
+                  <p dir="ltr" className="break-all text-left">
+                    {maskPhone(selected.participantPhone)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">ایمیل</p>
+                  <p dir="ltr" className="break-all text-left">
+                    {maskEmail(selected.participantEmail)}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">متن</p>
+                <p className="whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3">
+                  {selected.text?.trim() || "—"}
+                </p>
+              </div>
               {selected.mediaUrl && (
-                <div>
-                  <span className="text-muted-foreground">رسانه: </span>
-                  <a href={selected.mediaUrl} target="_blank" rel="noreferrer" className="text-primary underline" dir="ltr">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">رسانه</p>
+                  <a
+                    href={selected.mediaUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex break-all text-primary underline"
+                    dir="ltr"
+                  >
                     مشاهده فایل
                   </a>
                 </div>
               )}
-              <div className="flex flex-wrap gap-2 pt-4">
-                <Button size="sm" onClick={() => updateStatus(selected.id, "approved", true)} disabled={isPending}>
+              <div className="flex flex-wrap gap-2 border-t pt-4">
+                <Button
+                  size="sm"
+                  onClick={() => updateStatus(selected.id, "approved", true)}
+                  disabled={isPending}
+                >
                   تأیید و انتشار
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => updateStatus(selected.id, "pending", false)} disabled={isPending}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => updateStatus(selected.id, "pending", false)}
+                  disabled={isPending}
+                >
                   در انتظار
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => updateStatus(selected.id, "rejected", false)} disabled={isPending}>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => updateStatus(selected.id, "rejected", false)}
+                  disabled={isPending}
+                >
                   رد
                 </Button>
               </div>

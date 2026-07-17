@@ -14,7 +14,11 @@ export function AdminOwnerBadge({ ownerUserId, ownerName, className }: AdminOwne
   const label = ownerName?.trim() || "کاربر";
 
   return (
-    <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", className)}>
+    <Badge
+      variant="outline"
+      className={cn("max-w-[140px] truncate text-[10px] px-1.5 py-0", className)}
+      title={label}
+    >
       {label}
     </Badge>
   );

@@ -157,20 +157,13 @@ export function AdminDataTable<T extends { id: string }>({
           {emptyMessage}
         </div>
       ) : (
-        <div className="border rounded-xl overflow-hidden">
+        <div className="overflow-hidden rounded-xl border">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] table-fixed text-sm">
-              <colgroup>
-                {showSelection && <col className="w-[48px]" />}
-                {hasActions && <col className="w-[200px]" />}
-                {columns.map((col) => (
-                  <col key={col.key} />
-                ))}
-              </colgroup>
+            <table className="w-full min-w-[720px] text-sm">
               <thead className="bg-muted/50">
                 <tr>
                   {showSelection && (
-                    <th className="px-4 py-3">
+                    <th className="w-12 px-3 py-3 text-right">
                       <input
                         type="checkbox"
                         checked={allVisibleSelected}
@@ -182,12 +175,15 @@ export function AdminDataTable<T extends { id: string }>({
                     </th>
                   )}
                   {hasActions && (
-                    <th className="text-right px-4 py-3 font-medium whitespace-nowrap">
+                    <th className="w-[1%] whitespace-nowrap px-3 py-3 text-right font-medium">
                       عملیات
                     </th>
                   )}
                   {columns.map((col) => (
-                    <th key={col.key} className="text-right px-4 py-3 font-medium">
+                    <th
+                      key={col.key}
+                      className="whitespace-nowrap px-3 py-3 text-right font-medium"
+                    >
                       {col.label}
                     </th>
                   ))}
@@ -198,54 +194,65 @@ export function AdminDataTable<T extends { id: string }>({
                   const readOnly = isReadOnly?.(item) ?? false;
 
                   return (
-                  <tr
-                    key={item.id}
-                    className={readOnly ? "border-t bg-muted/20 hover:bg-muted/30" : "border-t hover:bg-muted/30"}
-                  >
-                    {showSelection && (
-                      <td className="px-4 py-3 align-middle">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(item.id)}
-                          onChange={() => toggleRow(item.id)}
-                          disabled={readOnly}
-                          aria-label="انتخاب ردیف"
-                          className="h-4 w-4"
-                        />
-                      </td>
-                    )}
-                    {hasActions && (
-                      <td className="px-4 py-3 align-middle">
-                        {readOnly ? (
-                          <span className="text-xs text-muted-foreground">از API — فقط مشاهده</span>
-                        ) : (
-                        <div className="flex flex-wrap items-center justify-start gap-1">
-                          <AdminItemActions
-                            onView={onView ? () => onView(item) : undefined}
-                            onEdit={onEdit ? () => onEdit(item) : undefined}
-                            onDelete={onDelete ? () => onDelete(item) : undefined}
+                    <tr
+                      key={item.id}
+                      className={
+                        readOnly
+                          ? "border-t bg-muted/20 hover:bg-muted/30"
+                          : "border-t hover:bg-muted/30"
+                      }
+                    >
+                      {showSelection && (
+                        <td className="px-3 py-3 align-middle">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(item.id)}
+                            onChange={() => toggleRow(item.id)}
+                            disabled={readOnly}
+                            aria-label="انتخاب ردیف"
+                            className="h-4 w-4"
                           />
-                          {onTogglePublish && getPublished && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onTogglePublish(item)}
-                            >
-                              {getPublished(item) ? "عدم انتشار" : "انتشار"}
-                            </Button>
+                        </td>
+                      )}
+                      {hasActions && (
+                        <td className="whitespace-nowrap px-3 py-3 align-middle">
+                          {readOnly ? (
+                            <span className="text-xs text-muted-foreground">از API — فقط مشاهده</span>
+                          ) : (
+                            <div className="inline-flex items-center gap-1">
+                              <AdminItemActions
+                                compact
+                                onView={onView ? () => onView(item) : undefined}
+                                onEdit={onEdit ? () => onEdit(item) : undefined}
+                                onDelete={onDelete ? () => onDelete(item) : undefined}
+                              />
+                              {onTogglePublish && getPublished && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => onTogglePublish(item)}
+                                >
+                                  {getPublished(item) ? "عدم انتشار" : "انتشار"}
+                                </Button>
+                              )}
+                            </div>
                           )}
-                        </div>
-                        )}
-                      </td>
-                    )}
-                    {columns.map((col) => (
-                      <td key={col.key} className="px-4 py-3 text-right align-middle">
-                        {col.render
-                          ? col.render(item)
-                          : String((item as Record<string, unknown>)[col.key] ?? "—")}
-                      </td>
-                    ))}
-                  </tr>
+                        </td>
+                      )}
+                      {columns.map((col) => (
+                        <td
+                          key={col.key}
+                          className="max-w-[220px] px-3 py-3 text-right align-middle"
+                        >
+                          <div className="min-w-0 truncate">
+                            {col.render
+                              ? col.render(item)
+                              : String((item as Record<string, unknown>)[col.key] ?? "—")}
+                          </div>
+                        </td>
+                      ))}
+                    </tr>
                   );
                 })}
               </tbody>
