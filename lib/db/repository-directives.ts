@@ -422,21 +422,25 @@ export async function pgSaveDirective(input: SaveDirectiveInput): Promise<{ id: 
       updated_at = EXCLUDED.updated_at
   `;
 
-  // Keep a single attachment row mirrored from the official letter for older UIs.
   await sql`DELETE FROM directive_attachments WHERE directive_id = ${id}`;
-  if (letterFileUrl) {
+  const attachments = input.attachments ?? [];
+  for (let index = 0; index < attachments.length; index += 1) {
+    const attachment = attachments[index];
+    const attachmentId = attachment.id ?? generateId();
+    const attachmentTitle =
+      attachment.title?.trim() || attachment.fileName?.trim() || `پیوست ${index + 1}`;
     await sql`
       INSERT INTO directive_attachments (
         id, directive_id, title, file_url, file_name, mime_type, file_size, sort_order, created_at
       ) VALUES (
-        ${generateId()},
+        ${attachmentId},
         ${id},
-        ${"نامه رسمی"},
-        ${letterFileUrl},
-        ${letterFileName || "letter"},
-        ${letterMimeType || "application/octet-stream"},
-        ${letterFileSize},
-        ${0},
+        ${attachmentTitle},
+        ${attachment.fileUrl},
+        ${attachment.fileName},
+        ${attachment.mimeType || "application/octet-stream"},
+        ${attachment.fileSize || 0},
+        ${index},
         ${now}
       )
     `;

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { confirmDirectiveSeenAction } from "@/lib/actions/directive-actions";
-import type { CampaignDirective } from "@/lib/types";
+import type { CampaignDirective, DirectiveAttachment } from "@/lib/types";
 import { adminHref, cn, formatPersianDate, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
 interface DashboardDirectivesPanelProps {
@@ -19,6 +19,12 @@ interface DashboardDirectivesPanelProps {
 }
 
 const PREVIEW_LIMIT = 5;
+
+function extraAttachments(item: CampaignDirective): DirectiveAttachment[] {
+  const letterUrl = item.letterFileUrl?.trim();
+  if (!letterUrl) return item.attachments;
+  return item.attachments.filter((file) => file.fileUrl !== letterUrl);
+}
 
 function OfficialLetterPreview({ item }: { item: CampaignDirective }) {
   if (!item.letterFileUrl) {
@@ -52,6 +58,37 @@ function OfficialLetterPreview({ item }: { item: CampaignDirective }) {
         </span>
       </a>
     </div>
+  );
+}
+
+function AttachmentList({ attachments }: { attachments: DirectiveAttachment[] }) {
+  if (attachments.length === 0) {
+    return <p className="text-sm text-muted-foreground">پیوستی ندارد</p>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {attachments.map((file) => (
+        <li key={file.id} className="rounded-lg border px-3 py-2">
+          <a
+            href={file.fileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-start gap-2 text-sm text-primary hover:underline"
+          >
+            <Download className="mt-0.5 h-4 w-4 shrink-0" />
+            <span className="min-w-0">
+              <span className="block font-medium text-foreground">
+                {file.title || file.fileName}
+              </span>
+              {file.title && file.title !== file.fileName && (
+                <span className="block text-xs text-muted-foreground">{file.fileName}</span>
+              )}
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -238,6 +275,10 @@ export function DashboardDirectivesPanel({
                 <div className="space-y-2">
                   <p className="text-sm font-medium">نامه رسمی</p>
                   <OfficialLetterPreview item={detailItem} />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">پیوست‌ها</p>
+                  <AttachmentList attachments={extraAttachments(detailItem)} />
                 </div>
                 {!detailItem.confirmed && (
                   <Button

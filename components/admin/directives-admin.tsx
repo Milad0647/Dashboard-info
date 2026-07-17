@@ -42,6 +42,7 @@ import {
 } from "@/lib/content-constraints";
 import type {
   CampaignDirective,
+  DirectiveAttachment,
   DirectiveRecipient,
 } from "@/lib/types";
 import { USER_REGIONS, getUserRegionLabel, type UserRegion } from "@/lib/user-regions";
@@ -61,6 +62,15 @@ type FormValues = z.infer<typeof schema>;
 
 type InboxTab = "new" | "seen" | "all";
 type ManagerView = "manage" | "inbox";
+
+type DraftAttachment = {
+  id?: string;
+  title: string;
+  fileUrl: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+};
 
 interface CampaignUserOption {
   id: string;
@@ -88,6 +98,14 @@ const smsStatusLabels: Record<DirectiveRecipient["smsStatus"], string> = {
   no_phone: "بدون شماره",
   skipped: "رد شد",
 };
+
+function extraAttachments(
+  item: CampaignDirective
+): DirectiveAttachment[] {
+  const letterUrl = item.letterFileUrl?.trim();
+  if (!letterUrl) return item.attachments;
+  return item.attachments.filter((file) => file.fileUrl !== letterUrl);
+}
 
 function OfficialLetterPreview({ item }: { item: CampaignDirective }) {
   if (!item.letterFileUrl) {
@@ -124,6 +142,37 @@ function OfficialLetterPreview({ item }: { item: CampaignDirective }) {
   );
 }
 
+function AttachmentList({ attachments }: { attachments: DirectiveAttachment[] }) {
+  if (attachments.length === 0) {
+    return <p className="text-sm text-muted-foreground">پیوستی ندارد</p>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {attachments.map((file) => (
+        <li key={file.id} className="rounded-lg border px-3 py-2">
+          <a
+            href={file.fileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-start gap-2 text-sm text-primary hover:underline"
+          >
+            <Download className="mt-0.5 h-4 w-4 shrink-0" />
+            <span className="min-w-0">
+              <span className="block font-medium text-foreground">
+                {file.title || file.fileName}
+              </span>
+              {file.title && file.title !== file.fileName && (
+                <span className="block text-xs text-muted-foreground">{file.fileName}</span>
+              )}
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function DirectiveDateRange({ item }: { item: CampaignDirective }) {
   const start = item.startDate;
   const end = item.endDate ?? item.dueDate;
@@ -151,6 +200,16 @@ export function DirectivesAdmin({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [letterUpload, setLetterUpload] = useState({
+    url: "",
+    fileName: "",
+    fileSize: 0,
+    mimeType: "",
+  });
+  const [attachments, setAttachments] = useState<DraftAttachment[]>([]);
+  const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
+  const [editingAttachmentIndex, setEditingAttachmentIndex] = useState<number | null>(null);
+  const [attachmentTitle, setAttachmentTitle] = useState("");
+  const [attachmentUpload, setAttachmentUpload] = useState({
     url: "",
     fileName: "",
     fileSize: 0,
@@ -189,6 +248,7 @@ export function DirectivesAdmin({
   const openCreate = () => {
     setEditingId(null);
     setSelectedUserIds([]);
+    setAttachments([]);
     setLetterUpload({ url: "", fileName: "", fileSize: 0, mimeType: "" });
     form.reset({
       title: "",
@@ -210,6 +270,16 @@ export function DirectivesAdmin({
       fileSize: item.letterFileSize ?? 0,
       mimeType: item.letterMimeType ?? "",
     });
+    setAttachments(
+      extraAttachments(item).map((file) => ({
+        id: file.id,
+        title: file.title || file.fileName,
+        fileUrl: file.fileUrl,
+        fileName: file.fileName,
+        mimeType: file.mimeType,
+        fileSize: file.fileSize,
+      }))
+    );
     setSelectedUserIds([]);
     form.reset({
       title: item.title,
@@ -236,6 +306,63 @@ export function DirectivesAdmin({
   const closeDialog = () => {
     setOpen(false);
     setEditingId(null);
+    setAttachmentDialogOpen(false);
+    setEditingAttachmentIndex(null);
+  };
+
+  const openAddAttachment = () => {
+    setEditingAttachmentIndex(null);
+    setAttachmentTitle("");
+    setAttachmentUpload({ url: "", fileName: "", fileSize: 0, mimeType: "" });
+    setAttachmentDialogOpen(true);
+  };
+
+  const openEditAttachment = (index: number) => {
+    const current = attachments[index];
+    if (!current) return;
+    setEditingAttachmentIndex(index);
+    setAttachmentTitle(current.title);
+    setAttachmentUpload({
+      url: current.fileUrl,
+      fileName: current.fileName,
+      fileSize: current.fileSize,
+      mimeType: current.mimeType,
+    });
+    setAttachmentDialogOpen(true);
+  };
+
+  const closeAttachmentDialog = () => {
+    setAttachmentDialogOpen(false);
+    setEditingAttachmentIndex(null);
+    setAttachmentTitle("");
+    setAttachmentUpload({ url: "", fileName: "", fileSize: 0, mimeType: "" });
+  };
+
+  const saveAttachmentDraft = () => {
+    const title = attachmentTitle.trim();
+    if (!title) {
+      toast.error("عنوان فایل الزامی است");
+      return;
+    }
+    if (!attachmentUpload.url) {
+      toast.error("فایل را آپلود کنید");
+      return;
+    }
+
+    const next: DraftAttachment = {
+      id: editingAttachmentIndex != null ? attachments[editingAttachmentIndex]?.id : undefined,
+      title,
+      fileUrl: attachmentUpload.url,
+      fileName: attachmentUpload.fileName || title,
+      mimeType: attachmentUpload.mimeType || "application/octet-stream",
+      fileSize: attachmentUpload.fileSize || 0,
+    };
+
+    setAttachments((prev) => {
+      if (editingAttachmentIndex == null) return [...prev, next];
+      return prev.map((item, index) => (index === editingAttachmentIndex ? next : item));
+    });
+    closeAttachmentDialog();
   };
 
   const toggleUser = (userId: string) => {
@@ -266,6 +393,7 @@ export function DirectivesAdmin({
         audienceType: data.audienceType,
         audienceRegion: data.audienceType === "region" ? data.audienceRegion ?? null : null,
         selectedUserIds: data.audienceType === "users" ? selectedUserIds : undefined,
+        attachments,
         sendSmsOnPublish: true,
       });
 
@@ -536,6 +664,55 @@ export function DirectivesAdmin({
               onChange={(payload) => setLetterUpload(payload)}
             />
 
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label>پیوست‌ها</Label>
+                <Button type="button" variant="outline" size="sm" onClick={openAddAttachment}>
+                  <Plus className="h-4 w-4" />
+                  افزودن فایل
+                </Button>
+              </div>
+              {attachments.length === 0 ? (
+                <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+                  هنوز فایلی اضافه نشده — با «افزودن فایل» پیوست بگذارید
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {attachments.map((file, index) => (
+                    <li
+                      key={`${file.fileUrl}-${index}`}
+                      className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{file.title}</p>
+                        <p className="truncate text-xs text-muted-foreground">{file.fileName}</p>
+                      </div>
+                      <div className="flex shrink-0 gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditAttachment(index)}
+                        >
+                          ویرایش
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setAttachments((prev) => prev.filter((_, i) => i !== index))
+                          }
+                        >
+                          حذف
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label>مخاطب</Label>
               <Select
@@ -619,6 +796,52 @@ export function DirectivesAdmin({
         </DialogContent>
       </Dialog>
 
+      {/* Add / edit attachment */}
+      <Dialog
+        open={attachmentDialogOpen}
+        onOpenChange={(next) => (next ? setAttachmentDialogOpen(true) : closeAttachmentDialog())}
+      >
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingAttachmentIndex != null ? "ویرایش فایل" : "افزودن فایل"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>عنوان فایل</Label>
+              <Input
+                value={attachmentTitle}
+                maxLength={CONTENT_TITLE_MAX_LENGTH}
+                onChange={(event) => setAttachmentTitle(event.target.value)}
+                placeholder="مثلاً دستورالعمل / متن پیامک / فایل خام"
+              />
+            </div>
+            <DocumentUpload
+              label="فایل"
+              value={attachmentUpload.url}
+              fileName={attachmentUpload.fileName}
+              fileSize={attachmentUpload.fileSize}
+              mimeType={attachmentUpload.mimeType}
+              onChange={(payload) => {
+                setAttachmentUpload(payload);
+                if (!attachmentTitle.trim() && payload.fileName) {
+                  setAttachmentTitle(payload.fileName.replace(/\.[^.]+$/, ""));
+                }
+              }}
+            />
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={closeAttachmentDialog}>
+                انصراف
+              </Button>
+              <Button type="button" onClick={saveAttachmentDraft}>
+                {editingAttachmentIndex != null ? "ذخیره فایل" : "افزودن به دستورکار"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Detail */}
       <Dialog open={Boolean(detailItem)} onOpenChange={(next) => !next && setDetailItem(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -647,6 +870,10 @@ export function DirectivesAdmin({
                 <div>
                   <h3 className="mb-2 text-sm font-medium">نامه رسمی</h3>
                   <OfficialLetterPreview item={detailItem} />
+                </div>
+                <div>
+                  <h3 className="mb-2 text-sm font-medium">پیوست‌ها</h3>
+                  <AttachmentList attachments={extraAttachments(detailItem)} />
                 </div>
                 {showingInbox && !detailItem.confirmed && (
                   <Button disabled={isPending} onClick={() => confirmSeen(detailItem)}>

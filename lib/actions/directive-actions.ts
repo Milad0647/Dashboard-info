@@ -142,6 +142,14 @@ export async function saveDirectiveAction(input: {
   audienceType: DirectiveAudienceType;
   audienceRegion?: UserRegion | null;
   selectedUserIds?: string[];
+  attachments?: Array<{
+    id?: string;
+    title: string;
+    fileUrl: string;
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+  }>;
   sendSmsOnPublish?: boolean;
 }) {
   const titleError = getContentTitleValidationError(input.title);
@@ -159,6 +167,19 @@ export async function saveDirectiveAction(input: {
 
   if (!input.letterFileUrl?.trim()) {
     return { success: false as const, error: "آپلود نامه رسمی (PDF یا تصویر) الزامی است" };
+  }
+
+  for (const attachment of input.attachments ?? []) {
+    const attachmentTitleError = getContentTitleValidationError(attachment.title);
+    if (attachmentTitleError) {
+      return {
+        success: false as const,
+        error: `عنوان پیوست: ${attachmentTitleError}`,
+      };
+    }
+    if (!attachment.fileUrl?.trim()) {
+      return { success: false as const, error: "برای هر پیوست باید فایل آپلود شود" };
+    }
   }
 
   const access = await assertDirectivesAccess(input.campaignId);
@@ -182,6 +203,7 @@ export async function saveDirectiveAction(input: {
   const cleaned = stripFileAccessTokensDeep({
     ...input,
     body: input.body?.trim() ?? "",
+    attachments: input.attachments ?? [],
   });
 
   const isUpdate = Boolean(cleaned.id);
@@ -204,6 +226,7 @@ export async function saveDirectiveAction(input: {
     audienceType: cleaned.audienceType,
     audienceRegion: cleaned.audienceRegion,
     published: true,
+    attachments: cleaned.attachments,
     selectedUserIds: cleaned.selectedUserIds,
   });
 

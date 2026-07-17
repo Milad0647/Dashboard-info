@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "e4772758151ce7ae1ed42705de4a036cd00d30cd",
+      "committedAt": "2026-07-17T20:42:25+03:30",
+      "title": "خواندن خودکار بازدید و لایک ویدیوهای آپارات از لینک",
+      "subject": "Add Aparat link metrics fetch for social posts"
+    },
+    {
+      "hash": "1f5fc4f987bbec70905d6a728e8429aaa64b60b6",
+      "committedAt": "2026-07-17T20:37:45+03:30",
+      "title": "رفع نمایش عکس تبلیغات محیطی که ثبت‌نشده نشان داده می‌شد",
+      "subject": "Show billboard images from display periods and load via plain img."
+    },
+    {
       "hash": "b72a4dbeef61d3a94e735cc90a56ed460877b97e",
       "committedAt": "2026-07-17T20:29:12+03:30",
       "title": "بروزرسانی خودکار روزانه آمار و محتوای لینک‌ها",
