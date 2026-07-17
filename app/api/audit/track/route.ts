@@ -33,9 +33,10 @@ export async function POST(request: Request) {
   }
 
   const session = await getAuthSession();
-  // Only track authenticated panel activity.
+  // Only track authenticated panel activity. Return 204 (not 401) when there is
+  // no session so background beacons do not spam the browser console.
   if (!session) {
-    return NextResponse.json({ success: false }, { status: 401 });
+    return new NextResponse(null, { status: 204 });
   }
 
   let payload: TrackPayload;

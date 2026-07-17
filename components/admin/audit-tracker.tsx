@@ -18,6 +18,7 @@ function sendTrack(body: Record<string, unknown>) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: payload,
+      credentials: "same-origin",
       keepalive: true,
     });
   } catch {

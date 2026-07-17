@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "d3910addff9dba90fc3c40e20190598ee032def8",
+      "committedAt": "2026-07-17T19:24:19+03:30",
+      "title": "رفع مشکل باز نشدن بخش‌های داشبورد و برگشت مکرر به صفحه اصلی",
+      "subject": "Fix dashboard sections bouncing back to dashboard after login"
+    },
+    {
       "hash": "35a1d5130d358eaa6526478c8472bf2dc817d3a3",
       "committedAt": "2026-07-17T19:22:49+03:30",
       "title": "رفع خطای ری‌استارت مکرر سرور پس از به‌روزرسانی امنیت دیتابیس",

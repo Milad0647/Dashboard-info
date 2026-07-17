@@ -112,44 +112,14 @@ export async function loginAdminAction(email: string, password: string) {
       };
     }
 
-    // Prefer DB user sessions so profile and ownership work.
-    if (isPostgresConfigured()) {
-      const user = await pgGetUserAuthByLogin(email);
-      if (user && (await verifyPassword(password, user.passwordHash))) {
-        const cookieStore = await cookies();
-        const sessionVersion = await getSessionVersion(user.id);
-        const token = createUserSessionTokenSync(user.id, user.role, sessionVersion);
-        const cookieOptions = getAdminSessionCookieOptions();
-
-        cookieStore.set(getAdminSessionCookieName(), token, cookieOptions);
-        cookieStore.set(getLegacyMockCookieName(), "", { ...cookieOptions, maxAge: 0 });
-        resetRateLimit(rateKey);
-        resetRateLimit(`login-soft:${rateKey}`);
-
-        await logAuditEvent({
-          actorUserId: user.id,
-          actorType: "db_user",
-          actorEmail: user.email,
-          actorName: user.name,
-          actorRole: user.role,
-          category: "auth",
-          action: "auth.login",
-          label: "ورود کاربر",
-          metadata: { method: "db_user" },
-        });
-
-        redirect("/admin");
-      }
-    }
-
+    // System admin credentials always win. Checking them before DB users prevents
+    // a same-email contributor/client row from downgrading the owner to a limited
+    // session (which then bounces protected admin sections back to /admin).
     if (await verifyEffectiveAdminCredentials(email, password)) {
       const cookieStore = await cookies();
       const cookieOptions = getAdminSessionCookieOptions();
 
-      // If env admin email matches a DB user, attach that profile to the session.
-      // Only when that profile is also an admin: env admin credentials must
-      // never produce a session with fewer privileges (a contributor/client
-      // profile with the same email would lock the owner out of admin pages).
+      // Prefer a linked DB profile only when that profile is also admin.
       if (isPostgresConfigured()) {
         const linkedUser = await pgGetUserAuthByLogin(email);
         if (linkedUser && linkedUser.role === "admin") {
@@ -195,6 +165,36 @@ export async function loginAdminAction(email: string, password: string) {
       });
 
       redirect("/admin");
+    }
+
+    // Regular panel users (contributor / client / DB admin without system creds).
+    if (isPostgresConfigured()) {
+      const user = await pgGetUserAuthByLogin(email);
+      if (user && (await verifyPassword(password, user.passwordHash))) {
+        const cookieStore = await cookies();
+        const sessionVersion = await getSessionVersion(user.id);
+        const token = createUserSessionTokenSync(user.id, user.role, sessionVersion);
+        const cookieOptions = getAdminSessionCookieOptions();
+
+        cookieStore.set(getAdminSessionCookieName(), token, cookieOptions);
+        cookieStore.set(getLegacyMockCookieName(), "", { ...cookieOptions, maxAge: 0 });
+        resetRateLimit(rateKey);
+        resetRateLimit(`login-soft:${rateKey}`);
+
+        await logAuditEvent({
+          actorUserId: user.id,
+          actorType: "db_user",
+          actorEmail: user.email,
+          actorName: user.name,
+          actorRole: user.role,
+          category: "auth",
+          action: "auth.login",
+          label: "ورود کاربر",
+          metadata: { method: "db_user" },
+        });
+
+        redirect("/admin");
+      }
     }
 
     return registerFailedLogin(rateKey, loginEmail, ip);
