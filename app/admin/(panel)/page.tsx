@@ -196,11 +196,13 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
             <Badge status={data.settings.status}>
               {data.settings.status === "live" ? "زنده" : "پایان‌یافته"}
             </Badge>
-            <Link href={`/campaign/${data.settings.slug}`} target="_blank">
-              <Badge variant="outline" className="cursor-pointer">
-                مشاهده صفحه عمومی
-              </Badge>
-            </Link>
+            {canManageAll && (
+              <Link href={`/campaign/${data.settings.slug}`} target="_blank">
+                <Badge variant="outline" className="cursor-pointer">
+                  مشاهده صفحه عمومی
+                </Badge>
+              </Link>
+            )}
           </div>
         </CardContent>
       </Card>

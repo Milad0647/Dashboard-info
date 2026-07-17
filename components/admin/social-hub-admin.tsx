@@ -46,6 +46,7 @@ export function SocialHubAdmin({
           <SocialAnalyticsAdmin
             campaignId={campaignId}
             initialStats={initialPlatformStats}
+            contentPlans={contentPlans}
             isFullAdmin={isFullAdmin}
           />
         </TabsContent>

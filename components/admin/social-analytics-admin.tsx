@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,11 +14,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
+import {
+  AdminContentFilterBar,
+  collectAdminFilterUsers,
+  DEFAULT_ADMIN_CONTENT_FILTER,
+  matchesAdminContentFilter,
+  type AdminContentFilterState,
+} from "@/components/admin/admin-content-filter-bar";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
 import {
   deleteSocialPlatformStatAction,
   saveSocialPlatformStatAction,
 } from "@/lib/actions/extended-actions";
+import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import type { SocialPlatform, SocialPlatformStat } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
 import {
@@ -66,23 +74,33 @@ const schema = z.object({
 interface SocialAnalyticsAdminProps {
   campaignId: string;
   initialStats: SocialPlatformStat[];
+  contentPlans?: string[];
   isFullAdmin?: boolean;
 }
 
 export function SocialAnalyticsAdmin({
   campaignId,
   initialStats,
+  contentPlans = [],
   isFullAdmin = true,
 }: SocialAnalyticsAdminProps) {
+  const { requestCreate, tutorialModal } = useSectionCreateGate("socialAnalytics");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rows, setRows] = useState(initialStats);
+  const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setRows(initialStats);
   }, [initialStats]);
+
+  const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
+  const filteredRows = useMemo(
+    () => rows.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+    [rows, contentFilter]
+  );
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -96,15 +114,17 @@ export function SocialAnalyticsAdmin({
   });
 
   const openCreate = () => {
-    setEditingId(null);
-    form.reset({
-      platform: "instagram",
-      title: "",
-      followers: 0,
-      posts: 0,
-      profileUrl: "",
+    void requestCreate(() => {
+      setEditingId(null);
+      form.reset({
+        platform: "instagram",
+        title: "",
+        followers: 0,
+        posts: 0,
+        profileUrl: "",
+      });
+      setOpen(true);
     });
-    setOpen(true);
   };
 
   const openEdit = (stat: SocialPlatformStat) => {
@@ -141,6 +161,7 @@ export function SocialAnalyticsAdmin({
 
   return (
     <div className="space-y-4">
+      {tutorialModal}
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold">آمار صفحات شبکه‌های اجتماعی</h2>
@@ -156,8 +177,15 @@ export function SocialAnalyticsAdmin({
         </Button>
       </div>
 
+      <AdminContentFilterBar
+        filter={contentFilter}
+        onChange={setContentFilter}
+        users={isFullAdmin ? filterUsers : []}
+        plans={contentPlans}
+      />
+
       <AdminDataTable
-        data={rows}
+        data={filteredRows}
         searchKeys={["platform", "title", "profileUrl"]}
         columns={[
           {

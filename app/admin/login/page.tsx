@@ -10,7 +10,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md space-y-2">
         <AdminLoginForm />
         <p className="text-center text-xs text-muted-foreground">
-          ورود با حساب مدیریت تنظیم‌شده در سرور
+          برای ورود به داشبورد، ایمیل و رمز عبور خود را وارد کنید
         </p>
       </div>
     </div>
