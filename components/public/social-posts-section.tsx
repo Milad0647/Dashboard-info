@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   SocialPlatformIcon,
   getSocialPlatformLabel,
@@ -14,8 +14,12 @@ import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Music } from "lucide-react";
-import { PUBLIC_MEDIA_GRID_CLASS, filterGroupsByDisplayContent, socialPostHasDisplayContent } from "@/lib/public-media-section";
+import { ExternalLink, Eye, Music } from "lucide-react";
+import {
+  PUBLIC_MEDIA_GRID_CLASS,
+  filterGroupsByDisplayContent,
+  socialPostHasDisplayContent,
+} from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
@@ -24,6 +28,7 @@ import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-cont
 import { isDirectAudioUrl, isDirectVideoUrl, resolveAbsoluteMediaUrl } from "@/lib/media-utils";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { PublicContentCard } from "@/components/public/public-content-card";
+import { PublicContentDetailDialog } from "@/components/public/public-content-detail-dialog";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { useContentScoreAccess } from "@/lib/context/content-score-context";
 
@@ -39,7 +44,7 @@ function SocialPostCover({ post }: { post: SocialMediaPost }) {
         src={post.coverImageUrl}
         alt={post.title}
         className="h-full w-full"
-        imgClassName="transition-transform group-hover:scale-105"
+        imgClassName="object-cover transition-transform group-hover:scale-105"
         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 220px"
       />
     );
@@ -79,14 +84,14 @@ function SocialPostCover({ post }: { post: SocialMediaPost }) {
         src={post.mediaUrl}
         alt={post.title}
         className="h-full w-full"
-        imgClassName="transition-transform group-hover:scale-105"
+        imgClassName="object-cover transition-transform group-hover:scale-105"
         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 220px"
       />
     );
   }
 
   return (
-    <div className="flex h-full items-center justify-center bg-muted text-xs text-muted-foreground px-2 text-center">
+    <div className="flex h-full items-center justify-center bg-muted px-2 text-center text-xs text-muted-foreground">
       {getStatusLabel(post.platform)}
     </div>
   );
@@ -94,60 +99,98 @@ function SocialPostCover({ post }: { post: SocialMediaPost }) {
 
 function SocialPostCard({ post }: { post: SocialMediaPost }) {
   const { canScore, campaignId } = useContentScoreAccess();
+  const [detailOpen, setDetailOpen] = useState(false);
   const platformLabel =
     post.platform === "site"
       ? getStatusLabel(post.platform)
       : getSocialPlatformLabel(post.platform as SocialPlatform);
+  const category = `${platformLabel} — ${getStatusLabel(post.contentType)}`;
+  const topics = post.planLabels ?? (post.planLabel ? [post.planLabel] : []);
+  const date = formatPersianDate(post.publishedDate);
 
   return (
-    <PublicContentCard
-      title={post.title}
-      date={formatPersianDate(post.publishedDate)}
-      category={`${platformLabel} — ${getStatusLabel(post.contentType)}`}
-      topics={post.planLabels ?? (post.planLabel ? [post.planLabel] : [])}
-      ownerUserId={post.ownerUserId}
-      ownerName={post.ownerName}
-      description={`بازدید: ${formatPersianNumber(post.views)} — لایک: ${formatPersianNumber(post.likes)}`}
-      media={
-        <div className="group relative h-full w-full">
-          <SocialPostCover post={post} />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-8">
-            <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0 text-white bg-white/20 border-0">
-              {post.platform !== "site" ? (
-                <SocialPlatformIcon
-                  platform={post.platform as SocialPlatform}
-                  size="sm"
-                  className="h-3.5 w-3.5 rounded"
-                />
-              ) : null}
-              {platformLabel}
-            </Badge>
+    <>
+      <PublicContentCard
+        title={post.title}
+        date={date}
+        category={category}
+        topics={topics}
+        ownerUserId={post.ownerUserId}
+        ownerName={post.ownerName}
+        media={
+          <div className="group relative h-full w-full">
+            <SocialPostCover post={post} />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-8">
+              <Badge
+                variant="secondary"
+                className="gap-1 border-0 bg-white/20 px-1.5 py-0 text-[10px] text-white"
+              >
+                {post.platform !== "site" ? (
+                  <SocialPlatformIcon
+                    platform={post.platform as SocialPlatform}
+                    size="sm"
+                    className="h-3.5 w-3.5 rounded"
+                  />
+                ) : null}
+                {platformLabel}
+              </Badge>
+            </div>
           </div>
-        </div>
-      }
-      score={
-        canScore || post.score != null ? (
-          <ContentScoreControl
-            campaignId={campaignId || post.campaignId}
-            contentType={post.platform === "site" ? "site_publication" : "social_post"}
-            contentId={post.id}
-            score={post.score}
-            canScore={canScore}
-            compact
-          />
-        ) : null
-      }
-      actions={
-        post.link ? (
-          <Button variant="outline" size="sm" asChild>
-            <a href={post.link} target="_blank" rel="noreferrer">
-              <ExternalLink className="h-4 w-4" />
-              مشاهده
-            </a>
+        }
+        score={
+          canScore || post.score != null ? (
+            <ContentScoreControl
+              campaignId={campaignId || post.campaignId}
+              contentType={post.platform === "site" ? "site_publication" : "social_post"}
+              contentId={post.id}
+              score={post.score}
+              canScore={canScore}
+              compact
+            />
+          ) : null
+        }
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setDetailOpen(true)}>
+            <Eye className="h-4 w-4" />
+            مشاهده
           </Button>
-        ) : undefined
-      }
-    />
+        }
+      />
+
+      <PublicContentDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        title={post.title}
+        category={category}
+        topics={topics}
+        date={date}
+        ownerName={post.ownerName}
+        description={post.description}
+        media={
+          <div className="relative mx-4 aspect-square max-h-[50vh] overflow-hidden rounded-lg bg-muted">
+            <SocialPostCover post={post} />
+          </div>
+        }
+        extras={
+          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+            <span>بازدید: {formatPersianNumber(post.views)}</span>
+            <span>لایک: {formatPersianNumber(post.likes)}</span>
+            <span>کامنت: {formatPersianNumber(post.comments)}</span>
+            <span>اشتراک: {formatPersianNumber(post.shares)}</span>
+          </div>
+        }
+        actions={
+          post.link ? (
+            <Button variant="outline" size="sm" asChild>
+              <a href={post.link} target="_blank" rel="noreferrer">
+                <ExternalLink className="h-4 w-4" />
+                باز کردن لینک
+              </a>
+            </Button>
+          ) : undefined
+        }
+      />
+    </>
   );
 }
 
@@ -208,10 +251,7 @@ export function SocialPostsSection({ posts, groups }: SocialPostsSectionProps) {
         </OwnerGroupedSection>
 
         {hasMore && (
-          <ShowMoreButton
-            remaining={filteredPosts.length - visibleCount}
-            onClick={loadMore}
-          />
+          <ShowMoreButton remaining={filteredPosts.length - visibleCount} onClick={loadMore} />
         )}
       </div>
     </CollapsibleSection>

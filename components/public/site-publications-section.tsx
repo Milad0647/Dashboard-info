@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { ExternalLink, Globe } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ExternalLink, Eye, Globe } from "lucide-react";
 import type { DataOwnerGroup, SocialMediaPost } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
@@ -16,6 +16,7 @@ import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import { Button } from "@/components/ui/button";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { PublicContentCard } from "@/components/public/public-content-card";
+import { PublicContentDetailDialog } from "@/components/public/public-content-detail-dialog";
 import {
   filterGroupsByDisplayContent,
   PUBLIC_MEDIA_GRID_CLASS,
@@ -31,60 +32,91 @@ interface SitePublicationsSectionProps {
   groups: DataOwnerGroup<SocialMediaPost>[];
 }
 
-function PublicationList({ items }: { items: SocialMediaPost[] }) {
+function PublicationCard({ item }: { item: SocialMediaPost }) {
   const { canScore, campaignId } = useContentScoreAccess();
+  const [detailOpen, setDetailOpen] = useState(false);
+  const topics = item.planLabels ?? (item.planLabel ? [item.planLabel] : []);
+  const date = formatPersianDate(item.publishedDate);
 
+  const cover = item.coverImageUrl ? (
+    <ImageZoom
+      src={item.coverImageUrl}
+      alt={item.title}
+      className="h-full w-full"
+      imgClassName="object-cover"
+      sizes="(max-width: 640px) 100vw, 280px"
+      quality={60}
+    />
+  ) : (
+    <div className="flex h-full items-center justify-center bg-muted">
+      <Globe className="h-12 w-12 text-muted-foreground" />
+    </div>
+  );
+
+  return (
+    <>
+      <PublicContentCard
+        title={item.title}
+        date={date}
+        category="انتشار در سایت"
+        topics={topics}
+        ownerUserId={item.ownerUserId}
+        ownerName={item.ownerName}
+        media={cover}
+        score={
+          canScore || item.score != null ? (
+            <ContentScoreControl
+              campaignId={campaignId || item.campaignId}
+              contentType="site_publication"
+              contentId={item.id}
+              score={item.score}
+              canScore={canScore}
+              compact
+            />
+          ) : null
+        }
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setDetailOpen(true)}>
+            <Eye className="h-4 w-4" />
+            مشاهده
+          </Button>
+        }
+      />
+
+      <PublicContentDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        title={item.title}
+        category="انتشار در سایت"
+        topics={topics}
+        date={date}
+        ownerName={item.ownerName}
+        description={item.description}
+        media={
+          <div className="relative mx-4 aspect-square max-h-[50vh] overflow-hidden rounded-lg bg-muted">
+            {cover}
+          </div>
+        }
+        actions={
+          item.link ? (
+            <Button variant="outline" size="sm" asChild>
+              <a href={item.link} target="_blank" rel="noreferrer">
+                <ExternalLink className="h-4 w-4" />
+                باز کردن لینک
+              </a>
+            </Button>
+          ) : undefined
+        }
+      />
+    </>
+  );
+}
+
+function PublicationList({ items }: { items: SocialMediaPost[] }) {
   return (
     <div className={PUBLIC_MEDIA_GRID_CLASS}>
       {items.map((item) => (
-        <PublicContentCard
-          key={item.id}
-          title={item.title}
-          date={formatPersianDate(item.publishedDate)}
-          category="انتشار در سایت"
-          topics={item.planLabels ?? (item.planLabel ? [item.planLabel] : [])}
-          ownerUserId={item.ownerUserId}
-          ownerName={item.ownerName}
-          description={item.description}
-          media={
-            item.coverImageUrl ? (
-              <ImageZoom
-                src={item.coverImageUrl}
-                alt={item.title}
-                className="h-full w-full"
-                imgClassName="object-cover"
-                sizes="(max-width: 640px) 100vw, 280px"
-                quality={60}
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center bg-muted">
-                <Globe className="h-12 w-12 text-muted-foreground" />
-              </div>
-            )
-          }
-          score={
-            canScore || item.score != null ? (
-              <ContentScoreControl
-                campaignId={campaignId || item.campaignId}
-                contentType="site_publication"
-                contentId={item.id}
-                score={item.score}
-                canScore={canScore}
-                compact
-              />
-            ) : null
-          }
-          actions={
-            item.link ? (
-              <Button variant="outline" size="sm" asChild>
-                <a href={item.link} target="_blank" rel="noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                  مشاهده
-                </a>
-              </Button>
-            ) : undefined
-          }
-        />
+        <PublicationCard key={item.id} item={item} />
       ))}
     </div>
   );

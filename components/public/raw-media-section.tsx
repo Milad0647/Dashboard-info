@@ -51,11 +51,6 @@ function RawMediaList({ items }: { items: RawMediaUpload[] }) {
             topics={item.planLabels ?? (item.planLabel ? [item.planLabel] : [])}
             ownerUserId={item.ownerUserId}
             ownerName={item.ownerName}
-            description={
-              [item.description, `${item.fileName} — ${formatStorageBytes(item.fileSize)}`]
-                .filter(Boolean)
-                .join(" — ")
-            }
             media={
               item.mediaKind === "video" ? (
                 <VideoThumbnail

@@ -65,7 +65,6 @@ function MeetingPreviewCard({
       category="جلسه و مصوبه"
       ownerUserId={meeting.ownerUserId}
       ownerName={meeting.ownerName}
-      description={meeting.summaryPreview}
       media={
         meeting.imageUrl ? (
           <Image

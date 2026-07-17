@@ -39,9 +39,6 @@ function SubmissionCards({ submissions }: { submissions: CampaignSubmission[] })
           topics={sub.planLabels ?? (sub.planLabel ? [sub.planLabel] : [])}
           ownerUserId={sub.ownerUserId}
           ownerName={sub.ownerName}
-          description={`${sub.text} — ${
-            sub.participantName === "ناشناس" ? "کاربر ناشناس" : sub.participantName
-          }`}
           media={
             sub.mediaUrl ? (
               <Image

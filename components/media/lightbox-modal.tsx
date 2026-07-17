@@ -6,6 +6,7 @@ import { Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
+import { PublicContentDetailFields } from "@/components/public/public-content-detail-fields";
 import { downloadMedia, getFilenameFromUrl, resolveDisplayVersion } from "@/lib/media-utils";
 import type { PosterVersion } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
@@ -16,6 +17,10 @@ interface LightboxModalProps {
   title: string;
   versions: PosterVersion[];
   initialVersionId: string;
+  description?: string | null;
+  category?: string | null;
+  topics?: string[];
+  ownerName?: string | null;
 }
 
 export function LightboxModal({
@@ -23,6 +28,10 @@ export function LightboxModal({
   onOpenChange,
   title,
   versions,
+  description,
+  category,
+  topics,
+  ownerName,
 }: LightboxModalProps) {
   const activeVersion = useMemo(() => {
     return resolveDisplayVersion(versions) ?? versions[0];
@@ -41,10 +50,10 @@ export function LightboxModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto p-0">
         <DialogHeader className="p-4 pb-0">
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="break-words">{title}</DialogTitle>
         </DialogHeader>
 
-        <div className="relative mx-4 aspect-[3/4] max-h-[55vh] w-auto bg-muted">
+        <div className="relative mx-4 aspect-square max-h-[55vh] w-auto bg-muted">
           {activeVersion.imageUrl ? (
             <Image
               src={activeVersion.imageUrl}
@@ -52,7 +61,7 @@ export function LightboxModal({
               fill
               loading="lazy"
               decoding="async"
-              quality={80}
+              quality={85}
               className="object-contain"
               sizes="(max-width: 768px) 100vw, 768px"
             />
@@ -61,16 +70,22 @@ export function LightboxModal({
           )}
         </div>
 
-        <div className="space-y-3 p-4">
+        <div className="space-y-4 p-4">
+          <PublicContentDetailFields
+            category={category}
+            topics={topics}
+            date={activeVersion.date ? formatPersianDate(activeVersion.date) : null}
+            ownerName={ownerName}
+            description={description}
+            extras={
+              activeVersion.notes ? <p className="text-sm text-muted-foreground">{activeVersion.notes}</p> : null
+            }
+          />
+
           <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
             <Download className="h-4 w-4" />
             دانلود تصویر
           </Button>
-
-          {activeVersion.date && (
-            <p className="text-sm text-muted-foreground">{formatPersianDate(activeVersion.date)}</p>
-          )}
-          {activeVersion.notes && <p className="text-sm">{activeVersion.notes}</p>}
         </div>
       </DialogContent>
     </Dialog>

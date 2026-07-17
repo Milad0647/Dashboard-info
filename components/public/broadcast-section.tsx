@@ -32,7 +32,6 @@ interface BroadcastSectionProps {
 
 function BroadcastReportCard({ report }: { report: BroadcastReport }) {
   const { canScore, campaignId } = useContentScoreAccess();
-  const { summaryData } = report;
 
   return (
     <PublicContentCard
@@ -42,7 +41,6 @@ function BroadcastReportCard({ report }: { report: BroadcastReport }) {
       topics={report.planLabels ?? (report.planLabel ? [report.planLabel] : [])}
       ownerUserId={report.ownerUserId}
       ownerName={report.ownerName}
-      description={summaryData.notes}
       media={
         <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted">
           <FileText className="h-16 w-16 text-primary" />

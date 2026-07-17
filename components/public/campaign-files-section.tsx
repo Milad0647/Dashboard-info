@@ -21,7 +21,7 @@ import {
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { useContentScoreAccess } from "@/lib/context/content-score-context";
 import type { CampaignFile, DataOwnerGroup } from "@/lib/types";
-import { formatPersianDate, formatPersianNumber } from "@/lib/utils";
+import { formatPersianDate } from "@/lib/utils";
 
 const FILES_ITEMS_PER_ROW = 2;
 
@@ -46,11 +46,6 @@ function FileList({ files }: { files: CampaignFile[] }) {
             topics={file.planLabels ?? (file.planLabel ? [file.planLabel] : [])}
             ownerUserId={file.ownerUserId}
             ownerName={file.ownerName}
-            description={
-              [file.description, `${file.fileName} — ${formatFileSize(file.fileSize)}`]
-                .filter(Boolean)
-                .join("\n")
-            }
             media={
               <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted p-4 text-center">
                 <Icon className="h-16 w-16 text-primary" />
@@ -90,12 +85,6 @@ function FileList({ files }: { files: CampaignFile[] }) {
       })}
     </div>
   );
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${formatPersianNumber(bytes)} B`;
-  if (bytes < 1024 * 1024) return `${formatPersianNumber(Math.round(bytes / 1024))} KB`;
-  return `${formatPersianNumber(Math.round(bytes / (1024 * 1024)))} MB`;
 }
 
 function fileIcon(mimeType: string) {

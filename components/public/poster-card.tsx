@@ -60,16 +60,15 @@ export function PosterCard({
         topics={topics}
         ownerUserId={ownerUserId}
         ownerName={ownerName}
-        description={description}
         media={
           <div className="group relative h-full w-full">
-          <ImageZoom
-            src={displayVersion.imageUrl}
-            alt={title}
-            className="absolute inset-0 h-full w-full"
-            imgClassName="object-contain object-center transition-transform group-hover:scale-105"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
-          />
+            <ImageZoom
+              src={displayVersion.imageUrl}
+              alt={title}
+              className="absolute inset-0 h-full w-full"
+              imgClassName="object-cover object-center transition-transform group-hover:scale-105"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
+            />
           </div>
         }
         score={
@@ -105,6 +104,10 @@ export function PosterCard({
           title={title}
           versions={[displayVersion]}
           initialVersionId={displayVersion.id}
+          description={description}
+          category={category}
+          topics={topics}
+          ownerName={ownerName}
         />
       )}
     </>

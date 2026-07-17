@@ -11,26 +11,16 @@ import { useContentScoreAccess } from "@/lib/context/content-score-context";
 import { resolveBillboardCategoryDisplay } from "@/lib/billboard-categories";
 import {
   getBillboardDateLabel,
-  getBillboardDisplayDays,
 } from "@/lib/billboards";
 import { getBillboardDisplayImage, hasBillboardDisplayImage } from "@/lib/billboard-media";
 import { parseProvinceFromBillboard } from "@/lib/billboard-form-utils";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
 import type { Billboard } from "@/lib/types";
-import { formatPersianDate, formatPersianNumber } from "@/lib/utils";
+import { formatPersianDate } from "@/lib/utils";
 
 interface BillboardCardProps {
   billboard: Billboard;
   onView: (billboard: Billboard) => void;
-}
-
-function resolveBillboardAddress(billboard: Billboard): string {
-  const location = billboard.location?.trim() ?? "";
-  const description = billboard.description?.trim() ?? "";
-  if (location && description && location !== description) {
-    return `${location} — ${description}`;
-  }
-  return location || description || "—";
 }
 
 export function BillboardCard({ billboard, onView }: BillboardCardProps) {
@@ -39,9 +29,7 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
   const city = billboard.city?.trim() || "";
   const showCity = Boolean(city && city !== province);
   const categoryLabel = resolveBillboardCategoryDisplay(billboard);
-  const address = resolveBillboardAddress(billboard);
   const dateLabel = getBillboardDateLabel(billboard);
-  const displayDays = getBillboardDisplayDays(billboard);
   const canZoom = hasBillboardDisplayImage(billboard);
   const displayImage = getBillboardDisplayImage(billboard);
 
@@ -58,11 +46,6 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
       topics={billboard.planLabels ?? (billboard.planLabel ? [billboard.planLabel] : [])}
       ownerUserId={billboard.ownerUserId}
       ownerName={billboard.ownerName}
-      description={`${province}${showCity ? ` — ${city}` : ""} | ${address}${
-        displayDays != null && displayDays > 0
-          ? ` | ${formatPersianNumber(displayDays)} روز نمایش`
-          : ""
-      }`}
       media={
         <div className="group relative h-full w-full">
           {canZoom ? (

@@ -1,10 +1,10 @@
 export const PUBLIC_MEDIA_GRID_CLASS =
   "grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
-export const PUBLIC_MEDIA_MAX_ROWS = 2;
+export const PUBLIC_MEDIA_MAX_ROWS = 3;
 
-/** Initial / load-more page size: 2 rows × 4 cards on desktop. */
-export const PUBLIC_MEDIA_PAGE_SIZE = 8;
+/** Initial / load-more page size: 3 rows × 4 cards on desktop. */
+export const PUBLIC_MEDIA_PAGE_SIZE = 12;
 
 export function getPublicMediaColumnCount(width: number): number {
   if (width >= 1280) return 4;

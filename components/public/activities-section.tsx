@@ -76,7 +76,6 @@ function ActivityCard({
       topics={activity.planLabels ?? (activity.planLabel ? [activity.planLabel] : [])}
       ownerUserId={activity.ownerUserId}
       ownerName={activity.ownerName}
-      description={activity.location || activity.description}
       media={
         <div className={cn("group relative h-full w-full", hasMedia && "cursor-pointer")}>
         {hasVideo ? (

@@ -14,7 +14,6 @@ interface PublicContentCardProps {
   topics?: (string | null | undefined)[];
   ownerUserId?: string | null;
   ownerName?: string | null;
-  description?: string | null;
   media: ReactNode;
   score?: ReactNode;
   actions?: ReactNode;
@@ -28,7 +27,6 @@ export function PublicContentCard({
   topics = [],
   ownerUserId,
   ownerName,
-  description,
   media,
   score,
   actions,
@@ -62,10 +60,6 @@ export function PublicContentCard({
             </Badge>
           ))}
         </div>
-
-        {description && (
-          <p className="break-words text-xs leading-5 text-muted-foreground">{description}</p>
-        )}
 
         <div className="mt-auto space-y-2">
           {date && (

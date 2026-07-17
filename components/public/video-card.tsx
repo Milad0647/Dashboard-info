@@ -69,14 +69,13 @@ export function VideoCard({
         topics={topics}
         ownerUserId={ownerUserId}
         ownerName={ownerName}
-        description={description}
         media={
           <div className="group relative h-full w-full">
             <VideoThumbnail
               videoUrl={displayVersion.videoUrl}
               thumbnailUrl={displayVersion.thumbnailUrl}
               alt={title}
-              className="object-contain transition-transform group-hover:scale-105"
+              className="object-cover transition-transform group-hover:scale-105"
             />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover:bg-black/30">
               <Play className="h-12 w-12 text-white" />
@@ -127,6 +126,10 @@ export function VideoCard({
           title={title}
           versions={[displayVersion]}
           initialVersionId={displayVersion.id}
+          description={description}
+          category={category}
+          topics={topics}
+          ownerName={ownerName}
         />
       )}
     </>

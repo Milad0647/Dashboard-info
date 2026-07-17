@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PublicContentDetailFields } from "@/components/public/public-content-detail-fields";
 import {
   downloadMedia,
   getFilenameFromUrl,
@@ -25,6 +26,10 @@ interface VideoModalProps {
   title: string;
   versions: VideoVersion[];
   initialVersionId: string;
+  description?: string | null;
+  category?: string | null;
+  topics?: string[];
+  ownerName?: string | null;
 }
 
 export function VideoModal({
@@ -32,6 +37,10 @@ export function VideoModal({
   onOpenChange,
   title,
   versions,
+  description,
+  category,
+  topics,
+  ownerName,
 }: VideoModalProps) {
   const activeVersion = useMemo(() => {
     return resolveDisplayVersion(versions) ?? versions[0];
@@ -62,7 +71,7 @@ export function VideoModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto p-0">
         <DialogHeader className="p-4 pb-0">
-          <DialogTitle className="flex flex-wrap items-center gap-2">
+          <DialogTitle className="flex flex-wrap items-center gap-2 break-words">
             {title}
             {activeVersion.duration && (
               <span className="text-sm font-normal text-muted-foreground">
@@ -98,7 +107,18 @@ export function VideoModal({
           )}
         </div>
 
-        <div className="space-y-3 p-4">
+        <div className="space-y-4 p-4">
+          <PublicContentDetailFields
+            category={category}
+            topics={topics}
+            date={activeVersion.date ? formatPersianDate(activeVersion.date) : null}
+            ownerName={ownerName}
+            description={description}
+            extras={
+              activeVersion.notes ? <p className="text-sm text-muted-foreground">{activeVersion.notes}</p> : null
+            }
+          />
+
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
@@ -117,11 +137,6 @@ export function VideoModal({
               </Button>
             )}
           </div>
-
-          {activeVersion.date && (
-            <p className="text-sm text-muted-foreground">{formatPersianDate(activeVersion.date)}</p>
-          )}
-          {activeVersion.notes && <p className="text-sm">{activeVersion.notes}</p>}
         </div>
       </DialogContent>
     </Dialog>

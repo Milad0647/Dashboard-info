@@ -1,10 +1,11 @@
 "use client";
 
-import { Download, MapPin, Music } from "lucide-react";
+import { Download, Music } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageZoom } from "@/components/ui/image-zoom";
+import { PublicContentDetailFields } from "@/components/public/public-content-detail-fields";
 import { getActivityTypeLabel } from "@/lib/activity-types";
 import {
   downloadMedia,
@@ -155,19 +156,17 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
         )}
 
         <div className="space-y-3 p-4">
-          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-            <span>{formatPersianDate(activity.activityDate)}</span>
-            {activity.location && (
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
-                {activity.location}
-              </span>
-            )}
-          </div>
-
-          {activity.description && (
-            <p className="text-sm leading-relaxed text-muted-foreground">{activity.description}</p>
-          )}
+          <PublicContentDetailFields
+            category={getActivityTypeLabel(activity.activityType)}
+            topics={activity.planLabels ?? (activity.planLabel ? [activity.planLabel] : [])}
+            date={formatPersianDate(activity.activityDate)}
+            ownerName={activity.ownerName}
+            description={
+              [activity.location ? `موقعیت: ${activity.location}` : null, activity.description]
+                .filter(Boolean)
+                .join("\n")
+            }
+          />
 
           <div className="flex flex-wrap gap-2">
             {hasImage && (
