@@ -8,17 +8,13 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { loginAdminAction } from "@/lib/actions/auth-actions";
 import {
-  formatLoginDisplayClock,
+  formatPersianClock,
   formatPersianLoginDate,
   getTimeOfDayConfig,
   type TimeOfDayConfig,
 } from "@/lib/login-time-of-day";
 import { isSupabaseConfigured } from "@/lib/utils";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-
-type AdminLoginFormProps = {
-  clockFontClassName?: string;
-};
 
 type CardTiltState = {
   rotateX: number;
@@ -53,7 +49,7 @@ function isNextRedirectError(error: unknown): boolean {
   );
 }
 
-export function AdminLoginForm({ clockFontClassName }: AdminLoginFormProps) {
+export function AdminLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -132,7 +128,7 @@ export function AdminLoginForm({ clockFontClassName }: AdminLoginFormProps) {
 
   return (
     <main
-      className={`dark relative isolate flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 text-white ${clockFontClassName ?? ""}`}
+      className="dark relative isolate flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 text-white"
       dir="rtl"
       onPointerMove={handlePagePointerMove}
     >
@@ -155,20 +151,19 @@ export function AdminLoginForm({ clockFontClassName }: AdminLoginFormProps) {
 
       {now && timeOfDay ? (
         <div
-          className="pointer-events-none absolute start-4 top-4 z-10 max-w-[11.5rem] text-start sm:start-6 sm:top-6 sm:max-w-none"
+          className="pointer-events-none absolute bottom-4 right-4 z-10 max-w-[14rem] text-right sm:bottom-6 sm:right-6 sm:max-w-none"
           aria-live="polite"
         >
           <p className="text-[11px] font-medium text-white/65 [text-shadow:0_1px_10px_rgba(0,0,0,0.7)]">
             {timeOfDay.greeting}
           </p>
           <p
-            className="mt-0.5 text-[1.65rem] font-semibold leading-none tracking-[0.12em] text-white tabular-nums sm:text-[1.85rem]"
+            className="mt-0.5 font-sans text-[1.65rem] font-semibold leading-none text-white tabular-nums sm:text-[1.85rem]"
             style={{
-              fontFamily: "var(--font-login-clock), ui-monospace, monospace",
               textShadow: "0 0 24px rgba(255,255,255,0.22), 0 2px 14px rgba(0,0,0,0.55)",
             }}
           >
-            {formatLoginDisplayClock(now)}
+            {formatPersianClock(now)}
           </p>
           <p className="mt-1.5 text-[10px] leading-snug text-white/45 [text-shadow:0_1px_8px_rgba(0,0,0,0.65)] sm:text-[11px]">
             {formatPersianLoginDate(now)}
