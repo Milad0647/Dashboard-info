@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { AdminVideoAddCard, AdminVideoCompactCard } from "@/components/admin/admin-video-compact-card";
 import { AdminVideoEditor } from "@/components/admin/admin-video-editor";
@@ -30,6 +30,10 @@ import {
 import { deleteVideoAction, saveVideoVersionAction } from "@/lib/actions/admin-actions";
 import { videoNeedsAutoCover } from "@/lib/client/video-cover";
 import type { ContentTopic } from "@/lib/content-topics";
+import {
+  parseEditSuggestionMissingFields,
+  type EditSuggestionMissingField,
+} from "@/lib/edit-suggestions";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import { VideoModal } from "@/components/media/video-modal";
@@ -63,12 +67,15 @@ export function VideosAdmin({
   users = [],
 }: VideosAdminProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const openedFromQueryRef = useRef<string | null>(null);
   const [videos, setVideos] = useState(initialVideos);
   const [versions, setVersions] = useState(initialVersions);
   const [editorOpen, setEditorOpen] = useState(false);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [draftVideo, setDraftVideo] = useState<Video | null>(null);
   const [previewVideo, setPreviewVideo] = useState<Video | null>(null);
+  const [highlightFields, setHighlightFields] = useState<EditSuggestionMissingField[]>([]);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("videos");
   const [, startTransition] = useTransition();
@@ -77,6 +84,18 @@ export function VideosAdmin({
     setVideos(initialVideos);
     setVersions(initialVersions);
   }, [initialVideos, initialVersions]);
+
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (!editId || openedFromQueryRef.current === editId) return;
+    if (!videos.some((video) => video.id === editId)) return;
+
+    openedFromQueryRef.current = editId;
+    setHighlightFields(parseEditSuggestionMissingFields(searchParams.get("missing")));
+    setActiveVideoId(editId);
+    setDraftVideo(null);
+    setEditorOpen(true);
+  }, [searchParams, videos]);
 
   const versionsByVideoId = useMemo(() => {
     const map = new Map<string, VideoVersion[]>();
@@ -135,7 +154,17 @@ export function VideosAdmin({
   const activeVersions = activeVideoId ? versionsByVideoId.get(activeVideoId) ?? [] : [];
   const refresh = () => router.refresh();
 
-  const openEditor = (videoId: string) => {
+  const clearEditQuery = () => {
+    if (!searchParams.get("edit") && !searchParams.get("missing")) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("edit");
+    params.delete("missing");
+    const query = params.toString();
+    router.replace(query ? `/admin/videos?${query}` : "/admin/videos");
+  };
+
+  const openEditor = (videoId: string, fields: EditSuggestionMissingField[] = []) => {
+    setHighlightFields(fields);
     setActiveVideoId(videoId);
     setEditorOpen(true);
   };
@@ -144,6 +173,9 @@ export function VideosAdmin({
     setEditorOpen(false);
     setActiveVideoId(null);
     setDraftVideo(null);
+    setHighlightFields([]);
+    openedFromQueryRef.current = null;
+    clearEditQuery();
   };
 
   const handleCreateVideo = () => {
@@ -313,6 +345,7 @@ export function VideosAdmin({
                 contentTopics={contentTopics}
                 canScore={canScore}
                 isNew={isDraftVideo}
+                highlightFields={highlightFields}
                 onClose={closeEditor}
                 onSaved={(savedVideo) => {
                   setVideos((prev) => {

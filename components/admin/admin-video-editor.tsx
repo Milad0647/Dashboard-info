@@ -20,6 +20,11 @@ import {
   saveVideoVersionAction,
 } from "@/lib/actions/admin-actions";
 import { normalizePlanLabels, type ContentTopic } from "@/lib/content-topics";
+import { CONTENT_TITLE_MAX_LENGTH } from "@/lib/content-constraints";
+import {
+  isDefaultVideoTitle,
+  type EditSuggestionMissingField,
+} from "@/lib/edit-suggestions";
 import { todayISO } from "@/lib/jalali";
 import {
   buildVideoVersionMedia,
@@ -30,6 +35,7 @@ import {
   resolveVideoThumbnail,
 } from "@/lib/media-utils";
 import type { MediaCategory, Video, VideoVersion } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { pickDefaultVideoCategoryId, videoTypeSelectOptions } from "@/lib/video-types";
 
 interface AdminVideoEditorProps {
@@ -40,6 +46,7 @@ interface AdminVideoEditorProps {
   contentTopics?: ContentTopic[];
   canScore?: boolean;
   isNew?: boolean;
+  highlightFields?: EditSuggestionMissingField[];
   onClose: () => void;
   onSaved?: (video: Video) => void;
 }
@@ -59,6 +66,7 @@ export function AdminVideoEditor({
   contentTopics = [],
   canScore = false,
   isNew = false,
+  highlightFields = [],
   onClose,
   onSaved,
 }: AdminVideoEditorProps) {
@@ -187,10 +195,21 @@ export function AdminVideoEditor({
     });
   };
 
+  const highlightTitle =
+    highlightFields.includes("title") && isDefaultVideoTitle(editTitle);
+  const highlightDescription =
+    highlightFields.includes("description") && !editDescription.trim();
+  const highlightMedia = highlightFields.includes("media") && !videoUrl.trim();
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div ref={scrollAreaRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain pr-1">
-        <div className="relative mx-auto aspect-video max-h-56 w-full overflow-hidden rounded-xl bg-muted">
+        <div
+          className={cn(
+            "relative mx-auto aspect-video max-h-56 w-full overflow-hidden rounded-xl bg-muted",
+            highlightMedia && "ring-2 ring-destructive ring-offset-2"
+          )}
+        >
           {videoUrl ? (
             previewCover ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -212,17 +231,32 @@ export function AdminVideoEditor({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 space-y-3">
             <div>
-              <Label>عنوان</Label>
-              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="عنوان ویدیو" />
+              <Label className={cn(highlightTitle && "text-destructive")}>عنوان</Label>
+              <Input
+                value={editTitle}
+                maxLength={CONTENT_TITLE_MAX_LENGTH}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="عنوان ویدیو"
+                className={cn(highlightTitle && "border-destructive focus-visible:ring-destructive")}
+              />
+              {highlightTitle && (
+                <p className="mt-1 text-xs text-destructive">عنوان پیش‌فرض است؛ یک عنوان اختصاصی وارد کنید.</p>
+              )}
             </div>
             <div>
-              <Label>توضیحات</Label>
+              <Label className={cn(highlightDescription && "text-destructive")}>توضیحات</Label>
               <Textarea
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
                 rows={2}
                 placeholder="توضیحات (اختیاری)"
+                className={cn(
+                  highlightDescription && "border-destructive focus-visible:ring-destructive"
+                )}
               />
+              {highlightDescription && (
+                <p className="mt-1 text-xs text-destructive">توضیحات خالی است؛ بهتر است تکمیل شود.</p>
+              )}
             </div>
             <div>
               <Label>نوع ویدیو</Label>
@@ -259,15 +293,24 @@ export function AdminVideoEditor({
                 onScoreSaved={setEditScore}
               />
             )}
-            <MediaUpload
-              label="ویدیو"
-              kind="video"
-              value={videoUrl}
-              onChange={setVideoUrl}
-              onAutoCoverGenerated={(coverUrl) => {
-                setThumbnailUrl((current) => (current.trim() ? current : coverUrl));
-              }}
-            />
+            <div
+              className={cn(
+                highlightMedia && "rounded-lg border border-destructive bg-destructive/5 p-3"
+              )}
+            >
+              <MediaUpload
+                label="ویدیو"
+                kind="video"
+                value={videoUrl}
+                onChange={setVideoUrl}
+                onAutoCoverGenerated={(coverUrl) => {
+                  setThumbnailUrl((current) => (current.trim() ? current : coverUrl));
+                }}
+              />
+              {highlightMedia && (
+                <p className="mt-2 text-xs text-destructive">ویدیو هنوز آپلود نشده است.</p>
+              )}
+            </div>
             <MediaUpload
               label={
                 isAparat

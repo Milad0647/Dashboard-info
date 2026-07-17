@@ -1,5 +1,4 @@
 import type { Poster, PosterVersion, Video, VideoVersion } from "@/lib/types";
-import { adminHref } from "@/lib/utils";
 
 export type EditSuggestionContentType = "poster" | "video";
 export type EditSuggestionMissingField = "title" | "description" | "media";
@@ -11,6 +10,41 @@ export interface EditSuggestionItem {
   ownerName?: string | null;
   missingFields: EditSuggestionMissingField[];
   editHref: string;
+}
+
+const MISSING_FIELD_VALUES = new Set<EditSuggestionMissingField>([
+  "title",
+  "description",
+  "media",
+]);
+
+export function buildEditSuggestionHref(
+  contentType: EditSuggestionContentType,
+  campaignId: string,
+  id: string,
+  missingFields: EditSuggestionMissingField[]
+): string {
+  const basePath = contentType === "poster" ? "/admin/posters" : "/admin/videos";
+  const params = new URLSearchParams({
+    campaign: campaignId,
+    edit: id,
+  });
+  if (missingFields.length > 0) {
+    params.set("missing", missingFields.join(","));
+  }
+  return `${basePath}?${params.toString()}`;
+}
+
+export function parseEditSuggestionMissingFields(
+  value: string | null | undefined
+): EditSuggestionMissingField[] {
+  if (!value?.trim()) return [];
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part): part is EditSuggestionMissingField =>
+      MISSING_FIELD_VALUES.has(part as EditSuggestionMissingField)
+    );
 }
 
 interface BuildEditSuggestionsInput {
@@ -102,26 +136,38 @@ export function buildEditSuggestions({
 
   const posterSuggestions = posters
     .filter((poster) => poster.ownerUserId === ownerUserId)
-    .map((poster) => ({
-      id: poster.id,
-      contentType: "poster" as const,
-      title: poster.title,
-      ownerName: poster.ownerName,
-      missingFields: getPosterMissingFields(poster, posterVersionsByPosterId.get(poster.id) ?? []),
-      editHref: adminHref("/admin/posters", campaignId),
-    }))
+    .map((poster) => {
+      const missingFields = getPosterMissingFields(
+        poster,
+        posterVersionsByPosterId.get(poster.id) ?? []
+      );
+      return {
+        id: poster.id,
+        contentType: "poster" as const,
+        title: poster.title,
+        ownerName: poster.ownerName,
+        missingFields,
+        editHref: buildEditSuggestionHref("poster", campaignId, poster.id, missingFields),
+      };
+    })
     .filter((suggestion) => suggestion.missingFields.length > 0);
 
   const videoSuggestions = videos
     .filter((video) => video.ownerUserId === ownerUserId)
-    .map((video) => ({
-      id: video.id,
-      contentType: "video" as const,
-      title: video.title,
-      ownerName: video.ownerName,
-      missingFields: getVideoMissingFields(video, videoVersionsByVideoId.get(video.id) ?? []),
-      editHref: adminHref("/admin/videos", campaignId),
-    }))
+    .map((video) => {
+      const missingFields = getVideoMissingFields(
+        video,
+        videoVersionsByVideoId.get(video.id) ?? []
+      );
+      return {
+        id: video.id,
+        contentType: "video" as const,
+        title: video.title,
+        ownerName: video.ownerName,
+        missingFields,
+        editHref: buildEditSuggestionHref("video", campaignId, video.id, missingFields),
+      };
+    })
     .filter((suggestion) => suggestion.missingFields.length > 0);
 
   return [...posterSuggestions, ...videoSuggestions];

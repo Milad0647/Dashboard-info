@@ -19,9 +19,15 @@ import {
   savePosterVersionAction,
 } from "@/lib/actions/admin-actions";
 import { normalizePlanLabels, type ContentTopic } from "@/lib/content-topics";
+import { CONTENT_TITLE_MAX_LENGTH } from "@/lib/content-constraints";
+import {
+  isDefaultPosterTitle,
+  type EditSuggestionMissingField,
+} from "@/lib/edit-suggestions";
 import { todayISO } from "@/lib/jalali";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { MediaCategory, Poster, PosterVersion } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface AdminPosterEditorProps {
   poster: Poster;
@@ -31,6 +37,7 @@ interface AdminPosterEditorProps {
   contentTopics?: ContentTopic[];
   canScore?: boolean;
   isNew?: boolean;
+  highlightFields?: EditSuggestionMissingField[];
   onClose: () => void;
   onSaved?: (poster: Poster) => void;
 }
@@ -42,6 +49,7 @@ export function AdminPosterEditor({
   contentTopics = [],
   canScore = false,
   isNew = false,
+  highlightFields = [],
   onClose,
   onSaved,
 }: AdminPosterEditorProps) {
@@ -142,10 +150,21 @@ export function AdminPosterEditor({
     });
   };
 
+  const highlightTitle =
+    highlightFields.includes("title") && isDefaultPosterTitle(editTitle);
+  const highlightDescription =
+    highlightFields.includes("description") && !editDescription.trim();
+  const highlightMedia = highlightFields.includes("media") && !imageUrl.trim();
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div ref={scrollAreaRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain pr-1">
-        <div className="relative mx-auto aspect-[3/4] max-h-80 w-full max-w-xs overflow-hidden rounded-xl bg-muted">
+        <div
+          className={cn(
+            "relative mx-auto aspect-[3/4] max-h-80 w-full max-w-xs overflow-hidden rounded-xl bg-muted",
+            highlightMedia && "ring-2 ring-destructive ring-offset-2"
+          )}
+        >
           <MediaThumbnail
             src={imageUrl || null}
             alt={editTitle}
@@ -158,17 +177,32 @@ export function AdminPosterEditor({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 space-y-3">
             <div>
-              <Label>عنوان</Label>
-              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="عنوان پوستر" />
+              <Label className={cn(highlightTitle && "text-destructive")}>عنوان</Label>
+              <Input
+                value={editTitle}
+                maxLength={CONTENT_TITLE_MAX_LENGTH}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="عنوان پوستر"
+                className={cn(highlightTitle && "border-destructive focus-visible:ring-destructive")}
+              />
+              {highlightTitle && (
+                <p className="mt-1 text-xs text-destructive">عنوان پیش‌فرض است؛ یک عنوان اختصاصی وارد کنید.</p>
+              )}
             </div>
             <div>
-              <Label>توضیحات</Label>
+              <Label className={cn(highlightDescription && "text-destructive")}>توضیحات</Label>
               <Textarea
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
                 rows={2}
                 placeholder="توضیحات (اختیاری)"
+                className={cn(
+                  highlightDescription && "border-destructive focus-visible:ring-destructive"
+                )}
               />
+              {highlightDescription && (
+                <p className="mt-1 text-xs text-destructive">توضیحات خالی است؛ بهتر است تکمیل شود.</p>
+              )}
             </div>
             <PlanLabelSelect
               topics={contentTopics}
@@ -186,7 +220,16 @@ export function AdminPosterEditor({
                 onScoreSaved={setEditScore}
               />
             )}
-            <MediaUpload label="تصویر" value={imageUrl} onChange={setImageUrl} />
+            <div
+              className={cn(
+                highlightMedia && "rounded-lg border border-destructive bg-destructive/5 p-3"
+              )}
+            >
+              <MediaUpload label="تصویر" value={imageUrl} onChange={setImageUrl} />
+              {highlightMedia && (
+                <p className="mt-2 text-xs text-destructive">تصویر پوستر هنوز آپلود نشده است.</p>
+              )}
+            </div>
             <div>
               <Label>یادداشت (اختیاری)</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />

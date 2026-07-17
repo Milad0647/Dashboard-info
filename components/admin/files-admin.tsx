@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { deleteCampaignFileAction, saveCampaignFileAction } from "@/lib/actions/admin-actions";
+import { CONTENT_TITLE_MAX_LENGTH } from "@/lib/content-constraints";
 import type { ContentTopic } from "@/lib/content-topics";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import type { AdminUser, CampaignFile } from "@/lib/types";
@@ -150,14 +151,23 @@ export function FilesAdmin({
         planLabel: planLabels[0] ?? null,
       });
 
-      if (!result.success || !("id" in result) || !result.id) {
+      if (!result.success) {
+        toast.error("ذخیره فایل ناموفق بود");
+        return;
+      }
+
+      const savedId =
+        "id" in result && typeof result.id === "string" && result.id
+          ? result.id
+          : editingId;
+      if (!savedId) {
         toast.error("ذخیره فایل ناموفق بود");
         return;
       }
 
       const now = new Date().toISOString();
       const nextFile: CampaignFile = {
-        id: result.id,
+        id: savedId,
         campaignId,
         title: title.trim(),
         description: description.trim() || null,
@@ -367,7 +377,12 @@ export function FilesAdmin({
           <div className="space-y-4">
             <div>
               <Label>عنوان</Label>
-              <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="عنوان فایل" />
+              <Input
+                value={title}
+                maxLength={CONTENT_TITLE_MAX_LENGTH}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="عنوان فایل"
+              />
             </div>
             <div>
               <Label>توضیحات (اختیاری)</Label>

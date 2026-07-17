@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { AdminPosterAddCard, AdminPosterCompactCard } from "@/components/admin/admin-poster-compact-card";
 import { AdminPosterEditor } from "@/components/admin/admin-poster-editor";
@@ -29,6 +29,10 @@ import {
 } from "@/components/admin/section-bulk-edit";
 import { deletePosterAction } from "@/lib/actions/admin-actions";
 import type { ContentTopic } from "@/lib/content-topics";
+import {
+  parseEditSuggestionMissingFields,
+  type EditSuggestionMissingField,
+} from "@/lib/edit-suggestions";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { AdminUser, MediaCategory, Poster, PosterVersion } from "@/lib/types";
@@ -60,12 +64,15 @@ export function PostersAdmin({
   users = [],
 }: PostersAdminProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const openedFromQueryRef = useRef<string | null>(null);
   const [posters, setPosters] = useState(initialPosters);
   const [versions, setVersions] = useState(initialVersions);
   const [editorOpen, setEditorOpen] = useState(false);
   const [activePosterId, setActivePosterId] = useState<string | null>(null);
   const [draftPoster, setDraftPoster] = useState<Poster | null>(null);
   const [previewPoster, setPreviewPoster] = useState<Poster | null>(null);
+  const [highlightFields, setHighlightFields] = useState<EditSuggestionMissingField[]>([]);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("posters");
   const [, startTransition] = useTransition();
@@ -74,6 +81,18 @@ export function PostersAdmin({
     setPosters(initialPosters);
     setVersions(initialVersions);
   }, [initialPosters, initialVersions]);
+
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (!editId || openedFromQueryRef.current === editId) return;
+    if (!posters.some((poster) => poster.id === editId)) return;
+
+    openedFromQueryRef.current = editId;
+    setHighlightFields(parseEditSuggestionMissingFields(searchParams.get("missing")));
+    setActivePosterId(editId);
+    setDraftPoster(null);
+    setEditorOpen(true);
+  }, [posters, searchParams]);
 
   const versionsByPosterId = useMemo(() => {
     const map = new Map<string, PosterVersion[]>();
@@ -103,7 +122,17 @@ export function PostersAdmin({
   const activeVersions = activePosterId ? versionsByPosterId.get(activePosterId) ?? [] : [];
   const refresh = () => router.refresh();
 
-  const openEditor = (posterId: string) => {
+  const clearEditQuery = () => {
+    if (!searchParams.get("edit") && !searchParams.get("missing")) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("edit");
+    params.delete("missing");
+    const query = params.toString();
+    router.replace(query ? `/admin/posters?${query}` : "/admin/posters");
+  };
+
+  const openEditor = (posterId: string, fields: EditSuggestionMissingField[] = []) => {
+    setHighlightFields(fields);
     setActivePosterId(posterId);
     setEditorOpen(true);
   };
@@ -112,6 +141,9 @@ export function PostersAdmin({
     setEditorOpen(false);
     setActivePosterId(null);
     setDraftPoster(null);
+    setHighlightFields([]);
+    openedFromQueryRef.current = null;
+    clearEditQuery();
   };
 
   const handleCreatePoster = () => {
@@ -277,6 +309,7 @@ export function PostersAdmin({
                 contentTopics={contentTopics}
                 canScore={canScore}
                 isNew={isDraftPoster}
+                highlightFields={highlightFields}
                 onClose={closeEditor}
                 onSaved={(savedPoster) => {
                   setPosters((prev) => {

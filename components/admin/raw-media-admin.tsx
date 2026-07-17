@@ -47,6 +47,7 @@ import {
   saveRawMediaUploadAction,
 } from "@/lib/actions/admin-actions";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
+import { CONTENT_TITLE_MAX_LENGTH } from "@/lib/content-constraints";
 import type { ContentTopic } from "@/lib/content-topics";
 import {
   buildRawMediaStorageSummary,
@@ -201,14 +202,23 @@ export function RawMediaAdmin({
         planLabel: planLabels[0] ?? null,
       });
 
-      if (!result.success || !("id" in result) || !result.id) {
+      if (!result.success) {
+        toast.error("ذخیره ناموفق بود");
+        return;
+      }
+
+      const savedId =
+        "id" in result && typeof result.id === "string" && result.id
+          ? result.id
+          : editingId;
+      if (!savedId) {
         toast.error("ذخیره ناموفق بود");
         return;
       }
 
       const now = new Date().toISOString();
       const nextItem: RawMediaUpload = {
-        id: result.id,
+        id: savedId,
         campaignId,
         title: title.trim(),
         description: description.trim() || null,
@@ -460,7 +470,12 @@ export function RawMediaAdmin({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>عنوان</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="نام محتوا" />
+              <Input
+                value={title}
+                maxLength={CONTENT_TITLE_MAX_LENGTH}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="نام محتوا"
+              />
             </div>
             <div className="space-y-2">
               <Label>توضیحات</Label>
