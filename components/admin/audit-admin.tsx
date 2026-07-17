@@ -467,6 +467,33 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
     return Array.from(groups.values());
   }, [data?.loginsTodayList]);
 
+  // Group today's failed logins by the entered identifier + IP so repeated
+  // attempts from the same source collapse into a single card with a count.
+  const groupedFailedLoginsToday = useMemo(() => {
+    const groups = new Map<
+      string,
+      { event: AuditEvent; attempts: number; enteredEmail: string | null; ip: string | null }
+    >();
+    for (const event of data?.failedLoginsTodayList ?? []) {
+      const enteredEmail =
+        (typeof event.metadata?.email === "string" ? event.metadata.email : null) ||
+        event.actorEmail;
+      const ip =
+        (typeof event.metadata?.ip === "string" ? event.metadata.ip : null) || event.ipAddress;
+      const key = `${enteredEmail?.trim().toLowerCase() || "empty"}|${ip ?? "unknown"}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.attempts += 1;
+        if (new Date(event.createdAt) > new Date(existing.event.createdAt)) {
+          existing.event = event;
+        }
+      } else {
+        groups.set(key, { event, attempts: 1, enteredEmail, ip });
+      }
+    }
+    return Array.from(groups.values());
+  }, [data?.failedLoginsTodayList]);
+
   const filteredEvents = useMemo(() => {
     const events = data?.recentEvents ?? [];
     const term = search.trim().toLowerCase();
@@ -606,6 +633,65 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
                   ))}
                 </div>
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-destructive" />
+              ورودهای ناموفق امروز
+              <Badge variant="destructive" className="mr-1">
+                {formatPersianNumber(
+                  groupedFailedLoginsToday.length > 0
+                    ? groupedFailedLoginsToday.length
+                    : summary.failedLoginsToday
+                )}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {groupedFailedLoginsToday.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                امروز هیچ ورود ناموفقی ثبت نشده است.
+              </p>
+            ) : (
+              <>
+                <div className="max-h-[360px] overflow-y-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                    {groupedFailedLoginsToday.map(({ event, attempts, enteredEmail, ip }) => (
+                      <div
+                        key={event.id}
+                        className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-3 flex items-start gap-3"
+                      >
+                        <ShieldAlert className="mt-1 h-4 w-4 shrink-0 text-destructive" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate" dir="ltr" title={enteredEmail ?? ""}>
+                            {enteredEmail?.trim() || "بدون نام کاربری"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1.5">
+                            آخرین تلاش: {formatPersianDateTime(event.createdAt)}
+                          </p>
+                          {attempts > 1 && (
+                            <p className="text-xs font-medium text-destructive mt-0.5">
+                              {formatPersianNumber(attempts)} تلاش ناموفق
+                            </p>
+                          )}
+                          {ip && (
+                            <p className="text-xs text-muted-foreground font-mono mt-0.5" dir="ltr">
+                              {ip}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <p className="px-4 pb-3 text-xs text-muted-foreground">
+                  به‌دلایل امنیتی، رمز عبور واردشده ذخیره و نمایش داده نمی‌شود.
+                </p>
+              </>
             )}
           </CardContent>
         </Card>

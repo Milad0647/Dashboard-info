@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "4e38ac4a9b6f989d870685cd70ba52729de35e1a",
+      "committedAt": "2026-07-17T19:51:34+03:30",
+      "title": "افزودن تاریخ شروع و پایان و آپلود نامه رسمی به دستورکارها",
+      "subject": "Add start/end dates and official letter upload to directives"
+    },
+    {
       "hash": "9cb11184302a73ef49cfeb9ef90ec542e723cb67",
       "committedAt": "2026-07-17T19:49:28+03:30",
       "title": "افزودن تنظیمات پیامک به بخش تنظیمات کمپین",

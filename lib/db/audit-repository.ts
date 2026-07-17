@@ -343,6 +343,42 @@ export async function pgGetLoginsToday(limit = 50): Promise<AuditEvent[]> {
   return rows.map((row) => mapAuditRow(row as Record<string, unknown>));
 }
 
+export async function pgGetFailedLoginsToday(limit = 50): Promise<AuditEvent[]> {
+  if (!isPostgresConfigured()) return [];
+
+  const sql = getSql();
+  const safeLimit = Math.min(Math.max(limit, 1), 100);
+  const todayStart = getTehranTodayStart();
+  const rows = await sql`
+    SELECT
+      e.id,
+      e.actor_user_id,
+      e.actor_type,
+      e.actor_email,
+      e.actor_name,
+      e.actor_role,
+      e.category,
+      e.action,
+      e.entity_type,
+      e.entity_id,
+      e.campaign_id,
+      e.label,
+      e.path,
+      e.method,
+      e.metadata,
+      e.ip_address,
+      e.user_agent,
+      e.created_at
+    FROM user_audit_events e
+    WHERE e.action = 'auth.login_failed'
+      AND e.created_at >= ${todayStart}
+    ORDER BY e.created_at DESC
+    LIMIT ${safeLimit}
+  `;
+
+  return rows.map((row) => mapAuditRow(row as Record<string, unknown>));
+}
+
 export async function pgGetOnlineUsers(withinMinutes = 5): Promise<
   import("@/lib/audit/types").OnlineUser[]
 > {
