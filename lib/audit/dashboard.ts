@@ -5,6 +5,7 @@ import {
   pgGetAuditTopActors,
   pgGetAuditTopClicks,
   pgGetAuditTopPaths,
+  pgGetOnlineUsers,
   pgGetUserContentContributions,
   pgListAuditEvents,
 } from "@/lib/db/audit-repository";
@@ -15,6 +16,7 @@ export async function getAuditDashboardData(): Promise<AuditDashboardData> {
     summary,
     dailySeries,
     topActors,
+    onlineUsers,
     topActions,
     topPaths,
     topClicks,
@@ -25,22 +27,28 @@ export async function getAuditDashboardData(): Promise<AuditDashboardData> {
     pgGetAuditSummaryCounts(),
     pgGetAuditDailySeries(14),
     pgGetAuditTopActors(12),
+    pgGetOnlineUsers(5),
     pgGetAuditTopActions(12),
     pgGetAuditTopPaths(12),
     pgGetAuditTopClicks(15),
-    pgListAuditEvents({ limit: 150 }),
+    pgListAuditEvents({ limit: 200 }),
     pgGetUserContentContributions(),
     pgListAuditEvents({ action: "auth.login", limit: 50 }),
   ]);
 
   return {
-    summary,
+    summary: {
+      ...summary,
+      onlineUsers: onlineUsers.length,
+    },
     dailySeries,
     topActors,
+    onlineUsers,
     topActions,
     topPaths,
     topClicks,
-    recentEvents,
+    // Heartbeats are presence-only noise for the event log.
+    recentEvents: recentEvents.filter((event) => event.action !== "presence.heartbeat"),
     contentByUser,
     logins,
   };

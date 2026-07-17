@@ -4,7 +4,11 @@ import { logAuditForSession } from "@/lib/audit/log-event";
 import type { AuditCategory } from "@/lib/audit/types";
 import { isPostgresConfigured } from "@/lib/utils";
 
-const ALLOWED_ACTIONS = new Set(["navigation.page_view", "ui.click"]);
+const ALLOWED_ACTIONS = new Set([
+  "navigation.page_view",
+  "ui.click",
+  "presence.heartbeat",
+]);
 const MAX_LABEL_LENGTH = 200;
 const MAX_PATH_LENGTH = 500;
 
@@ -46,7 +50,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 });
   }
 
-  const category: AuditCategory = action === "ui.click" ? "ui" : "navigation";
+  const category: AuditCategory =
+    action === "ui.click" ? "ui" : action === "presence.heartbeat" ? "system" : "navigation";
   const metadata =
     payload.metadata && typeof payload.metadata === "object" && !Array.isArray(payload.metadata)
       ? payload.metadata
@@ -56,7 +61,10 @@ export async function POST(request: Request) {
     category,
     action,
     path: sanitize(payload.path, MAX_PATH_LENGTH),
-    label: sanitize(payload.label, MAX_LABEL_LENGTH),
+    label:
+      action === "presence.heartbeat"
+        ? "آنلاین"
+        : sanitize(payload.label, MAX_LABEL_LENGTH),
     campaignId: sanitize(payload.campaignId, 64),
     metadata,
   });

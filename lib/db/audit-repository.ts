@@ -127,6 +127,7 @@ export async function pgGetAuditSummaryCounts() {
       loginsToday: 0,
       failedLoginsToday: 0,
       activeUsersToday: 0,
+      onlineUsers: 0,
       contentChangesToday: 0,
       pageViewsToday: 0,
       clicksToday: 0,
@@ -144,10 +145,14 @@ export async function pgGetAuditSummaryCounts() {
       COUNT(*) FILTER (
         WHERE action = 'auth.login_failed' AND created_at >= date_trunc('day', now())
       )::int AS failed_logins_today,
-      COUNT(DISTINCT COALESCE(actor_user_id::text, actor_email, actor_name)) FILTER (
+      COUNT(DISTINCT COALESCE(actor_user_id::text, NULLIF(actor_email, ''), NULLIF(actor_name, ''))) FILTER (
         WHERE created_at >= date_trunc('day', now())
           AND action <> 'auth.login_failed'
       )::int AS active_users_today,
+      COUNT(DISTINCT COALESCE(actor_user_id::text, NULLIF(actor_email, ''), NULLIF(actor_name, ''))) FILTER (
+        WHERE created_at >= now() - interval '5 minutes'
+          AND action <> 'auth.login_failed'
+      )::int AS online_users,
       COUNT(*) FILTER (
         WHERE category = 'content' AND created_at >= date_trunc('day', now())
       )::int AS content_changes_today,
@@ -167,6 +172,7 @@ export async function pgGetAuditSummaryCounts() {
     loginsToday: Number(row.logins_today ?? 0),
     failedLoginsToday: Number(row.failed_logins_today ?? 0),
     activeUsersToday: Number(row.active_users_today ?? 0),
+    onlineUsers: Number(row.online_users ?? 0),
     contentChangesToday: Number(row.content_changes_today ?? 0),
     pageViewsToday: Number(row.page_views_today ?? 0),
     clicksToday: Number(row.clicks_today ?? 0),
@@ -216,42 +222,138 @@ export async function pgGetAuditTopActors(limit = 10): Promise<AuditActorSummary
   const sql = getSql();
   const safeLimit = Math.min(Math.max(limit, 1), 50);
   const rows = await sql`
-    SELECT
-      COALESCE(actor_user_id::text, actor_email, actor_name, 'unknown') AS actor_key,
-      actor_user_id,
-      COALESCE(MAX(actor_name), MAX(actor_email), 'ناشناس') AS actor_name,
-      MAX(actor_email) AS actor_email,
-      MAX(actor_role) AS actor_role,
-      COUNT(*)::int AS event_count,
-      COUNT(*) FILTER (WHERE action = 'auth.login')::int AS login_count,
-      COUNT(*) FILTER (WHERE action = 'content.create')::int AS content_create_count,
-      COUNT(*) FILTER (WHERE action = 'content.update')::int AS content_update_count,
-      COUNT(*) FILTER (WHERE action = 'content.delete')::int AS content_delete_count,
-      COUNT(*) FILTER (WHERE action = 'navigation.page_view')::int AS page_view_count,
-      COUNT(*) FILTER (WHERE action = 'ui.click')::int AS click_count,
-      MAX(created_at) AS last_seen_at
-    FROM user_audit_events
-    WHERE action <> 'auth.login_failed'
-    GROUP BY COALESCE(actor_user_id::text, actor_email, actor_name, 'unknown'), actor_user_id
+    WITH ranked AS (
+      SELECT
+        COALESCE(e.actor_user_id::text, NULLIF(e.actor_email, ''), NULLIF(e.actor_name, ''), 'unknown') AS actor_key,
+        e.actor_user_id,
+        NULLIF(MAX(e.actor_name), '') AS event_name,
+        NULLIF(MAX(e.actor_email), '') AS event_email,
+        NULLIF(MAX(e.actor_role), '') AS event_role,
+        MAX(u.name) AS user_name,
+        MAX(u.email) AS user_email,
+        MAX(u.role) AS user_role,
+        COUNT(*)::int AS event_count,
+        COUNT(*) FILTER (WHERE e.action = 'auth.login')::int AS login_count,
+        COUNT(*) FILTER (WHERE e.action = 'content.create')::int AS content_create_count,
+        COUNT(*) FILTER (WHERE e.action = 'content.update')::int AS content_update_count,
+        COUNT(*) FILTER (WHERE e.action = 'content.delete')::int AS content_delete_count,
+        COUNT(*) FILTER (WHERE e.action = 'navigation.page_view')::int AS page_view_count,
+        COUNT(*) FILTER (WHERE e.action = 'ui.click')::int AS click_count,
+        MAX(e.created_at) AS last_seen_at
+      FROM user_audit_events e
+      LEFT JOIN users u ON u.id = e.actor_user_id
+      WHERE e.action NOT IN ('auth.login_failed', 'presence.heartbeat')
+      GROUP BY
+        COALESCE(e.actor_user_id::text, NULLIF(e.actor_email, ''), NULLIF(e.actor_name, ''), 'unknown'),
+        e.actor_user_id
+    )
+    SELECT *
+    FROM ranked
     ORDER BY event_count DESC
     LIMIT ${safeLimit}
   `;
 
-  return rows.map((row) => ({
-    actorKey: String(row.actor_key),
-    actorUserId: row.actor_user_id ? String(row.actor_user_id) : null,
-    actorName: String(row.actor_name ?? "ناشناس"),
-    actorEmail: row.actor_email ? String(row.actor_email) : null,
-    actorRole: row.actor_role ? String(row.actor_role) : null,
-    eventCount: Number(row.event_count ?? 0),
-    loginCount: Number(row.login_count ?? 0),
-    contentCreateCount: Number(row.content_create_count ?? 0),
-    contentUpdateCount: Number(row.content_update_count ?? 0),
-    contentDeleteCount: Number(row.content_delete_count ?? 0),
-    pageViewCount: Number(row.page_view_count ?? 0),
-    clickCount: Number(row.click_count ?? 0),
-    lastSeenAt: row.last_seen_at ? new Date(String(row.last_seen_at)).toISOString() : null,
-  }));
+  return rows.map((row) => {
+    const actorName =
+      String(row.user_name ?? "").trim() ||
+      String(row.event_name ?? "").trim() ||
+      String(row.user_email ?? "").trim() ||
+      String(row.event_email ?? "").trim() ||
+      "ناشناس";
+    const actorEmail =
+      String(row.user_email ?? "").trim() ||
+      String(row.event_email ?? "").trim() ||
+      null;
+    const actorRole =
+      String(row.user_role ?? "").trim() ||
+      String(row.event_role ?? "").trim() ||
+      null;
+    const lastSeenAt = row.last_seen_at
+      ? new Date(String(row.last_seen_at)).toISOString()
+      : null;
+    const isOnline = lastSeenAt
+      ? Date.now() - new Date(lastSeenAt).getTime() <= 5 * 60 * 1000
+      : false;
+
+    return {
+      actorKey: String(row.actor_key),
+      actorUserId: row.actor_user_id ? String(row.actor_user_id) : null,
+      actorName,
+      actorEmail,
+      actorRole,
+      eventCount: Number(row.event_count ?? 0),
+      loginCount: Number(row.login_count ?? 0),
+      contentCreateCount: Number(row.content_create_count ?? 0),
+      contentUpdateCount: Number(row.content_update_count ?? 0),
+      contentDeleteCount: Number(row.content_delete_count ?? 0),
+      pageViewCount: Number(row.page_view_count ?? 0),
+      clickCount: Number(row.click_count ?? 0),
+      lastSeenAt,
+      isOnline,
+    };
+  });
+}
+
+export async function pgGetOnlineUsers(withinMinutes = 5): Promise<
+  import("@/lib/audit/types").OnlineUser[]
+> {
+  if (!isPostgresConfigured()) return [];
+
+  const sql = getSql();
+  const minutes = Math.min(Math.max(withinMinutes, 1), 60);
+  const rows = await sql`
+    WITH latest AS (
+      SELECT DISTINCT ON (
+        COALESCE(e.actor_user_id::text, NULLIF(e.actor_email, ''), NULLIF(e.actor_name, ''), 'unknown')
+      )
+        COALESCE(e.actor_user_id::text, NULLIF(e.actor_email, ''), NULLIF(e.actor_name, ''), 'unknown') AS actor_key,
+        e.actor_user_id,
+        NULLIF(e.actor_name, '') AS event_name,
+        NULLIF(e.actor_email, '') AS event_email,
+        NULLIF(e.actor_role, '') AS event_role,
+        e.path,
+        e.created_at,
+        u.name AS user_name,
+        u.email AS user_email,
+        u.role AS user_role
+      FROM user_audit_events e
+      LEFT JOIN users u ON u.id = e.actor_user_id
+      WHERE e.created_at >= now() - (${minutes} * interval '1 minute')
+        AND e.action <> 'auth.login_failed'
+      ORDER BY
+        COALESCE(e.actor_user_id::text, NULLIF(e.actor_email, ''), NULLIF(e.actor_name, ''), 'unknown'),
+        e.created_at DESC
+    )
+    SELECT * FROM latest
+    ORDER BY created_at DESC
+  `;
+
+  return rows.map((row) => {
+    const actorName =
+      String(row.user_name ?? "").trim() ||
+      String(row.event_name ?? "").trim() ||
+      String(row.user_email ?? "").trim() ||
+      String(row.event_email ?? "").trim() ||
+      "ناشناس";
+    const actorEmail =
+      String(row.user_email ?? "").trim() ||
+      String(row.event_email ?? "").trim() ||
+      null;
+    const actorRole =
+      String(row.user_role ?? "").trim() ||
+      String(row.event_role ?? "").trim() ||
+      null;
+
+    return {
+      actorKey: String(row.actor_key),
+      actorUserId: row.actor_user_id ? String(row.actor_user_id) : null,
+      actorName,
+      actorEmail,
+      actorRole,
+      lastSeenAt: new Date(String(row.created_at)).toISOString(),
+      path: row.path ? String(row.path) : null,
+    };
+  });
 }
 
 export async function pgGetAuditTopActions(limit = 12): Promise<AuditActionSummary[]> {

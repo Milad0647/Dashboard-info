@@ -37,7 +37,7 @@ function isNextRedirectError(error: unknown): boolean {
 }
 
 export function AdminLoginForm() {
-  const [email, setEmail] = useState("admin@example.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -140,8 +140,8 @@ export function AdminLoginForm() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-white/80">ورود به سامانه</p>
-                <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">داشبورد گزارش زنده کمپین</h1>
-                <p className="mt-1 text-sm text-white/78">مدیریت امن گزارش‌ها و محتوای کمپین</p>
+                <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">25 درجه قرار همدلی</h1>
+                <p className="mt-1 text-sm text-white/78">مدیریت گزارش‌ها و محتوای کمپین</p>
               </div>
             </header>
 

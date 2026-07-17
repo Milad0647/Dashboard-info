@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
-  BarChart3,
   FileStack,
   LogIn,
   MousePointerClick,
   Navigation,
+  Radio,
   ShieldAlert,
   Users,
 } from "lucide-react";
@@ -71,6 +71,101 @@ interface AuditAdminProps {
   databaseReady: boolean;
 }
 
+function resolveUserDisplay(name?: string | null, email?: string | null) {
+  const displayName = name?.trim() || email?.trim() || "ناشناس";
+  const showEmail = Boolean(email?.trim() && email.trim() !== displayName);
+  return { displayName, showEmail, email: email?.trim() || null };
+}
+
+function UserCell({
+  name,
+  email,
+  online,
+}: {
+  name?: string | null;
+  email?: string | null;
+  online?: boolean;
+}) {
+  const { displayName, showEmail, email: resolvedEmail } = resolveUserDisplay(name, email);
+
+  return (
+    <div className="flex items-start gap-2 min-w-0">
+      {online !== undefined && (
+        <span
+          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+            online ? "bg-emerald-500" : "bg-muted-foreground/30"
+          }`}
+          title={online ? "آنلاین" : "آفلاین"}
+        />
+      )}
+      <div className="min-w-0">
+        <div className="font-medium truncate" title={displayName}>
+          {displayName}
+        </div>
+        {showEmail && resolvedEmail && (
+          <div className="text-xs text-muted-foreground truncate" dir="ltr" title={resolvedEmail}>
+            {resolvedEmail}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AuditTable({
+  columns,
+  children,
+  emptyColSpan,
+  emptyMessage = "موردی ثبت نشده است.",
+  isEmpty,
+  minWidth = "720px",
+}: {
+  columns: { key: string; label: string; width?: string }[];
+  children: ReactNode;
+  emptyColSpan: number;
+  emptyMessage?: string;
+  isEmpty: boolean;
+  minWidth?: string;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border-collapse" style={{ minWidth }}>
+        <colgroup>
+          {columns.map((column) => (
+            <col key={column.key} style={column.width ? { width: column.width } : undefined} />
+          ))}
+        </colgroup>
+        <thead className="bg-muted/50 text-muted-foreground">
+          <tr>
+            {columns.map((column) => (
+              <th
+                key={column.key}
+                className="text-right font-medium px-3 py-3 whitespace-nowrap border-b"
+              >
+                {column.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {isEmpty ? (
+            <tr>
+              <td
+                colSpan={emptyColSpan}
+                className="px-3 py-8 text-center text-muted-foreground"
+              >
+                {emptyMessage}
+              </td>
+            </tr>
+          ) : (
+            children
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function StatCard({
   label,
   value,
@@ -98,6 +193,54 @@ function StatCard({
   );
 }
 
+const USERS_COLUMNS = [
+  { key: "user", label: "کاربر", width: "22%" },
+  { key: "role", label: "نقش", width: "10%" },
+  { key: "events", label: "کل رویداد", width: "9%" },
+  { key: "login", label: "ورود", width: "7%" },
+  { key: "create", label: "ثبت", width: "7%" },
+  { key: "update", label: "ویرایش", width: "8%" },
+  { key: "delete", label: "حذف", width: "7%" },
+  { key: "views", label: "بازدید", width: "8%" },
+  { key: "clicks", label: "کلیک", width: "7%" },
+  { key: "last", label: "آخرین فعالیت", width: "15%" },
+];
+
+const CONTENT_COLUMNS = [
+  { key: "user", label: "کاربر", width: "18%" },
+  { key: "total", label: "مجموع", width: "8%" },
+  { key: "billboards", label: "بیلبورد", width: "8%" },
+  { key: "posters", label: "پوستر", width: "8%" },
+  { key: "videos", label: "ویدیو", width: "8%" },
+  { key: "files", label: "فایل", width: "7%" },
+  { key: "raw", label: "راش", width: "7%" },
+  { key: "social", label: "شبکه اجتماعی", width: "10%" },
+  { key: "activities", label: "اقدام", width: "8%" },
+  { key: "broadcast", label: "پخش", width: "8%" },
+  { key: "meetings", label: "جلسه", width: "10%" },
+];
+
+const LOGIN_COLUMNS = [
+  { key: "user", label: "کاربر", width: "35%" },
+  { key: "role", label: "نقش", width: "15%" },
+  { key: "time", label: "زمان ورود", width: "30%" },
+  { key: "ip", label: "IP", width: "20%" },
+];
+
+const EVENT_COLUMNS = [
+  { key: "time", label: "زمان", width: "16%" },
+  { key: "user", label: "کاربر", width: "20%" },
+  { key: "category", label: "دسته", width: "12%" },
+  { key: "action", label: "اقدام", width: "14%" },
+  { key: "entity", label: "مورد", width: "12%" },
+  { key: "label", label: "توضیح", width: "26%" },
+];
+
+const PATH_COLUMNS = [
+  { key: "path", label: "صفحه", width: "80%" },
+  { key: "count", label: "تعداد بازدید", width: "20%" },
+];
+
 export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
   const chartTheme = useChartTheme();
   const [search, setSearch] = useState("");
@@ -114,10 +257,12 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
 
   const actionChartData = useMemo(
     () =>
-      (data?.topActions ?? []).map((item) => ({
-        label: getAuditActionLabel(item.action),
-        count: item.count,
-      })),
+      (data?.topActions ?? [])
+        .filter((item) => item.action !== "presence.heartbeat")
+        .map((item) => ({
+          label: getAuditActionLabel(item.action),
+          count: item.count,
+        })),
     [data?.topActions]
   );
 
@@ -136,8 +281,9 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
     return events.filter((event) => {
       if (categoryFilter !== "all" && event.category !== categoryFilter) return false;
       if (!term) return true;
+      const { displayName } = resolveUserDisplay(event.actorName, event.actorEmail);
       return [
-        event.actorName,
+        displayName,
         event.actorEmail,
         getAuditActionLabel(event.action),
         event.label,
@@ -176,13 +322,18 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="کاربران آنلاین"
+          value={summary.onlineUsers}
+          icon={Radio}
+          hint="فعال در ۵ دقیقه اخیر"
+        />
         <StatCard label="کاربران فعال امروز" value={summary.activeUsersToday} icon={Users} />
         <StatCard label="ورود امروز" value={summary.loginsToday} icon={LogIn} />
         <StatCard label="تغییرات محتوا امروز" value={summary.contentChangesToday} icon={FileStack} />
         <StatCard label="بازدید صفحه امروز" value={summary.pageViewsToday} icon={Navigation} />
         <StatCard label="کلیک امروز" value={summary.clicksToday} icon={MousePointerClick} />
         <StatCard label="کل رویدادها" value={summary.totalEvents} icon={Activity} />
-        <StatCard label="رویداد امروز" value={summary.eventsToday} icon={BarChart3} />
         <StatCard
           label="ورود ناموفق امروز"
           value={summary.failedLoginsToday}
@@ -190,6 +341,62 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
           hint={summary.failedLoginsToday > 0 ? "بررسی امنیتی توصیه می‌شود" : undefined}
         />
       </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            </span>
+            کاربران آنلاین الان
+            <Badge variant="success" className="mr-1">
+              {formatPersianNumber(data.onlineUsers.length)}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.onlineUsers.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">
+              در ۵ دقیقه اخیر هیچ کاربری آنلاین نبوده است.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {data.onlineUsers.map((user) => (
+                <div
+                  key={user.actorKey}
+                  className="rounded-lg border bg-card px-3 py-3 flex items-start gap-3"
+                >
+                  <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium truncate">
+                        {resolveUserDisplay(user.actorName, user.actorEmail).displayName}
+                      </p>
+                      <Badge variant="outline" className="shrink-0">
+                        {getAuditRoleLabel(user.actorRole)}
+                      </Badge>
+                    </div>
+                    {user.actorEmail && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5" dir="ltr">
+                        {user.actorEmail}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      آخرین فعالیت: {formatPersianDateTime(user.lastSeenAt)}
+                    </p>
+                    {user.path && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5" dir="ltr">
+                        {user.path}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="overview">
         <TabsList>
@@ -200,7 +407,6 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
           <TabsTrigger value="events">رویدادها</TabsTrigger>
         </TabsList>
 
-        {/* Overview: charts */}
         <TabsContent value="overview" className="space-y-4">
           <Card>
             <CardHeader className="pb-2">
@@ -353,215 +559,169 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
               <CardTitle className="text-base">پربازدیدترین صفحات</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground">
-                    <tr>
-                      <th className="text-right font-medium px-4 py-2.5">صفحه</th>
-                      <th className="text-right font-medium px-4 py-2.5">تعداد بازدید</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.topPaths.length === 0 ? (
-                      <tr>
-                        <td colSpan={2} className="px-4 py-6 text-center text-muted-foreground">
-                          موردی ثبت نشده است.
-                        </td>
-                      </tr>
-                    ) : (
-                      data.topPaths.map((row) => (
-                        <tr key={row.path} className="border-t">
-                          <td className="px-4 py-2.5 font-mono text-xs" dir="ltr">{row.path}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(row.count)}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <AuditTable
+                columns={PATH_COLUMNS}
+                emptyColSpan={2}
+                isEmpty={data.topPaths.length === 0}
+                minWidth="480px"
+              >
+                {data.topPaths.map((row) => (
+                  <tr key={row.path} className="border-b last:border-0">
+                    <td className="px-3 py-2.5 font-mono text-xs" dir="ltr">
+                      {row.path}
+                    </td>
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      {formatPersianNumber(row.count)}
+                    </td>
+                  </tr>
+                ))}
+              </AuditTable>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Users: top actors */}
         <TabsContent value="users">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">فعال‌ترین کاربران</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground">
-                    <tr>
-                      <th className="text-right font-medium px-4 py-2.5">کاربر</th>
-                      <th className="text-right font-medium px-4 py-2.5">نقش</th>
-                      <th className="text-right font-medium px-4 py-2.5">کل رویداد</th>
-                      <th className="text-right font-medium px-4 py-2.5">ورود</th>
-                      <th className="text-right font-medium px-4 py-2.5">ثبت محتوا</th>
-                      <th className="text-right font-medium px-4 py-2.5">ویرایش</th>
-                      <th className="text-right font-medium px-4 py-2.5">حذف</th>
-                      <th className="text-right font-medium px-4 py-2.5">بازدید</th>
-                      <th className="text-right font-medium px-4 py-2.5">کلیک</th>
-                      <th className="text-right font-medium px-4 py-2.5">آخرین فعالیت</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.topActors.length === 0 ? (
-                      <tr>
-                        <td colSpan={10} className="px-4 py-6 text-center text-muted-foreground">
-                          موردی ثبت نشده است.
-                        </td>
-                      </tr>
-                    ) : (
-                      data.topActors.map((actor) => (
-                        <tr key={actor.actorKey} className="border-t">
-                          <td className="px-4 py-2.5">
-                            <div className="font-medium">{actor.actorName}</div>
-                            {actor.actorEmail && (
-                              <div className="text-xs text-muted-foreground" dir="ltr">
-                                {actor.actorEmail}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <Badge variant="outline">{getAuditRoleLabel(actor.actorRole)}</Badge>
-                          </td>
-                          <td className="px-4 py-2.5 font-semibold">
-                            {formatPersianNumber(actor.eventCount)}
-                          </td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(actor.loginCount)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(actor.contentCreateCount)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(actor.contentUpdateCount)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(actor.contentDeleteCount)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(actor.pageViewCount)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(actor.clickCount)}</td>
-                          <td className="px-4 py-2.5 text-xs text-muted-foreground">
-                            {actor.lastSeenAt ? formatPersianDateTime(actor.lastSeenAt) : "—"}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <AuditTable
+                columns={USERS_COLUMNS}
+                emptyColSpan={10}
+                isEmpty={data.topActors.length === 0}
+                minWidth="960px"
+              >
+                {data.topActors.map((actor) => (
+                  <tr key={actor.actorKey} className="border-b last:border-0">
+                    <td className="px-3 py-3 align-middle">
+                      <UserCell
+                        name={actor.actorName}
+                        email={actor.actorEmail}
+                        online={actor.isOnline}
+                      />
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      <Badge variant="outline">{getAuditRoleLabel(actor.actorRole)}</Badge>
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap font-semibold">
+                      {formatPersianNumber(actor.eventCount)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(actor.loginCount)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(actor.contentCreateCount)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(actor.contentUpdateCount)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(actor.contentDeleteCount)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(actor.pageViewCount)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(actor.clickCount)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap text-xs text-muted-foreground">
+                      {actor.lastSeenAt ? formatPersianDateTime(actor.lastSeenAt) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </AuditTable>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Content by user (from ownership) */}
         <TabsContent value="content">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">محتوای ثبت‌شده به تفکیک کاربر</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground">
-                    <tr>
-                      <th className="text-right font-medium px-4 py-2.5">کاربر</th>
-                      <th className="text-right font-medium px-4 py-2.5">مجموع</th>
-                      <th className="text-right font-medium px-4 py-2.5">بیلبورد</th>
-                      <th className="text-right font-medium px-4 py-2.5">پوستر</th>
-                      <th className="text-right font-medium px-4 py-2.5">ویدیو</th>
-                      <th className="text-right font-medium px-4 py-2.5">فایل</th>
-                      <th className="text-right font-medium px-4 py-2.5">راش</th>
-                      <th className="text-right font-medium px-4 py-2.5">شبکه اجتماعی</th>
-                      <th className="text-right font-medium px-4 py-2.5">اقدام</th>
-                      <th className="text-right font-medium px-4 py-2.5">پخش</th>
-                      <th className="text-right font-medium px-4 py-2.5">جلسه</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.contentByUser.length === 0 ? (
-                      <tr>
-                        <td colSpan={11} className="px-4 py-6 text-center text-muted-foreground">
-                          موردی ثبت نشده است.
-                        </td>
-                      </tr>
-                    ) : (
-                      data.contentByUser.map((row) => (
-                        <tr key={row.userId} className="border-t">
-                          <td className="px-4 py-2.5">
-                            <div className="font-medium">{row.name}</div>
-                            <div className="text-xs text-muted-foreground" dir="ltr">{row.email}</div>
-                          </td>
-                          <td className="px-4 py-2.5 font-semibold">{formatPersianNumber(row.total)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(row.billboards)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(row.posters)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(row.videos)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(row.files)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(row.rawMedia)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(row.socialPosts)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(row.activities)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(row.broadcast)}</td>
-                          <td className="px-4 py-2.5">{formatPersianNumber(row.meetings)}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <AuditTable
+                columns={CONTENT_COLUMNS}
+                emptyColSpan={11}
+                isEmpty={data.contentByUser.length === 0}
+                minWidth="1000px"
+              >
+                {data.contentByUser.map((row) => (
+                  <tr key={row.userId} className="border-b last:border-0">
+                    <td className="px-3 py-3 align-middle">
+                      <UserCell name={row.name} email={row.email} />
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap font-semibold">
+                      {formatPersianNumber(row.total)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(row.billboards)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(row.posters)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(row.videos)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(row.files)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(row.rawMedia)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(row.socialPosts)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(row.activities)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(row.broadcast)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {formatPersianNumber(row.meetings)}
+                    </td>
+                  </tr>
+                ))}
+              </AuditTable>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Logins */}
         <TabsContent value="logins">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">تاریخچه ورود کاربران</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground">
-                    <tr>
-                      <th className="text-right font-medium px-4 py-2.5">کاربر</th>
-                      <th className="text-right font-medium px-4 py-2.5">نقش</th>
-                      <th className="text-right font-medium px-4 py-2.5">زمان ورود</th>
-                      <th className="text-right font-medium px-4 py-2.5">IP</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.logins.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                          موردی ثبت نشده است.
-                        </td>
-                      </tr>
-                    ) : (
-                      data.logins.map((event) => (
-                        <tr key={event.id} className="border-t">
-                          <td className="px-4 py-2.5">
-                            <div className="font-medium">{event.actorName ?? "—"}</div>
-                            {event.actorEmail && (
-                              <div className="text-xs text-muted-foreground" dir="ltr">
-                                {event.actorEmail}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <Badge variant="outline">{getAuditRoleLabel(event.actorRole)}</Badge>
-                          </td>
-                          <td className="px-4 py-2.5 text-xs text-muted-foreground">
-                            {formatPersianDateTime(event.createdAt)}
-                          </td>
-                          <td className="px-4 py-2.5 font-mono text-xs" dir="ltr">
-                            {event.ipAddress ?? "—"}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <AuditTable
+                columns={LOGIN_COLUMNS}
+                emptyColSpan={4}
+                isEmpty={data.logins.length === 0}
+                minWidth="640px"
+              >
+                {data.logins.map((event) => (
+                  <tr key={event.id} className="border-b last:border-0">
+                    <td className="px-3 py-3 align-middle">
+                      <UserCell name={event.actorName} email={event.actorEmail} />
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      <Badge variant="outline">{getAuditRoleLabel(event.actorRole)}</Badge>
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap text-xs text-muted-foreground">
+                      {formatPersianDateTime(event.createdAt)}
+                    </td>
+                    <td className="px-3 py-3 align-middle font-mono text-xs whitespace-nowrap" dir="ltr">
+                      {event.ipAddress ?? "—"}
+                    </td>
+                  </tr>
+                ))}
+              </AuditTable>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Full event log */}
         <TabsContent value="events" className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
@@ -603,55 +763,40 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
 
           <Card>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground">
-                    <tr>
-                      <th className="text-right font-medium px-4 py-2.5">زمان</th>
-                      <th className="text-right font-medium px-4 py-2.5">کاربر</th>
-                      <th className="text-right font-medium px-4 py-2.5">دسته</th>
-                      <th className="text-right font-medium px-4 py-2.5">اقدام</th>
-                      <th className="text-right font-medium px-4 py-2.5">مورد</th>
-                      <th className="text-right font-medium px-4 py-2.5">توضیح</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredEvents.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
-                          موردی یافت نشد.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredEvents.map((event) => (
-                        <tr key={event.id} className="border-t align-top">
-                          <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
-                            {formatPersianDateTime(event.createdAt)}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <div className="font-medium">{event.actorName ?? "—"}</div>
-                            {event.actorEmail && (
-                              <div className="text-xs text-muted-foreground" dir="ltr">
-                                {event.actorEmail}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <Badge variant={CATEGORY_BADGE_VARIANT[event.category]}>
-                              {AUDIT_CATEGORY_LABELS[event.category]}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-2.5">{getAuditActionLabel(event.action)}</td>
-                          <td className="px-4 py-2.5">{getAuditEntityLabel(event.entityType)}</td>
-                          <td className="px-4 py-2.5 max-w-xs">
-                            <span className="line-clamp-2">{event.label ?? event.path ?? "—"}</span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <AuditTable
+                columns={EVENT_COLUMNS}
+                emptyColSpan={6}
+                emptyMessage="موردی یافت نشد."
+                isEmpty={filteredEvents.length === 0}
+                minWidth="900px"
+              >
+                {filteredEvents.map((event) => (
+                  <tr key={event.id} className="border-b last:border-0">
+                    <td className="px-3 py-3 align-middle whitespace-nowrap text-xs text-muted-foreground">
+                      {formatPersianDateTime(event.createdAt)}
+                    </td>
+                    <td className="px-3 py-3 align-middle">
+                      <UserCell name={event.actorName} email={event.actorEmail} />
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      <Badge variant={CATEGORY_BADGE_VARIANT[event.category]}>
+                        {AUDIT_CATEGORY_LABELS[event.category]}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {getAuditActionLabel(event.action)}
+                    </td>
+                    <td className="px-3 py-3 align-middle whitespace-nowrap">
+                      {getAuditEntityLabel(event.entityType)}
+                    </td>
+                    <td className="px-3 py-3 align-middle">
+                      <span className="line-clamp-2 break-words">
+                        {event.label?.trim() || event.path || "—"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </AuditTable>
             </CardContent>
           </Card>
         </TabsContent>

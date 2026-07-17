@@ -77,6 +77,17 @@ export interface AuditActorSummary {
   pageViewCount: number;
   clickCount: number;
   lastSeenAt: string | null;
+  isOnline?: boolean;
+}
+
+export interface OnlineUser {
+  actorKey: string;
+  actorUserId: string | null;
+  actorName: string;
+  actorEmail: string | null;
+  actorRole: string | null;
+  lastSeenAt: string;
+  path: string | null;
 }
 
 export interface AuditActionSummary {
@@ -122,12 +133,14 @@ export interface AuditDashboardData {
     loginsToday: number;
     failedLoginsToday: number;
     activeUsersToday: number;
+    onlineUsers: number;
     contentChangesToday: number;
     pageViewsToday: number;
     clicksToday: number;
   };
   dailySeries: AuditDailyPoint[];
   topActors: AuditActorSummary[];
+  onlineUsers: OnlineUser[];
   topActions: AuditActionSummary[];
   topPaths: AuditPathSummary[];
   topClicks: AuditClickSummary[];
@@ -135,3 +148,4 @@ export interface AuditDashboardData {
   contentByUser: UserContentContribution[];
   logins: AuditEvent[];
 }
+

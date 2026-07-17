@@ -100,5 +100,19 @@ export function AuditTracker() {
     return () => document.removeEventListener("click", handleClick, { capture: true } as EventListenerOptions);
   }, []);
 
+  useEffect(() => {
+    const sendHeartbeat = () => {
+      sendTrack({
+        action: "presence.heartbeat",
+        path: window.location.pathname + window.location.search,
+        label: "آنلاین",
+      });
+    };
+
+    sendHeartbeat();
+    const intervalId = window.setInterval(sendHeartbeat, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
   return null;
 }
