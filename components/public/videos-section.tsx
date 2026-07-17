@@ -56,14 +56,14 @@ function filterVideoGroups(
       items:
         categoryFilter === "all"
           ? sortByPublicMediaOrder(
-              group.items.filter((video) => sort === "default" || videoHasDisplayContent(video)),
+              group.items.filter((video) => videoHasDisplayContent(video)),
               sort,
               (video) => getVideoSortDate(video, sort)
             )
           : sortByPublicMediaOrder(
               group.items
                 .filter((video) => video.categoryId === categoryFilter)
-                .filter((video) => sort === "default" || videoHasDisplayContent(video)),
+                .filter((video) => videoHasDisplayContent(video)),
               sort,
               (video) => getVideoSortDate(video, sort)
             ),

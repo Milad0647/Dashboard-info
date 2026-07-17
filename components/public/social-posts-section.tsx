@@ -11,7 +11,7 @@ import { ImageZoom } from "@/components/ui/image-zoom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, Music } from "lucide-react";
-import { PUBLIC_MEDIA_GRID_CLASS } from "@/lib/public-media-section";
+import { PUBLIC_MEDIA_GRID_CLASS, filterGroupsByDisplayContent, socialPostHasDisplayContent } from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
@@ -144,7 +144,11 @@ function SocialPostCard({ post }: { post: SocialMediaPost }) {
 
 export function SocialPostsSection({ posts, groups }: SocialPostsSectionProps) {
   const { filter } = useOwnerLocationFilter();
-  const filteredGroups = useFilteredOwnerGroups(groups, (post) => post.publishedDate);
+  const locationFilteredGroups = useFilteredOwnerGroups(groups, (post) => post.publishedDate);
+  const filteredGroups = useMemo(
+    () => filterGroupsByDisplayContent(locationFilteredGroups, socialPostHasDisplayContent),
+    [locationFilteredGroups]
+  );
   const filteredPosts = useMemo(
     () => flattenOwnerGroupsInSortOrder(filteredGroups, filter.sortOrder),
     [filteredGroups, filter.sortOrder]

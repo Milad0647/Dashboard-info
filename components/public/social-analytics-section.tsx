@@ -93,7 +93,9 @@ export function SocialAnalyticsSection({
   const [visibleCount, setVisibleCount] = useState(SOCIAL_ANALYTICS_PAGE_SIZE);
 
   const platforms = useMemo(() => {
-    const filtered = filterItemsByOwnerLocation(analytics.platforms, filter);
+    const filtered = filterItemsByOwnerLocation(analytics.platforms, filter).filter((platform) =>
+      Boolean(platform.profileUrl?.trim())
+    );
     if (filter.sortOrder === "default") return filtered;
     return sortCampaignContent(
       filtered,

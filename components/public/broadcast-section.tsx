@@ -15,6 +15,7 @@ import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import { Button } from "@/components/ui/button";
 import { Download, FileText } from "lucide-react";
 import { PublicOwnerTag } from "@/components/public/public-owner-tag";
+import { broadcastHasDisplayContent, filterGroupsByDisplayContent } from "@/lib/public-media-section";
 
 const BROADCAST_ITEMS_PER_ROW = 1;
 
@@ -51,7 +52,11 @@ function BroadcastReportCard({ report }: { report: BroadcastReport }) {
 
 export function BroadcastSection({ reports, groups }: BroadcastSectionProps) {
   const { filter } = useOwnerLocationFilter();
-  const filteredGroups = useFilteredOwnerGroups(groups, (report) => report.reportDate);
+  const locationFilteredGroups = useFilteredOwnerGroups(groups, (report) => report.reportDate);
+  const filteredGroups = useMemo(
+    () => filterGroupsByDisplayContent(locationFilteredGroups, broadcastHasDisplayContent),
+    [locationFilteredGroups]
+  );
   const filteredReports = useMemo(
     () => flattenOwnerGroupsInSortOrder(filteredGroups, filter.sortOrder),
     [filteredGroups, filter.sortOrder]

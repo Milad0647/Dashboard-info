@@ -27,6 +27,7 @@ import {
 import type { DataOwnerGroup, MeetingPublicDetail, MeetingPublicPreview } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 import { PublicOwnerTag } from "@/components/public/public-owner-tag";
+import { filterGroupsByDisplayContent, meetingHasDisplayContent } from "@/lib/public-media-section";
 
 const MEETINGS_ITEMS_PER_ROW = 4;
 const MEETINGS_GRID_CLASS = "grid grid-cols-2 md:grid-cols-4 gap-4";
@@ -210,7 +211,11 @@ export function MeetingsSection({
 }: MeetingsSectionProps) {
   const exportMode = useCampaignExportMode();
   const { filter } = useOwnerLocationFilter();
-  const filteredGroups = useFilteredOwnerGroups(groups, (meeting) => meeting.meetingDate);
+  const locationFilteredGroups = useFilteredOwnerGroups(groups, (meeting) => meeting.meetingDate);
+  const filteredGroups = useMemo(
+    () => filterGroupsByDisplayContent(locationFilteredGroups, meetingHasDisplayContent),
+    [locationFilteredGroups]
+  );
   const filteredMeetings = useMemo(
     () => flattenOwnerGroupsInSortOrder(filteredGroups, filter.sortOrder),
     [filteredGroups, filter.sortOrder]

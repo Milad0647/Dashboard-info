@@ -56,14 +56,14 @@ function filterPosterGroups(
       items:
         categoryFilter === "all"
           ? sortByPublicMediaOrder(
-              group.items.filter((poster) => sort === "default" || posterHasDisplayContent(poster)),
+              group.items.filter((poster) => posterHasDisplayContent(poster)),
               sort,
               (poster) => getPosterSortDate(poster, sort)
             )
           : sortByPublicMediaOrder(
               group.items
                 .filter((poster) => poster.categoryId === categoryFilter)
-                .filter((poster) => sort === "default" || posterHasDisplayContent(poster)),
+                .filter((poster) => posterHasDisplayContent(poster)),
               sort,
               (poster) => getPosterSortDate(poster, sort)
             ),

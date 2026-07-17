@@ -16,6 +16,7 @@ import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import { Badge } from "@/components/ui/badge";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { PublicOwnerTag } from "@/components/public/public-owner-tag";
+import { filterGroupsByDisplayContent, socialPostHasDisplayContent } from "@/lib/public-media-section";
 
 const PUBLICATIONS_ITEMS_PER_ROW = 1;
 
@@ -81,7 +82,11 @@ function PublicationList({ items }: { items: SocialMediaPost[] }) {
 
 export function SitePublicationsSection({ publications, groups }: SitePublicationsSectionProps) {
   const { filter } = useOwnerLocationFilter();
-  const filteredGroups = useFilteredOwnerGroups(groups, (item) => item.publishedDate);
+  const locationFilteredGroups = useFilteredOwnerGroups(groups, (item) => item.publishedDate);
+  const filteredGroups = useMemo(
+    () => filterGroupsByDisplayContent(locationFilteredGroups, socialPostHasDisplayContent),
+    [locationFilteredGroups]
+  );
   const filteredPublications = useMemo(
     () => flattenOwnerGroupsInSortOrder(filteredGroups, filter.sortOrder),
     [filteredGroups, filter.sortOrder]

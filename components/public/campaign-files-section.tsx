@@ -13,6 +13,7 @@ import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-cont
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import { PublicOwnerTag } from "@/components/public/public-owner-tag";
+import { fileHasDisplayContent, filterGroupsByDisplayContent } from "@/lib/public-media-section";
 import type { CampaignFile, DataOwnerGroup } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
 
@@ -78,7 +79,11 @@ function fileIcon(mimeType: string) {
 
 export function CampaignFilesSection({ files, groups }: CampaignFilesSectionProps) {
   const { filter } = useOwnerLocationFilter();
-  const filteredGroups = useFilteredOwnerGroups(groups);
+  const locationFilteredGroups = useFilteredOwnerGroups(groups);
+  const filteredGroups = useMemo(
+    () => filterGroupsByDisplayContent(locationFilteredGroups, fileHasDisplayContent),
+    [locationFilteredGroups]
+  );
   const filteredFiles = useMemo(
     () => flattenOwnerGroupsInSortOrder(filteredGroups, filter.sortOrder),
     [filteredGroups, filter.sortOrder]

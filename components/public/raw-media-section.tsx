@@ -14,6 +14,7 @@ import { ShowMoreButton } from "@/components/public/show-more-button";
 import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import { formatStorageBytes } from "@/lib/raw-media-storage";
 import { PublicOwnerTag } from "@/components/public/public-owner-tag";
+import { fileHasDisplayContent, filterGroupsByDisplayContent } from "@/lib/public-media-section";
 import type { DataOwnerGroup, RawMediaStorageSummary, RawMediaUpload } from "@/lib/types";
 import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
@@ -103,7 +104,11 @@ function StorageMeter({ storage }: { storage: RawMediaStorageSummary }) {
 
 export function RawMediaSection({ items, groups, storage }: RawMediaSectionProps) {
   const { filter } = useOwnerLocationFilter();
-  const filteredGroups = useFilteredOwnerGroups(groups);
+  const locationFilteredGroups = useFilteredOwnerGroups(groups);
+  const filteredGroups = useMemo(
+    () => filterGroupsByDisplayContent(locationFilteredGroups, fileHasDisplayContent),
+    [locationFilteredGroups]
+  );
   const filteredItems = useMemo(
     () => flattenOwnerGroupsInSortOrder(filteredGroups, filter.sortOrder),
     [filteredGroups, filter.sortOrder]

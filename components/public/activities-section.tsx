@@ -19,7 +19,11 @@ import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
 import { ActivityMediaDialog } from "@/components/public/activity-media-dialog";
 import { PublicOwnerTag } from "@/components/public/public-owner-tag";
-import { PUBLIC_MEDIA_GRID_CLASS } from "@/lib/public-media-section";
+import {
+  activityHasDisplayContent,
+  filterGroupsByDisplayContent,
+  PUBLIC_MEDIA_GRID_CLASS,
+} from "@/lib/public-media-section";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +33,7 @@ interface ActivitiesSectionProps {
   sectionId?: string;
   title?: string;
   description?: string;
+  hasDisplayContent?: (activity: CampaignActivity) => boolean;
 }
 
 function hasActivityMedia(activity: CampaignActivity): boolean {
@@ -158,9 +163,14 @@ export function ActivitiesSection({
   sectionId = "activities",
   title = "اقدامات",
   description = "فعالیت‌های میدانی و تبلیغاتی: تراکت، غرفه، برنامه فرهنگی و ...",
+  hasDisplayContent = activityHasDisplayContent,
 }: ActivitiesSectionProps) {
   const { filter } = useOwnerLocationFilter();
-  const filteredGroups = useFilteredOwnerGroups(groups, (activity) => activity.activityDate);
+  const locationFilteredGroups = useFilteredOwnerGroups(groups, (activity) => activity.activityDate);
+  const filteredGroups = useMemo(
+    () => filterGroupsByDisplayContent(locationFilteredGroups, hasDisplayContent),
+    [locationFilteredGroups, hasDisplayContent]
+  );
   const filteredActivities = useMemo(
     () => flattenOwnerGroupsInSortOrder(filteredGroups, filter.sortOrder),
     [filteredGroups, filter.sortOrder]

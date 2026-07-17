@@ -22,6 +22,7 @@ import {
 } from "@/components/public/billboard-map-dialog";
 import { BillboardModal } from "@/components/public/billboard-modal";
 import {
+  billboardHasDisplayContent,
   PUBLIC_MEDIA_GRID_CLASS,
   resolvePublicMediaSort,
   sortByPublicMediaOrder,
@@ -84,6 +85,7 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
 
   const filtered = useMemo(() => {
     const items = locationFilteredBillboards.filter((billboard) => {
+      if (!billboardHasDisplayContent(billboard)) return false;
       if (cityFilter !== "all" && billboard.city !== cityFilter) return false;
       if (!matchesBillboardCategoryFilter(billboard, categoryFilter)) return false;
       if (!matchesBillboardStatusFilter(billboard, statusFilter)) return false;

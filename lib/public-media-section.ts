@@ -31,10 +31,22 @@ export function videoHasDisplayContent(video: { versions: { videoUrl?: string | 
   return video.versions.some((version) => Boolean(version.videoUrl?.trim()));
 }
 
-export function billboardHasDisplayContent(billboard: { thumbnailUrl?: string | null }): boolean {
-  const url = billboard.thumbnailUrl?.trim() ?? "";
-  if (!url) return false;
-  return !url.includes("placeholder");
+export function billboardHasDisplayContent(billboard: {
+  thumbnailUrl?: string | null;
+  imageUrl?: string | null;
+  location?: string | null;
+  description?: string | null;
+}): boolean {
+  const hasAddress = Boolean(billboard.location?.trim() || billboard.description?.trim());
+  const imageUrl = billboard.imageUrl?.trim() ?? "";
+  const thumbnailUrl = billboard.thumbnailUrl?.trim() ?? "";
+  const candidate = imageUrl || thumbnailUrl;
+  const hasImage =
+    Boolean(candidate) &&
+    !candidate.includes("placeholder") &&
+    candidate !== "/images/billboard-placeholder.svg";
+
+  return hasAddress || hasImage;
 }
 
 export function activityHasDisplayContent(activity: {
@@ -44,6 +56,47 @@ export function activityHasDisplayContent(activity: {
 }): boolean {
   if (activity.mediaItems?.some((item) => item.url.trim())) return true;
   return Boolean(activity.imageUrl?.trim() || activity.videoUrl?.trim());
+}
+
+/** Press / newspaper cards require an image. */
+export function pressPublicationHasDisplayContent(activity: {
+  imageUrl?: string | null;
+  mediaItems?: { type?: string; url: string }[];
+}): boolean {
+  if (activity.imageUrl?.trim()) return true;
+  return Boolean(
+    activity.mediaItems?.some((item) => item.type === "image" && item.url.trim())
+  );
+}
+
+export function socialPostHasDisplayContent(post: { link?: string | null }): boolean {
+  return Boolean(post.link?.trim());
+}
+
+export function meetingHasDisplayContent(meeting: { imageUrl?: string | null }): boolean {
+  return Boolean(meeting.imageUrl?.trim());
+}
+
+export function fileHasDisplayContent(file: { fileUrl?: string | null }): boolean {
+  return Boolean(file.fileUrl?.trim());
+}
+
+export function broadcastHasDisplayContent(report: { pdfUrl?: string | null }): boolean {
+  return Boolean(report.pdfUrl?.trim());
+}
+
+import type { DataOwnerGroup } from "@/lib/types";
+
+export function filterGroupsByDisplayContent<T>(
+  groups: DataOwnerGroup<T>[],
+  hasContent: (item: T) => boolean
+): DataOwnerGroup<T>[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(hasContent),
+    }))
+    .filter((group) => group.items.length > 0);
 }
 
 export type PublicMediaSort = "default" | "title" | "newest" | "oldest" | "top_scored";
