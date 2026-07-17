@@ -26,13 +26,7 @@ import {
   type CategoryCompletenessSummary,
   type EditSuggestionContentType,
 } from "@/lib/edit-suggestions";
-import { formatPersianNumber, adminHref, isPostgresConfigured, isSupabaseConfigured } from "@/lib/utils";
-
-function getDatabaseLabel() {
-  if (isPostgresConfigured()) return "PostgreSQL";
-  if (isSupabaseConfigured()) return "Supabase";
-  return "Local";
-}
+import { formatPersianNumber, adminHref } from "@/lib/utils";
 
 const PERMISSION_TO_CONTENT_TYPE: Partial<
   Record<ContributorPermissionKey, EditSuggestionContentType>
@@ -55,14 +49,38 @@ interface AdminDashboardProps {
 
 export default async function AdminDashboardPage({ searchParams }: AdminDashboardProps) {
   const params = await searchParams;
-  const { campaignId } = await resolveAdminCampaignId(params.campaign);
-
-  if (!campaignId) redirect("/admin/campaigns");
-
-  const data = await getAdminData(campaignId);
-  if (!data.settings) redirect("/admin/campaigns");
   const session = await getAuthSession();
   const canManageAll = Boolean(session && isFullAdmin(session));
+  const { campaignId } = await resolveAdminCampaignId(params.campaign);
+
+  if (!campaignId) {
+    if (canManageAll) redirect("/admin/campaigns");
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">داشبورد</h1>
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            کمپینی برای حساب شما تعریف نشده است. با مدیر تماس بگیرید.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const data = await getAdminData(campaignId);
+  if (!data.settings) {
+    if (canManageAll) redirect("/admin/campaigns");
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">داشبورد</h1>
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            کمپین انتخاب‌شده در دسترس نیست. با مدیر تماس بگیرید.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   const ownerUserId = session ? getOwnerFilter(session) : undefined;
 
   const features = data.settings.features;
@@ -143,23 +161,22 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
             {canManageAll ? data.settings.title : `${data.settings.title} — آمار آپلودهای شما`}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link href="/admin/campaigns">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <FolderKanban className="h-3.5 w-3.5" />
-              مدیریت کمپین‌ها
-            </Button>
-          </Link>
-          <Badge variant="success">{getDatabaseLabel()}</Badge>
-          {canManageAll && (
+        {canManageAll && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link href="/admin/campaigns">
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <FolderKanban className="h-3.5 w-3.5" />
+                مدیریت کمپین‌ها
+              </Button>
+            </Link>
             <Link href={adminHref("/admin/settings", campaignId)}>
               <Badge variant="outline" className="gap-1 cursor-pointer">
                 <Settings className="h-3 w-3" />
                 تنظیمات
               </Badge>
             </Link>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <CampaignTools isFullAdmin={canManageAll} />

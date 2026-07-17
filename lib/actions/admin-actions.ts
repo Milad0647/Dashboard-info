@@ -111,6 +111,10 @@ async function assertContributorOwnsBillboard(
 }
 
 export async function saveCampaignAction(data: Partial<CampaignSettings> & { id?: string }) {
+  const session = await getAuthSession();
+  if (!session || !isFullAdmin(session)) {
+    return { success: false, error: "Unauthorized" };
+  }
   const validationError = validateTitlePayload(data);
   if (validationError) return validationError;
   const result = await saveCampaign(data);
@@ -125,6 +129,10 @@ export async function saveCampaignAction(data: Partial<CampaignSettings> & { id?
 }
 
 export async function deleteCampaignAction(id: string) {
+  const session = await getAuthSession();
+  if (!session || !isFullAdmin(session)) {
+    return { success: false, error: "Unauthorized" };
+  }
   try {
     const result = await deleteCampaign(id);
     await auditContentDelete({ entityType: "campaign", entityId: id });
