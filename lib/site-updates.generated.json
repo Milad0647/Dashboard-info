@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "8508cf789a67b82d731af093511e8e75dbe2ac7a",
+      "committedAt": "2026-07-17T19:33:23+03:30",
+      "title": "رفع قفل شدن بخش‌های داشبورد برای مدیر سیستم بعد از ورود",
+      "subject": "Prefer system admin credentials over same-email DB user on login"
+    },
+    {
       "hash": "d3910addff9dba90fc3c40e20190598ee032def8",
       "committedAt": "2026-07-17T19:24:19+03:30",
       "title": "رفع مشکل باز نشدن بخش‌های داشبورد و برگشت مکرر به صفحه اصلی",

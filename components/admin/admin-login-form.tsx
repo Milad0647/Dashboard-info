@@ -8,13 +8,17 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { loginAdminAction } from "@/lib/actions/auth-actions";
 import {
-  formatPersianClock,
+  formatLoginDisplayClock,
   formatPersianLoginDate,
   getTimeOfDayConfig,
   type TimeOfDayConfig,
 } from "@/lib/login-time-of-day";
 import { isSupabaseConfigured } from "@/lib/utils";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+
+type AdminLoginFormProps = {
+  clockFontClassName?: string;
+};
 
 type CardTiltState = {
   rotateX: number;
@@ -49,7 +53,7 @@ function isNextRedirectError(error: unknown): boolean {
   );
 }
 
-export function AdminLoginForm() {
+export function AdminLoginForm({ clockFontClassName }: AdminLoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -128,7 +132,7 @@ export function AdminLoginForm() {
 
   return (
     <main
-      className="dark relative isolate flex min-h-[100dvh] flex-col items-center justify-center gap-8 overflow-hidden bg-slate-950 px-4 py-8 text-white md:gap-10"
+      className={`dark relative isolate flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 text-white ${clockFontClassName ?? ""}`}
       dir="rtl"
       onPointerMove={handlePagePointerMove}
     >
@@ -149,19 +153,28 @@ export function AdminLoginForm() {
         aria-hidden
       />
 
-      <div className="relative z-10 flex min-h-[88px] flex-col items-center text-center [text-shadow:0_2px_18px_rgba(0,0,0,0.75)]">
-        {now && timeOfDay ? (
-          <>
-            <p className="text-[11px] font-medium tracking-[0.18em] text-white/70 md:text-xs">
-              {timeOfDay.greeting} · {timeOfDay.label}
-            </p>
-            <p className="mt-2 font-mono text-4xl font-semibold tabular-nums tracking-tight text-white md:text-5xl">
-              {formatPersianClock(now)}
-            </p>
-            <p className="mt-2 text-sm text-white/80 md:text-base">{formatPersianLoginDate(now)}</p>
-          </>
-        ) : null}
-      </div>
+      {now && timeOfDay ? (
+        <div
+          className="pointer-events-none absolute start-4 top-4 z-10 max-w-[11.5rem] text-start sm:start-6 sm:top-6 sm:max-w-none"
+          aria-live="polite"
+        >
+          <p className="text-[11px] font-medium text-white/65 [text-shadow:0_1px_10px_rgba(0,0,0,0.7)]">
+            {timeOfDay.greeting}
+          </p>
+          <p
+            className="mt-0.5 text-[1.65rem] font-semibold leading-none tracking-[0.12em] text-white tabular-nums sm:text-[1.85rem]"
+            style={{
+              fontFamily: "var(--font-login-clock), ui-monospace, monospace",
+              textShadow: "0 0 24px rgba(255,255,255,0.22), 0 2px 14px rgba(0,0,0,0.55)",
+            }}
+          >
+            {formatLoginDisplayClock(now)}
+          </p>
+          <p className="mt-1.5 text-[10px] leading-snug text-white/45 [text-shadow:0_1px_8px_rgba(0,0,0,0.65)] sm:text-[11px]">
+            {formatPersianLoginDate(now)}
+          </p>
+        </div>
+      ) : null}
 
       <div className="relative z-20 w-full max-w-[460px]" style={{ perspective: "1100px" }}>
         <section

@@ -54,6 +54,16 @@ export function formatPersianClock(date: Date): string {
   }).format(date);
 }
 
+/** Latin digits for display fonts that lack Persian glyphs. */
+export function formatLoginDisplayClock(date: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
 export function formatPersianLoginDate(date: Date): string {
   return new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
     weekday: "long",
