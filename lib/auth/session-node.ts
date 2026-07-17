@@ -17,30 +17,48 @@ function verifySignature(payload: string, signature: string): boolean {
 
 function parsePayload(payload: string): AuthSession | null {
   const parts = payload.split(":");
-  if (parts[0] === "admin" && parts.length === 2) {
+  if (parts[0] === "admin" && parts.length === 3) {
     const expiresAt = Number(parts[1]);
+    const sessionVersion = Number(parts[2]);
     if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return null;
-    return { type: "env_admin", userId: null, role: "admin" };
+    if (!Number.isFinite(sessionVersion) || sessionVersion < 0) return null;
+    return {
+      type: "env_admin",
+      userId: null,
+      role: "admin",
+      sessionVersion: Math.floor(sessionVersion),
+    };
   }
 
-  if (parts[0] === "user" && parts.length === 4) {
-    const [, userId, role, expiresAtRaw] = parts;
+  if (parts[0] === "user" && parts.length === 5) {
+    const [, userId, role, expiresAtRaw, versionRaw] = parts;
     const expiresAt = Number(expiresAtRaw);
+    const sessionVersion = Number(versionRaw);
     if (!userId || (role !== "admin" && role !== "contributor" && role !== "client")) return null;
     if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return null;
-    return { type: "db_user", userId, role: role as SessionRole };
+    if (!Number.isFinite(sessionVersion) || sessionVersion < 0) return null;
+    return {
+      type: "db_user",
+      userId,
+      role: role as SessionRole,
+      sessionVersion: Math.floor(sessionVersion),
+    };
   }
 
   return null;
 }
 
-export function createAdminSessionTokenSync(): string {
-  const payload = buildEnvAdminPayload(Date.now() + getSessionTtlMs());
+export function createAdminSessionTokenSync(sessionVersion: number): string {
+  const payload = buildEnvAdminPayload(sessionVersion, Date.now() + getSessionTtlMs());
   return `${payload}.${signPayloadSync(payload)}`;
 }
 
-export function createUserSessionTokenSync(userId: string, role: SessionRole): string {
-  const payload = buildUserSessionPayload(userId, role, Date.now() + getSessionTtlMs());
+export function createUserSessionTokenSync(
+  userId: string,
+  role: SessionRole,
+  sessionVersion: number
+): string {
+  const payload = buildUserSessionPayload(userId, role, sessionVersion, Date.now() + getSessionTtlMs());
   return `${payload}.${signPayloadSync(payload)}`;
 }
 

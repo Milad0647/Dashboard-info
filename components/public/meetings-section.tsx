@@ -22,8 +22,7 @@ import {
   shouldRenderChronologically,
 } from "@/lib/owner-groups";
 import {
-  loadUnlockedMeetings,
-  saveUnlockedMeetings,
+  clearUnlockedMeetings,
 } from "@/lib/client/meetings-unlock-storage";
 import type { DataOwnerGroup, MeetingPublicDetail, MeetingPublicPreview } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
@@ -127,7 +126,8 @@ function MeetingsUnlockBanner({
       }
 
       const data = (await response.json()) as { meetings: MeetingPublicDetail[] };
-      saveUnlockedMeetings(campaignSlug, data.meetings);
+      // Keep details in memory only for this page visit — do not persist to sessionStorage.
+      clearUnlockedMeetings(campaignSlug);
       onUnlocked(Object.fromEntries(data.meetings.map((meeting) => [meeting.id, meeting])));
       toast.success("همه جلسات باز شدند");
     });
@@ -249,11 +249,11 @@ export function MeetingsSection({
       return;
     }
 
-    const cached = loadUnlockedMeetings(campaignSlug);
-    if (cached) {
-      applyUnlock(cached);
-    }
-  }, [campaignSlug, meetingsHasPassword, exportMode, applyUnlock]);
+    // Do not restore unlocked meeting payloads from browser storage.
+    clearUnlockedMeetings(campaignSlug);
+    setIsUnlocked(false);
+    setDetailCache({});
+  }, [campaignSlug, meetingsHasPassword, exportMode]);
 
   if (!sectionVisible) return null;
 

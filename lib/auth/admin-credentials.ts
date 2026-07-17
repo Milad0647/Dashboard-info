@@ -1,9 +1,18 @@
-import { getSql } from "@/lib/db/client";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { normalizeStoredUserEmail } from "@/lib/auth/user-login";
+import { getSql } from "@/lib/db/client";
 import { isPostgresConfigured } from "@/lib/utils";
 
 const ADMIN_CREDENTIALS_KEY = "admin_credentials";
+
+const WEAK_ENV_ADMIN_PASSWORDS = new Set([
+  "",
+  "password",
+  "admin",
+  "1234",
+  "123456",
+  "admin123",
+]);
 
 export type StoredAdminCredentials = {
   email: string;
@@ -16,11 +25,22 @@ export type EffectiveAdminCredentials = {
 };
 
 function getEnvAdminEmail() {
-  return (process.env.ADMIN_EMAIL ?? "admin@example.com").trim().toLowerCase();
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  if (email) return email;
+  if (process.env.NODE_ENV === "production") return "";
+  return "admin@example.com";
 }
 
 function getEnvAdminPassword() {
-  return process.env.ADMIN_PASSWORD ?? "password";
+  const password = process.env.ADMIN_PASSWORD ?? "";
+  if (process.env.NODE_ENV === "production") {
+    return password;
+  }
+  return password || "password";
+}
+
+function isWeakEnvAdminPassword(password: string): boolean {
+  return WEAK_ENV_ADMIN_PASSWORDS.has(password.trim().toLowerCase()) || password.trim().length < 8;
 }
 
 function normalizeStoredCredentials(value: unknown): StoredAdminCredentials | null {
@@ -72,6 +92,15 @@ export async function verifyEffectiveAdminCredentials(
 
   const envEmail = getEnvAdminEmail();
   const envPassword = getEnvAdminPassword();
+  if (!envEmail || !envPassword) return false;
+
+  if (process.env.NODE_ENV === "production" && isWeakEnvAdminPassword(envPassword)) {
+    console.error(
+      "[auth] ADMIN_PASSWORD is missing or too weak for production. Env admin login is disabled."
+    );
+    return false;
+  }
+
   return (
     (loginEmail === envEmail || normalizeStoredUserEmail(loginEmail) === envEmail) &&
     password === envPassword
@@ -95,15 +124,19 @@ export async function pgSaveAdminCredentials(data: {
   let passwordHash = existing?.passwordHash ?? "";
 
   if (data.password?.trim()) {
-    if (data.password.trim().length < 4) {
-      return { success: false, error: "رمز عبور باید حداقل ۴ کاراکتر باشد" };
+    // System admin credential only — does not change regular user password policy.
+    if (data.password.trim().length < 8) {
+      return { success: false, error: "رمز مدیر باید حداقل ۸ کاراکتر باشد" };
     }
     passwordHash = await hashPassword(data.password.trim());
   }
 
   if (!passwordHash) {
-    // First-time save from UI without password: seed from current env password.
-    passwordHash = await hashPassword(getEnvAdminPassword());
+    const envPassword = getEnvAdminPassword();
+    if (!envPassword || isWeakEnvAdminPassword(envPassword)) {
+      return { success: false, error: "رمز عبور مدیر الزامی است" };
+    }
+    passwordHash = await hashPassword(envPassword);
   }
 
   const sql = getSql();

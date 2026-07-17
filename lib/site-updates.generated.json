@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "9e34b87844012d83d479a805dd7a87af6d228374",
+      "committedAt": "2026-07-17T18:14:41+03:30",
+      "title": "اصلاح نمایش آمار امروز در کارت‌های خلاصه کمپین",
+      "subject": "Fix misleading campaign KPI today badges"
+    },
+    {
       "hash": "3af0cdb227872718318210d8850cfba34773d0d1",
       "committedAt": "2026-07-17T18:11:01+03:30",
       "title": "محدود کردن دسترسی عمومی به فایل‌های آپلود شده",

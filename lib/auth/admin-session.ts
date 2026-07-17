@@ -10,9 +10,14 @@ export function getLegacyMockCookieName() {
 }
 
 export function verifyAdminCredentials(email: string, password: string): boolean {
-  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@example.com";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "password";
-  return email.trim().toLowerCase() === adminEmail.trim().toLowerCase() && password === adminPassword;
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "";
+  if (!adminEmail || !adminPassword) return false;
+  if (process.env.NODE_ENV === "production") {
+    const weak = new Set(["", "password", "admin", "1234", "123456", "admin123"]);
+    if (weak.has(adminPassword.toLowerCase()) || adminPassword.length < 8) return false;
+  }
+  return email.trim().toLowerCase() === adminEmail && password === adminPassword;
 }
 
 /** Prefer database override, then fall back to ADMIN_EMAIL / ADMIN_PASSWORD. */

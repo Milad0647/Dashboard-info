@@ -1,11 +1,7 @@
 import { mkdir, writeFile } from "fs/promises";
 import { randomUUID } from "crypto";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import {
-  getAdminSessionCookieName,
-  verifyAdminSessionToken,
-} from "@/lib/auth/admin-session";
+import { getAuthSession } from "@/lib/auth/get-session";
 import { getUploadPublicUrl, getUploadsDir, withFileAccessToken } from "@/lib/uploads";
 
 export const runtime = "nodejs";
@@ -191,11 +187,8 @@ function isAllowedRawVideo(file: File): boolean {
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies();
-  const session = cookieStore.get(getAdminSessionCookieName())?.value;
-  const isAuthorized = await verifyAdminSessionToken(session);
-
-  if (!isAuthorized) {
+  const session = await getAuthSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

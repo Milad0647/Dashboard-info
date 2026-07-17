@@ -1218,6 +1218,39 @@ export async function pgDeleteMeeting(id: string) {
   return { success: true };
 }
 
+export async function pgGetMeetingById(id: string) {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT id, campaign_id, owner_user_id
+    FROM campaign_meetings
+    WHERE id = ${id}
+    LIMIT 1
+  `;
+  if (!rows[0]) return null;
+  return {
+    id: String(rows[0].id),
+    campaignId: String(rows[0].campaign_id),
+    ownerUserId: rows[0].owner_user_id ? String(rows[0].owner_user_id) : null,
+  };
+}
+
+export async function pgGetMeetingTaskOwner(taskId: string) {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT m.id, m.campaign_id, m.owner_user_id
+    FROM meeting_tasks t
+    INNER JOIN campaign_meetings m ON m.id = t.meeting_id
+    WHERE t.id = ${taskId}
+    LIMIT 1
+  `;
+  if (!rows[0]) return null;
+  return {
+    meetingId: String(rows[0].id),
+    campaignId: String(rows[0].campaign_id),
+    ownerUserId: rows[0].owner_user_id ? String(rows[0].owner_user_id) : null,
+  };
+}
+
 export async function pgToggleMeetingTask(taskId: string, completed: boolean) {
   const sql = getSql();
   const now = new Date().toISOString();

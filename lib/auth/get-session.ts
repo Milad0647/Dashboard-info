@@ -2,12 +2,19 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { getAdminSessionCookieName } from "@/lib/auth/admin-session";
 import { parseSessionTokenSync } from "@/lib/auth/session-node";
+import { isSessionVersionCurrent } from "@/lib/auth/session-versions";
 import type { AuthSession } from "@/lib/types";
 
 export const getAuthSession = cache(async (): Promise<AuthSession | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(getAdminSessionCookieName())?.value;
-  return parseSessionTokenSync(token);
+  const session = parseSessionTokenSync(token);
+  if (!session) return null;
+
+  const current = await isSessionVersionCurrent(session.userId, session.sessionVersion);
+  if (!current) return null;
+
+  return session;
 });
 
 export async function requireAuthSession(): Promise<AuthSession> {

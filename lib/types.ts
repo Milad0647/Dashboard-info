@@ -352,6 +352,8 @@ export interface AuthSession {
   role: SessionRole;
   email?: string;
   name?: string;
+  /** Bumped on logout so previous cookies become invalid. */
+  sessionVersion: number;
 }
 
 export interface SocialPlatformStat extends Ownable {

@@ -414,6 +414,16 @@ export async function deleteMeetingAction(id: string) {
   const session = await getAuthSession();
   if (!session) return { success: false, error: "Unauthorized" };
   if (!isPostgresConfigured()) return { success: false, error: "Database required" };
+
+  const meeting = await pgExt.pgGetMeetingById(id);
+  if (!meeting) return { success: false, error: "جلسه یافت نشد" };
+
+  if (!isFullAdmin(session)) {
+    if (!session.userId || meeting.ownerUserId !== session.userId) {
+      return { success: false, error: "دسترسی ندارید" };
+    }
+  }
+
   await pgExt.pgDeleteMeeting(id);
   await auditContentDelete({ entityType: "meeting", entityId: id });
   await revalidateExtended();
@@ -424,6 +434,16 @@ export async function toggleMeetingTaskAction(taskId: string, completed: boolean
   const session = await getAuthSession();
   if (!session) return { success: false, error: "Unauthorized" };
   if (!isPostgresConfigured()) return { success: false, error: "Database required" };
+
+  const meeting = await pgExt.pgGetMeetingTaskOwner(taskId);
+  if (!meeting) return { success: false, error: "وظیفه یافت نشد" };
+
+  if (!isFullAdmin(session)) {
+    if (meeting.ownerUserId !== session.userId) {
+      return { success: false, error: "دسترسی ندارید" };
+    }
+  }
+
   await pgExt.pgToggleMeetingTask(taskId, completed);
   await revalidateExtended();
   return { success: true };

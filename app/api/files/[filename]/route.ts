@@ -1,10 +1,8 @@
 import { open, stat } from "fs/promises";
-import { cookies } from "next/headers";
 import path from "path";
 import { NextResponse } from "next/server";
-import { getAdminSessionCookieName } from "@/lib/auth/admin-session";
+import { getAuthSession } from "@/lib/auth/get-session";
 import { verifyFileAccessToken } from "@/lib/auth/file-access-token";
-import { parseSessionTokenSync } from "@/lib/auth/session-node";
 import { resolveUploadFilePath } from "@/lib/uploads";
 
 const MIME_TYPES: Record<string, string> = {
@@ -36,8 +34,7 @@ function sanitizeFilename(raw: string): string | null {
 }
 
 async function canAccessFile(request: Request, filename: string): Promise<boolean> {
-  const cookieStore = await cookies();
-  const session = parseSessionTokenSync(cookieStore.get(getAdminSessionCookieName())?.value);
+  const session = await getAuthSession();
   if (session) return true;
 
   const { searchParams } = new URL(request.url);
