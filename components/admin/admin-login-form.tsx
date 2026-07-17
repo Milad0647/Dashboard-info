@@ -58,21 +58,16 @@ export function AdminLoginForm() {
     return () => mediaQuery.removeEventListener("change", syncMotionPreference);
   }, []);
 
-  const handleCardPointerMove = (event: PointerEvent<HTMLElement>) => {
+  const handlePagePointerMove = (event: PointerEvent<HTMLElement>) => {
     if (!motionEnabled || event.pointerType !== "mouse") return;
 
-    const rect = event.currentTarget.getBoundingClientRect();
-    const relativeX = (event.clientX - rect.left) / rect.width;
-    const relativeY = (event.clientY - rect.top) / rect.height;
+    const relativeX = event.clientX / window.innerWidth;
+    const relativeY = event.clientY / window.innerHeight;
 
     setTilt({
       rotateY: getBoundedMotion((relativeX - 0.5) * MAX_CARD_ROTATION * 2, MAX_CARD_ROTATION),
       rotateX: getBoundedMotion(-(relativeY - 0.5) * MAX_CARD_ROTATION * 2, MAX_CARD_ROTATION),
     });
-  };
-
-  const resetCardTilt = () => {
-    setTilt(INITIAL_TILT);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,6 +102,7 @@ export function AdminLoginForm() {
     <main
       className="dark relative isolate flex min-h-[100dvh] items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 text-white"
       dir="rtl"
+      onPointerMove={handlePagePointerMove}
     >
       <div
         className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-center"
@@ -115,14 +111,12 @@ export function AdminLoginForm() {
 
       <div className="w-full max-w-[460px]" style={{ perspective: "1100px" }}>
         <section
-          className="relative overflow-hidden rounded-[32px] border border-white/35 bg-white/[0.08] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-[48px] backdrop-saturate-150 transition-transform duration-150 ease-out will-change-transform md:p-7"
+          className="relative overflow-hidden rounded-[32px] border border-white/35 bg-white/[0.08] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-[19px] backdrop-saturate-150 transition-transform duration-150 ease-out will-change-transform md:p-7"
           style={{
             transform: motionEnabled
               ? `rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg)`
               : undefined,
           }}
-          onPointerMove={handleCardPointerMove}
-          onPointerLeave={resetCardTilt}
         >
           <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
 
@@ -162,7 +156,7 @@ export function AdminLoginForm() {
                   required
                   dir="ltr"
                   autoComplete="username"
-                  className="h-[52px] w-full rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-left text-base text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] outline-none backdrop-blur-md transition placeholder:text-white/45 focus:border-white/50 focus:bg-white/14 focus:ring-4 focus:ring-[#0A84FF]/20"
+                  className="h-[52px] w-full rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-left text-base text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] outline-none backdrop-blur-sm transition placeholder:text-white/45 focus:border-white/50 focus:bg-white/14 focus:ring-4 focus:ring-[#0A84FF]/20"
                 />
               </div>
 
@@ -182,12 +176,12 @@ export function AdminLoginForm() {
                   minLength={4}
                   placeholder="رمز عبور خود را وارد کنید"
                   autoComplete="current-password"
-                  className="h-[52px] w-full rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-right text-base text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] outline-none backdrop-blur-md transition placeholder:text-white/45 focus:border-white/50 focus:bg-white/14 focus:ring-4 focus:ring-[#0A84FF]/20"
+                  className="h-[52px] w-full rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-right text-base text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] outline-none backdrop-blur-sm transition placeholder:text-white/45 focus:border-white/50 focus:bg-white/14 focus:ring-4 focus:ring-[#0A84FF]/20"
                 />
               </div>
 
               {errorMessage ? (
-                <p className="rounded-2xl border border-red-300/25 bg-red-500/18 px-4 py-3 text-sm text-red-50 shadow-[0_10px_30px_rgba(127,29,29,0.18)] backdrop-blur-xl [text-shadow:0_2px_10px_rgba(0,0,0,0.62)]">
+                <p className="rounded-2xl border border-red-300/25 bg-red-500/18 px-4 py-3 text-sm text-red-50 shadow-[0_10px_30px_rgba(127,29,29,0.18)] backdrop-blur-sm [text-shadow:0_2px_10px_rgba(0,0,0,0.62)]">
                   {errorMessage}
                 </p>
               ) : null}
