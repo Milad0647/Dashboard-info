@@ -21,6 +21,8 @@ import {
   SectionBulkEditBar,
   useSectionBulkEdit,
 } from "@/components/admin/section-bulk-edit";
+import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
+import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import { MediaUpload } from "@/components/ui/media-upload";
 import {
   Select,
@@ -47,6 +50,7 @@ import {
   saveRawMediaUploadAction,
 } from "@/lib/actions/admin-actions";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
+import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { CONTENT_TITLE_MAX_LENGTH } from "@/lib/content-constraints";
 import type { ContentTopic } from "@/lib/content-topics";
 import {
@@ -105,6 +109,17 @@ export function RawMediaAdmin({
     () => items.filter((item) => matchesAdminContentFilter(item, contentFilter)),
     [items, contentFilter]
   );
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
+    filteredItems.length,
+    paginationResetKey
+  );
+  const visibleItems = useMemo(
+    () => filteredItems.slice(0, visibleCount),
+    [filteredItems, visibleCount]
+  );
+  const visibleIds = useMemo(() => visibleItems.map((item) => item.id), [visibleItems]);
+  const bulk = useSectionBulkEdit(visibleIds);
 
   const handleDownloadAll = async () => {
     if (isExporting || items.length === 0) return;
@@ -136,8 +151,6 @@ export function RawMediaAdmin({
       setIsExporting(false);
     }
   };
-  const filteredIds = useMemo(() => filteredItems.map((item) => item.id), [filteredItems]);
-  const bulk = useSectionBulkEdit(filteredIds);
 
   const resetForm = () => {
     setEditingId(null);
@@ -337,7 +350,7 @@ export function RawMediaAdmin({
         bulkMode={bulk.bulkMode}
         onBulkModeChange={bulk.setBulkMode}
         selectedIds={[...bulk.selectedIds]}
-        visibleCount={filteredItems.length}
+        visibleCount={visibleItems.length}
         allVisibleSelected={bulk.allVisibleSelected}
         onToggleAllVisible={bulk.toggleAllVisible}
         onClearSelection={bulk.clearSelection}
@@ -353,7 +366,7 @@ export function RawMediaAdmin({
         </div>
       ) : viewMode === "list" ? (
         <div className="overflow-hidden rounded-xl border">
-          {filteredItems.map((item) => (
+          {visibleItems.map((item) => (
             <div
               key={item.id}
               className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 last:border-b-0"
@@ -392,7 +405,7 @@ export function RawMediaAdmin({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {filteredItems.map((item) => (
+          {visibleItems.map((item) => (
             <BulkItemShell
               key={item.id}
               enabled={bulk.bulkMode}
@@ -401,7 +414,25 @@ export function RawMediaAdmin({
             >
               <Card>
                 <CardContent className="flex items-start justify-between gap-3 p-4">
-                  <div className="min-w-0 space-y-2">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
+                      {item.mediaKind === "video" ? (
+                        <VideoThumbnail
+                          videoUrl={item.fileUrl}
+                          alt={item.title}
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                        />
+                      ) : (
+                        <MediaThumbnail
+                          src={item.fileUrl}
+                          alt={item.title}
+                          kind="image"
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          objectFit="cover"
+                        />
+                      )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-2">
                       {item.mediaKind === "video" ? (
                         <Film className="h-4 w-4 text-primary" />
@@ -452,6 +483,13 @@ export function RawMediaAdmin({
           ))}
         </div>
       )}
+
+      <AdminInfiniteScrollSentinel
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={loadMore}
+        remaining={filteredItems.length - visibleCount}
+      />
 
       <Dialog
         open={dialogOpen}

@@ -37,6 +37,8 @@ import { deleteCampaignFileAction, saveCampaignFileAction } from "@/lib/actions/
 import { CONTENT_TITLE_MAX_LENGTH } from "@/lib/content-constraints";
 import type { ContentTopic } from "@/lib/content-topics";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
+import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
+import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import type { AdminUser, CampaignFile } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
 
@@ -93,8 +95,17 @@ export function FilesAdmin({
     () => files.filter((item) => matchesAdminContentFilter(item, contentFilter)),
     [files, contentFilter]
   );
-  const filteredIds = useMemo(() => filteredFiles.map((item) => item.id), [filteredFiles]);
-  const bulk = useSectionBulkEdit(filteredIds);
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
+    filteredFiles.length,
+    paginationResetKey
+  );
+  const visibleFiles = useMemo(
+    () => filteredFiles.slice(0, visibleCount),
+    [filteredFiles, visibleCount]
+  );
+  const visibleIds = useMemo(() => visibleFiles.map((item) => item.id), [visibleFiles]);
+  const bulk = useSectionBulkEdit(visibleIds);
 
   const resetForm = () => {
     setEditingId(null);
@@ -242,7 +253,7 @@ export function FilesAdmin({
         bulkMode={bulk.bulkMode}
         onBulkModeChange={bulk.setBulkMode}
         selectedIds={[...bulk.selectedIds]}
-        visibleCount={filteredFiles.length}
+        visibleCount={visibleFiles.length}
         allVisibleSelected={bulk.allVisibleSelected}
         onToggleAllVisible={bulk.toggleAllVisible}
         onClearSelection={bulk.clearSelection}
@@ -258,7 +269,7 @@ export function FilesAdmin({
         </div>
       ) : viewMode === "list" ? (
         <div className="overflow-hidden rounded-xl border">
-          {filteredFiles.map((file) => (
+          {visibleFiles.map((file) => (
             <div
               key={file.id}
               className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 last:border-b-0"
@@ -295,7 +306,7 @@ export function FilesAdmin({
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredFiles.map((file) => {
+          {visibleFiles.map((file) => {
             const Icon = fileIcon(file.mimeType);
             return (
               <BulkItemShell
@@ -358,6 +369,13 @@ export function FilesAdmin({
           })}
         </div>
       )}
+
+      <AdminInfiniteScrollSentinel
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={loadMore}
+        remaining={filteredFiles.length - visibleCount}
+      />
 
       <Dialog
         open={dialogOpen}

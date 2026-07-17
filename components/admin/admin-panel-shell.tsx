@@ -10,6 +10,7 @@ import {
   AdminCampaignProviderStatic,
 } from "@/components/admin/admin-campaign-provider";
 import { AuditTracker } from "@/components/admin/audit-tracker";
+import { ScrollToTopButton } from "@/components/ui/scroll-to-top-button";
 import type { CampaignSettings } from "@/lib/types";
 
 function NavigationPendingOverlay() {
@@ -82,6 +83,7 @@ function PanelChrome({
       <main className="min-h-screen lg:mr-64">
         <div className="container mx-auto px-4 py-8 pt-16 lg:pt-8">{children}</div>
       </main>
+      <ScrollToTopButton />
     </div>
   );
 }

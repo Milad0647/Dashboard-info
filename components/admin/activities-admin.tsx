@@ -42,6 +42,8 @@ import { fieldActivityTypeOptions, getActivityTypeLabel } from "@/lib/activity-t
 import { deleteCampaignActivityAction, saveCampaignActivityAction } from "@/lib/actions/extended-actions";
 import { normalizePlanLabels, type ContentTopic } from "@/lib/content-topics";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
+import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
+import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { todayISO } from "@/lib/jalali";
 import { isPressPublication } from "@/lib/press-publications";
 import type { ActivityMediaItem, ActivityType, AdminUser, CampaignActivity } from "@/lib/types";
@@ -114,8 +116,17 @@ export function ActivitiesAdmin({
     () => rows.filter((item) => matchesAdminContentFilter(item, contentFilter)),
     [rows, contentFilter]
   );
-  const filteredIds = useMemo(() => filteredRows.map((item) => item.id), [filteredRows]);
-  const bulk = useSectionBulkEdit(filteredIds);
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
+    filteredRows.length,
+    paginationResetKey
+  );
+  const visibleRows = useMemo(
+    () => filteredRows.slice(0, visibleCount),
+    [filteredRows, visibleCount]
+  );
+  const visibleIds = useMemo(() => visibleRows.map((item) => item.id), [visibleRows]);
+  const bulk = useSectionBulkEdit(visibleIds);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -264,7 +275,7 @@ export function ActivitiesAdmin({
         bulkMode={bulk.bulkMode}
         onBulkModeChange={bulk.setBulkMode}
         selectedIds={[...bulk.selectedIds]}
-        visibleCount={filteredRows.length}
+        visibleCount={visibleRows.length}
         allVisibleSelected={bulk.allVisibleSelected}
         onToggleAllVisible={bulk.toggleAllVisible}
         onClearSelection={bulk.clearSelection}
@@ -277,7 +288,7 @@ export function ActivitiesAdmin({
       {viewMode === "grid" ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {!bulk.bulkMode && <AdminCompactAddCard onClick={openCreate} label="اقدام جدید" />}
-          {filteredRows.map((activity) => (
+          {visibleRows.map((activity) => (
             <BulkItemShell
               key={activity.id}
               enabled={bulk.bulkMode}
@@ -296,7 +307,7 @@ export function ActivitiesAdmin({
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border">
-          {filteredRows.map((activity) => (
+          {visibleRows.map((activity) => (
             <div
               key={activity.id}
               className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 last:border-b-0"
@@ -331,6 +342,13 @@ export function ActivitiesAdmin({
           )}
         </div>
       )}
+
+      <AdminInfiniteScrollSentinel
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={loadMore}
+        remaining={filteredRows.length - visibleCount}
+      />
 
       <AdminContentPreviewDialog
         open={Boolean(previewActivity)}

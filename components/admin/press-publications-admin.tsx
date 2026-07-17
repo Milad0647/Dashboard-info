@@ -31,6 +31,8 @@ import { applyVideoCoverToMediaItems } from "@/lib/client/activity-media-cover";
 import { getActivityTypeLabel, pressActivityTypeOptions } from "@/lib/activity-types";
 import { deleteCampaignActivityAction, saveCampaignActivityAction } from "@/lib/actions/extended-actions";
 import { normalizePlanLabels, type ContentTopic } from "@/lib/content-topics";
+import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
+import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { todayISO } from "@/lib/jalali";
 import { isPressPublication } from "@/lib/press-publications";
 import type { ActivityMediaItem, AdminUser, CampaignActivity } from "@/lib/types";
@@ -75,8 +77,14 @@ export function PressPublicationsAdmin({
   );
   const [previewActivity, setPreviewActivity] = useState<CampaignActivity | null>(null);
   const [isPending, startTransition] = useTransition();
-  const filteredIds = useMemo(() => rows.map((item) => item.id), [rows]);
-  const bulk = useSectionBulkEdit(filteredIds);
+  const paginationResetKey = "press";
+  const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
+    rows.length,
+    paginationResetKey
+  );
+  const visibleRows = useMemo(() => rows.slice(0, visibleCount), [rows, visibleCount]);
+  const visibleIds = useMemo(() => visibleRows.map((item) => item.id), [visibleRows]);
+  const bulk = useSectionBulkEdit(visibleIds);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -217,7 +225,7 @@ export function PressPublicationsAdmin({
         bulkMode={bulk.bulkMode}
         onBulkModeChange={bulk.setBulkMode}
         selectedIds={[...bulk.selectedIds]}
-        visibleCount={rows.length}
+        visibleCount={visibleRows.length}
         allVisibleSelected={bulk.allVisibleSelected}
         onToggleAllVisible={bulk.toggleAllVisible}
         onClearSelection={bulk.clearSelection}
@@ -229,7 +237,7 @@ export function PressPublicationsAdmin({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {!bulk.bulkMode && <AdminCompactAddCard onClick={openCreate} label="ثبت جدید" />}
-        {rows.map((activity) => (
+        {visibleRows.map((activity) => (
           <BulkItemShell
             key={activity.id}
             enabled={bulk.bulkMode}
@@ -246,6 +254,13 @@ export function PressPublicationsAdmin({
           </BulkItemShell>
         ))}
       </div>
+
+      <AdminInfiniteScrollSentinel
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={loadMore}
+        remaining={rows.length - visibleCount}
+      />
 
       <AdminContentPreviewDialog
         open={Boolean(previewActivity)}

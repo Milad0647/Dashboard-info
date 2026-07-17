@@ -20,9 +20,17 @@ export function useInView<T extends Element = HTMLDivElement>({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        setInView(true);
-        if (triggerOnce) observer.disconnect();
+        if (!entry) return;
+
+        if (entry.isIntersecting) {
+          setInView(true);
+          if (triggerOnce) observer.disconnect();
+          return;
+        }
+
+        if (!triggerOnce) {
+          setInView(false);
+        }
       },
       { rootMargin }
     );

@@ -35,6 +35,8 @@ import {
   type EditSuggestionMissingField,
 } from "@/lib/edit-suggestions";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
+import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
+import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import { VideoModal } from "@/components/media/video-modal";
 import type { AdminUser, MediaCategory, Video, VideoVersion } from "@/lib/types";
@@ -112,8 +114,17 @@ export function VideosAdmin({
     () => videos.filter((item) => matchesAdminContentFilter(item, contentFilter)),
     [videos, contentFilter]
   );
-  const filteredIds = useMemo(() => filteredVideos.map((item) => item.id), [filteredVideos]);
-  const bulk = useSectionBulkEdit(filteredIds);
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
+    filteredVideos.length,
+    paginationResetKey
+  );
+  const visibleVideos = useMemo(
+    () => filteredVideos.slice(0, visibleCount),
+    [filteredVideos, visibleCount]
+  );
+  const visibleIds = useMemo(() => visibleVideos.map((item) => item.id), [visibleVideos]);
+  const bulk = useSectionBulkEdit(visibleIds);
 
   const missingCoverTargets = useMemo(() => {
     return videos.flatMap((video) => {
@@ -240,7 +251,7 @@ export function VideosAdmin({
         bulkMode={bulk.bulkMode}
         onBulkModeChange={bulk.setBulkMode}
         selectedIds={[...bulk.selectedIds]}
-        visibleCount={filteredVideos.length}
+        visibleCount={visibleVideos.length}
         allVisibleSelected={bulk.allVisibleSelected}
         onToggleAllVisible={bulk.toggleAllVisible}
         onClearSelection={bulk.clearSelection}
@@ -261,7 +272,7 @@ export function VideosAdmin({
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {!bulk.bulkMode && <AdminVideoAddCard onClick={handleCreateVideo} />}
-          {filteredVideos.map((video) => (
+          {visibleVideos.map((video) => (
             <BulkItemShell
               key={video.id}
               enabled={bulk.bulkMode}
@@ -287,7 +298,7 @@ export function VideosAdmin({
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border">
-          {filteredVideos.map((video) => {
+          {visibleVideos.map((video) => {
             const displayVersion = resolveDisplayVersion(versionsByVideoId.get(video.id) ?? []);
             return (
               <div
@@ -326,6 +337,13 @@ export function VideosAdmin({
           )}
         </div>
       )}
+
+      <AdminInfiniteScrollSentinel
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={loadMore}
+        remaining={filteredVideos.length - visibleCount}
+      />
 
       <Dialog open={editorOpen} onOpenChange={(open) => (open ? setEditorOpen(true) : closeEditor())}>
         <DialogContent className={editorDialogClass}>

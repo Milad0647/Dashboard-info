@@ -23,6 +23,7 @@ import { BroadcastSection } from "@/components/public/broadcast-section";
 import { MeetingsSection } from "@/components/public/meetings-section";
 import { DeferredSection } from "@/components/public/deferred-section";
 import { CampaignScreenshotExporter } from "@/components/public/campaign-screenshot-exporter";
+import { ScrollToTopButton } from "@/components/ui/scroll-to-top-button";
 import { CampaignExportProvider } from "@/lib/context/campaign-export-context";
 import { CampaignScrollProvider, useCampaignScroll } from "@/lib/context/campaign-scroll-context";
 import { ContentScoreProvider } from "@/lib/context/content-score-context";
@@ -275,6 +276,8 @@ function CampaignDashboardBody({
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
         <p>گزارش زنده کمپین — {settings.title}</p>
       </footer>
+
+      {!exportMode && <ScrollToTopButton />}
     </div>
   );
 }

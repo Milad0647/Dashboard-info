@@ -38,6 +38,8 @@ import { canManageBillboardPeriods, isApiBillboard } from "@/lib/billboards";
 import { getBillboardDisplayImage } from "@/lib/billboard-media";
 import type { ContentTopic } from "@/lib/content-topics";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
+import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
+import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import type { AdminUser, Billboard } from "@/lib/types";
 import { getStatusLabel } from "@/lib/utils";
 import { formatBillboardCityLine } from "@/lib/billboard-location";
@@ -122,11 +124,26 @@ export function BillboardsAdmin({
     })();
   };
 
-  const manualBillboards = filteredBillboards.filter((billboard) => !isApiBillboard(billboard));
+  const manualBillboards = useMemo(
+    () => filteredBillboards.filter((billboard) => !isApiBillboard(billboard)),
+    [filteredBillboards]
+  );
   const apiBillboards = filteredBillboards.filter((billboard) => isApiBillboard(billboard));
   const allApiBillboards = billboards.filter((billboard) => isApiBillboard(billboard));
-  const manualIds = useMemo(() => manualBillboards.map((item) => item.id), [manualBillboards]);
-  const bulk = useSectionBulkEdit(manualIds);
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
+    manualBillboards.length,
+    paginationResetKey
+  );
+  const visibleManualBillboards = useMemo(
+    () => manualBillboards.slice(0, visibleCount),
+    [manualBillboards, visibleCount]
+  );
+  const visibleIds = useMemo(
+    () => visibleManualBillboards.map((item) => item.id),
+    [visibleManualBillboards]
+  );
+  const bulk = useSectionBulkEdit(visibleIds);
   const showExternalMigrationTools = isFullAdmin && liveApiEnabled && Boolean(externalCampaignSlug);
   const showExternalPeriodTools = showExternalMigrationTools && Boolean(externalCampaignId);
 
@@ -185,7 +202,7 @@ export function BillboardsAdmin({
         bulkMode={bulk.bulkMode}
         onBulkModeChange={bulk.setBulkMode}
         selectedIds={[...bulk.selectedIds]}
-        visibleCount={manualBillboards.length}
+        visibleCount={visibleManualBillboards.length}
         allVisibleSelected={bulk.allVisibleSelected}
         onToggleAllVisible={bulk.toggleAllVisible}
         onClearSelection={bulk.clearSelection}
@@ -265,7 +282,7 @@ export function BillboardsAdmin({
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {!bulk.bulkMode && <AdminBillboardAddCard onClick={openCreate} />}
-          {manualBillboards.map((billboard) => (
+          {visibleManualBillboards.map((billboard) => (
             <BulkItemShell
               key={billboard.id}
               enabled={bulk.bulkMode}
@@ -290,7 +307,7 @@ export function BillboardsAdmin({
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border">
-          {manualBillboards.map((billboard) => (
+          {visibleManualBillboards.map((billboard) => (
             <div
               key={billboard.id}
               className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 last:border-b-0"
@@ -330,6 +347,13 @@ export function BillboardsAdmin({
           ))}
         </div>
       )}
+
+      <AdminInfiniteScrollSentinel
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={loadMore}
+        remaining={manualBillboards.length - visibleCount}
+      />
 
       {apiBillboards.length > 0 && (
         <AdminDataTable

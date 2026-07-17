@@ -43,7 +43,7 @@ export function AdminPosterCompactCard({
       >
         <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
           <MediaThumbnail
-            src={displayVersion?.imageUrl}
+            src={displayVersion?.thumbnailUrl || displayVersion?.imageUrl}
             alt={poster.title}
             kind="poster"
             sizes="160px"

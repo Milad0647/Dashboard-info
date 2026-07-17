@@ -34,6 +34,8 @@ import {
   type EditSuggestionMissingField,
 } from "@/lib/edit-suggestions";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
+import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
+import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { AdminUser, MediaCategory, Poster, PosterVersion } from "@/lib/types";
 
@@ -110,7 +112,17 @@ export function PostersAdmin({
     [posters, contentFilter]
   );
   const filteredIds = useMemo(() => filteredPosters.map((item) => item.id), [filteredPosters]);
-  const bulk = useSectionBulkEdit(filteredIds);
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
+    filteredPosters.length,
+    paginationResetKey
+  );
+  const visiblePosters = useMemo(
+    () => filteredPosters.slice(0, visibleCount),
+    [filteredPosters, visibleCount]
+  );
+  const visibleIds = useMemo(() => visiblePosters.map((item) => item.id), [visiblePosters]);
+  const bulk = useSectionBulkEdit(visibleIds);
 
   const activePoster = useMemo(() => {
     if (!activePosterId) return null;
@@ -204,7 +216,7 @@ export function PostersAdmin({
         bulkMode={bulk.bulkMode}
         onBulkModeChange={bulk.setBulkMode}
         selectedIds={[...bulk.selectedIds]}
-        visibleCount={filteredPosters.length}
+        visibleCount={visiblePosters.length}
         allVisibleSelected={bulk.allVisibleSelected}
         onToggleAllVisible={bulk.toggleAllVisible}
         onClearSelection={bulk.clearSelection}
@@ -225,7 +237,7 @@ export function PostersAdmin({
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {!bulk.bulkMode && <AdminPosterAddCard onClick={handleCreatePoster} />}
-          {filteredPosters.map((poster) => (
+          {visiblePosters.map((poster) => (
             <BulkItemShell
               key={poster.id}
               enabled={bulk.bulkMode}
@@ -251,7 +263,7 @@ export function PostersAdmin({
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border">
-          {filteredPosters.map((poster) => {
+          {visiblePosters.map((poster) => {
             const displayVersion = resolveDisplayVersion(versionsByPosterId.get(poster.id) ?? []);
             return (
               <div
@@ -290,6 +302,13 @@ export function PostersAdmin({
           )}
         </div>
       )}
+
+      <AdminInfiniteScrollSentinel
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={loadMore}
+        remaining={filteredPosters.length - visibleCount}
+      />
 
       <Dialog open={editorOpen} onOpenChange={(open) => (open ? setEditorOpen(true) : closeEditor())}>
         <DialogContent className={editorDialogClass}>
