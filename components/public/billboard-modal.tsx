@@ -50,9 +50,9 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden">
-        <DialogHeader className="p-4 pb-0">
-          <DialogTitle className="flex items-center gap-2 flex-wrap">
+      <DialogContent className="max-h-[92vh] max-w-3xl gap-0 overflow-y-auto overflow-x-hidden p-0">
+        <DialogHeader className="p-4 pb-3 pe-12">
+          <DialogTitle className="flex flex-wrap items-center gap-2 break-words text-base">
             {billboard.title}
             {billboard.code && <Badge variant="outline">{billboard.code}</Badge>}
             {showStatus && <Badge status={billboard.status}>{getStatusLabel(billboard.status)}</Badge>}

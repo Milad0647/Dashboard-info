@@ -164,7 +164,7 @@ function SocialPostCard({ post }: { post: SocialMediaPost }) {
         ownerName={post.ownerName}
         description={post.description}
         media={
-          <div className="relative mx-4 aspect-square max-h-[50vh] overflow-hidden rounded-lg bg-muted">
+          <div className="relative aspect-square w-full overflow-hidden">
             <SocialPostCover post={post} />
           </div>
         }

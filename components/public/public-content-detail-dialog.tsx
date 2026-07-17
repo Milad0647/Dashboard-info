@@ -33,14 +33,14 @@ export function PublicContentDetailDialog({
 }: PublicContentDetailDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto overflow-x-hidden p-0">
-        <DialogHeader className="p-4 pb-0">
+      <DialogContent className="max-h-[92vh] max-w-3xl gap-0 overflow-y-auto overflow-x-hidden p-0">
+        <DialogHeader className="p-4 pb-3 pe-12">
           <DialogTitle className="break-words text-base">{title}</DialogTitle>
         </DialogHeader>
 
-        {media && <div className="mt-2">{media}</div>}
+        {media && <div className="w-full min-w-0 bg-muted">{media}</div>}
 
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 border-t p-4">
           <PublicContentDetailFields
             category={category}
             topics={topics}

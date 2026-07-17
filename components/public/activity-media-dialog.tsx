@@ -61,8 +61,8 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto overflow-x-hidden p-0">
-        <DialogHeader className="p-4 pb-0">
+      <DialogContent className="max-h-[92vh] max-w-3xl gap-0 overflow-y-auto overflow-x-hidden p-0">
+        <DialogHeader className="p-4 pb-3 pe-12">
           <DialogTitle className="flex flex-wrap items-center gap-2 text-base">
             {activity.title}
             <Badge variant="outline">{getActivityTypeLabel(activity.activityType)}</Badge>
@@ -100,25 +100,27 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
         )}
 
         {!hasVideo && hasImage && (
-          <div className="p-4 pt-2">
+          <div className="w-full bg-muted">
             <ImageZoom
               src={activity.imageUrl!}
               alt={activity.title}
-              className="w-full rounded-lg bg-muted"
-              imgClassName="max-h-[60vh] w-full object-contain"
+              className="w-full"
+              imgClassName="max-h-[65vh] w-full object-contain"
+              sizes="(max-width: 768px) 100vw, 768px"
             />
           </div>
         )}
 
         {!hasVideo && !hasImage && galleryImages.length > 0 && (
-          <div className="grid gap-3 p-4 sm:grid-cols-2">
+          <div className="grid gap-px bg-border sm:grid-cols-2">
             {galleryImages.map((url) => (
               <ImageZoom
                 key={url}
                 src={url}
                 alt={activity.title}
-                className="w-full rounded-lg bg-muted"
-                imgClassName="max-h-64 w-full object-contain"
+                className="w-full bg-muted"
+                imgClassName="max-h-72 w-full object-contain"
+                sizes="(max-width: 640px) 100vw, 384px"
               />
             ))}
           </div>
@@ -155,7 +157,7 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
           </div>
         )}
 
-        <div className="space-y-3 p-4">
+        <div className="space-y-3 border-t p-4">
           <PublicContentDetailFields
             category={getActivityTypeLabel(activity.activityType)}
             topics={activity.planLabels ?? (activity.planLabel ? [activity.planLabel] : [])}

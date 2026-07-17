@@ -93,7 +93,7 @@ function PublicationCard({ item }: { item: SocialMediaPost }) {
         ownerName={item.ownerName}
         description={item.description}
         media={
-          <div className="relative mx-4 aspect-square max-h-[50vh] overflow-hidden rounded-lg bg-muted">
+          <div className="relative aspect-square w-full overflow-hidden">
             {cover}
           </div>
         }

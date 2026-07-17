@@ -69,9 +69,9 @@ export function VideoModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto p-0">
-        <DialogHeader className="p-4 pb-0">
-          <DialogTitle className="flex flex-wrap items-center gap-2 break-words">
+      <DialogContent className="max-h-[92vh] max-w-3xl gap-0 overflow-y-auto overflow-x-hidden p-0">
+        <DialogHeader className="p-4 pb-3 pe-12">
+          <DialogTitle className="flex flex-wrap items-center gap-2 break-words text-base">
             {title}
             {activeVersion.duration && (
               <span className="text-sm font-normal text-muted-foreground">
@@ -107,7 +107,7 @@ export function VideoModal({
           )}
         </div>
 
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 border-t p-4">
           <PublicContentDetailFields
             category={category}
             topics={topics}

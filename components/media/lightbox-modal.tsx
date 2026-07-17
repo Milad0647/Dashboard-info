@@ -48,29 +48,30 @@ export function LightboxModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto p-0">
-        <DialogHeader className="p-4 pb-0">
-          <DialogTitle className="break-words">{title}</DialogTitle>
+      <DialogContent className="max-h-[92vh] max-w-3xl gap-0 overflow-y-auto overflow-x-hidden p-0">
+        <DialogHeader className="p-4 pb-3 pe-12">
+          <DialogTitle className="break-words text-base">{title}</DialogTitle>
         </DialogHeader>
 
-        <div className="relative mx-4 aspect-square max-h-[55vh] w-auto bg-muted">
+        <div className="w-full bg-muted">
           {activeVersion.imageUrl ? (
             <Image
               src={activeVersion.imageUrl}
               alt={title}
-              fill
+              width={1200}
+              height={1200}
               loading="lazy"
               decoding="async"
               quality={85}
-              className="object-contain"
+              className="mx-auto max-h-[65vh] w-full object-contain"
               sizes="(max-width: 768px) 100vw, 768px"
             />
           ) : (
-            <MediaPlaceholder kind="poster" className="h-full" />
+            <MediaPlaceholder kind="poster" className="aspect-square w-full" />
           )}
         </div>
 
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 border-t p-4">
           <PublicContentDetailFields
             category={category}
             topics={topics}
