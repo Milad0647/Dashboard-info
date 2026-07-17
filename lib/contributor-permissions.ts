@@ -37,7 +37,7 @@ export const contributorPermissionLabels: Record<ContributorPermissionKey, strin
   files: "فایل‌ها",
   rawMedia: "راش تصویر",
   analytics: "آمار سایت",
-  socialPosts: "شبکه‌های اجتماعی",
+  socialPosts: "پست‌ها و شبکه‌های اجتماعی",
   sitePublications: "انتشار در سایت",
   broadcast: "پخش صدا و سیما",
   meetings: "جلسات و مصوبات",

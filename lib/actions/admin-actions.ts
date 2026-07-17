@@ -60,6 +60,7 @@ async function revalidateAll(slug?: string) {
   revalidatePath("/admin/videos");
   revalidatePath("/admin/analytics");
   revalidatePath("/admin/social-posts");
+  revalidatePath("/admin/social-analytics");
   revalidatePath("/admin/broadcast");
   revalidatePath("/admin/submissions");
   revalidatePath("/admin/files");

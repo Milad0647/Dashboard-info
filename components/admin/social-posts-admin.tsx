@@ -93,7 +93,6 @@ interface SocialPostsAdminProps {
   contentPlans?: string[];
   contentTopics?: ContentTopic[];
   canScore?: boolean;
-  embedded?: boolean;
   isFullAdmin?: boolean;
   users?: AdminUser[];
 }
@@ -104,7 +103,6 @@ export function SocialPostsAdmin({
   contentPlans = [],
   contentTopics = [],
   canScore = false,
-  embedded = false,
   isFullAdmin = false,
   users = [],
 }: SocialPostsAdminProps) {
@@ -333,27 +331,14 @@ export function SocialPostsAdmin({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir="rtl">
       {tutorialModal}
-      {!embedded && (
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">شبکه‌های اجتماعی</h1>
-            <p className="text-sm text-muted-foreground">ثبت پست‌ها، بازدید، لینک و نوع محتوا</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <GenerateMissingVideoCoversButton targets={missingCoverTargets} />
-            <AdminViewModeToggle value={viewMode} onChange={setViewMode} />
-            <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" />
-              افزودن پست
-            </Button>
-          </div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="text-right">
+          <h1 className="text-2xl font-bold">پست‌های شبکه اجتماعی</h1>
+          <p className="text-sm text-muted-foreground">ثبت پست‌ها، بازدید، لینک و نوع محتوا</p>
         </div>
-      )}
-
-      {embedded && (
-        <div className="flex items-center justify-start gap-2">
+        <div className="flex items-center gap-2">
           <GenerateMissingVideoCoversButton targets={missingCoverTargets} />
           <AdminViewModeToggle value={viewMode} onChange={setViewMode} />
           <Button onClick={openCreate}>
@@ -361,7 +346,7 @@ export function SocialPostsAdmin({
             افزودن پست
           </Button>
         </div>
-      )}
+      </div>
 
       <AdminContentFilterBar
         filter={contentFilter}
@@ -505,11 +490,11 @@ export function SocialPostsAdmin({
         open={open}
         onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : closeEditor())}
       >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader className="text-right">
             <DialogTitle>{editingId ? "ویرایش پست" : "پست جدید"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4 text-right">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>کانال</Label>

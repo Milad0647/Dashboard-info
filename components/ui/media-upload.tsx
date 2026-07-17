@@ -233,7 +233,7 @@ export function MediaUpload({
   const isCardDropzone = Boolean(dropzoneContent);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 text-right" dir="rtl">
       {label && <Label>{label}</Label>}
 
       <div

@@ -11,6 +11,7 @@ import {
   GraduationCap,
   HardDrive,
   ImageIcon,
+  Images,
   Globe,
   LayoutDashboard,
   LayoutGrid,
@@ -68,7 +69,8 @@ const allNavItems: {
   { href: "/admin/raw-media", label: "راش تصویر", icon: HardDrive, permissionKey: "rawMedia" },
   { href: "/admin/analytics", label: "آمار سایت", icon: BarChart3, permissionKey: "analytics" },
   { href: "/admin/site-publications", label: "انتشار در سایت", icon: Globe, permissionKey: "sitePublications" },
-  { href: "/admin/social-posts", label: "شبکه‌های اجتماعی", icon: Share2, permissionKey: "socialPosts" },
+  { href: "/admin/social-analytics", label: "شبکه‌های اجتماعی", icon: Share2, permissionKey: "socialPosts" },
+  { href: "/admin/social-posts", label: "پست‌های شبکه اجتماعی", icon: Images, permissionKey: "socialPosts" },
   { href: "/admin/press-publications", label: "مجله و روزنامه", icon: FileText, permissionKey: "activities" },
   { href: "/admin/activities", label: "اقدامات", icon: Sparkles, permissionKey: "activities" },
   { href: "/admin/elanha", label: "اعلان‌ها", icon: Bell, adminOrClientOnly: true },
@@ -164,9 +166,9 @@ export function AdminSidebar() {
                 prefetch={false}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                  "apple-nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
                   isActive
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >
@@ -193,9 +195,9 @@ export function AdminSidebar() {
                     prefetch={false}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                      "apple-nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
                       isActive
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     )}
                   >

@@ -91,7 +91,7 @@ const featureLabels: { key: keyof CampaignFeatures; label: string }[] = [
   { key: "posters", label: "پوستر" },
   { key: "videos", label: "ویدیو" },
   { key: "analytics", label: "آمار سایت" },
-  { key: "socialAnalytics", label: "آمار شبکه‌های اجتماعی (کلی)" },
+  { key: "socialAnalytics", label: "شبکه‌های اجتماعی" },
   { key: "socialPosts", label: "پست‌های شبکه اجتماعی" },
   { key: "sitePublications", label: "انتشار در سایت" },
   { key: "broadcastReports", label: "گزارش پخش صدا و سیما" },

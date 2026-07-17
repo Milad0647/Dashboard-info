@@ -6,6 +6,7 @@ import {
   FileText,
   Globe,
   ImageIcon,
+  Images,
   LayoutGrid,
   Radio,
   Share2,
@@ -25,6 +26,7 @@ import type {
   CampaignSubmission,
   Poster,
   SocialMediaPost,
+  SocialPlatformStat,
   Video as CampaignVideo,
 } from "@/lib/types";
 
@@ -35,6 +37,7 @@ export interface AdminDashboardData {
   submissions: CampaignSubmission[];
   analytics: AnalyticsMetric[];
   socialPosts?: SocialMediaPost[];
+  socialPlatformStats?: SocialPlatformStat[];
   broadcastReports?: BroadcastReport[];
   meetings?: CampaignMeeting[];
   activities?: CampaignActivity[];
@@ -108,10 +111,18 @@ export const DASHBOARD_STAT_DEFINITIONS: DashboardStatDefinition[] = [
   },
   {
     permissionKey: "socialPosts",
-    featureKey: "socialPosts",
+    featureKey: "socialAnalytics",
     label: "شبکه‌های اجتماعی",
-    href: "/admin/social-posts",
+    href: "/admin/social-analytics",
     icon: Share2,
+    getCount: (data) => (data.socialPlatformStats ?? []).length,
+  },
+  {
+    permissionKey: "socialPosts",
+    featureKey: "socialPosts",
+    label: "پست‌های شبکه اجتماعی",
+    href: "/admin/social-posts",
+    icon: Images,
     getCount: (data) => splitSocialPosts(data.socialPosts ?? []).socialPosts.length,
   },
   {

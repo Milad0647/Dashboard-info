@@ -173,11 +173,11 @@ export function SocialAnalyticsAdmin({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir="rtl">
       {tutorialModal}
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold">آمار صفحات شبکه‌های اجتماعی</h2>
+        <div className="text-right">
+          <h1 className="text-2xl font-bold">شبکه‌های اجتماعی</h1>
           <p className="text-sm text-muted-foreground">
             {isFullAdmin
               ? "هر کاربر می‌تواند چند کانال ثبت کند (حتی چند کانال از یک پلتفرم)"
@@ -246,11 +246,11 @@ export function SocialAnalyticsAdmin({
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent dir="rtl">
+          <DialogHeader className="text-right">
             <DialogTitle>{editingId ? "ویرایش کانال" : "کانال جدید"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4 text-right">
             <div className="space-y-2">
               <Label>پلتفرم</Label>
               <Select

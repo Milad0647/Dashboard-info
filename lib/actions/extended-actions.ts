@@ -42,6 +42,7 @@ function activityTutorialKey(
 
 async function revalidateExtended(slug?: string) {
   revalidatePath("/admin/social-posts");
+  revalidatePath("/admin/social-analytics");
   revalidatePath("/admin/site-publications");
   revalidatePath("/admin/activities");
   revalidatePath("/admin/broadcast");
