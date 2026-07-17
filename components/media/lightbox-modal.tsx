@@ -73,6 +73,9 @@ export function LightboxModal({
               src={activeVersion.imageUrl}
               alt={`${title} — نسخه ${activeVersion.versionNumber}`}
               fill
+              loading="lazy"
+              decoding="async"
+              quality={80}
               className="object-contain"
               sizes="(max-width: 768px) 100vw, 768px"
             />

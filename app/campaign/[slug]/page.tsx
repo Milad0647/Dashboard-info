@@ -3,7 +3,7 @@ import { getPublicCampaignData } from "@/lib/data-access/campaign";
 import { CampaignDashboard } from "@/components/public/campaign-dashboard";
 import { CampaignPageUnlock } from "@/components/public/campaign-page-unlock";
 import { canScoreContent } from "@/lib/auth/access";
-import { getAuthSession } from "@/lib/auth/get-session";
+import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
 import { isCampaignPageUnlocked } from "@/lib/campaign-page-unlock";
 import { pgGetPublishedCampaignBySlug } from "@/lib/db/repository";
 import { isPostgresConfigured } from "@/lib/utils";
@@ -44,12 +44,14 @@ export default async function CampaignPage({ params, searchParams }: CampaignPag
   if (!data) notFound();
 
   const canScore = Boolean(session && canScoreContent(session));
+  // Screenshot PDF export is admin-only (avoids heavy full-page capture for others)
+  const exportMode = exportParam === "screenshot" && Boolean(session && isFullAdmin(session));
 
   return (
     <CampaignDashboard
       initialData={data}
       slug={slug}
-      exportMode={exportParam === "screenshot"}
+      exportMode={exportMode}
       canScore={canScore}
     />
   );

@@ -52,6 +52,7 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
             alt={billboard.title}
             className="absolute inset-0 h-full w-full"
             imgClassName="transition-transform group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 320px"
           />
         ) : (
           <BillboardThumbnail

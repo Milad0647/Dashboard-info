@@ -38,6 +38,8 @@ function PublicationList({ items }: { items: SocialMediaPost[] }) {
                 alt={item.title}
                 className="h-full w-full"
                 imgClassName="object-cover"
+                sizes="160px"
+                quality={60}
               />
             </div>
           )}

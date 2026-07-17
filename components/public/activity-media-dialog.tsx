@@ -77,7 +77,7 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
                   src={videoSrc}
                   controls
                   playsInline
-                  preload="metadata"
+                  preload="none"
                   className="h-full w-full bg-black"
                 />
               ) : (
@@ -86,7 +86,7 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
                   src={videoSrc}
                   title={activity.title}
                   className="h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                   allowFullScreen
                 />
               )
@@ -137,7 +137,7 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
                 <audio
                   src={resolveAbsoluteMediaUrl(item.url)}
                   controls
-                  preload="metadata"
+                  preload="none"
                   className="w-full flex-1"
                 />
                 <Button

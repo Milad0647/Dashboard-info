@@ -33,6 +33,8 @@ export function MediaThumbnail({
       alt={alt}
       fill={fill}
       loading="lazy"
+      decoding="async"
+      quality={65}
       className={cn(objectFit === "contain" ? "object-contain" : "object-cover", className)}
       sizes={sizes}
     />

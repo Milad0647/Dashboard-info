@@ -1,10 +1,15 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import Image from "next/image";
 import { Minus, Plus, X, ZoomIn } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+const THUMB_QUALITY = 65;
+const FULL_QUALITY = 85;
+const DEFAULT_SIZES = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px";
 
 interface ImageZoomProps {
   src: string;
@@ -13,6 +18,10 @@ interface ImageZoomProps {
   imgClassName?: string;
   /** Show zoom affordance overlay on hover */
   showHint?: boolean;
+  /** Responsive sizes hint for next/image optimization */
+  sizes?: string;
+  /** Thumbnail quality (1–100). Lower = less bandwidth. */
+  quality?: number;
 }
 
 export function ImageZoom({
@@ -21,6 +30,8 @@ export function ImageZoom({
   className,
   imgClassName,
   showHint = true,
+  sizes = DEFAULT_SIZES,
+  quality = THUMB_QUALITY,
 }: ImageZoomProps) {
   const [open, setOpen] = useState(false);
   const [scale, setScale] = useState(1);
@@ -49,8 +60,17 @@ export function ImageZoom({
         )}
         aria-label="بزرگ‌نمایی تصویر"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={alt} className={cn("h-full w-full object-cover", imgClassName)} />
+        <Image
+          src={src}
+          alt={alt}
+          width={800}
+          height={600}
+          loading="lazy"
+          decoding="async"
+          quality={quality}
+          sizes={sizes}
+          className={cn("h-full w-full object-cover", imgClassName)}
+        />
         {showHint && (
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-opacity group-hover:bg-black/25 group-hover:opacity-100">
             <ZoomIn className="h-6 w-6 text-white drop-shadow" />
@@ -106,10 +126,14 @@ export function ImageZoom({
               setScale((s) => Math.min(4, Math.max(0.5, Number((s + delta).toFixed(2)))));
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={src}
               alt={alt}
+              width={1920}
+              height={1080}
+              quality={FULL_QUALITY}
+              sizes="95vw"
+              priority
               className="max-h-[90vh] max-w-full origin-center object-contain transition-transform"
               style={{ transform: `scale(${scale})` }}
               draggable={false}

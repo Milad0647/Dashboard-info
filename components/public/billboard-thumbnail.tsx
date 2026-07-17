@@ -39,6 +39,9 @@ export function BillboardThumbnail({
       src={getBillboardDisplayImage(billboard)}
       alt={alt}
       fill
+      loading="lazy"
+      decoding="async"
+      quality={65}
       className={cn("object-cover", imageClassName, className)}
       sizes={sizes}
       onError={() => setImageFailed(true)}

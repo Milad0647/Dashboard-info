@@ -1,11 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import Image from "next/image";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
-import {
-  isDirectVideoUrl,
-  resolveVideoThumbnail,
-} from "@/lib/media-utils";
+import { resolveVideoThumbnail } from "@/lib/media-utils";
 import { cn } from "@/lib/utils";
 
 interface VideoThumbnailProps {
@@ -13,42 +10,34 @@ interface VideoThumbnailProps {
   thumbnailUrl?: string | null;
   alt: string;
   className?: string;
+  sizes?: string;
 }
 
-function withFirstFrameFragment(url: string): string {
-  const trimmed = url.trim();
-  if (!trimmed || trimmed.includes("#")) return trimmed;
-  return `${trimmed}#t=0.001`;
-}
-
-export function VideoThumbnail({ videoUrl, thumbnailUrl, alt, className = "object-cover" }: VideoThumbnailProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+/**
+ * Lightweight video cover only — never loads the video file.
+ * Without a cover image, shows a placeholder (user must open the player to stream).
+ */
+export function VideoThumbnail({
+  videoUrl,
+  thumbnailUrl,
+  alt,
+  className = "object-cover",
+  sizes = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px",
+}: VideoThumbnailProps) {
   const coverUrl = resolveVideoThumbnail(videoUrl, thumbnailUrl);
 
   if (coverUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={coverUrl} alt={alt} className={cn("h-full w-full", className)} />
-    );
-  }
-
-  if (!videoUrl) {
-    return <MediaPlaceholder kind="video" className={cn("h-full w-full", className)} />;
-  }
-
-  if (isDirectVideoUrl(videoUrl)) {
-    return (
-      <video
-        ref={videoRef}
-        src={withFirstFrameFragment(videoUrl)}
+      <Image
+        src={coverUrl}
+        alt={alt}
+        width={640}
+        height={360}
+        loading="lazy"
+        decoding="async"
+        quality={60}
+        sizes={sizes}
         className={cn("h-full w-full", className)}
-        muted
-        playsInline
-        preload="auto"
-        onLoadedData={(event) => {
-          event.currentTarget.currentTime = 0;
-        }}
-        aria-label={alt}
       />
     );
   }

@@ -45,7 +45,8 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
     });
   };
 
-  if (!currentCampaign) return null;
+  // Backup + full report export are admin-only
+  if (!isFullAdmin || !currentCampaign) return null;
 
   return (
     <Card>
@@ -69,46 +70,42 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
           دانلود PDF گزارش کامل
         </Button>
 
-        {isFullAdmin && (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isPending}
-              onClick={() =>
-                download(
-                  `/api/campaign/backup?campaignId=${encodeURIComponent(campaignId)}`,
-                  `backup-${currentCampaign.slug}.zip`
-                )
-              }
-            >
-              <FileArchive className="h-4 w-4" />
-              دانلود ZIP پشتیبان
-            </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          onClick={() =>
+            download(
+              `/api/campaign/backup?campaignId=${encodeURIComponent(campaignId)}`,
+              `backup-${currentCampaign.slug}.zip`
+            )
+          }
+        >
+          <FileArchive className="h-4 w-4" />
+          دانلود ZIP پشتیبان
+        </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isPending}
-              onClick={() => importRef.current?.click()}
-            >
-              <Upload className="h-4 w-4" />
-              Import از ZIP
-            </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          onClick={() => importRef.current?.click()}
+        >
+          <Upload className="h-4 w-4" />
+          Import از ZIP
+        </Button>
 
-            <input
-              ref={importRef}
-              type="file"
-              accept=".zip,application/zip"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) handleImport(file);
-                event.target.value = "";
-              }}
-            />
-          </>
-        )}
+        <input
+          ref={importRef}
+          type="file"
+          accept=".zip,application/zip"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) handleImport(file);
+            event.target.value = "";
+          }}
+        />
 
         <Button variant="ghost" size="sm" asChild>
           <a href={`/campaign/${currentCampaign.slug}`} target="_blank" rel="noreferrer">

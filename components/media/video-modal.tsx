@@ -103,7 +103,7 @@ export function VideoModal({
                 src={videoSrc}
                 controls
                 playsInline
-                preload="metadata"
+                preload="none"
                 className="h-full w-full bg-black"
               />
             ) : (
@@ -112,7 +112,7 @@ export function VideoModal({
                 src={videoSrc}
                 title={`${title} — نسخه ${activeVersion.versionNumber}`}
                 className="h-full w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 allowFullScreen
               />
             )

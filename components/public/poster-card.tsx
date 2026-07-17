@@ -66,6 +66,7 @@ export function PosterCard({
               alt={title}
               className="absolute inset-0 h-full w-full"
               imgClassName="object-contain object-center transition-transform group-hover:scale-105"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 220px"
             />
           ) : (
             <MediaPlaceholder kind="poster" className="h-full" />
@@ -152,6 +153,8 @@ export function PosterCard({
                             alt=""
                             fill
                             loading="lazy"
+                            decoding="async"
+                            quality={50}
                             className="object-cover"
                             sizes="48px"
                           />

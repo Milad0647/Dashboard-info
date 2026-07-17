@@ -33,6 +33,7 @@ function SocialPostCover({ post }: { post: SocialMediaPost }) {
         alt={post.title}
         className="h-full w-full"
         imgClassName="transition-transform group-hover:scale-105"
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 220px"
       />
     );
   }
@@ -47,7 +48,7 @@ function SocialPostCover({ post }: { post: SocialMediaPost }) {
         <audio
           src={resolveAbsoluteMediaUrl(post.mediaUrl)}
           controls
-          preload="metadata"
+          preload="none"
           className="w-full max-w-full"
           onClick={(event) => event.stopPropagation()}
         />
@@ -72,6 +73,7 @@ function SocialPostCover({ post }: { post: SocialMediaPost }) {
         alt={post.title}
         className="h-full w-full"
         imgClassName="transition-transform group-hover:scale-105"
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 220px"
       />
     );
   }

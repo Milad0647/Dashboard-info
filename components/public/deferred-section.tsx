@@ -16,7 +16,7 @@ export function DeferredSection({
   children,
   fallback,
   minHeight = 240,
-  rootMargin = "240px",
+  rootMargin = "80px",
   forceRender = false,
 }: DeferredSectionProps) {
   const { ref, inView } = useInView<HTMLDivElement>({ rootMargin, triggerOnce: true });
