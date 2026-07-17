@@ -25,7 +25,7 @@ interface EditSuggestionsPanelProps {
   storageKey: string;
 }
 
-const PREVIEW_LIMIT = 5;
+const PREVIEW_LIMIT = 8;
 
 export function EditSuggestionsPanel({ suggestions, storageKey }: EditSuggestionsPanelProps) {
   const [open, setOpen] = useState(false);
@@ -60,8 +60,8 @@ export function EditSuggestionsPanel({ suggestions, storageKey }: EditSuggestion
               <div className="min-w-0">
                 <p className="font-medium">پیشنهاد ویرایش</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {formatPersianNumber(suggestions.length)} کارت شما هنوز کامل نشده است. بهتر است
-                  فیلدهای جاافتاده را تکمیل کنید.
+                  {formatPersianNumber(suggestions.length)} کارت در بخش‌های مختلف هنوز کامل نشده
+                  است. فیلدهای جاافتاده را تکمیل کنید.
                 </p>
               </div>
             </div>
@@ -80,8 +80,7 @@ export function EditSuggestionsPanel({ suggestions, storageKey }: EditSuggestion
               پیشنهاد ویرایش
             </DialogTitle>
             <DialogDescription>
-              چند کارت شما هنوز اطلاعات کامل ندارد. تکمیل این فیلدها باعث می‌شود خروجی کمپین
-              دقیق‌تر و حرفه‌ای‌تر نمایش داده شود.
+              کارت‌های ناقص شما به‌همراه فیلدهای جاافتاده. روی ویرایش بزنید تا همان کارت باز شود.
             </DialogDescription>
           </DialogHeader>
 
@@ -89,7 +88,7 @@ export function EditSuggestionsPanel({ suggestions, storageKey }: EditSuggestion
             {visibleSuggestions.map((suggestion) => (
               <div
                 key={`${suggestion.contentType}:${suggestion.id}`}
-                className="rounded-xl border bg-card p-4"
+                className="rounded-xl border border-destructive/20 bg-destructive/5 p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 space-y-2">
@@ -99,6 +98,12 @@ export function EditSuggestionsPanel({ suggestions, storageKey }: EditSuggestion
                       </Badge>
                       <p className="truncate font-medium">{suggestion.title}</p>
                     </div>
+                    <p className="text-sm text-destructive">
+                      ناقص است:{" "}
+                      {suggestion.missingFields
+                        .map((field) => editSuggestionFieldLabels[field])
+                        .join("، ")}
+                    </p>
                     <div className="flex flex-wrap gap-1.5">
                       {suggestion.missingFields.map((field) => (
                         <Badge key={field} variant="warning">
@@ -120,8 +125,7 @@ export function EditSuggestionsPanel({ suggestions, storageKey }: EditSuggestion
 
             {remainingCount > 0 && (
               <div className="rounded-xl border border-dashed px-4 py-3 text-center text-sm text-muted-foreground">
-                و {formatPersianNumber(remainingCount)} مورد دیگر در صفحات پوسترها و ویدیوها نیاز به
-                تکمیل دارد.
+                و {formatPersianNumber(remainingCount)} مورد دیگر نیاز به تکمیل دارد.
               </div>
             )}
           </div>

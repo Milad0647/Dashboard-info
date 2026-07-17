@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,13 +36,17 @@ import { normalizePlanLabels, type ContentTopic } from "@/lib/content-topics";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteSocialPostAction, saveSocialPostAction } from "@/lib/actions/extended-actions";
+import {
+  parseEditSuggestionMissingFields,
+  type EditSuggestionMissingField,
+} from "@/lib/edit-suggestions";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { todayISO } from "@/lib/jalali";
 import { videoNeedsAutoCover } from "@/lib/client/video-cover";
 import { isSitePublication } from "@/lib/social-posts";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
 import type { AdminUser, SocialContentType, SocialMediaPost, SocialPlatform } from "@/lib/types";
-import { getStatusLabel } from "@/lib/utils";
+import { cn, getStatusLabel } from "@/lib/utils";
 import { GenerateMissingVideoCoversButton } from "@/components/admin/generate-missing-video-covers-button";
 import {
   CONTENT_TITLE_MAX_LENGTH,
@@ -100,10 +105,14 @@ export function SocialPostsAdmin({
   isFullAdmin = false,
   users = [],
 }: SocialPostsAdminProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const openedFromQueryRef = useRef<string | null>(null);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewPost, setPreviewPost] = useState<SocialMediaPost | null>(null);
   const [planLabels, setPlanLabels] = useState<string[]>([]);
+  const [highlightFields, setHighlightFields] = useState<EditSuggestionMissingField[]>([]);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("social-posts");
   const [rows, setRows] = useState(initialPosts.filter((post) => !isSitePublication(post)));
@@ -116,6 +125,27 @@ export function SocialPostsAdmin({
   );
   const filteredIds = useMemo(() => filteredRows.map((item) => item.id), [filteredRows]);
   const bulk = useSectionBulkEdit(filteredIds);
+
+  useEffect(() => {
+    setRows(initialPosts.filter((post) => !isSitePublication(post)));
+  }, [initialPosts]);
+
+  const clearEditQuery = () => {
+    if (!searchParams.get("edit") && !searchParams.get("missing")) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("edit");
+    params.delete("missing");
+    const query = params.toString();
+    router.replace(query ? `/admin/social-posts?${query}` : "/admin/social-posts");
+  };
+
+  const closeEditor = () => {
+    setOpen(false);
+    setEditingId(null);
+    setHighlightFields([]);
+    openedFromQueryRef.current = null;
+    clearEditQuery();
+  };
 
   const missingCoverTargets = useMemo(() => {
     return rows.flatMap((post) => {
@@ -163,6 +193,7 @@ export function SocialPostsAdmin({
 
   const openCreate = () => {
     setEditingId(null);
+    setHighlightFields([]);
     setPlanLabels([]);
     form.reset({
       platform: "instagram",
@@ -181,9 +212,10 @@ export function SocialPostsAdmin({
     setOpen(true);
   };
 
-  const openEdit = (post: SocialMediaPost) => {
+  const openEdit = (post: SocialMediaPost, fields: EditSuggestionMissingField[] = []) => {
     if (isSitePublication(post)) return;
     setEditingId(post.id);
+    setHighlightFields(fields);
     setPlanLabels(normalizePlanLabels(post.planLabels, post.planLabel));
     form.reset({
       platform: post.platform as SocialPlatform,
@@ -201,6 +233,29 @@ export function SocialPostsAdmin({
     });
     setOpen(true);
   };
+
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (!editId || openedFromQueryRef.current === editId) return;
+    const post = rows.find((item) => item.id === editId);
+    if (!post) return;
+    openedFromQueryRef.current = editId;
+    openEdit(post, parseEditSuggestionMissingFields(searchParams.get("missing")));
+    // openEdit depends on form; intentionally run when query/rows change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, searchParams]);
+
+  const watchedTitle = form.watch("title");
+  const watchedLink = form.watch("link");
+  const watchedDescription = form.watch("description");
+  const watchedCover = form.watch("coverImageUrl");
+  const watchedMedia = form.watch("mediaUrl");
+  const highlightTitle = highlightFields.includes("title") && !watchedTitle?.trim();
+  const highlightLink = highlightFields.includes("link") && !watchedLink?.trim();
+  const highlightDescription =
+    highlightFields.includes("description") && !watchedDescription?.trim();
+  const highlightMedia =
+    highlightFields.includes("media") && !watchedCover?.trim() && !watchedMedia?.trim();
 
   const handleDelete = (post: SocialMediaPost) => {
     if (!window.confirm(`حذف «${post.title}»؟`)) return;
@@ -226,7 +281,10 @@ export function SocialPostsAdmin({
         return;
       }
 
-      const savedId = "id" in result ? result.id : (editingId ?? crypto.randomUUID());
+      const savedId =
+        "id" in result && typeof result.id === "string" && result.id
+          ? result.id
+          : editingId ?? crypto.randomUUID();
 
       if (editingId) {
         setRows((prev) =>
@@ -255,7 +313,7 @@ export function SocialPostsAdmin({
       }
 
       toast.success("ذخیره شد");
-      setOpen(false);
+      closeEditor();
     });
   });
 
@@ -393,7 +451,10 @@ export function SocialPostsAdmin({
         }
       />
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : closeEditor())}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "ویرایش پست" : "پست جدید"}</DialogTitle>
@@ -441,8 +502,15 @@ export function SocialPostsAdmin({
             </div>
 
             <div className="space-y-2">
-              <Label>عنوان / نام کاور</Label>
-              <Input {...form.register("title")} maxLength={CONTENT_TITLE_MAX_LENGTH} />
+              <Label className={cn(highlightTitle && "text-destructive")}>عنوان / نام کاور</Label>
+              <Input
+                {...form.register("title")}
+                maxLength={CONTENT_TITLE_MAX_LENGTH}
+                className={cn(highlightTitle && "border-destructive focus-visible:ring-destructive")}
+              />
+              {highlightTitle && (
+                <p className="text-xs text-destructive">عنوان خالی است؛ لطفاً تکمیل کنید.</p>
+              )}
             </div>
 
             <PlanLabelSelect
@@ -474,53 +542,76 @@ export function SocialPostsAdmin({
             </div>
 
             <div className="space-y-2">
-              <Label>لینک پست</Label>
-              <Input {...form.register("link")} dir="ltr" />
+              <Label className={cn(highlightLink && "text-destructive")}>لینک پست</Label>
+              <Input
+                {...form.register("link")}
+                dir="ltr"
+                className={cn(highlightLink && "border-destructive focus-visible:ring-destructive")}
+              />
+              {highlightLink && (
+                <p className="text-xs text-destructive">لینک پست خالی است؛ لطفاً تکمیل کنید.</p>
+              )}
             </div>
 
             <PersianDateField control={form.control} name="publishedDate" label="تاریخ انتشار" />
 
-            <MediaUpload label="تصویر کاور" value={form.watch("coverImageUrl") ?? ""} onChange={(value) => form.setValue("coverImageUrl", value)} kind="image" />
-            {form.watch("contentType") === "audio" ? (
-              <MediaUpload
-                label="فایل صوتی"
-                value={form.watch("mediaUrl") ?? ""}
-                onChange={(value) => form.setValue("mediaUrl", value)}
-                kind="audio"
-                uploadKind="audio"
-                accept="audio/*"
-                fileOnly
-              />
-            ) : form.watch("contentType") === "video" || form.watch("contentType") === "reel" ? (
-              <MediaUpload
-                label="رسانه (ویدیو)"
-                value={form.watch("mediaUrl") ?? ""}
-                onChange={(value) => form.setValue("mediaUrl", value)}
-                kind="video"
-                accept="video/*"
-                onAutoCoverGenerated={(coverUrl) => {
-                  const currentCover = form.getValues("coverImageUrl")?.trim() ?? "";
-                  if (!currentCover) {
-                    form.setValue("coverImageUrl", coverUrl);
-                  }
-                }}
-              />
-            ) : (
-              <MediaUpload
-                label="رسانه (تصویر/ویدیو)"
-                value={form.watch("mediaUrl") ?? ""}
-                onChange={(value) => form.setValue("mediaUrl", value)}
-                kind="image"
-              />
-            )}
+            <div
+              className={cn(
+                "space-y-3",
+                highlightMedia && "rounded-lg border border-destructive bg-destructive/5 p-3"
+              )}
+            >
+              <MediaUpload label="تصویر کاور" value={form.watch("coverImageUrl") ?? ""} onChange={(value) => form.setValue("coverImageUrl", value)} kind="image" />
+              {form.watch("contentType") === "audio" ? (
+                <MediaUpload
+                  label="فایل صوتی"
+                  value={form.watch("mediaUrl") ?? ""}
+                  onChange={(value) => form.setValue("mediaUrl", value)}
+                  kind="audio"
+                  uploadKind="audio"
+                  accept="audio/*"
+                  fileOnly
+                />
+              ) : form.watch("contentType") === "video" || form.watch("contentType") === "reel" ? (
+                <MediaUpload
+                  label="رسانه (ویدیو)"
+                  value={form.watch("mediaUrl") ?? ""}
+                  onChange={(value) => form.setValue("mediaUrl", value)}
+                  kind="video"
+                  accept="video/*"
+                  onAutoCoverGenerated={(coverUrl) => {
+                    const currentCover = form.getValues("coverImageUrl")?.trim() ?? "";
+                    if (!currentCover) {
+                      form.setValue("coverImageUrl", coverUrl);
+                    }
+                  }}
+                />
+              ) : (
+                <MediaUpload
+                  label="رسانه (تصویر/ویدیو)"
+                  value={form.watch("mediaUrl") ?? ""}
+                  onChange={(value) => form.setValue("mediaUrl", value)}
+                  kind="image"
+                />
+              )}
+              {highlightMedia && (
+                <p className="text-xs text-destructive">کاور یا رسانه هنوز اضافه نشده است.</p>
+              )}
+            </div>
 
             <div className="space-y-2">
-              <Label>توضیحات</Label>
+              <Label className={cn(highlightDescription && "text-destructive")}>توضیحات</Label>
               <Textarea
                 {...form.register("description")}
                 rows={4}
                 placeholder="خلاصه پست، متن کپشن، نکات مهم یا توضیح محتوا"
+                className={cn(
+                  highlightDescription && "border-destructive focus-visible:ring-destructive"
+                )}
               />
+              {highlightDescription && (
+                <p className="text-xs text-destructive">توضیحات خالی است؛ بهتر است تکمیل شود.</p>
+              )}
             </div>
 
 

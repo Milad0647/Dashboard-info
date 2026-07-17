@@ -4,6 +4,7 @@ import { FolderKanban, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DashboardCompletenessCards } from "@/components/admin/dashboard-completeness-cards";
 import { EditSuggestionsPanel } from "@/components/admin/edit-suggestions-panel";
 import { getAdminData, getAllUsers } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
@@ -15,10 +16,16 @@ import { getAuthSession, getOwnerFilter, isFullAdmin } from "@/lib/auth/get-sess
 import {
   defaultContributorPermissions,
   hasContributorPermission,
+  type ContributorPermissionKey,
   type ContributorPermissions,
 } from "@/lib/contributor-permissions";
 import { pgGetUserPermissionsForCampaign } from "@/lib/db/repository-extended";
-import { buildEditSuggestions } from "@/lib/edit-suggestions";
+import {
+  buildCategoryCompleteness,
+  buildEditSuggestions,
+  type CategoryCompletenessSummary,
+  type EditSuggestionContentType,
+} from "@/lib/edit-suggestions";
 import { formatPersianNumber, adminHref, isPostgresConfigured, isSupabaseConfigured } from "@/lib/utils";
 
 function getDatabaseLabel() {
@@ -26,6 +33,21 @@ function getDatabaseLabel() {
   if (isSupabaseConfigured()) return "Supabase";
   return "Local";
 }
+
+const PERMISSION_TO_CONTENT_TYPE: Partial<
+  Record<ContributorPermissionKey, EditSuggestionContentType>
+> = {
+  billboards: "billboard",
+  posters: "poster",
+  videos: "video",
+  files: "file",
+  rawMedia: "rawMedia",
+  sitePublications: "sitePublication",
+  socialPosts: "socialPost",
+  broadcast: "broadcast",
+  meetings: "meeting",
+  activities: "activity",
+};
 
 interface AdminDashboardProps {
   searchParams: Promise<{ campaign?: string }>;
@@ -61,31 +83,53 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
       )
     : [];
 
+  const completenessByType = new Map<EditSuggestionContentType, CategoryCompletenessSummary>();
+  const completenessInput = {
+    campaignId,
+    ownerUserId: canManageAll ? undefined : session?.userId,
+    posters: data.posters,
+    posterVersions: data.posterVersions,
+    videos: data.videos,
+    videoVersions: data.videoVersions,
+    socialPosts: data.socialPosts ?? [],
+    billboards,
+    files: data.files ?? [],
+    rawMedia: data.rawMedia ?? [],
+    broadcastReports: data.broadcastReports ?? [],
+    meetings: data.meetings ?? [],
+    activities: data.activities ?? [],
+  };
+  for (const summary of buildCategoryCompleteness(completenessInput)) {
+    completenessByType.set(summary.contentType, summary);
+  }
+
+  const editSuggestions = session?.userId
+    ? buildEditSuggestions({
+        ...completenessInput,
+        ownerUserId: session.userId,
+      })
+    : [];
+
   const stats = DASHBOARD_STAT_DEFINITIONS.filter((definition) =>
     canManageAll
       ? features[definition.featureKey]
       : hasContributorPermission(contributorPermissions, definition.permissionKey)
-  ).map((definition) => ({
-    label: definition.label,
-    value: definition.getCount(data, billboards),
-    href: adminHref(definition.href, campaignId),
-    icon: definition.icon,
-  }));
+  ).map((definition) => {
+    const contentType = PERMISSION_TO_CONTENT_TYPE[definition.permissionKey];
+    return {
+      label: definition.label,
+      value: definition.getCount(data, billboards),
+      href: adminHref(definition.href, campaignId),
+      icon: definition.icon,
+      completeness: contentType ? completenessByType.get(contentType) : undefined,
+      showOwnerHint: !canManageAll,
+    };
+  });
 
   const pendingSubmissions = data.submissions.filter((s) => s.status === "pending").length;
   const showSubmissionsAlert = canManageAll
     ? features.submissions
     : hasContributorPermission(contributorPermissions, "submissions");
-  const editSuggestions = session?.userId
-    ? buildEditSuggestions({
-        campaignId,
-        ownerUserId: session.userId,
-        posters: data.posters,
-        posterVersions: data.posterVersions,
-        videos: data.videos,
-        videoVersions: data.videoVersions,
-      })
-    : [];
   const editSuggestionsStorageKey = session?.userId
     ? `edit-suggestions:${campaignId}:${session.userId}`
     : `edit-suggestions:${campaignId}`;
@@ -145,28 +189,13 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
       </Card>
 
       {stats.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <Link key={stat.href} href={stat.href}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm text-muted-foreground">{stat.label}</p>
-                        <p className="text-2xl font-bold">{formatPersianNumber(stat.value)}</p>
-                        {!canManageAll && (
-                          <p className="text-xs text-muted-foreground mt-1">مورد ثبت‌شده</p>
-                        )}
-                      </div>
-                      <Icon className="h-5 w-5 text-primary shrink-0" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-emerald-700">کامل = سبز</span>
+            <span className="rounded-full bg-amber-400/20 px-2 py-1 text-amber-800">ناقص جزئی = زرد</span>
+            <span className="rounded-full bg-red-500/15 px-2 py-1 text-red-700">ناقص کامل = قرمز</span>
+          </div>
+          <DashboardCompletenessCards cards={stats} />
         </div>
       ) : (
         <Card>
