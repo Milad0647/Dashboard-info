@@ -98,8 +98,8 @@ export function AdminContentFilterBar({
     }));
 
   return (
-    <div className="mb-4 flex flex-col gap-3 rounded-xl border bg-card/60 p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+    <div className="mb-4 flex flex-col gap-3 rounded-xl border bg-card/60 p-4 text-right" dir="rtl">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start">
         <div className="flex items-center gap-2 text-sm font-medium">
           <Filter className="h-4 w-4 text-primary" />
           فیلتر محتوا
@@ -148,7 +148,7 @@ export function AdminContentFilterBar({
       </div>
 
       {filter.planLabels.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-start gap-2">
           {filter.planLabels.map((label) => (
             <Badge key={label} variant="secondary" className="gap-1 pl-1">
               {formatPlanLabelDisplay(label)}

@@ -131,11 +131,11 @@ export function SearchableSelect({
           triggerClassName
         )}
       >
-        <span className="flex min-w-0 flex-1 items-center gap-2 text-right">
+        <span className="flex min-w-0 flex-1 items-center gap-2">
           {leadingIcon}
           <span
             className={cn(
-              "truncate",
+              "min-w-0 flex-1 truncate text-right",
               !displayLabel || clearAfterSelect ? "text-muted-foreground" : undefined
             )}
           >

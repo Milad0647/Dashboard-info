@@ -41,6 +41,7 @@ import {
   type EditSuggestionMissingField,
 } from "@/lib/edit-suggestions";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
+import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { todayISO } from "@/lib/jalali";
@@ -107,6 +108,7 @@ export function SocialPostsAdmin({
   isFullAdmin = false,
   users = [],
 }: SocialPostsAdminProps) {
+  const { requestCreate, tutorialModal } = useSectionCreateGate("socialPosts");
   const router = useRouter();
   const searchParams = useSearchParams();
   const openedFromQueryRef = useRef<string | null>(null);
@@ -203,24 +205,26 @@ export function SocialPostsAdmin({
   });
 
   const openCreate = () => {
-    setEditingId(null);
-    setHighlightFields([]);
-    setPlanLabels([]);
-    form.reset({
-      platform: "instagram",
-      title: "",
-      coverImageUrl: "",
-      views: 0,
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      link: "",
-      contentType: "image",
-      mediaUrl: "",
-      description: "",
-      publishedDate: todayISO(),
+    void requestCreate(() => {
+      setEditingId(null);
+      setHighlightFields([]);
+      setPlanLabels([]);
+      form.reset({
+        platform: "instagram",
+        title: "",
+        coverImageUrl: "",
+        views: 0,
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        link: "",
+        contentType: "image",
+        mediaUrl: "",
+        description: "",
+        publishedDate: todayISO(),
+      });
+      setOpen(true);
     });
-    setOpen(true);
   };
 
   const openEdit = (post: SocialMediaPost, fields: EditSuggestionMissingField[] = []) => {
@@ -330,6 +334,7 @@ export function SocialPostsAdmin({
 
   return (
     <div className="space-y-4">
+      {tutorialModal}
       {!embedded && (
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -348,7 +353,7 @@ export function SocialPostsAdmin({
       )}
 
       {embedded && (
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-start gap-2">
           <GenerateMissingVideoCoversButton targets={missingCoverTargets} />
           <AdminViewModeToggle value={viewMode} onChange={setViewMode} />
           <Button onClick={openCreate}>
