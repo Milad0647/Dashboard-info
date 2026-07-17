@@ -238,7 +238,7 @@ export function VideosAdmin({
                     <p className="truncate font-medium">{video.title}</p>
                     <p className="text-xs text-muted-foreground">
                       {video.ownerName ?? "—"}
-                      {displayVersion ? ` · نسخه ${displayVersion.versionNumber}` : " · بدون ویدیو"}
+                      {displayVersion ? "" : " · بدون ویدیو"}
                     </p>
                   </div>
                 </div>
@@ -263,7 +263,7 @@ export function VideosAdmin({
           <DialogHeader className="shrink-0 border-b px-6 py-4 pr-12">
             <DialogTitle>{activeVideo?.title ?? "ویرایش ویدیو"}</DialogTitle>
             <DialogDescription className="sr-only">
-              ویرایش عنوان، نسخه‌ها و وضعیت انتشار ویدیو
+              ویرایش عنوان و وضعیت انتشار ویدیو
             </DialogDescription>
           </DialogHeader>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-4 pt-4">

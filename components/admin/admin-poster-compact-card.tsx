@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
@@ -8,7 +7,7 @@ import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { Poster, PosterVersion } from "@/lib/types";
-import { cn, formatPersianNumber } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface AdminPosterCompactCardProps {
   poster: Poster;
@@ -51,16 +50,6 @@ export function AdminPosterCompactCard({
             objectFit="contain"
           />
           <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
-          {displayVersion && (
-            <div className="absolute top-1.5 right-1.5 flex flex-wrap gap-1 justify-end">
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                v{formatPersianNumber(displayVersion.versionNumber)}
-              </Badge>
-              {displayVersion.isFinal && (
-                <Badge status="final" className="text-[10px] px-1.5 py-0">نهایی</Badge>
-              )}
-            </div>
-          )}
         </div>
         <div className="space-y-1 p-2">
           <p className="truncate text-xs font-medium">{poster.title}</p>

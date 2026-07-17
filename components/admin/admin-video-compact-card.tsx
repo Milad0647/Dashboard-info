@@ -1,7 +1,6 @@
 "use client";
 
 import { Play } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
@@ -9,7 +8,7 @@ import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { Video, VideoVersion } from "@/lib/types";
-import { cn, formatPersianNumber } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface AdminVideoCompactCardProps {
   video: Video;
@@ -57,16 +56,6 @@ export function AdminVideoCompactCard({
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover:bg-black/30">
             <Play className="h-8 w-8 text-white" />
           </div>
-          {displayVersion && (
-            <div className="absolute top-1.5 right-1.5 flex flex-wrap gap-1 justify-end">
-              <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                v{formatPersianNumber(displayVersion.versionNumber)}
-              </Badge>
-              {displayVersion.isFinal && (
-                <Badge status="final" className="px-1.5 py-0 text-[10px]">نهایی</Badge>
-              )}
-            </div>
-          )}
         </div>
         <div className="space-y-1 p-2">
           <p className="truncate text-xs font-medium">{video.title}</p>

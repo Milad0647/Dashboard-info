@@ -239,7 +239,7 @@ export function PostersAdmin({
                     <p className="truncate font-medium">{poster.title}</p>
                     <p className="text-xs text-muted-foreground">
                       {poster.ownerName ?? "—"}
-                      {displayVersion ? ` · نسخه ${displayVersion.versionNumber}` : " · بدون تصویر"}
+                      {displayVersion ? "" : " · بدون تصویر"}
                     </p>
                   </div>
                 </div>
@@ -264,7 +264,7 @@ export function PostersAdmin({
           <DialogHeader className="shrink-0 border-b px-6 py-4 pr-12">
             <DialogTitle>{activePoster?.title ?? "ویرایش پوستر"}</DialogTitle>
             <DialogDescription className="sr-only">
-              ویرایش عنوان، نسخه‌ها و وضعیت انتشار پوستر
+              ویرایش عنوان و وضعیت انتشار پوستر
             </DialogDescription>
           </DialogHeader>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-4 pt-4">

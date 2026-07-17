@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, History, Play, Plus, Trash2 } from "lucide-react";
+import { Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
@@ -32,21 +30,7 @@ import {
   resolveVideoThumbnail,
 } from "@/lib/media-utils";
 import type { MediaCategory, Video, VideoVersion } from "@/lib/types";
-import { cn, formatPersianDate, formatPersianNumber } from "@/lib/utils";
 import { pickDefaultVideoCategoryId, videoTypeSelectOptions } from "@/lib/video-types";
-
-interface VideoVersionDraft {
-  localId: string;
-  id?: string;
-  versionNumber?: number;
-  videoUrl: string;
-  thumbnailUrl: string;
-  duration: string;
-  notes: string;
-  isFinal?: boolean;
-  status?: VideoVersion["status"];
-  date?: string;
-}
 
 interface AdminVideoEditorProps {
   video: Video;
@@ -60,41 +44,11 @@ interface AdminVideoEditorProps {
   onSaved?: (video: Video) => void;
 }
 
-function createVideoVersionDraft(): VideoVersionDraft {
-  return {
-    localId: crypto.randomUUID(),
-    videoUrl: "",
-    thumbnailUrl: "",
-    duration: "",
-    notes: "",
-  };
-}
-
 function draftCoverFromVersion(version: VideoVersion): string {
   const hash = extractAparatVideoHash(version.videoUrl);
   if (hash && version.thumbnailUrl === getAparatThumbnailUrl(hash)) return "";
   if (version.thumbnailUrl === version.videoUrl) return "";
   return version.thumbnailUrl ?? "";
-}
-
-function videoVersionToDraft(version: VideoVersion): VideoVersionDraft {
-  return {
-    localId: version.id,
-    id: version.id,
-    versionNumber: version.versionNumber,
-    videoUrl: version.videoUrl,
-    thumbnailUrl: draftCoverFromVersion(version),
-    duration: version.duration ?? "",
-    notes: version.notes ?? "",
-    isFinal: version.isFinal,
-    status: version.status,
-    date: version.date,
-  };
-}
-
-function buildVideoVersionDrafts(versions: VideoVersion[]): VideoVersionDraft[] {
-  const sorted = [...versions].sort((a, b) => a.versionNumber - b.versionNumber);
-  return sorted.length > 0 ? sorted.map(videoVersionToDraft) : [createVideoVersionDraft()];
 }
 
 export function AdminVideoEditor({
@@ -110,12 +64,16 @@ export function AdminVideoEditor({
 }: AdminVideoEditorProps) {
   const router = useRouter();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const shouldScrollToBottomRef = useRef(false);
-  const [versionsExpanded, setVersionsExpanded] = useState(true);
   const [isPending, startTransition] = useTransition();
-  const [versionDrafts, setVersionDrafts] = useState<VideoVersionDraft[]>(() =>
-    buildVideoVersionDrafts(versions)
+
+  const displayVersion = useMemo(() => resolveDisplayVersion(versions), [versions]);
+
+  const [videoUrl, setVideoUrl] = useState(displayVersion?.videoUrl ?? "");
+  const [thumbnailUrl, setThumbnailUrl] = useState(
+    displayVersion ? draftCoverFromVersion(displayVersion) : ""
   );
+  const [duration, setDuration] = useState(displayVersion?.duration ?? "");
+  const [notes, setNotes] = useState(displayVersion?.notes ?? "");
   const [editTitle, setEditTitle] = useState(video.title);
   const [editDescription, setEditDescription] = useState(video.description ?? "");
   const [editCategoryId, setEditCategoryId] = useState(
@@ -135,85 +93,44 @@ export function AdminVideoEditor({
   }, [categories, editCategoryId, typeOptions]);
 
   useEffect(() => {
+    const current = resolveDisplayVersion(versions);
     setEditTitle(video.title);
     setEditDescription(video.description ?? "");
     setEditCategoryId(video.categoryId || pickDefaultVideoCategoryId(categories));
     setEditPlanLabels(normalizePlanLabels(video.planLabels, video.planLabel));
     setEditScore(video.score);
-    setVersionDrafts(buildVideoVersionDrafts(versions));
-  }, [video.id, video.title, video.description, video.categoryId, video.planLabel, video.planLabels, video.score, versions.length, categories]);
+    setVideoUrl(current?.videoUrl ?? "");
+    setThumbnailUrl(current ? draftCoverFromVersion(current) : "");
+    setDuration(current?.duration ?? "");
+    setNotes(current?.notes ?? "");
+  }, [
+    video.id,
+    video.title,
+    video.description,
+    video.categoryId,
+    video.planLabel,
+    video.planLabels,
+    video.score,
+    versions,
+    categories,
+  ]);
 
-  useLayoutEffect(() => {
-    if (!shouldScrollToBottomRef.current) return;
-    shouldScrollToBottomRef.current = false;
-    const scrollArea = scrollAreaRef.current;
-    if (!scrollArea) return;
-    scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: "smooth" });
-  }, [versionDrafts.length]);
-
-  const sortedVersions = useMemo(
-    () => [...versions].sort((a, b) => b.versionNumber - a.versionNumber),
-    [versions]
-  );
-  const displayVersion = resolveDisplayVersion(sortedVersions);
-  const previewCover = displayVersion
-    ? resolveVideoThumbnail(displayVersion.videoUrl, displayVersion.thumbnailUrl)
+  const previewCover = videoUrl
+    ? resolveVideoThumbnail(videoUrl, thumbnailUrl || undefined)
     : null;
+  const isAparat = isAparatVideoInput(videoUrl);
 
   const refresh = () => router.refresh();
-
-  const updateDraft = (localId: string, patch: Partial<VideoVersionDraft>) => {
-    setVersionDrafts((prev) =>
-      prev.map((item) => (item.localId === localId ? { ...item, ...patch } : item))
-    );
-  };
-
-  const handleSetFinal = (localId: string, isFinal: boolean) => {
-    if (isFinal) {
-      setVersionDrafts((prev) =>
-        prev.map((item) => ({ ...item, isFinal: item.localId === localId }))
-      );
-      return;
-    }
-
-    updateDraft(localId, { isFinal: false });
-  };
-
-  const handleDeleteVersion = (draft: VideoVersionDraft) => {
-    if (draft.id) {
-      startTransition(async () => {
-        await deleteVideoVersionAction(draft.id!);
-        setVersionDrafts((prev) => prev.filter((item) => item.localId !== draft.localId));
-        toast.success("نسخه حذف شد");
-        refresh();
-      });
-      return;
-    }
-
-    setVersionDrafts((prev) => {
-      const next = prev.filter((item) => item.localId !== draft.localId);
-      return next.length > 0 ? next : [createVideoVersionDraft()];
-    });
-  };
 
   const handleSaveAll = () => {
     if (!editCategoryId) {
       toast.error("نوع ویدیو را انتخاب کنید");
       return;
     }
-    const draftsToSave = versionDrafts.filter((item) => item.videoUrl.trim());
-    if (draftsToSave.length === 0) {
-      toast.error("حداقل یک embed یا ویدیو لازم است");
+    if (!videoUrl.trim()) {
+      toast.error("ویدیو لازم است");
       return;
     }
-
-    const finalLocalId = versionDrafts.find((item) => item.isFinal)?.localId;
-    const orderedDrafts = finalLocalId
-      ? [
-          ...draftsToSave.filter((item) => item.localId !== finalLocalId),
-          ...draftsToSave.filter((item) => item.localId === finalLocalId),
-        ]
-      : draftsToSave;
 
     startTransition(async () => {
       const savedVideo = {
@@ -230,26 +147,28 @@ export function AdminVideoEditor({
 
       await saveVideoAction(savedVideo);
 
-      let savedCount = 0;
-      for (const draft of orderedDrafts) {
-        const media = buildVideoVersionMedia(draft.videoUrl, draft.thumbnailUrl);
-        const isFinal = Boolean(draft.isFinal);
-        await saveVideoVersionAction({
-          id: draft.id,
-          videoId: video.id,
-          versionNumber: draft.versionNumber,
-          videoUrl: media.videoUrl,
-          thumbnailUrl: media.thumbnailUrl,
-          duration: draft.duration || undefined,
-          notes: draft.notes || undefined,
-          date: draft.date ?? todayISO(),
-          isFinal,
-          status: isFinal ? "final" : "draft",
-        });
-        savedCount += 1;
+      const media = buildVideoVersionMedia(videoUrl, thumbnailUrl);
+      const keepId = displayVersion?.id;
+      await saveVideoVersionAction({
+        id: keepId,
+        videoId: video.id,
+        versionNumber: displayVersion?.versionNumber ?? 1,
+        videoUrl: media.videoUrl,
+        thumbnailUrl: media.thumbnailUrl,
+        duration: duration || undefined,
+        notes: notes || undefined,
+        date: displayVersion?.date ?? todayISO(),
+        isFinal: true,
+        status: "final",
+      });
+
+      for (const version of versions) {
+        if (version.id !== keepId) {
+          await deleteVideoVersionAction(version.id);
+        }
       }
 
-      toast.success(`ذخیره شد — ${formatPersianNumber(savedCount)} نسخه`);
+      toast.success("ذخیره شد");
       onSaved?.(savedVideo);
       refresh();
     });
@@ -268,218 +187,112 @@ export function AdminVideoEditor({
     });
   };
 
-  const handleAddVersion = () => {
-    shouldScrollToBottomRef.current = true;
-    setVersionDrafts((prev) => [...prev, createVideoVersionDraft()]);
-  };
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div ref={scrollAreaRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain pr-1">
-      <div className="relative mx-auto aspect-video max-h-56 w-full overflow-hidden rounded-xl bg-muted">
-        {displayVersion ? (
-          previewCover ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewCover} alt={editTitle} className="h-full w-full object-contain" />
-          ) : (
-            <VideoThumbnail
-              videoUrl={displayVersion.videoUrl}
-              thumbnailUrl={displayVersion.thumbnailUrl}
-              alt={editTitle}
-              className="object-contain"
-            />
-          )
-        ) : null}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-          <Play className="h-12 w-12 text-white" />
-        </div>
-        <div className="absolute top-2 right-2 flex flex-wrap gap-1">
-          {displayVersion ? (
-            <>
-              <Badge variant="outline">نسخه {formatPersianNumber(displayVersion.versionNumber)}</Badge>
-              {displayVersion.isFinal && <Badge status="final">نسخه نهایی</Badge>}
-            </>
-          ) : (
-            <Badge variant="secondary">بدون نسخه</Badge>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 space-y-3">
-          <div>
-            <Label>عنوان</Label>
-            <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="عنوان ویدیو" />
+        <div className="relative mx-auto aspect-video max-h-56 w-full overflow-hidden rounded-xl bg-muted">
+          {videoUrl ? (
+            previewCover ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previewCover} alt={editTitle} className="h-full w-full object-contain" />
+            ) : (
+              <VideoThumbnail
+                videoUrl={videoUrl}
+                thumbnailUrl={thumbnailUrl || undefined}
+                alt={editTitle}
+                className="object-contain"
+              />
+            )
+          ) : null}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+            <Play className="h-12 w-12 text-white" />
           </div>
-          <div>
-            <Label>توضیحات</Label>
-            <Textarea
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-              rows={2}
-              placeholder="توضیحات (اختیاری)"
+        </div>
+
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 space-y-3">
+            <div>
+              <Label>عنوان</Label>
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="عنوان ویدیو" />
+            </div>
+            <div>
+              <Label>توضیحات</Label>
+              <Textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                rows={2}
+                placeholder="توضیحات (اختیاری)"
+              />
+            </div>
+            <div>
+              <Label>نوع ویدیو</Label>
+              <Select
+                value={editCategoryId || undefined}
+                onValueChange={setEditCategoryId}
+                disabled={selectOptions.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="تیزر، انیمیشن یا موشن‌گرافیک" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectOptions.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <PlanLabelSelect
+              topics={contentTopics}
+              plans={contentPlans}
+              values={editPlanLabels}
+              onChangeMultiple={setEditPlanLabels}
             />
-          </div>
-          <div>
-            <Label>نوع ویدیو</Label>
-            <Select
-              value={editCategoryId || undefined}
-              onValueChange={setEditCategoryId}
-              disabled={selectOptions.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="تیزر، انیمیشن یا موشن‌گرافیک" />
-              </SelectTrigger>
-              <SelectContent>
-                {selectOptions.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <PlanLabelSelect
-            topics={contentTopics}
-            plans={contentPlans}
-            values={editPlanLabels}
-            onChangeMultiple={setEditPlanLabels}
-          />
-          {!isNew && (
-            <ContentScoreControl
-              campaignId={video.campaignId}
-              contentType="video"
-              contentId={video.id}
-              score={editScore}
-              canScore={canScore}
-              onScoreSaved={setEditScore}
+            {!isNew && (
+              <ContentScoreControl
+                campaignId={video.campaignId}
+                contentType="video"
+                contentId={video.id}
+                score={editScore}
+                canScore={canScore}
+                onScoreSaved={setEditScore}
+              />
+            )}
+            <MediaUpload label="ویدیو" kind="video" value={videoUrl} onChange={setVideoUrl} />
+            <MediaUpload
+              label={
+                isAparat
+                  ? "کاور سفارشی (اختیاری — بدون کاور از آپارات)"
+                  : "کاور (اختیاری)"
+              }
+              value={thumbnailUrl}
+              onChange={setThumbnailUrl}
+              dropzone={false}
             />
-          )}
+            <div>
+              <Label>مدت (اختیاری)</Label>
+              <Input
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                placeholder="0:30"
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <Label>یادداشت (اختیاری)</Label>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+            </div>
+          </div>
+          <div className="flex flex-col items-center gap-2 pt-6">
+            <Button variant="ghost" size="icon" onClick={handleDeleteVideo} disabled={isPending}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col items-center gap-2 pt-6">
-          <Button variant="ghost" size="icon" onClick={handleDeleteVideo} disabled={isPending}>
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="border-t pt-3">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-9 w-full justify-between text-xs"
-          onClick={() => setVersionsExpanded(!versionsExpanded)}
-        >
-          <span className="flex items-center gap-1.5">
-            <History className="h-3.5 w-3.5" />
-            نسخه‌ها ({formatPersianNumber(versionDrafts.filter((item) => item.id).length || versionDrafts.length)})
-          </span>
-          {versionsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
-
-        <div
-          className={cn(
-            "space-y-3 transition-all",
-            versionsExpanded ? "mt-3 opacity-100" : "max-h-0 overflow-hidden opacity-0"
-          )}
-        >
-          <p className="text-sm font-medium">ویرایش / افزودن نسخه</p>
-
-          {versionDrafts.map((draft, index) => {
-            const isAparat = isAparatVideoInput(draft.videoUrl);
-
-            return (
-              <div key={draft.localId} className="space-y-3 rounded-lg border p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      {draft.id
-                        ? `نسخه ${formatPersianNumber(draft.versionNumber ?? index + 1)}`
-                        : `نسخه جدید ${formatPersianNumber(index + 1)}`}
-                    </p>
-                    {draft.isFinal && (
-                      <Badge status="final" className="text-[10px]">
-                        نسخه نهایی
-                      </Badge>
-                    )}
-                    {draft.id && draft.date && (
-                      <span className="text-[10px] text-muted-foreground">{formatPersianDate(draft.date)}</span>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => handleDeleteVersion(draft)}
-                    disabled={isPending}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
-                </div>
-
-                <MediaUpload
-                  label="ویدیو"
-                  kind="video"
-                  value={draft.videoUrl}
-                  onChange={(url) => updateDraft(draft.localId, { videoUrl: url })}
-                />
-                <MediaUpload
-                  label={
-                    isAparat
-                      ? "کاور سفارشی (اختیاری — بدون کاور از آپارات)"
-                      : "کاور (اختیاری)"
-                  }
-                  value={draft.thumbnailUrl}
-                  onChange={(url) => updateDraft(draft.localId, { thumbnailUrl: url })}
-                  dropzone={false}
-                />
-                <div>
-                  <Label>مدت (اختیاری)</Label>
-                  <Input
-                    value={draft.duration}
-                    onChange={(e) => updateDraft(draft.localId, { duration: e.target.value })}
-                    placeholder="0:30"
-                    dir="ltr"
-                  />
-                </div>
-                <div>
-                  <Label>یادداشت (اختیاری)</Label>
-                  <Textarea
-                    value={draft.notes}
-                    onChange={(e) => updateDraft(draft.localId, { notes: e.target.value })}
-                    rows={2}
-                  />
-                </div>
-                <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
-                  <div className="space-y-0.5">
-                    <Label className="text-xs">نسخه نهایی</Label>
-                    <p className="text-[10px] text-muted-foreground">فقط یک نسخه می‌تواند نهایی باشد</p>
-                  </div>
-                  <Switch
-                    checked={Boolean(draft.isFinal)}
-                    onCheckedChange={(checked) => handleSetFinal(draft.localId, checked)}
-                    disabled={isPending}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
       </div>
 
       <div className="mt-3 flex shrink-0 gap-2 border-t bg-card pt-3">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isPending}
-          onClick={handleAddVersion}
-        >
-          <Plus className="h-4 w-4" />
-          نسخه
-        </Button>
         <Button onClick={handleSaveAll} disabled={isPending} className="flex-1">
           {isPending ? "در حال ذخیره..." : "ذخیره"}
         </Button>
