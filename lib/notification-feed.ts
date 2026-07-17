@@ -72,7 +72,16 @@ function activityThumbnail(activity: CampaignActivity): string | null {
   return firstImage?.url ?? null;
 }
 
+function buildAdminEditPath(basePath: string, campaignId: string, contentId: string): string {
+  const params = new URLSearchParams({
+    campaign: campaignId,
+    edit: contentId,
+  });
+  return `${basePath}?${params.toString()}`;
+}
+
 export function buildNotificationFeed(input: {
+  campaignId: string;
   posters: Poster[];
   videos: Video[];
   billboards: Billboard[];
@@ -81,6 +90,7 @@ export function buildNotificationFeed(input: {
   posterVersions?: PosterVersion[];
   videoVersions?: VideoVersion[];
 }): NotificationFeedItem[] {
+  const { campaignId } = input;
   const posterVersions = input.posterVersions ?? [];
   const videoVersions = input.videoVersions ?? [];
   const items: NotificationFeedItem[] = [];
@@ -102,7 +112,7 @@ export function buildNotificationFeed(input: {
       createdAt: poster.createdAt,
       thumbnailUrl: posterThumbnail(poster.id, posterVersions),
       published: poster.published,
-      adminPath: "/admin/posters",
+      adminPath: buildAdminEditPath("/admin/posters", campaignId, poster.id),
       score: poster.score,
     });
   }
@@ -124,7 +134,7 @@ export function buildNotificationFeed(input: {
       createdAt: video.createdAt,
       thumbnailUrl: videoThumbnail(video.id, videoVersions),
       published: video.published,
-      adminPath: "/admin/videos",
+      adminPath: buildAdminEditPath("/admin/videos", campaignId, video.id),
       score: video.score,
     });
   }
@@ -146,7 +156,7 @@ export function buildNotificationFeed(input: {
       createdAt: billboard.createdAt,
       thumbnailUrl: billboard.thumbnailUrl,
       published: billboard.published,
-      adminPath: "/admin/billboards",
+      adminPath: buildAdminEditPath("/admin/billboards", campaignId, billboard.id),
       score: billboard.score,
     });
   }
@@ -168,7 +178,7 @@ export function buildNotificationFeed(input: {
       createdAt: activity.createdAt,
       thumbnailUrl: activityThumbnail(activity),
       published: activity.published,
-      adminPath: "/admin/activities",
+      adminPath: buildAdminEditPath("/admin/activities", campaignId, activity.id),
       score: activity.score,
     });
   }
@@ -191,7 +201,11 @@ export function buildNotificationFeed(input: {
       createdAt: post.createdAt,
       thumbnailUrl: post.coverImageUrl ?? post.mediaUrl,
       published: post.published,
-      adminPath: isSite ? "/admin/site-publications" : "/admin/social-posts",
+      adminPath: buildAdminEditPath(
+        isSite ? "/admin/site-publications" : "/admin/social-posts",
+        campaignId,
+        post.id
+      ),
       score: post.score,
     });
   }

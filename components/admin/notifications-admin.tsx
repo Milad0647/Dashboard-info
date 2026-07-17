@@ -84,7 +84,7 @@ function NotificationCard({
   onScoreSaved?: (score: number | null) => void;
 }) {
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border bg-card transition hover:border-primary hover:shadow-md">
+    <div className="apple-lift group flex flex-col overflow-hidden rounded-xl border bg-card hover:border-primary/50">
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <input
           type="checkbox"
@@ -105,7 +105,7 @@ function NotificationCard({
               src={item.thumbnailUrl}
               alt={item.title}
               fill
-              className="object-cover transition-transform group-hover:scale-105"
+              className="apple-media-zoom object-cover"
               sizes="(max-width: 768px) 100vw, 33vw"
             />
           ) : (
@@ -215,6 +215,7 @@ export function NotificationsAdmin({
     () =>
       sortNotificationFeed(
         buildNotificationFeed({
+          campaignId,
           posters,
           videos,
           billboards,
@@ -230,6 +231,7 @@ export function NotificationsAdmin({
         sort
       ),
     [
+      campaignId,
       posters,
       videos,
       billboards,
