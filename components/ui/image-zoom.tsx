@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import Image from "next/image";
 import { Minus, Plus, X, ZoomIn } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { OptimizedMediaImage } from "@/components/ui/optimized-media-image";
 import { cn } from "@/lib/utils";
 
 const THUMB_QUALITY = 65;
@@ -22,6 +22,8 @@ interface ImageZoomProps {
   sizes?: string;
   /** Thumbnail quality (1–100). Lower = less bandwidth. */
   quality?: number;
+  /** Called when the thumbnail image fails to load */
+  onError?: () => void;
 }
 
 export function ImageZoom({
@@ -32,9 +34,11 @@ export function ImageZoom({
   showHint = true,
   sizes = DEFAULT_SIZES,
   quality = THUMB_QUALITY,
+  onError,
 }: ImageZoomProps) {
   const [open, setOpen] = useState(false);
   const [scale, setScale] = useState(1);
+  const [imageFailed, setImageFailed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const resetZoom = useCallback(() => setScale(1), []);
@@ -44,7 +48,12 @@ export function ImageZoom({
     if (!next) resetZoom();
   };
 
-  if (!src) return null;
+  const handleImageError = () => {
+    setImageFailed(true);
+    onError?.();
+  };
+
+  if (!src || imageFailed) return null;
 
   return (
     <>
@@ -60,7 +69,7 @@ export function ImageZoom({
         )}
         aria-label="بزرگ‌نمایی تصویر"
       >
-        <Image
+        <OptimizedMediaImage
           src={src}
           alt={alt}
           fill
@@ -69,6 +78,7 @@ export function ImageZoom({
           quality={quality}
           sizes={sizes}
           className={cn("object-cover", imgClassName)}
+          onError={handleImageError}
         />
         {showHint && (
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-opacity group-hover:bg-black/25 group-hover:opacity-100">
@@ -125,7 +135,7 @@ export function ImageZoom({
               setScale((s) => Math.min(4, Math.max(0.5, Number((s + delta).toFixed(2)))));
             }}
           >
-            <Image
+            <OptimizedMediaImage
               src={src}
               alt={alt}
               width={1920}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
+import { OptimizedMediaImage } from "@/components/ui/optimized-media-image";
 import { getBillboardDisplayImage, hasBillboardDisplayImage } from "@/lib/billboard-media";
 import type { Billboard } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,7 @@ export function BillboardThumbnail({
   }
 
   return (
-    <Image
+    <OptimizedMediaImage
       src={getBillboardDisplayImage(billboard)}
       alt={alt}
       fill

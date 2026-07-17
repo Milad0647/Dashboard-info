@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
+import { OptimizedMediaImage } from "@/components/ui/optimized-media-image";
 import { cn } from "@/lib/utils";
 
 interface MediaThumbnailProps {
@@ -28,7 +28,7 @@ export function MediaThumbnail({
   }
 
   return (
-    <Image
+    <OptimizedMediaImage
       src={src}
       alt={alt}
       fill={fill}

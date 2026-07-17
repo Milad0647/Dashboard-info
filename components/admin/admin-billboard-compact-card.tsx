@@ -8,6 +8,7 @@ import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import { resolveBillboardCategoryDisplay } from "@/lib/billboard-categories";
 import { formatBillboardCityLine } from "@/lib/billboard-location";
+import { getBillboardDisplayImage, hasBillboardDisplayImage } from "@/lib/billboard-media";
 import type { Billboard } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +46,7 @@ export function AdminBillboardCompactCard({
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
           <MediaThumbnail
-            src={billboard.thumbnailUrl}
+            src={hasBillboardDisplayImage(billboard) ? getBillboardDisplayImage(billboard) : null}
             alt={billboard.title}
             kind="poster"
             sizes="200px"

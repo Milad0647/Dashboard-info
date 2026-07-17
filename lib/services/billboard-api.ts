@@ -106,25 +106,58 @@ function resolveIntegrationOwnerFields(
   };
 }
 
-export function mapIntegrationBillboardToBillboard(
-  external: IntegrationBillboard,
-  campaignId: string,
-  options?: IntegrationBillboardMappingOptions
-): Billboard {
+function firstDesignImage(external: IntegrationBillboard): string | null {
+  const designs = [...(external.designs ?? [])].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  );
+  for (const design of designs) {
+    const url = design.thumbnail_url ?? design.image_url;
+    if (url?.trim()) return url;
+  }
+  return null;
+}
+
+function firstGalleryImage(external: IntegrationBillboard): string | null {
+  for (const image of external.images ?? []) {
+    const url = image.thumbnail_url ?? image.image_url;
+    if (url?.trim()) return url;
+  }
+  return null;
+}
+
+function resolveIntegrationDisplayImages(external: IntegrationBillboard): {
+  thumbnailUrl: string;
+  imageUrl: string;
+} {
+  const nestedFallback = firstDesignImage(external) ?? firstGalleryImage(external);
+
   const cardImage = billboardApiRoutes.resolveAssetUrl(
     external.card_image_url ??
       external.execution_thumbnail_url ??
+      external.execution_image_url ??
       external.thumbnail_url ??
-      external.image_url
+      external.image_url ??
+      nestedFallback
   );
   const fullImage = billboardApiRoutes.resolveAssetUrl(
     external.execution_image_url ??
       external.image_url ??
       external.card_image_url ??
-      external.thumbnail_url
+      external.thumbnail_url ??
+      nestedFallback
   );
-  const thumbnail = cardImage ?? "";
-  const imageUrl = fullImage ?? "";
+
+  const thumbnailUrl = cardImage ?? fullImage ?? "";
+  const imageUrl = fullImage ?? cardImage ?? "";
+  return { thumbnailUrl, imageUrl };
+}
+
+export function mapIntegrationBillboardToBillboard(
+  external: IntegrationBillboard,
+  campaignId: string,
+  options?: IntegrationBillboardMappingOptions
+): Billboard {
+  const { thumbnailUrl: thumbnail, imageUrl } = resolveIntegrationDisplayImages(external);
   const title = external.name?.trim() || external.axis?.trim() || external.code;
   const address = external.address?.trim() ?? "";
   const fullAddress = external.full_address?.trim() ?? address;

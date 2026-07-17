@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "7801ed796a0f20c3127bf67d5abbb7fc9979987d",
+      "committedAt": "2026-07-17T20:11:13+03:30",
+      "title": "خواندن خودکار بازدید و محتوای پست‌های ایتا از لینک",
+      "subject": "Add Eitaa link metrics fetch for social posts"
+    },
+    {
       "hash": "ff78e89720cacf96dddc844190113aad90308b07",
       "committedAt": "2026-07-17T19:52:43+03:30",
       "title": "نمایش ورودهای ناموفق با ایمیل و آی‌پی در رصد",

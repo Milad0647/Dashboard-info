@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Download, Eye, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,7 @@ import { BillboardThumbnail } from "@/components/public/billboard-thumbnail";
 import { PublicContentCard } from "@/components/public/public-content-card";
 import { useContentScoreAccess } from "@/lib/context/content-score-context";
 import { resolveBillboardCategoryDisplay } from "@/lib/billboard-categories";
-import {
-  getBillboardDateLabel,
-} from "@/lib/billboards";
+import { getBillboardDateLabel } from "@/lib/billboards";
 import { getBillboardDisplayImage, hasBillboardDisplayImage } from "@/lib/billboard-media";
 import { parseProvinceFromBillboard } from "@/lib/billboard-form-utils";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
@@ -25,12 +24,13 @@ interface BillboardCardProps {
 
 export function BillboardCard({ billboard, onView }: BillboardCardProps) {
   const { canScore, campaignId } = useContentScoreAccess();
+  const [zoomFailed, setZoomFailed] = useState(false);
   const province = parseProvinceFromBillboard(billboard) || "نامشخص";
   const city = billboard.city?.trim() || "";
   const showCity = Boolean(city && city !== province);
   const categoryLabel = resolveBillboardCategoryDisplay(billboard);
   const dateLabel = getBillboardDateLabel(billboard);
-  const canZoom = hasBillboardDisplayImage(billboard);
+  const canZoom = hasBillboardDisplayImage(billboard) && !zoomFailed;
   const displayImage = getBillboardDisplayImage(billboard);
 
   const handleDownload = () => {
@@ -55,6 +55,7 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
               className="absolute inset-0 h-full w-full"
               imgClassName="apple-media-zoom object-cover"
               sizes="(max-width: 768px) 100vw, 320px"
+              onError={() => setZoomFailed(true)}
             />
           ) : (
             <BillboardThumbnail
