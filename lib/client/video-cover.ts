@@ -1,38 +1,53 @@
 /**
- * Client-side helpers to capture a low-size WebP cover from a video file.
- * Used when the user uploads a video without providing a custom cover.
+ * Client-side helpers to capture a low-size WebP cover from a video.
+ * Used on upload and when backfilling existing videos without a cover.
  */
+
+import {
+  isAparatVideoInput,
+  isDirectVideoUrl,
+  isLocalUploadedFileUrl,
+  resolveAbsoluteMediaUrl,
+  resolveVideoThumbnail,
+} from "@/lib/media-utils";
 
 const COVER_SEEK_SECONDS = 3;
 const COVER_MAX_WIDTH = 720;
 const COVER_WEBP_QUALITY = 0.72;
 
-function loadVideoFromFile(file: File): Promise<HTMLVideoElement> {
+type RevokableVideo = HTMLVideoElement & { __revoke?: () => void };
+
+function loadVideoElement(src: string, revokeObjectUrl?: string): Promise<RevokableVideo> {
   return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(file);
-    const video = document.createElement("video");
+    const video = document.createElement("video") as RevokableVideo;
     video.muted = true;
     video.playsInline = true;
     video.preload = "auto";
-    video.src = objectUrl;
+    video.crossOrigin = "anonymous";
+    video.src = src;
 
     const cleanup = () => {
       video.removeAttribute("src");
       video.load();
-      URL.revokeObjectURL(objectUrl);
+      if (revokeObjectUrl) URL.revokeObjectURL(revokeObjectUrl);
     };
+    video.__revoke = cleanup;
 
-    video.onloadedmetadata = () => {
-      resolve(video);
-    };
+    video.onloadedmetadata = () => resolve(video);
     video.onerror = () => {
       cleanup();
       reject(new Error("بارگذاری ویدیو برای ساخت کاور ناموفق بود"));
     };
-
-    // Attach cleanup handle for callers
-    (video as HTMLVideoElement & { __revoke?: () => void }).__revoke = cleanup;
   });
+}
+
+function loadVideoFromFile(file: File): Promise<RevokableVideo> {
+  const objectUrl = URL.createObjectURL(file);
+  return loadVideoElement(objectUrl, objectUrl);
+}
+
+function loadVideoFromUrl(videoUrl: string): Promise<RevokableVideo> {
+  return loadVideoElement(resolveAbsoluteMediaUrl(videoUrl));
 }
 
 function seekVideo(video: HTMLVideoElement, timeSec: number): Promise<void> {
@@ -76,14 +91,10 @@ function canvasToWebpBlob(canvas: HTMLCanvasElement, quality: number): Promise<B
   });
 }
 
-/** Capture a frame near second 3 and encode as a compact WebP blob. */
-export async function captureVideoCoverWebp(
-  file: File,
+async function captureFrameFromVideo(
+  video: RevokableVideo,
   seekSeconds = COVER_SEEK_SECONDS
 ): Promise<Blob> {
-  const video = await loadVideoFromFile(file);
-  const revoke = (video as HTMLVideoElement & { __revoke?: () => void }).__revoke;
-
   try {
     await seekVideo(video, seekSeconds);
 
@@ -104,8 +115,35 @@ export async function captureVideoCoverWebp(
     context.drawImage(video, 0, 0, width, height);
     return await canvasToWebpBlob(canvas, COVER_WEBP_QUALITY);
   } finally {
-    revoke?.();
+    video.__revoke?.();
   }
+}
+
+/** True when this video can and should get an auto-generated cover. */
+export function videoNeedsAutoCover(videoUrl: string, thumbnailUrl?: string | null): boolean {
+  const trimmed = videoUrl.trim();
+  if (!trimmed) return false;
+  if (isAparatVideoInput(trimmed)) return false;
+  if (!isDirectVideoUrl(trimmed) && !isLocalUploadedFileUrl(trimmed)) return false;
+  return !resolveVideoThumbnail(trimmed, thumbnailUrl);
+}
+
+/** Capture a frame near second 3 from a File and encode as compact WebP. */
+export async function captureVideoCoverWebp(
+  file: File,
+  seekSeconds = COVER_SEEK_SECONDS
+): Promise<Blob> {
+  const video = await loadVideoFromFile(file);
+  return captureFrameFromVideo(video, seekSeconds);
+}
+
+/** Capture a frame near second 3 from an already-uploaded video URL. */
+export async function captureVideoCoverWebpFromUrl(
+  videoUrl: string,
+  seekSeconds = COVER_SEEK_SECONDS
+): Promise<Blob> {
+  const video = await loadVideoFromUrl(videoUrl);
+  return captureFrameFromVideo(video, seekSeconds);
 }
 
 async function uploadImageBlob(blob: Blob, fileName: string): Promise<string> {
@@ -138,4 +176,22 @@ export async function captureAndUploadVideoCover(
   const blob = await captureVideoCoverWebp(file, seekSeconds);
   const baseName = file.name.replace(/\.[^.]+$/, "") || "video";
   return uploadImageBlob(blob, `${baseName}-cover.webp`);
+}
+
+/**
+ * Capture a WebP cover from an existing video URL and upload it.
+ * Returns the public cover URL.
+ */
+export async function captureAndUploadVideoCoverFromUrl(
+  videoUrl: string,
+  seekSeconds = COVER_SEEK_SECONDS
+): Promise<string> {
+  const blob = await captureVideoCoverWebpFromUrl(videoUrl, seekSeconds);
+  const safeName =
+    videoUrl
+      .split("/")
+      .pop()
+      ?.replace(/\.[^.]+$/, "")
+      ?.replace(/[^a-zA-Z0-9_-]/g, "") || "video";
+  return uploadImageBlob(blob, `${safeName}-cover.webp`);
 }

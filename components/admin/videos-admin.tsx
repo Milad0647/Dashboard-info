@@ -7,6 +7,7 @@ import { AdminVideoAddCard, AdminVideoCompactCard } from "@/components/admin/adm
 import { AdminVideoEditor } from "@/components/admin/admin-video-editor";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
+import { GenerateMissingVideoCoversButton } from "@/components/admin/generate-missing-video-covers-button";
 import {
   AdminContentFilterBar,
   collectAdminFilterUsers,
@@ -26,7 +27,8 @@ import {
   SectionBulkEditBar,
   useSectionBulkEdit,
 } from "@/components/admin/section-bulk-edit";
-import { deleteVideoAction } from "@/lib/actions/admin-actions";
+import { deleteVideoAction, saveVideoVersionAction } from "@/lib/actions/admin-actions";
+import { videoNeedsAutoCover } from "@/lib/client/video-cover";
 import type { ContentTopic } from "@/lib/content-topics";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { resolveDisplayVersion } from "@/lib/media-utils";
@@ -94,6 +96,35 @@ export function VideosAdmin({
   const filteredIds = useMemo(() => filteredVideos.map((item) => item.id), [filteredVideos]);
   const bulk = useSectionBulkEdit(filteredIds);
 
+  const missingCoverTargets = useMemo(() => {
+    return videos.flatMap((video) => {
+      const display = resolveDisplayVersion(versionsByVideoId.get(video.id) ?? []);
+      if (!display || !videoNeedsAutoCover(display.videoUrl, display.thumbnailUrl)) {
+        return [];
+      }
+      return [
+        {
+          id: display.id,
+          label: video.title,
+          videoUrl: display.videoUrl,
+          thumbnailUrl: display.thumbnailUrl,
+          applyCover: async (coverUrl: string) => {
+            await saveVideoVersionAction({
+              ...display,
+              videoId: display.videoId,
+              thumbnailUrl: coverUrl,
+            });
+            setVersions((prev) =>
+              prev.map((item) =>
+                item.id === display.id ? { ...item, thumbnailUrl: coverUrl } : item
+              )
+            );
+          },
+        },
+      ];
+    });
+  }, [videos, versionsByVideoId]);
+
   const activeVideo = useMemo(() => {
     if (!activeVideoId) return null;
     if (draftVideo?.id === activeVideoId) return draftVideo;
@@ -155,7 +186,13 @@ export function VideosAdmin({
             نمای فشرده — روی کارت کلیک کنید یا با + ویدیو جدید بسازید
           </p>
         </div>
-        <AdminViewModeToggle value={viewMode} onChange={setViewMode} />
+        <div className="flex flex-wrap items-center gap-2">
+          <GenerateMissingVideoCoversButton
+            targets={missingCoverTargets}
+            onComplete={refresh}
+          />
+          <AdminViewModeToggle value={viewMode} onChange={setViewMode} />
+        </div>
       </div>
 
       <AdminContentFilterBar

@@ -37,9 +37,11 @@ import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteSocialPostAction, saveSocialPostAction } from "@/lib/actions/extended-actions";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { todayISO } from "@/lib/jalali";
+import { videoNeedsAutoCover } from "@/lib/client/video-cover";
 import { isSitePublication } from "@/lib/social-posts";
 import type { AdminUser, SocialContentType, SocialMediaPost, SocialPlatform } from "@/lib/types";
 import { getStatusLabel } from "@/lib/utils";
+import { GenerateMissingVideoCoversButton } from "@/components/admin/generate-missing-video-covers-button";
 
 const schema = z.object({
   platform: z.enum(["instagram", "x", "telegram", "linkedin", "youtube", "aparat", "rubika", "eitaa", "soroush", "bale", "other"]),
@@ -109,6 +111,32 @@ export function SocialPostsAdmin({
   );
   const filteredIds = useMemo(() => filteredRows.map((item) => item.id), [filteredRows]);
   const bulk = useSectionBulkEdit(filteredIds);
+
+  const missingCoverTargets = useMemo(() => {
+    return rows.flatMap((post) => {
+      const isVideoContent = post.contentType === "video" || post.contentType === "reel";
+      const mediaUrl = post.mediaUrl?.trim() ?? "";
+      if (!isVideoContent || !mediaUrl) return [];
+      if (!videoNeedsAutoCover(mediaUrl, post.coverImageUrl)) return [];
+      return [
+        {
+          id: post.id,
+          label: post.title,
+          videoUrl: mediaUrl,
+          thumbnailUrl: post.coverImageUrl,
+          applyCover: async (coverUrl: string) => {
+            await saveSocialPostAction({
+              ...post,
+              coverImageUrl: coverUrl,
+            });
+            setRows((prev) =>
+              prev.map((row) => (row.id === post.id ? { ...row, coverImageUrl: coverUrl } : row))
+            );
+          },
+        },
+      ];
+    });
+  }, [rows]);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -235,6 +263,7 @@ export function SocialPostsAdmin({
             <p className="text-sm text-muted-foreground">ثبت پست‌ها، بازدید، لینک و نوع محتوا</p>
           </div>
           <div className="flex items-center gap-2">
+            <GenerateMissingVideoCoversButton targets={missingCoverTargets} />
             <AdminViewModeToggle value={viewMode} onChange={setViewMode} />
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4" />
@@ -246,6 +275,7 @@ export function SocialPostsAdmin({
 
       {embedded && (
         <div className="flex items-center justify-end gap-2">
+          <GenerateMissingVideoCoversButton targets={missingCoverTargets} />
           <AdminViewModeToggle value={viewMode} onChange={setViewMode} />
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />
