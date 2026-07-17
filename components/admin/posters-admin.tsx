@@ -111,7 +111,6 @@ export function PostersAdmin({
     () => posters.filter((item) => matchesAdminContentFilter(item, contentFilter)),
     [posters, contentFilter]
   );
-  const filteredIds = useMemo(() => filteredPosters.map((item) => item.id), [filteredPosters]);
   const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredPosters.length,

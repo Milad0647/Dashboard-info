@@ -14,8 +14,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
+import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
+import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 
 interface AdminDataTableProps<T> {
   data: T[];
@@ -55,15 +57,24 @@ export function AdminDataTable<T extends { id: string }>({
   const hasActions = Boolean(onView || onEdit || onDelete || onTogglePublish);
   const showSelection = selectable && Boolean(onBulkDelete);
 
-  const filtered = data.filter((item) => {
-    if (!search) return true;
-    return searchKeys.some((key) => {
-      const val = item[key];
-      return String(val ?? "").toLowerCase().includes(search.toLowerCase());
-    });
-  });
-
-  const selectableRows = filtered.filter((item) => !(isReadOnly?.(item) ?? false));
+  const filtered = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+    if (!normalizedSearch) return data;
+    return data.filter((item) =>
+      searchKeys.some((key) =>
+        String(item[key] ?? "").toLowerCase().includes(normalizedSearch)
+      )
+    );
+  }, [data, search, searchKeys]);
+  const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
+    filtered.length,
+    search
+  );
+  const visibleRows = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
+  );
+  const selectableRows = visibleRows.filter((item) => !(isReadOnly?.(item) ?? false));
   const selectedCount = selectedIds.size;
   const allVisibleSelected =
     selectableRows.length > 0 && selectableRows.every((item) => selectedIds.has(item.id));
@@ -190,7 +201,7 @@ export function AdminDataTable<T extends { id: string }>({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item) => {
+                {visibleRows.map((item) => {
                   const readOnly = isReadOnly?.(item) ?? false;
 
                   return (
@@ -260,6 +271,13 @@ export function AdminDataTable<T extends { id: string }>({
           </div>
         </div>
       )}
+
+      <AdminInfiniteScrollSentinel
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={loadMore}
+        remaining={filtered.length - visibleCount}
+      />
     </div>
   );
 }
