@@ -5,7 +5,6 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LightboxModal } from "@/components/media/lightbox-modal";
-import { MediaPlaceholder } from "@/components/ui/media-placeholder";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { PublicOwnerTag } from "@/components/public/public-owner-tag";
@@ -39,7 +38,7 @@ export function PosterCard({
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const displayVersion = resolveDisplayVersion(versions);
-  if (!displayVersion) return null;
+  if (!displayVersion?.imageUrl?.trim()) return null;
 
   const handleDownload = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -53,17 +52,13 @@ export function PosterCard({
     <>
       <Card className="overflow-hidden w-full py-0 gap-0">
         <div className="relative w-full aspect-[3/4] overflow-hidden bg-muted group">
-          {displayVersion.imageUrl ? (
-            <ImageZoom
-              src={displayVersion.imageUrl}
-              alt={title}
-              className="absolute inset-0 h-full w-full"
-              imgClassName="object-contain object-center transition-transform group-hover:scale-105"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 220px"
-            />
-          ) : (
-            <MediaPlaceholder kind="poster" className="h-full" />
-          )}
+          <ImageZoom
+            src={displayVersion.imageUrl}
+            alt={title}
+            className="absolute inset-0 h-full w-full"
+            imgClassName="object-contain object-center transition-transform group-hover:scale-105"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 220px"
+          />
           <Button
             type="button"
             variant="secondary"

@@ -4,6 +4,7 @@ import { FolderKanban, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EditSuggestionsPanel } from "@/components/admin/edit-suggestions-panel";
 import { getAdminData, getAllUsers } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
 import { DASHBOARD_STAT_DEFINITIONS } from "@/lib/admin-dashboard-stats";
@@ -17,6 +18,7 @@ import {
   type ContributorPermissions,
 } from "@/lib/contributor-permissions";
 import { pgGetUserPermissionsForCampaign } from "@/lib/db/repository-extended";
+import { buildEditSuggestions } from "@/lib/edit-suggestions";
 import { formatPersianNumber, adminHref, isPostgresConfigured, isSupabaseConfigured } from "@/lib/utils";
 
 function getDatabaseLabel() {
@@ -74,6 +76,19 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
   const showSubmissionsAlert = canManageAll
     ? features.submissions
     : hasContributorPermission(contributorPermissions, "submissions");
+  const editSuggestions = session?.userId
+    ? buildEditSuggestions({
+        campaignId,
+        ownerUserId: session.userId,
+        posters: data.posters,
+        posterVersions: data.posterVersions,
+        videos: data.videos,
+        videoVersions: data.videoVersions,
+      })
+    : [];
+  const editSuggestionsStorageKey = session?.userId
+    ? `edit-suggestions:${campaignId}:${session.userId}`
+    : `edit-suggestions:${campaignId}`;
 
   return (
     <div className="space-y-8">
@@ -104,6 +119,11 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
       </div>
 
       <CampaignTools isFullAdmin={canManageAll} />
+
+      <EditSuggestionsPanel
+        suggestions={editSuggestions}
+        storageKey={editSuggestionsStorageKey}
+      />
 
       <Card>
         <CardHeader>

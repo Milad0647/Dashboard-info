@@ -38,7 +38,7 @@ export function VideoCard({
   const [modalOpen, setModalOpen] = useState(false);
 
   const displayVersion = resolveDisplayVersion(versions);
-  if (!displayVersion) return null;
+  if (!displayVersion?.videoUrl?.trim()) return null;
 
   const handleDownloadVideo = (event: React.MouseEvent) => {
     event.stopPropagation();
