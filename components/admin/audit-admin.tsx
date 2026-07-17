@@ -44,7 +44,13 @@ import {
   getAuditEntityLabel,
   getAuditRoleLabel,
 } from "@/lib/audit/labels";
-import type { AuditCategory, AuditDashboardData } from "@/lib/audit/types";
+import type {
+  AuditActorSummary,
+  AuditCategory,
+  AuditDashboardData,
+  AuditEvent,
+  UserContentContribution,
+} from "@/lib/audit/types";
 
 const CATEGORY_BADGE_VARIANT: Record<
   AuditCategory,
@@ -101,7 +107,7 @@ function UserCell({
           title={online ? "آنلاین" : "آفلاین"}
         />
       )}
-      <div className="min-w-0">
+      <div className="min-w-0 text-right">
         <div className="font-medium truncate" title={displayName}>
           {displayName}
         </div>
@@ -115,35 +121,35 @@ function UserCell({
   );
 }
 
-function AuditTable({
+type AuditColumnDef<T> = {
+  key: string;
+  label: string;
+  render: (row: T) => ReactNode;
+  className?: string;
+};
+
+function AuditDataTable<T>({
   columns,
-  children,
-  emptyColSpan,
+  rows,
+  getRowKey,
   emptyMessage = "موردی ثبت نشده است.",
-  isEmpty,
   minWidth = "720px",
 }: {
-  columns: { key: string; label: string; width?: string }[];
-  children: ReactNode;
-  emptyColSpan: number;
+  columns: AuditColumnDef<T>[];
+  rows: T[];
+  getRowKey: (row: T) => string;
   emptyMessage?: string;
-  isEmpty: boolean;
   minWidth?: string;
 }) {
   return (
     <div className="overflow-x-auto">
-      <table
-        className="w-full text-sm border-collapse table-fixed"
-        dir="rtl"
-        style={{ minWidth }}
-      >
-        <thead className="bg-muted/50 text-muted-foreground">
-          <tr>
+      <table className="w-full border-collapse text-sm" style={{ minWidth, direction: "rtl" }}>
+        <thead>
+          <tr className="bg-muted/50 text-muted-foreground">
             {columns.map((column) => (
               <th
                 key={column.key}
-                className="text-right font-medium px-3 py-3 whitespace-nowrap border-b"
-                style={column.width ? { width: column.width } : undefined}
+                className="border-b px-3 py-3 text-right font-medium whitespace-nowrap"
               >
                 {column.label}
               </th>
@@ -151,17 +157,28 @@ function AuditTable({
           </tr>
         </thead>
         <tbody>
-          {isEmpty ? (
+          {rows.length === 0 ? (
             <tr>
               <td
-                colSpan={emptyColSpan}
+                colSpan={columns.length}
                 className="px-3 py-8 text-center text-muted-foreground"
               >
                 {emptyMessage}
               </td>
             </tr>
           ) : (
-            children
+            rows.map((row) => (
+              <tr key={getRowKey(row)} className="border-b last:border-0">
+                {columns.map((column) => (
+                  <td
+                    key={column.key}
+                    className={`px-3 py-3 text-right align-middle whitespace-nowrap ${column.className ?? ""}`}
+                  >
+                    {column.render(row)}
+                  </td>
+                ))}
+              </tr>
+            ))
           )}
         </tbody>
       </table>
@@ -196,59 +213,227 @@ function StatCard({
   );
 }
 
-const ACTIVE_TODAY_COLUMNS = [
-  { key: "user", label: "کاربر", width: "35%" },
-  { key: "role", label: "نقش", width: "15%" },
-  { key: "events", label: "رویداد امروز", width: "15%" },
-  { key: "last", label: "آخرین فعالیت", width: "35%" },
+const ACTIVE_TODAY_COLUMNS: AuditColumnDef<AuditActorSummary>[] = [
+  {
+    key: "user",
+    label: "کاربر",
+    render: (actor) => (
+      <UserCell name={actor.actorName} email={actor.actorEmail} online={actor.isOnline} />
+    ),
+  },
+  {
+    key: "role",
+    label: "نقش",
+    render: (actor) => <Badge variant="outline">{getAuditRoleLabel(actor.actorRole)}</Badge>,
+  },
+  {
+    key: "events",
+    label: "رویداد امروز",
+    className: "font-semibold",
+    render: (actor) => formatPersianNumber(actor.eventCount),
+  },
+  {
+    key: "last",
+    label: "آخرین فعالیت",
+    className: "text-xs text-muted-foreground",
+    render: (actor) => (actor.lastSeenAt ? formatPersianDateTime(actor.lastSeenAt) : "—"),
+  },
 ];
 
-const USERS_COLUMNS = [
-  { key: "user", label: "کاربر", width: "22%" },
-  { key: "role", label: "نقش", width: "10%" },
-  { key: "events", label: "کل رویداد", width: "9%" },
-  { key: "login", label: "ورود", width: "7%" },
-  { key: "create", label: "ثبت", width: "7%" },
-  { key: "update", label: "ویرایش", width: "8%" },
-  { key: "delete", label: "حذف", width: "7%" },
-  { key: "views", label: "بازدید", width: "8%" },
-  { key: "clicks", label: "کلیک", width: "7%" },
-  { key: "last", label: "آخرین فعالیت", width: "15%" },
+const USERS_COLUMNS: AuditColumnDef<AuditActorSummary>[] = [
+  {
+    key: "user",
+    label: "کاربر",
+    render: (actor) => (
+      <UserCell name={actor.actorName} email={actor.actorEmail} online={actor.isOnline} />
+    ),
+  },
+  {
+    key: "role",
+    label: "نقش",
+    render: (actor) => <Badge variant="outline">{getAuditRoleLabel(actor.actorRole)}</Badge>,
+  },
+  {
+    key: "events",
+    label: "کل رویداد",
+    className: "font-semibold",
+    render: (actor) => formatPersianNumber(actor.eventCount),
+  },
+  {
+    key: "login",
+    label: "ورود",
+    render: (actor) => formatPersianNumber(actor.loginCount),
+  },
+  {
+    key: "create",
+    label: "ثبت",
+    render: (actor) => formatPersianNumber(actor.contentCreateCount),
+  },
+  {
+    key: "update",
+    label: "ویرایش",
+    render: (actor) => formatPersianNumber(actor.contentUpdateCount),
+  },
+  {
+    key: "delete",
+    label: "حذف",
+    render: (actor) => formatPersianNumber(actor.contentDeleteCount),
+  },
+  {
+    key: "views",
+    label: "بازدید",
+    render: (actor) => formatPersianNumber(actor.pageViewCount),
+  },
+  {
+    key: "clicks",
+    label: "کلیک",
+    render: (actor) => formatPersianNumber(actor.clickCount),
+  },
+  {
+    key: "last",
+    label: "آخرین فعالیت",
+    className: "text-xs text-muted-foreground",
+    render: (actor) => (actor.lastSeenAt ? formatPersianDateTime(actor.lastSeenAt) : "—"),
+  },
 ];
 
-const CONTENT_COLUMNS = [
-  { key: "user", label: "کاربر", width: "18%" },
-  { key: "total", label: "مجموع", width: "8%" },
-  { key: "billboards", label: "بیلبورد", width: "8%" },
-  { key: "posters", label: "پوستر", width: "8%" },
-  { key: "videos", label: "ویدیو", width: "8%" },
-  { key: "files", label: "فایل", width: "7%" },
-  { key: "raw", label: "راش", width: "7%" },
-  { key: "social", label: "شبکه اجتماعی", width: "10%" },
-  { key: "activities", label: "اقدام", width: "8%" },
-  { key: "broadcast", label: "پخش", width: "8%" },
-  { key: "meetings", label: "جلسه", width: "10%" },
+const CONTENT_COLUMNS: AuditColumnDef<UserContentContribution>[] = [
+  {
+    key: "user",
+    label: "کاربر",
+    render: (row) => <UserCell name={row.name} email={row.email} />,
+  },
+  {
+    key: "total",
+    label: "مجموع",
+    className: "font-semibold",
+    render: (row) => formatPersianNumber(row.total),
+  },
+  {
+    key: "billboards",
+    label: "بیلبورد",
+    render: (row) => formatPersianNumber(row.billboards),
+  },
+  {
+    key: "posters",
+    label: "پوستر",
+    render: (row) => formatPersianNumber(row.posters),
+  },
+  {
+    key: "videos",
+    label: "ویدیو",
+    render: (row) => formatPersianNumber(row.videos),
+  },
+  {
+    key: "files",
+    label: "فایل",
+    render: (row) => formatPersianNumber(row.files),
+  },
+  {
+    key: "raw",
+    label: "راش",
+    render: (row) => formatPersianNumber(row.rawMedia),
+  },
+  {
+    key: "social",
+    label: "شبکه اجتماعی",
+    render: (row) => formatPersianNumber(row.socialPosts),
+  },
+  {
+    key: "activities",
+    label: "اقدام",
+    render: (row) => formatPersianNumber(row.activities),
+  },
+  {
+    key: "broadcast",
+    label: "پخش",
+    render: (row) => formatPersianNumber(row.broadcast),
+  },
+  {
+    key: "meetings",
+    label: "جلسه",
+    render: (row) => formatPersianNumber(row.meetings),
+  },
 ];
 
-const LOGIN_COLUMNS = [
-  { key: "user", label: "کاربر", width: "35%" },
-  { key: "role", label: "نقش", width: "15%" },
-  { key: "time", label: "زمان ورود", width: "30%" },
-  { key: "ip", label: "IP", width: "20%" },
+const LOGIN_COLUMNS: AuditColumnDef<AuditEvent>[] = [
+  {
+    key: "user",
+    label: "کاربر",
+    render: (event) => <UserCell name={event.actorName} email={event.actorEmail} />,
+  },
+  {
+    key: "role",
+    label: "نقش",
+    render: (event) => <Badge variant="outline">{getAuditRoleLabel(event.actorRole)}</Badge>,
+  },
+  {
+    key: "time",
+    label: "زمان ورود",
+    className: "text-xs text-muted-foreground",
+    render: (event) => formatPersianDateTime(event.createdAt),
+  },
+  {
+    key: "ip",
+    label: "IP",
+    className: "font-mono text-xs",
+    render: (event) => <span dir="ltr">{event.ipAddress ?? "—"}</span>,
+  },
 ];
 
-const EVENT_COLUMNS = [
-  { key: "time", label: "زمان", width: "16%" },
-  { key: "user", label: "کاربر", width: "20%" },
-  { key: "category", label: "دسته", width: "12%" },
-  { key: "action", label: "اقدام", width: "14%" },
-  { key: "entity", label: "مورد", width: "12%" },
-  { key: "label", label: "توضیح", width: "26%" },
+const EVENT_COLUMNS: AuditColumnDef<AuditEvent>[] = [
+  {
+    key: "time",
+    label: "زمان",
+    className: "text-xs text-muted-foreground",
+    render: (event) => formatPersianDateTime(event.createdAt),
+  },
+  {
+    key: "user",
+    label: "کاربر",
+    render: (event) => <UserCell name={event.actorName} email={event.actorEmail} />,
+  },
+  {
+    key: "category",
+    label: "دسته",
+    render: (event) => (
+      <Badge variant={CATEGORY_BADGE_VARIANT[event.category]}>
+        {AUDIT_CATEGORY_LABELS[event.category]}
+      </Badge>
+    ),
+  },
+  {
+    key: "action",
+    label: "اقدام",
+    render: (event) => getAuditActionLabel(event.action),
+  },
+  {
+    key: "entity",
+    label: "مورد",
+    render: (event) => getAuditEntityLabel(event.entityType),
+  },
+  {
+    key: "label",
+    label: "توضیح",
+    className: "!whitespace-normal",
+    render: (event) => (
+      <span className="line-clamp-2 break-words">{event.label?.trim() || event.path || "—"}</span>
+    ),
+  },
 ];
 
-const PATH_COLUMNS = [
-  { key: "path", label: "صفحه", width: "80%" },
-  { key: "count", label: "تعداد بازدید", width: "20%" },
+const PATH_COLUMNS: AuditColumnDef<{ path: string; count: number }>[] = [
+  {
+    key: "path",
+    label: "صفحه",
+    className: "font-mono text-xs !whitespace-normal",
+    render: (row) => <span dir="ltr">{row.path}</span>,
+  },
+  {
+    key: "count",
+    label: "تعداد بازدید",
+    render: (row) => formatPersianNumber(row.count),
+  },
 ];
 
 export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
@@ -284,6 +469,31 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
       })),
     [data?.topClicks]
   );
+
+  // Group today's logins by user so repeated logins show as one card with a count
+  const groupedLoginsToday = useMemo(() => {
+    const groups = new Map<
+      string,
+      { event: AuditEvent; loginCount: number }
+    >();
+    for (const event of data?.loginsTodayList ?? []) {
+      const key =
+        event.actorEmail?.trim().toLowerCase() ||
+        event.actorName?.trim() ||
+        event.id;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.loginCount += 1;
+        // Keep the most recent login as the card's representative event
+        if (new Date(event.createdAt) > new Date(existing.event.createdAt)) {
+          existing.event = event;
+        }
+      } else {
+        groups.set(key, { event, loginCount: 1 });
+      }
+    }
+    return Array.from(groups.values());
+  }, [data?.loginsTodayList]);
 
   const filteredEvents = useMemo(() => {
     const events = data?.recentEvents ?? [];
@@ -372,8 +582,8 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
               چه کسانی امروز وارد شده‌اند
               <Badge variant="outline" className="mr-1">
                 {formatPersianNumber(
-                  data.loginsTodayList.length > 0
-                    ? data.loginsTodayList.length
+                  groupedLoginsToday.length > 0
+                    ? groupedLoginsToday.length
                     : summary.loginsToday
                 )}
               </Badge>
@@ -390,7 +600,7 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
             ) : (
               <div className="max-h-[360px] overflow-y-auto">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
-                  {data.loginsTodayList.map((event) => (
+                  {groupedLoginsToday.map(({ event, loginCount }) => (
                     <div
                       key={event.id}
                       className="rounded-lg border bg-card px-3 py-3 flex items-start gap-3"
@@ -411,8 +621,13 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground mt-1.5">
-                          {formatPersianDateTime(event.createdAt)}
+                          آخرین ورود: {formatPersianDateTime(event.createdAt)}
                         </p>
+                        {loginCount > 1 && (
+                          <p className="text-xs font-medium text-primary mt-0.5">
+                            {formatPersianNumber(loginCount)} بار وارد شده
+                          </p>
+                        )}
                         {event.ipAddress && (
                           <p className="text-xs text-muted-foreground font-mono mt-0.5" dir="ltr">
                             {event.ipAddress}
@@ -438,34 +653,13 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <AuditTable
+            <AuditDataTable
               columns={ACTIVE_TODAY_COLUMNS}
-              emptyColSpan={4}
+              rows={data.activeUsersTodayList}
+              getRowKey={(actor) => actor.actorKey}
               emptyMessage="امروز هنوز فعالیتی ثبت نشده است."
-              isEmpty={data.activeUsersTodayList.length === 0}
               minWidth="520px"
-            >
-              {data.activeUsersTodayList.map((actor) => (
-                <tr key={actor.actorKey} className="border-b last:border-0">
-                  <td className="px-3 py-3 align-middle">
-                    <UserCell
-                      name={actor.actorName}
-                      email={actor.actorEmail}
-                      online={actor.isOnline}
-                    />
-                  </td>
-                  <td className="px-3 py-3 align-middle whitespace-nowrap">
-                    <Badge variant="outline">{getAuditRoleLabel(actor.actorRole)}</Badge>
-                  </td>
-                  <td className="px-3 py-3 align-middle whitespace-nowrap font-semibold">
-                    {formatPersianNumber(actor.eventCount)}
-                  </td>
-                  <td className="px-3 py-3 align-middle whitespace-nowrap text-xs text-muted-foreground">
-                    {actor.lastSeenAt ? formatPersianDateTime(actor.lastSeenAt) : "—"}
-                  </td>
-                </tr>
-              ))}
-            </AuditTable>
+            />
           </CardContent>
         </Card>
       </div>
@@ -702,23 +896,12 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
               <CardTitle className="text-base">پربازدیدترین صفحات</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <AuditTable
+              <AuditDataTable
                 columns={PATH_COLUMNS}
-                emptyColSpan={2}
-                isEmpty={data.topPaths.length === 0}
+                rows={data.topPaths}
+                getRowKey={(row) => row.path}
                 minWidth="480px"
-              >
-                {data.topPaths.map((row) => (
-                  <tr key={row.path} className="border-b last:border-0">
-                    <td className="px-3 py-2.5 font-mono text-xs" dir="ltr">
-                      {row.path}
-                    </td>
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      {formatPersianNumber(row.count)}
-                    </td>
-                  </tr>
-                ))}
-              </AuditTable>
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -729,51 +912,12 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
               <CardTitle className="text-base">فعال‌ترین کاربران</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <AuditTable
+              <AuditDataTable
                 columns={USERS_COLUMNS}
-                emptyColSpan={10}
-                isEmpty={data.topActors.length === 0}
+                rows={data.topActors}
+                getRowKey={(actor) => actor.actorKey}
                 minWidth="960px"
-              >
-                {data.topActors.map((actor) => (
-                  <tr key={actor.actorKey} className="border-b last:border-0">
-                    <td className="px-3 py-3 align-middle">
-                      <UserCell
-                        name={actor.actorName}
-                        email={actor.actorEmail}
-                        online={actor.isOnline}
-                      />
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      <Badge variant="outline">{getAuditRoleLabel(actor.actorRole)}</Badge>
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap font-semibold">
-                      {formatPersianNumber(actor.eventCount)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(actor.loginCount)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(actor.contentCreateCount)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(actor.contentUpdateCount)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(actor.contentDeleteCount)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(actor.pageViewCount)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(actor.clickCount)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap text-xs text-muted-foreground">
-                      {actor.lastSeenAt ? formatPersianDateTime(actor.lastSeenAt) : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </AuditTable>
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -784,50 +928,12 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
               <CardTitle className="text-base">محتوای ثبت‌شده به تفکیک کاربر</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <AuditTable
+              <AuditDataTable
                 columns={CONTENT_COLUMNS}
-                emptyColSpan={11}
-                isEmpty={data.contentByUser.length === 0}
+                rows={data.contentByUser}
+                getRowKey={(row) => row.userId}
                 minWidth="1000px"
-              >
-                {data.contentByUser.map((row) => (
-                  <tr key={row.userId} className="border-b last:border-0">
-                    <td className="px-3 py-3 align-middle">
-                      <UserCell name={row.name} email={row.email} />
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap font-semibold">
-                      {formatPersianNumber(row.total)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(row.billboards)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(row.posters)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(row.videos)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(row.files)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(row.rawMedia)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(row.socialPosts)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(row.activities)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(row.broadcast)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {formatPersianNumber(row.meetings)}
-                    </td>
-                  </tr>
-                ))}
-              </AuditTable>
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -843,30 +949,13 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <AuditTable
+              <AuditDataTable
                 columns={LOGIN_COLUMNS}
-                emptyColSpan={4}
+                rows={data.loginsTodayList}
+                getRowKey={(event) => event.id}
                 emptyMessage="امروز هنوز ورودی ثبت نشده است."
-                isEmpty={data.loginsTodayList.length === 0}
                 minWidth="640px"
-              >
-                {data.loginsTodayList.map((event) => (
-                  <tr key={event.id} className="border-b last:border-0">
-                    <td className="px-3 py-3 align-middle">
-                      <UserCell name={event.actorName} email={event.actorEmail} />
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      <Badge variant="outline">{getAuditRoleLabel(event.actorRole)}</Badge>
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap text-xs text-muted-foreground">
-                      {formatPersianDateTime(event.createdAt)}
-                    </td>
-                    <td className="px-3 py-3 align-middle font-mono text-xs whitespace-nowrap" dir="ltr">
-                      {event.ipAddress ?? "—"}
-                    </td>
-                  </tr>
-                ))}
-              </AuditTable>
+              />
             </CardContent>
           </Card>
 
@@ -875,29 +964,12 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
               <CardTitle className="text-base">تاریخچه ورود کاربران</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <AuditTable
+              <AuditDataTable
                 columns={LOGIN_COLUMNS}
-                emptyColSpan={4}
-                isEmpty={data.logins.length === 0}
+                rows={data.logins}
+                getRowKey={(event) => event.id}
                 minWidth="640px"
-              >
-                {data.logins.map((event) => (
-                  <tr key={event.id} className="border-b last:border-0">
-                    <td className="px-3 py-3 align-middle">
-                      <UserCell name={event.actorName} email={event.actorEmail} />
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      <Badge variant="outline">{getAuditRoleLabel(event.actorRole)}</Badge>
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap text-xs text-muted-foreground">
-                      {formatPersianDateTime(event.createdAt)}
-                    </td>
-                    <td className="px-3 py-3 align-middle font-mono text-xs whitespace-nowrap" dir="ltr">
-                      {event.ipAddress ?? "—"}
-                    </td>
-                  </tr>
-                ))}
-              </AuditTable>
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -943,40 +1015,13 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
 
           <Card>
             <CardContent className="p-0">
-              <AuditTable
+              <AuditDataTable
                 columns={EVENT_COLUMNS}
-                emptyColSpan={6}
+                rows={filteredEvents}
+                getRowKey={(event) => event.id}
                 emptyMessage="موردی یافت نشد."
-                isEmpty={filteredEvents.length === 0}
                 minWidth="900px"
-              >
-                {filteredEvents.map((event) => (
-                  <tr key={event.id} className="border-b last:border-0">
-                    <td className="px-3 py-3 align-middle whitespace-nowrap text-xs text-muted-foreground">
-                      {formatPersianDateTime(event.createdAt)}
-                    </td>
-                    <td className="px-3 py-3 align-middle">
-                      <UserCell name={event.actorName} email={event.actorEmail} />
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      <Badge variant={CATEGORY_BADGE_VARIANT[event.category]}>
-                        {AUDIT_CATEGORY_LABELS[event.category]}
-                      </Badge>
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {getAuditActionLabel(event.action)}
-                    </td>
-                    <td className="px-3 py-3 align-middle whitespace-nowrap">
-                      {getAuditEntityLabel(event.entityType)}
-                    </td>
-                    <td className="px-3 py-3 align-middle">
-                      <span className="line-clamp-2 break-words">
-                        {event.label?.trim() || event.path || "—"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </AuditTable>
+              />
             </CardContent>
           </Card>
         </TabsContent>
