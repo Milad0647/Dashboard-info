@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "c49ebd3cd8bcf6f7718cc6ce636efd445f70a523",
+      "committedAt": "2026-07-17T17:04:44+03:30",
+      "title": "افزودن نمایش و مخفی کردن رمز عبور در فرم ورود",
+      "subject": "Add show/hide password toggle on login form"
+    },
+    {
+      "hash": "7f3d25abed20cb3b0d0390879d2f506f5859efa4",
+      "committedAt": "2026-07-17T16:35:13+03:30",
+      "title": "افزودن بخش آپدیت‌های سایت برای ادمین و کارفرما با تولید خودکار از تاریخچه گیت",
+      "subject": "Add auto-generated site updates section for admin and client users"
+    },
+    {
       "hash": "f6a0657771bad2c310723752199a9a0f5ca86095",
       "committedAt": "2026-06-28T15:37:04+03:30",
       "title": "قابل جمع‌شدن کردن بخش‌های جلسات و پخش صدا و سیما مثل سایر سکشن‌ها",

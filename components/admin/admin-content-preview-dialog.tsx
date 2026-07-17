@@ -37,22 +37,25 @@ export function AdminContentPreviewDialog({
 }: AdminContentPreviewDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto overflow-x-hidden">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+      <DialogContent className="!flex max-h-[92vh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
+        <DialogHeader className="shrink-0 border-b px-6 py-4 pe-12">
+          <DialogTitle className="break-words text-base">{title}</DialogTitle>
           <DialogDescription className="sr-only">پیش‌نمایش محتوا</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-6 py-4">
           {imageUrl ? (
-            <ImageZoom
-              src={imageUrl}
-              alt={title}
-              className="w-full rounded-lg bg-muted"
-              imgClassName="max-h-80 w-full object-contain"
-            />
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted">
+              <ImageZoom
+                src={imageUrl}
+                alt={title}
+                className="absolute inset-0 h-full w-full"
+                imgClassName="object-contain"
+                sizes="(max-width: 768px) 100vw, 42rem"
+              />
+            </div>
           ) : (
-            <div className="flex h-40 items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">
+            <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">
               تصویری ثبت نشده است
             </div>
           )}
@@ -68,7 +71,7 @@ export function AdminContentPreviewDialog({
           {meta}
 
           {details.length > 0 && (
-            <div className="grid gap-2 rounded-lg border bg-muted/20 p-3 text-sm sm:grid-cols-2">
+            <div className="grid gap-3 rounded-lg border bg-muted/20 p-4 text-sm sm:grid-cols-2">
               {details.map((detail) =>
                 detail.value !== null && detail.value !== undefined && detail.value !== "" ? (
                   <div key={detail.label} className="space-y-1">
@@ -79,8 +82,10 @@ export function AdminContentPreviewDialog({
               )}
             </div>
           )}
+        </div>
 
-          {(onEdit || onDelete) && (
+        {(onEdit || onDelete) && (
+          <div className="shrink-0 border-t px-6 py-3">
             <AdminItemActions
               onEdit={
                 onEdit
@@ -100,8 +105,8 @@ export function AdminContentPreviewDialog({
               }
               deleteLabel={deleteLabel}
             />
-          )}
-        </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

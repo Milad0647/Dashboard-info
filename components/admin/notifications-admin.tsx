@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
+import { VideoModal } from "@/components/media/video-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +39,7 @@ import {
   type NotificationSort,
   type NotificationView,
 } from "@/lib/notification-feed";
+import { resolveDisplayVersion } from "@/lib/media-utils";
 import type {
   Billboard,
   CampaignActivity,
@@ -248,6 +250,18 @@ export function NotificationsAdmin({
       socialPosts,
     });
   }, [previewItem, posters, videos, billboards, activities, socialPosts]);
+
+  const previewVideoVersions = useMemo(() => {
+    if (!previewItem || previewItem.contentType !== "video") return [];
+    return videoVersions
+      .filter((version) => version.videoId === previewItem.contentId)
+      .sort((a, b) => b.versionNumber - a.versionNumber);
+  }, [previewItem, videoVersions]);
+
+  const previewVideoDisplay = useMemo(
+    () => resolveDisplayVersion(previewVideoVersions),
+    [previewVideoVersions]
+  );
 
   useEffect(() => {
     void getNotificationReadsAction().then((keys) => {
@@ -528,61 +542,75 @@ export function NotificationsAdmin({
         </div>
       )}
 
-      <AdminContentPreviewDialog
-        open={Boolean(previewItem)}
-        onOpenChange={(open) => !open && setPreviewItem(null)}
-        title={previewItem?.title ?? "پیش‌نمایش اعلان"}
-        description={previewDescription}
-        imageUrl={previewItem?.thumbnailUrl}
-        meta={
-          previewItem ? (
-            <div className="flex flex-wrap gap-1.5">
-              <Badge variant="outline" className="text-[10px]">
-                {previewItem.typeLabel}
-              </Badge>
-              {previewItem.score == null ? (
-                <Badge variant="warning" className="text-[10px]">
-                  بدون امتیاز
-                </Badge>
-              ) : (
-                <Badge variant="secondary" className="text-[10px]">
-                  امتیاز {formatPersianNumber(previewItem.score)}
-                </Badge>
-              )}
-              {!previewItem.published && (
+      {previewItem?.contentType === "video" && previewVideoDisplay ? (
+        <VideoModal
+          open
+          onOpenChange={(open) => !open && setPreviewItem(null)}
+          title={previewItem.title}
+          versions={previewVideoVersions}
+          initialVersionId={previewVideoDisplay.id}
+          description={previewDescription}
+          topics={previewItem.planLabel ? [previewItem.planLabel] : []}
+          ownerName={previewItem.ownerName}
+        />
+      ) : (
+        <AdminContentPreviewDialog
+          open={Boolean(previewItem)}
+          onOpenChange={(open) => !open && setPreviewItem(null)}
+          title={previewItem?.title ?? "پیش‌نمایش اعلان"}
+          description={previewDescription}
+          imageUrl={previewItem?.thumbnailUrl}
+          meta={
+            previewItem ? (
+              <div className="flex flex-wrap gap-1.5">
                 <Badge variant="outline" className="text-[10px]">
-                  منتشر نشده
+                  {previewItem.typeLabel}
                 </Badge>
-              )}
-            </div>
-          ) : null
-        }
-        details={
-          previewItem
-            ? [
-                { label: "کاربر", value: previewItem.ownerName ?? "—" },
-                {
-                  label: "موقعیت",
-                  value:
-                    [previewItem.ownerProvince, previewItem.ownerCity].filter(Boolean).join(" / ") ||
-                    "—",
-                },
-                { label: "موضوع", value: previewItem.planLabel ?? "—" },
-                { label: "تاریخ رویداد", value: formatPersianDateTime(previewItem.eventAt) },
-                { label: "تاریخ روز", value: formatPersianDate(previewItem.date) },
-              ]
-            : []
-        }
-        onEdit={
-          previewItem
-            ? () => {
-                const path = previewItem.adminPath;
-                setPreviewItem(null);
-                router.push(path);
-              }
-            : undefined
-        }
-      />
+                {previewItem.score == null ? (
+                  <Badge variant="warning" className="text-[10px]">
+                    بدون امتیاز
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-[10px]">
+                    امتیاز {formatPersianNumber(previewItem.score)}
+                  </Badge>
+                )}
+                {!previewItem.published && (
+                  <Badge variant="outline" className="text-[10px]">
+                    منتشر نشده
+                  </Badge>
+                )}
+              </div>
+            ) : null
+          }
+          details={
+            previewItem
+              ? [
+                  { label: "کاربر", value: previewItem.ownerName ?? "—" },
+                  {
+                    label: "موقعیت",
+                    value:
+                      [previewItem.ownerProvince, previewItem.ownerCity]
+                        .filter(Boolean)
+                        .join(" / ") || "—",
+                  },
+                  { label: "موضوع", value: previewItem.planLabel ?? "—" },
+                  { label: "تاریخ رویداد", value: formatPersianDateTime(previewItem.eventAt) },
+                  { label: "تاریخ روز", value: formatPersianDate(previewItem.date) },
+                ]
+              : []
+          }
+          onEdit={
+            previewItem
+              ? () => {
+                  const path = previewItem.adminPath;
+                  setPreviewItem(null);
+                  router.push(path);
+                }
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }
