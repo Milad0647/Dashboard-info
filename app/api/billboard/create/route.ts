@@ -116,6 +116,10 @@ export async function POST(request: Request) {
     .map((value) => String(value).trim())
     .filter(Boolean);
 
+  if (planLabels.length === 0 && !planLabel) {
+    return NextResponse.json({ error: "انتخاب موضوع الزامی است" }, { status: 400 });
+  }
+
   try {
     const periods = parseRequiredPeriods(formData);
 

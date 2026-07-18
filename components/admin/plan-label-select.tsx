@@ -50,7 +50,8 @@ export function PlanLabelSelect({
   multiple = true,
 }: PlanLabelSelectProps) {
   const options = buildOptions(topics, plans);
-  if (options.length === 0) return null;
+  // Hide entirely when optional and campaign has no topics/plans configured.
+  if (options.length === 0 && optional) return null;
 
   const selected = multiple
     ? values ?? (value?.trim() ? [value] : [])
@@ -92,7 +93,10 @@ export function PlanLabelSelect({
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      <Label>
+        {label}
+        {!optional ? " *" : ""}
+      </Label>
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {selected.map((token) => (
@@ -121,8 +125,12 @@ export function PlanLabelSelect({
           clearAfterSelect
         />
       ) : (
-        optional && selected.length === 0 && (
-          <p className="text-xs text-muted-foreground">موضوعی تعریف نشده است.</p>
+        selected.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            {optional
+              ? "موضوعی تعریف نشده است."
+              : "ابتدا در تنظیمات کمپین موضوع تعریف کنید."}
+          </p>
         )
       )}
       {multiple && selected.length > 0 && (

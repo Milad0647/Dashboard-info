@@ -224,6 +224,10 @@ export function BillboardCreateAssignmentDialog({
       toast.error("محور باید حداقل ۲ کاراکتر باشد");
       return;
     }
+    if (planLabels.length === 0) {
+      toast.error("انتخاب موضوع الزامی است");
+      return;
+    }
 
     for (const [index, period] of periods.entries()) {
       if (!period.startDate || !period.endDate) {
@@ -402,6 +406,7 @@ export function BillboardCreateAssignmentDialog({
             plans={contentPlans}
             values={planLabels}
             onChangeMultiple={setPlanLabels}
+            optional={false}
           />
 
           {isEditing && editingBillboard && (

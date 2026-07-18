@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "943d95cf9c511b7f4652e1c147b76c8f3a132276",
+      "committedAt": "2026-07-18T15:19:28+03:30",
+      "title": "حفظ اطلاعات فرم آپلود محتوا هنگام بستن تصادفی مودال",
+      "subject": "Preserve upload modal drafts across accidental close"
+    },
+    {
       "hash": "bdb500799b985ccce9f94daa7840b311a813f2f2",
       "committedAt": "2026-07-18T15:14:26+03:30",
       "title": "رفع خطای نمایش صفحه کمپین پس از افزودن ورود",
