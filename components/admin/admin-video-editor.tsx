@@ -180,11 +180,19 @@ export function AdminVideoEditor({
         updatedAt: new Date().toISOString(),
       };
 
-      await saveVideoAction(savedVideo);
+      const videoResult = await saveVideoAction(savedVideo);
+      if (!videoResult?.success) {
+        toast.error(
+          videoResult && "error" in videoResult && typeof videoResult.error === "string"
+            ? videoResult.error
+            : "ذخیره ویدیو ناموفق بود"
+        );
+        return;
+      }
 
       const media = buildVideoVersionMedia(videoUrl, thumbnailUrl);
       const keepId = displayVersion?.id;
-      await saveVideoVersionAction({
+      const versionResult = await saveVideoVersionAction({
         id: keepId,
         videoId: video.id,
         versionNumber: displayVersion?.versionNumber ?? 1,
@@ -196,6 +204,14 @@ export function AdminVideoEditor({
         isFinal: true,
         status: "final",
       });
+      if (!versionResult?.success) {
+        toast.error(
+          versionResult && "error" in versionResult && typeof versionResult.error === "string"
+            ? versionResult.error
+            : "ذخیره فایل ویدیو ناموفق بود"
+        );
+        return;
+      }
 
       for (const version of versions) {
         if (version.id !== keepId) {

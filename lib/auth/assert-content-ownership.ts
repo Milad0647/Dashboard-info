@@ -117,6 +117,26 @@ export async function assertCanMutateOwnedContent(
   return null;
 }
 
+/**
+ * For upsert saves that send a client-generated id on create:
+ * skip ownership when the row does not exist yet; enforce it on updates.
+ */
+export async function assertCanMutateOwnedContentIfExists(
+  session: AuthSession,
+  table: OwnedContentTable,
+  id: string
+): Promise<{ success: false; error: string } | null> {
+  if (isFullAdmin(session)) return null;
+  if (!isPostgresConfigured()) return null;
+
+  const row = await getOwnedRow(table, id);
+  if (!row) return null;
+  if (!session.userId || row.ownerUserId !== session.userId) {
+    return { success: false, error: "دسترسی ندارید" };
+  }
+  return null;
+}
+
 export async function assertCanMutateOwnedContentFromSession(
   table: OwnedContentTable | "poster_versions" | "video_versions",
   id: string

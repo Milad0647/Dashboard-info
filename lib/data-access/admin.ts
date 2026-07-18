@@ -369,12 +369,15 @@ export async function savePoster(data: Partial<Poster> & { id?: string }) {
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
       if (data.id) {
-        return {
-          ...store,
-          posters: store.posters.map((p) =>
-            p.id === data.id ? { ...p, ...data, updatedAt: now } as Poster : p
-          ),
-        };
+        const existing = store.posters.find((p) => p.id === data.id);
+        if (existing) {
+          return {
+            ...store,
+            posters: store.posters.map((p) =>
+              p.id === data.id ? { ...p, ...data, updatedAt: now } as Poster : p
+            ),
+          };
+        }
       }
       const campaignPosters = store.posters.filter((p) => p.campaignId === data.campaignId);
       const newItem: Poster = {
@@ -472,16 +475,19 @@ export async function saveVideo(data: Partial<Video> & { id?: string }) {
   if (!isSupabaseConfigured()) {
     updateMockStore((store) => {
       if (data.id) {
-        return {
-          ...store,
-          videos: store.videos.map((v) =>
-            v.id === data.id ? { ...v, ...data, updatedAt: now } as Video : v
-          ),
-        };
+        const existing = store.videos.find((v) => v.id === data.id);
+        if (existing) {
+          return {
+            ...store,
+            videos: store.videos.map((v) =>
+              v.id === data.id ? { ...v, ...data, updatedAt: now } as Video : v
+            ),
+          };
+        }
       }
       const campaignVideos = store.videos.filter((v) => v.campaignId === data.campaignId);
       const newItem: Video = {
-        id: generateId(),
+        id: data.id ?? generateId(),
         campaignId: data.campaignId ?? "",
         categoryId: data.categoryId ?? "",
         title: data.title ?? "",

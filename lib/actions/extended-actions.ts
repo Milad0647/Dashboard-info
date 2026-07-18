@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { getAuthSession, getOwnerFilter, isFullAdmin } from "@/lib/auth/get-session";
-import { assertCanMutateOwnedContent } from "@/lib/auth/assert-content-ownership";
+import {
+  assertCanMutateOwnedContent,
+  assertCanMutateOwnedContentIfExists,
+} from "@/lib/auth/assert-content-ownership";
 import { canScoreContent, isClientUser } from "@/lib/auth/access";
 import {
   assertTutorialForPossibleCreate,
@@ -101,7 +104,7 @@ export async function saveSocialPostAction(data: Partial<SocialMediaPost> & { id
   }
 
   if (data.id) {
-    const denied = await assertCanMutateOwnedContent(session, "social_media_posts", data.id);
+    const denied = await assertCanMutateOwnedContentIfExists(session, "social_media_posts", data.id);
     if (denied) return denied;
   }
 

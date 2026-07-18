@@ -114,7 +114,11 @@ export function AdminPosterEditor({
 
       const posterResult = await savePosterAction(savedPoster);
       if (!posterResult?.success) {
-        toast.error(posterResult?.error ?? "ذخیره پوستر ناموفق بود");
+        toast.error(
+          posterResult && "error" in posterResult && typeof posterResult.error === "string"
+            ? posterResult.error
+            : "ذخیره پوستر ناموفق بود"
+        );
         return;
       }
 
@@ -131,7 +135,11 @@ export function AdminPosterEditor({
         status: "final",
       });
       if (!versionResult?.success) {
-        toast.error(versionResult?.error ?? "ذخیره تصویر پوستر ناموفق بود");
+        toast.error(
+          versionResult && "error" in versionResult && typeof versionResult.error === "string"
+            ? versionResult.error
+            : "ذخیره تصویر پوستر ناموفق بود"
+        );
         return;
       }
 

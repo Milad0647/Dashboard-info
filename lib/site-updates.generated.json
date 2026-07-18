@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "8ebd10867b3278b49c14c3fb754ea1a9df2105d1",
+      "committedAt": "2026-07-18T10:07:25+03:30",
+      "title": "سبک‌تر شدن عکس کاور کارت‌ها برای باز شدن سریع‌تر",
+      "subject": "Serve low-size WebP thumbnails on card covers"
+    },
+    {
       "hash": "c403ec37b839ef61cb3f4c51652a145f942513bb",
       "committedAt": "2026-07-18T10:03:51+03:30",
       "title": "رفع خطای آپلود PNG در پوسترها",

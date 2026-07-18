@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
-import { assertCanMutateOwnedContent } from "@/lib/auth/assert-content-ownership";
+import {
+  assertCanMutateOwnedContent,
+  assertCanMutateOwnedContentIfExists,
+} from "@/lib/auth/assert-content-ownership";
 import { assertTutorialForPossibleCreate } from "@/lib/auth/require-tutorial-completion";
 import {
   deleteAnalyticsMetric,
@@ -128,6 +131,13 @@ async function assertContributorOwnsBillboard(
   return assertCanMutateOwnedContent(session, "billboards", billboardId);
 }
 
+async function assertContributorOwnsBillboardIfExists(
+  session: AuthSession,
+  billboardId: string
+): Promise<{ success: false; error: string } | null> {
+  return assertCanMutateOwnedContentIfExists(session, "billboards", billboardId);
+}
+
 export async function saveCampaignAction(data: Partial<CampaignSettings> & { id?: string }) {
   const auth = await requireFullAdmin();
   if (isAuthError(auth)) return auth;
@@ -183,7 +193,7 @@ export async function saveBillboardAction(data: Partial<Billboard> & { id?: stri
   const validationError = validateTitlePayload(data);
   if (validationError) return validationError;
   if (data.id) {
-    const denied = await assertContributorOwnsBillboard(auth, data.id);
+    const denied = await assertContributorOwnsBillboardIfExists(auth, data.id);
     if (denied) return denied;
   }
   const tutorialDenied = await assertTutorialForPossibleCreate(
@@ -252,7 +262,7 @@ export async function savePosterAction(data: Partial<Poster> & { id?: string }) 
   const validationError = validateTitlePayload(data);
   if (validationError) return validationError;
   if (data.id) {
-    const denied = await assertCanMutateOwnedContent(auth, "posters", data.id);
+    const denied = await assertCanMutateOwnedContentIfExists(auth, "posters", data.id);
     if (denied) return denied;
   }
   const tutorialDenied = await assertTutorialForPossibleCreate("posters", "posters", data.id);
@@ -322,7 +332,7 @@ export async function saveVideoAction(data: Partial<Video> & { id?: string }) {
   const validationError = validateTitlePayload(data);
   if (validationError) return validationError;
   if (data.id) {
-    const denied = await assertCanMutateOwnedContent(auth, "videos", data.id);
+    const denied = await assertCanMutateOwnedContentIfExists(auth, "videos", data.id);
     if (denied) return denied;
   }
   const tutorialDenied = await assertTutorialForPossibleCreate("videos", "videos", data.id);
@@ -390,7 +400,7 @@ export async function saveAnalyticsAction(data: Partial<AnalyticsMetric> & { id?
   const auth = await requireSession();
   if (isAuthError(auth)) return auth;
   if (data.id) {
-    const denied = await assertCanMutateOwnedContent(auth, "analytics_metrics", data.id);
+    const denied = await assertCanMutateOwnedContentIfExists(auth, "analytics_metrics", data.id);
     if (denied) return denied;
   }
   const tutorialDenied = await assertTutorialForPossibleCreate(
@@ -460,7 +470,7 @@ export async function saveCampaignFileAction(data: Partial<CampaignFile> & { id?
   const validationError = validateTitlePayload(data);
   if (validationError) return validationError;
   if (data.id) {
-    const denied = await assertCanMutateOwnedContent(auth, "campaign_files", data.id);
+    const denied = await assertCanMutateOwnedContentIfExists(auth, "campaign_files", data.id);
     if (denied) return denied;
   }
   const tutorialDenied = await assertTutorialForPossibleCreate(
@@ -498,7 +508,7 @@ export async function saveRawMediaUploadAction(data: Partial<RawMediaUpload> & {
   const validationError = validateTitlePayload(data);
   if (validationError) return validationError;
   if (data.id) {
-    const denied = await assertCanMutateOwnedContent(auth, "raw_media_uploads", data.id);
+    const denied = await assertCanMutateOwnedContentIfExists(auth, "raw_media_uploads", data.id);
     if (denied) return denied;
   }
   const tutorialDenied = await assertTutorialForPossibleCreate(
