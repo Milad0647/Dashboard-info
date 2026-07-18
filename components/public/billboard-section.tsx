@@ -63,7 +63,7 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
   const [cityFilter, setCityFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sort, setSort] = useState<PublicMediaSort>("default");
+  const [sort, setSort] = useState<PublicMediaSort>("newest");
   const [search, setSearch] = useState("");
   const [selectedBillboard, setSelectedBillboard] = useState<Billboard | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -82,6 +82,8 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
   }, [locationFilteredBillboards]);
 
   const effectiveSort = resolvePublicMediaSort(filter.sortOrder, sort);
+  // Billboard default display order is newest-first.
+  const displaySort = effectiveSort === "default" ? "newest" : effectiveSort;
 
   const filtered = useMemo(() => {
     const items = locationFilteredBillboards.filter((billboard) => {
@@ -92,9 +94,8 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
       if (search && !billboard.title.includes(search) && !billboard.city.includes(search)) return false;
       return true;
     });
-    // Keep admin/default order unless user picks a global or local sort.
-    return sortByPublicMediaOrder(items, effectiveSort, getBillboardUploadDate);
-  }, [locationFilteredBillboards, cityFilter, categoryFilter, statusFilter, search, effectiveSort]);
+    return sortByPublicMediaOrder(items, displaySort, getBillboardUploadDate);
+  }, [locationFilteredBillboards, cityFilter, categoryFilter, statusFilter, search, displaySort]);
 
   const sectionVisible = useCampaignSectionVisibility(billboards.length, filtered.length);
 
@@ -103,7 +104,7 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
     `${cityFilter}:${categoryFilter}:${statusFilter}:${search}:${sort}`
   );
 
-  const chronological = shouldRenderChronologically(effectiveSort);
+  const chronological = shouldRenderChronologically(displaySort);
   const visibleBillboards = filtered.slice(0, visibleCount);
   const visibleGroups = useMemo(() => {
     return groupByOwnerPreservingOrder(visibleBillboards, adminOwnerLabel ?? undefined);

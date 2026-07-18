@@ -483,7 +483,11 @@ function getMockPublicDataBySlug(slug: string): PublicCampaignData | null {
   const campaignStore = getMockStoreForCampaign(settings.id);
   if (!campaignStore.settings) return null;
   const billboards = campaignStore.billboards
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+    .sort((a, b) => {
+      const dateCmp = (b.createdAt || "").localeCompare(a.createdAt || "");
+      if (dateCmp !== 0) return dateCmp;
+      return b.sortOrder - a.sortOrder;
+    });
   return assemblePublicData(campaignStore.settings, campaignStore, billboards);
 }
 

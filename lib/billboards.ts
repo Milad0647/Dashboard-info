@@ -100,8 +100,17 @@ function excludePersistedLiveBillboards(
   });
 }
 
+function getBillboardRecency(billboard: Billboard): string {
+  return billboard.createdAt || billboard.updatedAt || "";
+}
+
+/** Newest billboards first (createdAt DESC), then higher sortOrder. */
 function sortLocalBillboards(dbBillboards: Billboard[]): Billboard[] {
-  return [...dbBillboards].sort((a, b) => a.sortOrder - b.sortOrder);
+  return [...dbBillboards].sort((a, b) => {
+    const dateCmp = getBillboardRecency(b).localeCompare(getBillboardRecency(a));
+    if (dateCmp !== 0) return dateCmp;
+    return b.sortOrder - a.sortOrder;
+  });
 }
 
 export function getExternalCampaignSlug(settings: CampaignSettings): string | null {

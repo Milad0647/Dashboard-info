@@ -204,7 +204,7 @@ export async function pgGetAdminData(
       ) period_img ON true
       WHERE b.campaign_id = ${campaignId}
       ${ownerFilter}
-      ORDER BY b.sort_order
+      ORDER BY b.created_at DESC, b.sort_order DESC
     `
       : emptyRows,
     want.has("posterCategories")
@@ -1042,7 +1042,7 @@ export async function pgGetPublicCampaignData(campaignId: string) {
         LIMIT 1
       ) period_img ON true
       WHERE b.campaign_id = ${campaignId}
-      ORDER BY b.sort_order
+      ORDER BY b.created_at DESC, b.sort_order DESC
     `,
     sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'poster' ORDER BY sort_order`,
     sql`
