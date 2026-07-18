@@ -508,6 +508,10 @@ export interface BroadcastReportSummary {
   clientName?: string;
   reportDateTime?: string;
   notes?: string;
+  /** pdf (default) or video — stored in JSON to avoid schema migration */
+  mediaType?: "pdf" | "video";
+  /** Optional auto/custom cover when mediaType is video */
+  coverImageUrl?: string;
   statusBreakdown?: BroadcastStatusRow[];
   cityBreakdown?: BroadcastCityRow[];
   billboards?: BroadcastBillboardRow[];
