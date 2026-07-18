@@ -19,6 +19,7 @@ import { bumpSessionVersion, getSessionVersion } from "@/lib/auth/session-versio
 import { logAuditEvent, logAuditForSession } from "@/lib/audit/log-event";
 import { consumeRateLimit, getRateLimitBlock, resetRateLimit } from "@/lib/security/rate-limit";
 import { recordLoginSecurityAlert } from "@/lib/security/login-alerts";
+import { resolveSafeAuthRedirect } from "@/lib/auth/safe-redirect";
 import { isPostgresConfigured } from "@/lib/utils";
 
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
@@ -93,8 +94,13 @@ async function registerFailedLogin(rateKey: string, loginEmail: string, ip: stri
   return { success: false as const, error: "ایمیل یا رمز عبور اشتباه است" };
 }
 
-export async function loginAdminAction(email: string, password: string) {
+export async function loginAdminAction(
+  email: string,
+  password: string,
+  nextPath?: string | null
+) {
   const loginEmail = email.trim();
+  const redirectTo = resolveSafeAuthRedirect(nextPath);
   const { rateKey, ip } = await resolveLoginClient(loginEmail);
 
   try {
@@ -142,7 +148,7 @@ export async function loginAdminAction(email: string, password: string) {
             metadata: { method: "env_admin_linked_db_user" },
           });
 
-          redirect("/admin");
+          redirect(redirectTo);
         }
       }
 
@@ -164,7 +170,7 @@ export async function loginAdminAction(email: string, password: string) {
         metadata: { method: "env_admin" },
       });
 
-      redirect("/admin");
+      redirect(redirectTo);
     }
 
     // Regular panel users (contributor / client / DB admin without system creds).
@@ -193,7 +199,7 @@ export async function loginAdminAction(email: string, password: string) {
           metadata: { method: "db_user" },
         });
 
-        redirect("/admin");
+        redirect(redirectTo);
       }
     }
 

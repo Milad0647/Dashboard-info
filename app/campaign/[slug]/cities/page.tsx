@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPublicCampaignData } from "@/lib/data-access/campaign";
 import { CityLeaderboardDashboard } from "@/components/public/city-leaderboard-dashboard";
+import { resolveCampaignHeaderUser } from "@/components/public/campaign-header-auth";
 import { CampaignPageUnlock } from "@/components/public/campaign-page-unlock";
 import { canScoreContent } from "@/lib/auth/access";
 import { getAuthSession } from "@/lib/auth/get-session";
@@ -28,6 +29,7 @@ export default async function CityLeaderboardPage({ params }: CityLeaderboardPag
   }
 
   const session = await getAuthSession();
+  const headerUser = resolveCampaignHeaderUser(session);
   const canBypassPassword = Boolean(session && canScoreContent(session));
   const unlocked =
     !pagePasswordHash ||
@@ -35,11 +37,11 @@ export default async function CityLeaderboardPage({ params }: CityLeaderboardPag
     (await isCampaignPageUnlocked(slug, pagePasswordHash));
 
   if (pagePasswordHash && !unlocked) {
-    return <CampaignPageUnlock slug={slug} title={lockedTitle} />;
+    return <CampaignPageUnlock slug={slug} title={lockedTitle} headerUser={headerUser} />;
   }
 
   const data = await getPublicCampaignData(slug);
   if (!data) notFound();
 
-  return <CityLeaderboardDashboard data={data} slug={slug} />;
+  return <CityLeaderboardDashboard data={data} slug={slug} headerUser={headerUser} />;
 }

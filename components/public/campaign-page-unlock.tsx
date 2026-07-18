@@ -7,14 +7,23 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  CampaignHeaderAuth,
+  type CampaignHeaderUser,
+} from "@/components/public/campaign-header-auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 interface CampaignPageUnlockProps {
   slug: string;
   title: string;
+  headerUser?: CampaignHeaderUser | null;
 }
 
-export function CampaignPageUnlock({ slug, title }: CampaignPageUnlockProps) {
+export function CampaignPageUnlock({
+  slug,
+  title,
+  headerUser = null,
+}: CampaignPageUnlockProps) {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -48,7 +57,10 @@ export function CampaignPageUnlock({ slug, title }: CampaignPageUnlockProps) {
             <p className="text-xs text-muted-foreground">صفحه کمپین</p>
             <h1 className="text-lg font-semibold">{title}</h1>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <CampaignHeaderAuth user={headerUser} returnPath={`/campaign/${slug}`} />
+          </div>
         </div>
       </header>
 

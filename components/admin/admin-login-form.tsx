@@ -3,10 +3,12 @@
 import type { PointerEvent } from "react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { loginAdminAction } from "@/lib/actions/auth-actions";
+import { resolveSafeAuthRedirect } from "@/lib/auth/safe-redirect";
 import {
   formatPersianClock,
   formatPersianLoginDate,
@@ -50,6 +52,8 @@ function isNextRedirectError(error: unknown): boolean {
 }
 
 export function AdminLoginForm() {
+  const searchParams = useSearchParams();
+  const redirectTo = resolveSafeAuthRedirect(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -111,11 +115,11 @@ export function AdminLoginForm() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
 
-        window.location.assign("/admin");
+        window.location.assign(redirectTo);
         return;
       }
 
-      await loginAdminAction(email, password);
+      await loginAdminAction(email, password, redirectTo);
     } catch (err) {
       if (isNextRedirectError(err)) return;
       const nextErrorMessage = err instanceof Error ? err.message : "خطا در ورود";

@@ -5,6 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRight, RefreshCw, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  CampaignHeaderAuth,
+  type CampaignHeaderUser,
+} from "@/components/public/campaign-header-auth";
 import { CampaignOverviewSection } from "@/components/public/campaign-overview-section";
 import { BillboardSection } from "@/components/public/billboard-section";
 import { PostersSection } from "@/components/public/posters-section";
@@ -41,6 +45,7 @@ interface CampaignDashboardProps {
   slug: string;
   exportMode?: boolean;
   canScore?: boolean;
+  headerUser?: CampaignHeaderUser | null;
 }
 
 function collectAllOwnerGroups(data: PublicCampaignData): DataOwnerGroup<Ownable>[] {
@@ -66,6 +71,7 @@ function CampaignDashboardBody({
   lastRefresh,
   isRefreshing,
   onRefresh,
+  headerUser,
 }: {
   data: PublicCampaignData;
   slug: string;
@@ -73,6 +79,7 @@ function CampaignDashboardBody({
   lastRefresh: Date;
   isRefreshing: boolean;
   onRefresh: () => void;
+  headerUser: CampaignHeaderUser | null;
 }) {
   const { settings, sections } = data;
   const { filter } = useOwnerLocationFilter();
@@ -103,6 +110,7 @@ function CampaignDashboardBody({
             <span data-export-hide>
               <ThemeToggle />
             </span>
+            <CampaignHeaderAuth user={headerUser} returnPath={`/campaign/${slug}`} />
             <Button variant="outline" size="sm" asChild data-export-hide>
               <Link href={`/campaign/${slug}/cities`}>
                 <Trophy className="h-4 w-4" />
@@ -285,6 +293,7 @@ export function CampaignDashboard({
   slug,
   exportMode = false,
   canScore = false,
+  headerUser = null,
 }: CampaignDashboardProps) {
   const [data, setData] = useState(initialData);
   const [lastRefresh, setLastRefresh] = useState(() => new Date(initialData.lastUpdated));
@@ -335,6 +344,7 @@ export function CampaignDashboard({
               lastRefresh={lastRefresh}
               isRefreshing={isRefreshing}
               onRefresh={refreshData}
+              headerUser={headerUser}
             />
           </OwnerLocationFilterProvider>
         </ContentScoreProvider>

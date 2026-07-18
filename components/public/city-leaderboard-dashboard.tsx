@@ -7,6 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
+import {
+  CampaignHeaderAuth,
+  type CampaignHeaderUser,
+} from "@/components/public/campaign-header-auth";
 import { SectionHeader } from "@/components/public/section-header";
 import { LeaderboardBillboardsModal } from "@/components/public/leaderboard-billboards-modal";
 import { UserContentScoreModal } from "@/components/public/user-content-score-modal";
@@ -32,6 +36,7 @@ type LeaderboardView = "province" | "user" | "rating";
 interface CityLeaderboardDashboardProps {
   data: PublicCampaignData;
   slug: string;
+  headerUser?: CampaignHeaderUser | null;
 }
 
 const SECTION_HREF_BY_METRIC_LABEL: Record<string, string> = {
@@ -210,7 +215,11 @@ function LeaderboardViewToggle({
   );
 }
 
-export function CityLeaderboardDashboard({ data, slug }: CityLeaderboardDashboardProps) {
+export function CityLeaderboardDashboard({
+  data,
+  slug,
+  headerUser = null,
+}: CityLeaderboardDashboardProps) {
   const { settings } = data;
   const [view, setView] = useState<LeaderboardView>("province");
   const [selectedUser, setSelectedUser] = useState<UserLeaderboardEntry | null>(null);
@@ -289,6 +298,7 @@ export function CityLeaderboardDashboard({ data, slug }: CityLeaderboardDashboar
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <CampaignHeaderAuth user={headerUser} returnPath={`/campaign/${slug}/cities`} />
             <Badge variant="outline" className="gap-1">
               <Trophy className="h-3.5 w-3.5" />
               {formatPersianNumber(activeEntries.length)}{" "}

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPublicCampaignData } from "@/lib/data-access/campaign";
 import { CampaignDashboard } from "@/components/public/campaign-dashboard";
+import { resolveCampaignHeaderUser } from "@/components/public/campaign-header-auth";
 import { CampaignPageUnlock } from "@/components/public/campaign-page-unlock";
 import { canScoreContent } from "@/lib/auth/access";
 import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
@@ -30,6 +31,7 @@ export default async function CampaignPage({ params, searchParams }: CampaignPag
   }
 
   const session = await getAuthSession();
+  const headerUser = resolveCampaignHeaderUser(session);
   const canBypassPassword = Boolean(session && canScoreContent(session));
   const unlocked =
     !pagePasswordHash ||
@@ -37,7 +39,7 @@ export default async function CampaignPage({ params, searchParams }: CampaignPag
     (await isCampaignPageUnlocked(slug, pagePasswordHash));
 
   if (pagePasswordHash && !unlocked) {
-    return <CampaignPageUnlock slug={slug} title={lockedTitle} />;
+    return <CampaignPageUnlock slug={slug} title={lockedTitle} headerUser={headerUser} />;
   }
 
   const data = await getPublicCampaignData(slug);
@@ -53,6 +55,7 @@ export default async function CampaignPage({ params, searchParams }: CampaignPag
       slug={slug}
       exportMode={exportMode}
       canScore={canScore}
+      headerUser={headerUser}
     />
   );
 }
