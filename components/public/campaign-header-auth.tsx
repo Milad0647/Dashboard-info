@@ -6,13 +6,11 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, LayoutDashboard, LogIn, LogOut, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutAdminAction } from "@/lib/actions/auth-actions";
+import type { CampaignHeaderUser } from "@/lib/campaign-header-user";
 import { createClient } from "@/lib/supabase/client";
 import { cn, isSupabaseConfigured } from "@/lib/utils";
 
-export interface CampaignHeaderUser {
-  name: string;
-  email?: string;
-}
+export type { CampaignHeaderUser };
 
 interface CampaignHeaderAuthProps {
   user: CampaignHeaderUser | null;
@@ -143,20 +141,4 @@ export function CampaignHeaderAuth({ user, returnPath, className }: CampaignHead
       )}
     </div>
   );
-}
-
-export function resolveCampaignHeaderUser(
-  session: { name?: string; email?: string; type: string } | null
-): CampaignHeaderUser | null {
-  if (!session) return null;
-
-  const name =
-    session.name?.trim() ||
-    session.email?.trim() ||
-    (session.type === "env_admin" ? "مدیر سیستم" : "کاربر");
-
-  return {
-    name,
-    email: session.email?.trim() || undefined,
-  };
 }

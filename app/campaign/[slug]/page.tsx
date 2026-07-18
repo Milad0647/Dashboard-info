@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { getPublicCampaignData } from "@/lib/data-access/campaign";
 import { CampaignDashboard } from "@/components/public/campaign-dashboard";
-import { resolveCampaignHeaderUser } from "@/components/public/campaign-header-auth";
 import { CampaignPageUnlock } from "@/components/public/campaign-page-unlock";
 import { canScoreContent } from "@/lib/auth/access";
 import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
+import { resolveCampaignHeaderUser } from "@/lib/campaign-header-user";
 import { isCampaignPageUnlocked } from "@/lib/campaign-page-unlock";
 import { pgGetPublishedCampaignBySlug } from "@/lib/db/repository";
 import { isPostgresConfigured } from "@/lib/utils";
