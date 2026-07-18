@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "6226f36412ab363635ea761ef161f4e666620ecc",
+      "committedAt": "2026-07-18T10:42:55+03:30",
+      "title": "افزودن بخش گزارش مشکل به پنل با نقطه قرمز برای پاسخ‌های جدید",
+      "subject": "Add problem reports page with unread reply indicator"
+    },
+    {
       "hash": "cd2dc99951c074e7645c4cc7128e8a415b3929e6",
       "committedAt": "2026-07-18T10:31:41+03:30",
       "title": "آپلود فایل پخش صدا و سیما با کشیدن و رها کردن مثل بخش ویدیو",

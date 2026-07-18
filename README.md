@@ -93,6 +93,23 @@ What it updates:
 - **Aparat videos**: views, likes, comments (and empty title/description/cover)
 - **Site publications** + **magazine/newspaper** with a link: Open Graph title/description/cover when empty
 
+### 5b. Daily campaign ZIP backup (Coolify Scheduled Job)
+
+Stored campaign backups (ZIP on disk, downloadable from **Admin → پشتیبان‌گیری**) are created via:
+
+`GET|POST /api/cron/daily-backup`
+
+1. In Coolify, open the app → **Scheduled Tasks**.
+2. Schedule: `0 12 * * *` (12:00 server time every day).
+3. Command:
+
+```bash
+curl -fsS -X POST "$APP_URL/api/cron/daily-backup" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Persist backups with a volume mounted at `BACKUP_DIR` (default `/app/data/backups`). The panel keeps the latest 14 backups per campaign. You can also create a backup manually from the admin UI.
+
 ### 6. Local Docker test
 
 Create a `.env` next to `docker-compose.yml` with strong `POSTGRES_PASSWORD`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `AUTH_SECRET`, then:

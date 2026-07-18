@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useTransition } from "react";
-import { Camera, FileArchive, Upload } from "lucide-react";
+import { Archive, Camera, FileArchive, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminCampaign } from "@/components/admin/admin-campaign-provider";
+import { adminHref } from "@/lib/utils";
 
 interface CampaignToolsProps {
   isFullAdmin: boolean;
@@ -45,6 +47,26 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
     });
   };
 
+  const createStoredBackup = () => {
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/backups", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ campaignId }),
+        });
+        const result = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          toast.error(result.error ?? "گرفتن پشتیبان ناموفق بود");
+          return;
+        }
+        toast.success("پشتیبان روی سرور ذخیره شد — از صفحه پشتیبان‌گیری دانلود کنید");
+      } catch {
+        toast.error("گرفتن پشتیبان ناموفق بود");
+      }
+    });
+  };
+
   // Backup + full report export are admin-only
   if (!isFullAdmin || !currentCampaign) return null;
 
@@ -70,6 +92,11 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
           دانلود PDF گزارش کامل
         </Button>
 
+        <Button variant="outline" size="sm" disabled={isPending} onClick={createStoredBackup}>
+          <Archive className="h-4 w-4" />
+          گرفتن پشتیبان روی سرور
+        </Button>
+
         <Button
           variant="outline"
           size="sm"
@@ -82,7 +109,7 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
           }
         >
           <FileArchive className="h-4 w-4" />
-          دانلود ZIP پشتیبان
+          دانلود فوری ZIP
         </Button>
 
         <Button
@@ -93,6 +120,13 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
         >
           <Upload className="h-4 w-4" />
           Import از ZIP
+        </Button>
+
+        <Button variant="outline" size="sm" asChild>
+          <Link href={adminHref("/admin/backups", campaignId)}>
+            <Archive className="h-4 w-4" />
+            مدیریت پشتیبان‌ها
+          </Link>
         </Button>
 
         <input

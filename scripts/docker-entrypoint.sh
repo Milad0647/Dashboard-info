@@ -2,6 +2,7 @@
 set -e
 
 UPLOAD_DIR="${UPLOAD_DIR:-/app/data/uploads}"
+BACKUP_DIR="${BACKUP_DIR:-/app/data/backups}"
 
 if [ -n "$DATABASE_URL" ]; then
   echo "Waiting for database..."
@@ -24,7 +25,7 @@ if [ -n "$DATABASE_URL" ]; then
   fi
 fi
 
-mkdir -p "$UPLOAD_DIR"
-chown -R nextjs:nodejs "$UPLOAD_DIR" 2>/dev/null || true
+mkdir -p "$UPLOAD_DIR" "$BACKUP_DIR"
+chown -R nextjs:nodejs "$UPLOAD_DIR" "$BACKUP_DIR" 2>/dev/null || true
 
 exec su-exec nextjs:nodejs node server.js

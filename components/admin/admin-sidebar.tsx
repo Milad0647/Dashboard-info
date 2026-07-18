@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Archive,
   BarChart3,
   Bell,
   ClipboardCheck,
@@ -96,6 +97,7 @@ const allNavItems: {
   { href: "/admin/submissions", label: "مشارکت‌ها", icon: FileText, permissionKey: "submissions" },
   { href: "/admin/users", label: "کاربران", icon: Users, adminOrClientOnly: true },
   { href: "/admin/updates", label: "آپدیت‌های سایت", icon: Rocket, adminOrClientOnly: true },
+  { href: "/admin/backups", label: "پشتیبان‌گیری", icon: Archive, adminOnly: true },
   { href: "/admin/audit", label: "رصد کاربران", icon: ScrollText, adminOnly: true },
 ];
 
@@ -107,6 +109,7 @@ const managementNavHrefs = new Set([
   "/admin/tutorials",
   "/admin/elanha",
   "/admin/updates",
+  "/admin/backups",
 ]);
 
 const DIRECTIVES_HREF = "/admin/directives";

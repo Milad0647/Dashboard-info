@@ -21,6 +21,7 @@ ENV NODE_ENV=production
 ENV PORT=3030
 ENV HOSTNAME=0.0.0.0
 ENV UPLOAD_DIR=/app/data/uploads
+ENV BACKUP_DIR=/app/data/backups
 
 RUN apk add --no-cache postgresql-client su-exec
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
@@ -30,7 +31,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/database ./database
 COPY --from=builder /app/scripts ./scripts
-RUN mkdir -p /app/data/uploads && chown -R nextjs:nodejs /app/data/uploads /app/public
+RUN mkdir -p /app/data/uploads /app/data/backups && chown -R nextjs:nodejs /app/data/uploads /app/data/backups /app/public
 RUN chmod +x ./scripts/docker-entrypoint.sh
 
 EXPOSE 3030
