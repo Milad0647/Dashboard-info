@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "431e909813a4bc9cd570967275cf14145ece2675",
+      "committedAt": "2026-07-18T11:01:29+03:30",
+      "title": "افزودن دکمه مشکلات ثبت‌شده برای ادمین در تنظیمات و مدیریت",
+      "subject": "Add admin reported-problems page in management nav"
+    },
+    {
+      "hash": "d76c5f04b4c3410e10f98d2ff61a8ec8bbd04bbd",
+      "committedAt": "2026-07-18T10:45:15+03:30",
+      "title": "ذخیره پشتیبان ZIP روی سرور با دانلود و بکاپ خودکار روزانه",
+      "subject": "Store campaign backup ZIPs on server with daily cron"
+    },
+    {
       "hash": "6226f36412ab363635ea761ef161f4e666620ecc",
       "committedAt": "2026-07-18T10:42:55+03:30",
       "title": "افزودن بخش گزارش مشکل به پنل با نقطه قرمز برای پاسخ‌های جدید",
