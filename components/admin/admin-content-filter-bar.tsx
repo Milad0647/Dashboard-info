@@ -30,6 +30,10 @@ interface AdminContentFilterBarProps {
   onChange: (next: AdminContentFilterState) => void;
   users: AdminFilterUserOption[];
   plans: string[];
+  /** Optional category labels (e.g. billboard structure types). */
+  categoryOptions?: string[];
+  categoryValue?: string;
+  onCategoryChange?: (value: string) => void;
 }
 
 export function matchesAdminContentFilter<T extends Ownable>(
@@ -68,11 +72,17 @@ export function AdminContentFilterBar({
   onChange,
   users,
   plans,
+  categoryOptions = [],
+  categoryValue = ADMIN_FILTER_ALL,
+  onCategoryChange,
 }: AdminContentFilterBarProps) {
+  const hasCategoryFilter = categoryOptions.length > 0 && Boolean(onCategoryChange);
   const active =
-    filter.userKey !== ADMIN_FILTER_ALL || filter.planLabels.length > 0;
+    filter.userKey !== ADMIN_FILTER_ALL ||
+    filter.planLabels.length > 0 ||
+    (hasCategoryFilter && categoryValue !== ADMIN_FILTER_ALL);
 
-  if (users.length === 0 && plans.length === 0) return null;
+  if (users.length === 0 && plans.length === 0 && !hasCategoryFilter) return null;
 
   const togglePlan = (plan: string) => {
     const exists = filter.planLabels.includes(plan);
@@ -96,6 +106,16 @@ export function AdminContentFilterBar({
       label: formatPlanLabelDisplay(plan),
       keywords: plan,
     }));
+
+  const categorySelectOptions = [
+    { value: ADMIN_FILTER_ALL, label: "همه دسته‌ها" },
+    ...categoryOptions.map((category) => ({ value: category, label: category })),
+  ];
+
+  const resetFilters = () => {
+    onChange(DEFAULT_ADMIN_CONTENT_FILTER);
+    onCategoryChange?.(ADMIN_FILTER_ALL);
+  };
 
   return (
     <div className="mb-4 flex flex-col gap-3 rounded-xl border bg-card/60 p-4 text-right" dir="rtl">
@@ -133,13 +153,24 @@ export function AdminContentFilterBar({
           />
         )}
 
+        {hasCategoryFilter && onCategoryChange && (
+          <SearchableSelect
+            value={categoryValue}
+            onValueChange={onCategoryChange}
+            options={categorySelectOptions}
+            placeholder="دسته سازه"
+            searchPlaceholder="جستجوی دسته..."
+            className="w-full sm:w-56"
+          />
+        )}
+
         {active && (
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="gap-2"
-            onClick={() => onChange(DEFAULT_ADMIN_CONTENT_FILTER)}
+            onClick={resetFilters}
           >
             <RotateCcw className="h-4 w-4" />
             ریست فیلتر

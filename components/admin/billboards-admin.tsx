@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  ADMIN_FILTER_ALL,
   AdminContentFilterBar,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
@@ -33,7 +34,12 @@ import {
   useSectionBulkEdit,
 } from "@/components/admin/section-bulk-edit";
 import { deleteBillboardAction } from "@/lib/actions/admin-actions";
-import { resolveBillboardCategoryLabel } from "@/lib/billboard-categories";
+import {
+  BILLBOARD_CATEGORIES,
+  billboardCategoryLabels,
+  resolveBillboardCategoryDisplay,
+  resolveBillboardCategoryLabel,
+} from "@/lib/billboard-categories";
 import { canManageBillboardPeriods, isApiBillboard } from "@/lib/billboards";
 import { getBillboardDisplayImage } from "@/lib/billboard-media";
 import type { ContentTopic } from "@/lib/content-topics";
@@ -91,8 +97,14 @@ export function BillboardsAdmin({
   const [periodBillboard, setPeriodBillboard] = useState<Billboard | null>(null);
   const [isNormalizing, setIsNormalizing] = useState(false);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
+  const [categoryFilter, setCategoryFilter] = useState(ADMIN_FILTER_ALL);
   const { viewMode, setViewMode } = useAdminViewMode("billboards");
   const [, startTransition] = useTransition();
+
+  const billboardCategoryOptions = useMemo(
+    () => BILLBOARD_CATEGORIES.map((key) => billboardCategoryLabels[key]),
+    []
+  );
 
   const { highlightFields, setHighlightFields, resetDeepLink } = useAdminEditDeepLink({
     items: billboards.filter((billboard) => !isApiBillboard(billboard)),
@@ -111,8 +123,13 @@ export function BillboardsAdmin({
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(billboards), [billboards]);
   const filteredBillboards = useMemo(
-    () => billboards.filter((item) => matchesAdminContentFilter(item, contentFilter)),
-    [billboards, contentFilter]
+    () =>
+      billboards.filter((item) => {
+        if (!matchesAdminContentFilter(item, contentFilter)) return false;
+        if (categoryFilter === ADMIN_FILTER_ALL) return true;
+        return resolveBillboardCategoryDisplay(item) === categoryFilter;
+      }),
+    [billboards, contentFilter, categoryFilter]
   );
 
   const handleNormalizeApiBillboards = () => {
@@ -145,7 +162,7 @@ export function BillboardsAdmin({
   );
   const apiBillboards = filteredBillboards.filter((billboard) => isApiBillboard(billboard));
   const allApiBillboards = billboards.filter((billboard) => isApiBillboard(billboard));
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${categoryFilter}:${viewMode}`;
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     manualBillboards.length,
     paginationResetKey
@@ -216,6 +233,9 @@ export function BillboardsAdmin({
         onChange={setContentFilter}
         users={isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        categoryOptions={billboardCategoryOptions}
+        categoryValue={categoryFilter}
+        onCategoryChange={setCategoryFilter}
       />
 
       <SectionBulkEditBar
