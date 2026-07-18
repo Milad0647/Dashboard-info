@@ -373,6 +373,7 @@ CREATE INDEX IF NOT EXISTS idx_campaign_activities_campaign ON campaign_activiti
 
 ALTER TABLE campaign_activities ADD COLUMN IF NOT EXISTS video_url TEXT;
 ALTER TABLE campaign_activities ADD COLUMN IF NOT EXISTS media_items JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE campaign_activities ADD COLUMN IF NOT EXISTS attachments JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE campaign_activities ADD COLUMN IF NOT EXISTS link TEXT NOT NULL DEFAULT '';
 
 ALTER TABLE billboards ADD COLUMN IF NOT EXISTS province TEXT;

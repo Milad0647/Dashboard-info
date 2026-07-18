@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Music } from "lucide-react";
+import { Download, FileText, Music } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,18 @@ import {
   resolveVideoEmbedUrl,
 } from "@/lib/media-utils";
 import type { CampaignActivity } from "@/lib/types";
-import { formatPersianDate } from "@/lib/utils";
+import { formatPersianDate, formatPersianNumber } from "@/lib/utils";
 
 interface ActivityMediaDialogProps {
   activity: CampaignActivity | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${formatPersianNumber(bytes)} B`;
+  if (bytes < 1024 * 1024) return `${formatPersianNumber(Math.round(bytes / 1024))} KB`;
+  return `${formatPersianNumber(Math.round(bytes / (1024 * 1024)))} MB`;
 }
 
 export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMediaDialogProps) {
@@ -38,6 +44,8 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
     [];
   const audioItems =
     activity.mediaItems?.filter((item) => item.url?.trim() && item.type === "audio") ?? [];
+  const attachments =
+    activity.attachments?.filter((item) => item.fileUrl?.trim() && item.title?.trim()) ?? [];
 
   const handleDownloadImage = () => {
     if (!activity.imageUrl) return;
@@ -57,6 +65,10 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
 
   const handleDownloadAudio = (url: string, index: number) => {
     void downloadMedia(url, getFilenameFromUrl(url, `${activity.title}-${index + 1}.mp3`));
+  };
+
+  const handleDownloadAttachment = (fileUrl: string, fileName: string, title: string) => {
+    void downloadMedia(fileUrl, fileName || `${title}.pdf`);
   };
 
   return (
@@ -147,6 +159,40 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
                   variant="outline"
                   size="sm"
                   onClick={() => handleDownloadAudio(item.url, index)}
+                  className="gap-2 shrink-0"
+                >
+                  <Download className="h-4 w-4" />
+                  دانلود
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {attachments.length > 0 && (
+          <div className="space-y-3 px-4 pt-2">
+            <p className="text-sm font-medium">فایل‌های قابل دانلود</p>
+            {attachments.map((item) => (
+              <div
+                key={item.id}
+                className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex min-w-0 items-start gap-2">
+                  <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{item.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {item.fileName}
+                      {item.fileSize > 0 ? ` · ${formatFileSize(item.fileSize)}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    handleDownloadAttachment(item.fileUrl, item.fileName, item.title)
+                  }
                   className="gap-2 shrink-0"
                 >
                   <Download className="h-4 w-4" />

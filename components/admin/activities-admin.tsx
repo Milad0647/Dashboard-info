@@ -35,6 +35,7 @@ import {
   SectionBulkEditBar,
   useSectionBulkEdit,
 } from "@/components/admin/section-bulk-edit";
+import { DocumentUpload } from "@/components/ui/document-upload";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { applyVideoCoverToMediaItems } from "@/lib/client/activity-media-cover";
@@ -49,12 +50,30 @@ import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { todayISO } from "@/lib/jalali";
 import { isPressPublication } from "@/lib/press-publications";
-import type { ActivityMediaItem, ActivityType, AdminUser, CampaignActivity } from "@/lib/types";
+import type {
+  ActivityAttachment,
+  ActivityMediaItem,
+  ActivityType,
+  AdminUser,
+  CampaignActivity,
+} from "@/lib/types";
 import { cn, formatPersianDate } from "@/lib/utils";
 
 const ACTIVITY_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 
 const MAX_MEDIA_ITEMS = 10;
+const MAX_ATTACHMENTS = 10;
+
+function createEmptyAttachment(): ActivityAttachment {
+  return {
+    id: crypto.randomUUID(),
+    title: "",
+    fileUrl: "",
+    fileName: "",
+    mimeType: "",
+    fileSize: 0,
+  };
+}
 
 const schema = z.object({
   title: z
@@ -108,6 +127,7 @@ export function ActivitiesAdmin({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewActivity, setPreviewActivity] = useState<CampaignActivity | null>(null);
   const [mediaItems, setMediaItems] = useState<ActivityMediaItem[]>([]);
+  const [attachments, setAttachments] = useState<ActivityAttachment[]>([]);
   const [isMediaDragging, setIsMediaDragging] = useState(false);
   const [isBatchUploadingMedia, setIsBatchUploadingMedia] = useState(false);
   const [planLabels, setPlanLabels] = useState<string[]>([]);
@@ -155,6 +175,7 @@ export function ActivitiesAdmin({
     onOpen: (activity, fields) => {
       setEditingId(activity.id);
       setMediaItems(activity.mediaItems ?? []);
+      setAttachments(activity.attachments ?? []);
       setPlanLabels(normalizePlanLabels(activity.planLabels, activity.planLabel));
       form.reset({
         title: activity.title,
@@ -190,6 +211,7 @@ export function ActivitiesAdmin({
     void requestCreate(() => {
       setEditingId(null);
       setMediaItems([]);
+      setAttachments([]);
       setPlanLabels([]);
       setHighlightFields([]);
       form.reset({
@@ -208,6 +230,7 @@ export function ActivitiesAdmin({
   const openEdit = (activity: CampaignActivity, fields: EditSuggestionMissingField[] = []) => {
     setEditingId(activity.id);
     setMediaItems(activity.mediaItems ?? []);
+    setAttachments(activity.attachments ?? []);
     setPlanLabels(normalizePlanLabels(activity.planLabels, activity.planLabel));
     form.reset({
       title: activity.title,
@@ -226,6 +249,7 @@ export function ActivitiesAdmin({
     setOpen(false);
     setEditingId(null);
     setMediaItems([]);
+    setAttachments([]);
     setPlanLabels([]);
     resetDeepLink();
   };
@@ -245,6 +269,20 @@ export function ActivitiesAdmin({
       return;
     }
     setMediaItems((prev) => [...prev, { id: crypto.randomUUID(), type, url: "" }]);
+  };
+
+  const addAttachment = () => {
+    if (attachments.length >= MAX_ATTACHMENTS) {
+      toast.error(`حداکثر ${MAX_ATTACHMENTS} فایل پیوست مجاز است`);
+      return;
+    }
+    setAttachments((prev) => [...prev, createEmptyAttachment()]);
+  };
+
+  const updateAttachment = (id: string, patch: Partial<ActivityAttachment>) => {
+    setAttachments((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
+    );
   };
 
   const uploadMediaFiles = async (files: FileList | File[]) => {
@@ -309,6 +347,23 @@ export function ActivitiesAdmin({
 
   const onSubmit = form.handleSubmit((data) => {
     const filledMedia = mediaItems.filter((item) => item.url.trim());
+    const incompleteAttachment = attachments.find(
+      (item) =>
+        (item.title.trim() && !item.fileUrl.trim()) ||
+        (!item.title.trim() && item.fileUrl.trim())
+    );
+    if (incompleteAttachment) {
+      toast.error("برای هر فایل پیوست، هم عنوان و هم فایل لازم است");
+      return;
+    }
+    const filledAttachments = attachments
+      .filter((item) => item.title.trim() && item.fileUrl.trim())
+      .map((item) => ({
+        ...item,
+        title: item.title.trim(),
+        fileName: item.fileName || item.title.trim(),
+      }));
+
     startTransition(async () => {
       const result = await saveCampaignActivityAction({
         campaignId,
@@ -320,6 +375,7 @@ export function ActivitiesAdmin({
         imageUrl: filledMedia.find((item) => item.type === "image")?.url ?? (data.imageUrl || null),
         videoUrl: filledMedia.find((item) => item.type === "video")?.url ?? (data.videoUrl || null),
         mediaItems: filledMedia,
+        attachments: filledAttachments,
         description: data.description || null,
         published: true,
         planLabels,
@@ -342,6 +398,7 @@ export function ActivitiesAdmin({
         imageUrl: filledMedia.find((item) => item.type === "image")?.url ?? (data.imageUrl || null),
         videoUrl: filledMedia.find((item) => item.type === "video")?.url ?? (data.videoUrl || null),
         mediaItems: filledMedia,
+        attachments: filledAttachments,
         description: data.description || null,
         published: true,
         planLabels,
@@ -497,6 +554,12 @@ export function ActivitiesAdmin({
                   label: "رسانه‌ها",
                   value: previewActivity.mediaItems?.length
                     ? `${previewActivity.mediaItems.length} مورد`
+                    : "—",
+                },
+                {
+                  label: "فایل‌های پیوست",
+                  value: previewActivity.attachments?.length
+                    ? `${previewActivity.attachments.length} مورد`
                     : "—",
                 },
                 {
@@ -699,6 +762,58 @@ export function ActivitiesAdmin({
               {highlightMedia && (
                 <p className="text-xs text-destructive">هنوز رسانه‌ای اضافه نشده است.</p>
               )}
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label>فایل‌های قابل دانلود (حداکثر {MAX_ATTACHMENTS})</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addAttachment}>
+                  + افزودن فایل
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                برای هر فایل یک عنوان و فایل آپلود کنید تا کاربران بتوانند دانلود کنند.
+              </p>
+              {attachments.map((item, index) => (
+                <div key={item.id} className="space-y-3 rounded-lg border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">فایل {index + 1}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setAttachments((prev) => prev.filter((attachment) => attachment.id !== item.id))
+                      }
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>عنوان فایل</Label>
+                    <Input
+                      value={item.title}
+                      maxLength={CONTENT_TITLE_MAX_LENGTH}
+                      placeholder="مثلاً گزارش کامل اقدام"
+                      onChange={(event) => updateAttachment(item.id, { title: event.target.value })}
+                    />
+                  </div>
+                  <DocumentUpload
+                    label="فایل"
+                    value={item.fileUrl}
+                    fileName={item.fileName}
+                    fileSize={item.fileSize}
+                    mimeType={item.mimeType}
+                    onChange={(payload) =>
+                      updateAttachment(item.id, {
+                        fileUrl: payload.url,
+                        fileName: payload.fileName,
+                        fileSize: payload.fileSize,
+                        mimeType: payload.mimeType,
+                      })
+                    }
+                  />
+                </div>
+              ))}
             </div>
             <div className="space-y-2">
               <Label className={cn(highlightDescription && "text-amber-700 dark:text-amber-300")}>توضیحات (اختیاری)</Label>

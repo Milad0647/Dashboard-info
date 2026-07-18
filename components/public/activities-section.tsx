@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, ExternalLink, Eye, Music, Play } from "lucide-react";
+import { Download, ExternalLink, Eye, FileText, Music, Play } from "lucide-react";
 import { getActivityTypeLabel } from "@/lib/activity-types";
 import { toCardThumbnailUrl } from "@/lib/card-image";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
@@ -44,6 +44,14 @@ function hasActivityMedia(activity: CampaignActivity): boolean {
   return Boolean(activity.imageUrl?.trim() || activity.videoUrl?.trim());
 }
 
+function hasActivityAttachments(activity: CampaignActivity): boolean {
+  return Boolean(activity.attachments?.some((item) => item.fileUrl.trim() && item.title.trim()));
+}
+
+function canOpenActivityDetail(activity: CampaignActivity): boolean {
+  return hasActivityMedia(activity) || hasActivityAttachments(activity);
+}
+
 function ActivityCard({
   activity,
   onOpen,
@@ -53,12 +61,15 @@ function ActivityCard({
 }) {
   const { canScore, campaignId } = useContentScoreAccess();
   const hasMedia = hasActivityMedia(activity);
+  const hasAttachments = hasActivityAttachments(activity);
+  const canOpen = canOpenActivityDetail(activity);
   const hasLink = Boolean(activity.link?.trim());
   const hasVideo = Boolean(activity.videoUrl?.trim());
   const audioOnly =
     !hasVideo &&
     !activity.imageUrl?.trim() &&
     Boolean(activity.mediaItems?.some((item) => item.type === "audio" && item.url.trim()));
+  const attachmentsOnly = !hasMedia && hasAttachments;
   const primaryMediaUrl =
     activity.imageUrl?.trim() ||
     activity.videoUrl?.trim() ||
@@ -78,7 +89,7 @@ function ActivityCard({
       ownerUserId={activity.ownerUserId}
       ownerName={activity.ownerName}
       media={
-        <div className={cn("group relative h-full w-full", hasMedia && "cursor-pointer")}>
+        <div className={cn("group relative h-full w-full", canOpen && "cursor-pointer")}>
         {hasVideo ? (
           <VideoThumbnail
             videoUrl={activity.videoUrl!}
@@ -98,6 +109,13 @@ function ActivityCard({
           <div className="flex h-full flex-col items-center justify-center gap-2 px-2 text-muted-foreground">
             <Music className="h-8 w-8" />
             <span className="text-xs">فایل صوتی</span>
+          </div>
+        ) : attachmentsOnly ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-2 text-muted-foreground">
+            <FileText className="h-8 w-8" />
+            <span className="text-xs">
+              {activity.attachments!.filter((item) => item.fileUrl.trim()).length} فایل قابل دانلود
+            </span>
           </div>
         ) : (
           <div className="flex h-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
@@ -135,9 +153,9 @@ function ActivityCard({
         ) : null
       }
       actions={
-        hasMedia || hasLink ? (
+        canOpen || hasLink ? (
           <>
-            {hasMedia && (
+            {canOpen && (
               <Button variant="outline" size="sm" onClick={onOpen}>
                 <Eye className="h-4 w-4" />
                 مشاهده
@@ -169,7 +187,7 @@ function ActivityCards({ activities }: { activities: CampaignActivity[] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const openActivity = (activity: CampaignActivity) => {
-    if (!hasActivityMedia(activity)) return;
+    if (!canOpenActivityDetail(activity)) return;
     setSelectedActivity(activity);
     setDialogOpen(true);
   };

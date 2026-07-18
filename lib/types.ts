@@ -539,6 +539,16 @@ export interface ActivityMediaItem {
   url: string;
 }
 
+/** Downloadable document attached to a field activity (title + file). */
+export interface ActivityAttachment {
+  id: string;
+  title: string;
+  fileUrl: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+}
+
 export interface CampaignActivity extends Ownable {
   id: string;
   campaignId: string;
@@ -550,6 +560,7 @@ export interface CampaignActivity extends Ownable {
   imageUrl?: string | null;
   videoUrl?: string | null;
   mediaItems: ActivityMediaItem[];
+  attachments: ActivityAttachment[];
   description?: string | null;
   published: boolean;
   sortOrder: number;

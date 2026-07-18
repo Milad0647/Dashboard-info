@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "a97d2147c6bea9fc3cbd546bbf43a51eb9ce326b",
+      "committedAt": "2026-07-18T10:13:15+03:30",
+      "title": "رفع مشکل ذخیره نشدن ویدیو و محتوای جدید",
+      "subject": "Fix create saves blocked by ownership check on client UUIDs"
+    },
+    {
       "hash": "8ebd10867b3278b49c14c3fb754ea1a9df2105d1",
       "committedAt": "2026-07-18T10:07:25+03:30",
       "title": "سبک‌تر شدن عکس کاور کارت‌ها برای باز شدن سریع‌تر",

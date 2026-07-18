@@ -52,8 +52,10 @@ export function activityHasDisplayContent(activity: {
   imageUrl?: string | null;
   videoUrl?: string | null;
   mediaItems?: { url: string }[];
+  attachments?: { fileUrl: string }[];
 }): boolean {
   if (activity.mediaItems?.some((item) => item.url.trim())) return true;
+  if (activity.attachments?.some((item) => item.fileUrl.trim())) return true;
   return Boolean(activity.imageUrl?.trim() || activity.videoUrl?.trim());
 }
 

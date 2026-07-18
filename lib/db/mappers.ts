@@ -142,7 +142,7 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
   };
 }
 
-import type { ActivityMediaItem, BillboardDisplayPeriod } from "@/lib/types";
+import type { ActivityAttachment, ActivityMediaItem, BillboardDisplayPeriod } from "@/lib/types";
 
 function parseActivityMediaItems(value: unknown): ActivityMediaItem[] {
   if (!Array.isArray(value)) return [];
@@ -164,6 +164,31 @@ function parseActivityMediaItems(value: unknown): ActivityMediaItem[] {
       return { id, type, url };
     })
     .filter((item): item is ActivityMediaItem => Boolean(item));
+}
+
+function parseActivityAttachments(value: unknown): ActivityAttachment[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const record = item as Record<string, unknown>;
+      const title = typeof record.title === "string" ? record.title.trim() : "";
+      const fileUrl = typeof record.fileUrl === "string" ? record.fileUrl.trim() : "";
+      const fileName = typeof record.fileName === "string" ? record.fileName.trim() : "";
+      const mimeType = typeof record.mimeType === "string" ? record.mimeType.trim() : "";
+      const fileSize = typeof record.fileSize === "number" ? record.fileSize : Number(record.fileSize) || 0;
+      const id = typeof record.id === "string" ? record.id : crypto.randomUUID();
+      if (!title || !fileUrl) return null;
+      return {
+        id,
+        title,
+        fileUrl,
+        fileName: fileName || title,
+        mimeType: mimeType || "application/octet-stream",
+        fileSize,
+      };
+    })
+    .filter((item): item is ActivityAttachment => Boolean(item));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -422,6 +447,7 @@ export function mapCampaignActivityFromDb(row: any): CampaignActivity {
               ? [{ id: `${row.id}-video`, type: "video" as const, url: row.video_url }]
               : []),
           ],
+    attachments: parseActivityAttachments(row.attachments),
     description: row.description ?? null,
     published: row.published ?? false,
     sortOrder: row.sort_order ?? 0,
