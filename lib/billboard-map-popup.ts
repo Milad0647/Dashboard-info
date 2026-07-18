@@ -1,5 +1,5 @@
 import { formatBillboardLocationLine } from "@/lib/billboard-location";
-import { getBillboardDisplayImage } from "@/lib/billboard-media";
+import { getBillboardCardImage } from "@/lib/billboard-media";
 import { getBillboardDateLabel } from "@/lib/billboards";
 import type { Billboard } from "@/lib/types";
 
@@ -12,7 +12,7 @@ function escapeHtml(value: string): string {
 }
 
 export function buildBillboardMapTooltipHtml(billboard: Billboard): string {
-  const imageUrl = escapeHtml(getBillboardDisplayImage(billboard));
+  const imageUrl = escapeHtml(getBillboardCardImage(billboard));
   const title = escapeHtml(billboard.title);
   const location = escapeHtml(formatBillboardLocationLine(billboard));
   const dateLabel = getBillboardDateLabel(billboard);

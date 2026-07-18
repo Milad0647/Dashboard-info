@@ -1,6 +1,10 @@
 import { mkdir, writeFile } from "fs/promises";
 import { randomUUID } from "crypto";
 import { assertMagicMatchesKind } from "@/lib/security/file-magic";
+import {
+  isThumbnailableImageFilename,
+  writeImageThumbnail,
+} from "@/lib/server/image-thumbnail";
 import { getUploadPublicUrl, getUploadsDir } from "@/lib/uploads";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -52,6 +56,14 @@ export async function saveUploadedImageFile(file: File): Promise<string> {
 
   await mkdir(uploadsDir, { recursive: true });
   await writeFile(`${uploadsDir}/${filename}`, buffer);
+
+  if (isThumbnailableImageFilename(filename)) {
+    try {
+      await writeImageThumbnail(filename, buffer);
+    } catch (error) {
+      console.warn("Card thumbnail generation failed:", error);
+    }
+  }
 
   return getUploadPublicUrl(filename);
 }

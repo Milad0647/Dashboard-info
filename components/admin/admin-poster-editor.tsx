@@ -60,6 +60,7 @@ export function AdminPosterEditor({
   const displayVersion = useMemo(() => resolveDisplayVersion(versions), [versions]);
 
   const [imageUrl, setImageUrl] = useState(displayVersion?.imageUrl || "");
+  const [thumbnailUrl, setThumbnailUrl] = useState(displayVersion?.thumbnailUrl || "");
   const [notes, setNotes] = useState(displayVersion?.notes ?? "");
   const [editTitle, setEditTitle] = useState(poster.title);
   const [editDescription, setEditDescription] = useState(poster.description ?? "");
@@ -77,6 +78,7 @@ export function AdminPosterEditor({
     setEditPlanLabels(normalizePlanLabels(poster.planLabels, poster.planLabel));
     setEditScore(poster.score);
     setImageUrl(current?.imageUrl || "");
+    setThumbnailUrl(current?.thumbnailUrl || "");
     setNotes(current?.notes ?? "");
   }, [
     poster.id,
@@ -110,20 +112,28 @@ export function AdminPosterEditor({
         updatedAt: new Date().toISOString(),
       };
 
-      await savePosterAction(savedPoster);
+      const posterResult = await savePosterAction(savedPoster);
+      if (!posterResult?.success) {
+        toast.error(posterResult?.error ?? "ذخیره پوستر ناموفق بود");
+        return;
+      }
 
       const keepId = displayVersion?.id;
-      await savePosterVersionAction({
+      const versionResult = await savePosterVersionAction({
         id: keepId,
         posterId: poster.id,
         versionNumber: displayVersion?.versionNumber ?? 1,
         imageUrl,
-        thumbnailUrl: imageUrl,
+        thumbnailUrl: thumbnailUrl.trim() || imageUrl,
         notes: notes || undefined,
         date: displayVersion?.date ?? todayISO(),
         isFinal: true,
         status: "final",
       });
+      if (!versionResult?.success) {
+        toast.error(versionResult?.error ?? "ذخیره تصویر پوستر ناموفق بود");
+        return;
+      }
 
       for (const version of versions) {
         if (version.id !== keepId) {
@@ -162,7 +172,13 @@ export function AdminPosterEditor({
         <MediaUpload
           label="تصویر پوستر"
           value={imageUrl}
-          onChange={setImageUrl}
+          onChange={(url) => {
+            setImageUrl(url);
+            setThumbnailUrl("");
+          }}
+          onUploadedMeta={(meta) => {
+            if (meta.thumbnailUrl) setThumbnailUrl(meta.thumbnailUrl);
+          }}
           showPreview={false}
           showLinkInput={false}
           dropzoneContent={

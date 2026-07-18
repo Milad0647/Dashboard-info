@@ -11,7 +11,7 @@ import { PublicContentCard } from "@/components/public/public-content-card";
 import { useContentScoreAccess } from "@/lib/context/content-score-context";
 import { resolveBillboardCategoryDisplay } from "@/lib/billboard-categories";
 import { getBillboardDateLabel } from "@/lib/billboards";
-import { getBillboardDisplayImage, hasBillboardDisplayImage } from "@/lib/billboard-media";
+import { getBillboardCardImage, getBillboardDisplayImage, hasBillboardDisplayImage } from "@/lib/billboard-media";
 import { parseProvinceFromBillboard } from "@/lib/billboard-form-utils";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
 import type { Billboard } from "@/lib/types";
@@ -31,11 +31,12 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
   const categoryLabel = resolveBillboardCategoryDisplay(billboard);
   const dateLabel = getBillboardDateLabel(billboard);
   const canZoom = hasBillboardDisplayImage(billboard) && !zoomFailed;
-  const displayImage = getBillboardDisplayImage(billboard);
+  const fullImage = getBillboardDisplayImage(billboard);
+  const cardImage = getBillboardCardImage(billboard);
 
   const handleDownload = () => {
     if (!canZoom) return;
-    void downloadMedia(displayImage, getFilenameFromUrl(displayImage, `${billboard.title}.jpg`));
+    void downloadMedia(fullImage, getFilenameFromUrl(fullImage, `${billboard.title}.jpg`));
   };
 
   return (
@@ -50,7 +51,8 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
         <div className="group relative h-full w-full">
           {canZoom ? (
             <ImageZoom
-              src={displayImage}
+              src={fullImage}
+              previewSrc={cardImage}
               alt={billboard.title}
               className="absolute inset-0 h-full w-full"
               imgClassName="apple-media-zoom object-cover"

@@ -29,6 +29,7 @@ interface MediaUploadProps {
   onUploadedFile?: (file: File, url: string) => void;
   onUploadedMeta?: (meta: {
     url: string;
+    thumbnailUrl?: string;
     fileName: string;
     fileSize: number;
     mimeType: string;
@@ -177,6 +178,7 @@ export function MediaUpload({
 
       const data = (await response.json()) as {
         url: string;
+        thumbnailUrl?: string;
         fileName?: string;
         fileSize?: number;
         mimeType?: string;
@@ -186,6 +188,7 @@ export function MediaUpload({
       onUploadedFile?.(file, data.url);
       onUploadedMeta?.({
         url: data.url,
+        thumbnailUrl: data.thumbnailUrl,
         fileName: data.fileName ?? file.name,
         fileSize: data.fileSize ?? file.size,
         mimeType: data.mimeType ?? file.type,

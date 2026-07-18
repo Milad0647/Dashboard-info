@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import { Download, ExternalLink, Eye, Music, Play } from "lucide-react";
 import { getActivityTypeLabel } from "@/lib/activity-types";
+import { toCardThumbnailUrl } from "@/lib/card-image";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { flattenOwnerGroupsInSortOrder, shouldRenderChronologically } from "@/lib/owner-groups";
@@ -86,12 +86,13 @@ function ActivityCard({
             className="object-cover apple-media-zoom"
           />
         ) : activity.imageUrl ? (
-          <Image
-            src={activity.imageUrl}
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={toCardThumbnailUrl(activity.imageUrl)}
             alt={activity.title}
-            fill
-            className="object-cover apple-media-zoom"
-            sizes="(max-width: 1280px) 16vw, 200px"
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover apple-media-zoom"
           />
         ) : audioOnly ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-2 text-muted-foreground">

@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "c403ec37b839ef61cb3f4c51652a145f942513bb",
+      "committedAt": "2026-07-18T10:03:51+03:30",
+      "title": "رفع خطای آپلود PNG در پوسترها",
+      "subject": "Fix PNG uploads falsely rejected as SVG"
+    },
+    {
       "hash": "9fbab51af7cfc9ca83abe57915ac5a3eaa0d6c9a",
       "committedAt": "2026-07-18T10:03:14+03:30",
       "title": "امکان آپلود ویدیو در بخش پخش صدا و سیما",

@@ -6,6 +6,7 @@ import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
+import { resolveCardCoverUrl } from "@/lib/card-image";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { Poster, PosterVersion } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,9 @@ export function AdminPosterCompactCard({
   onScoreSaved,
 }: AdminPosterCompactCardProps) {
   const displayVersion = resolveDisplayVersion(versions);
+  const coverSrc = displayVersion
+    ? resolveCardCoverUrl(displayVersion.imageUrl, displayVersion.thumbnailUrl)
+    : null;
 
   return (
     <div className="apple-lift group relative w-full overflow-hidden rounded-xl border bg-card text-right hover:border-primary/50">
@@ -44,7 +48,7 @@ export function AdminPosterCompactCard({
       >
         <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
           <MediaThumbnail
-            src={displayVersion?.thumbnailUrl || displayVersion?.imageUrl}
+            src={coverSrc}
             alt={poster.title}
             kind="poster"
             sizes="160px"

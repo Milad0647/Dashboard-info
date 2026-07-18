@@ -4,12 +4,15 @@ import { useCallback, useRef, useState } from "react";
 import { Minus, Plus, X, ZoomIn } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toCardThumbnailUrl } from "@/lib/card-image";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_SIZES = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px";
 
 interface ImageZoomProps {
   src: string;
+  /** Optional low-size cover for the card tile; lightbox always uses `src`. */
+  previewSrc?: string | null;
   alt?: string;
   className?: string;
   imgClassName?: string;
@@ -25,6 +28,7 @@ interface ImageZoomProps {
 
 export function ImageZoom({
   src,
+  previewSrc,
   alt = "",
   className,
   imgClassName,
@@ -39,6 +43,8 @@ export function ImageZoom({
   const [scale, setScale] = useState(1);
   const [imageFailed, setImageFailed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const cardSrc = toCardThumbnailUrl((previewSrc?.trim() || src).trim());
 
   const resetZoom = useCallback(() => setScale(1), []);
 
@@ -71,7 +77,7 @@ export function ImageZoom({
         {/* Plain img avoids next/image optimizer failures for signed/local and remote hosts */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={src}
+          src={cardSrc}
           alt={alt}
           loading="lazy"
           decoding="async"

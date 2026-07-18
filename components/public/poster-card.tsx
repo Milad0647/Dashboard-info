@@ -64,6 +64,7 @@ export function PosterCard({
           <div className="group relative h-full w-full">
             <ImageZoom
               src={displayVersion.imageUrl}
+              previewSrc={displayVersion.thumbnailUrl}
               alt={title}
               className="absolute inset-0 h-full w-full"
               imgClassName="apple-media-zoom object-cover object-center"

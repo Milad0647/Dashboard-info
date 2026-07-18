@@ -1,4 +1,5 @@
 import type { Billboard } from "@/lib/types";
+import { resolveCardCoverUrl, toCardThumbnailUrl } from "@/lib/card-image";
 
 export const BILLBOARD_PLACEHOLDER_IMAGE = "/images/billboard-placeholder.svg";
 
@@ -27,7 +28,8 @@ function firstPeriodImageUrl(billboard: Billboard): string {
   return "";
 }
 
-function resolveBillboardImageCandidate(billboard: Billboard): string {
+/** Full-quality candidate for lightbox / download. */
+function resolveBillboardFullImageCandidate(billboard: Billboard): string {
   const imageUrl = normalizeBillboardImageUrl(billboard.imageUrl);
   const thumbnailUrl = normalizeBillboardImageUrl(billboard.thumbnailUrl);
   const fromRow = imageUrl || thumbnailUrl;
@@ -35,12 +37,34 @@ function resolveBillboardImageCandidate(billboard: Billboard): string {
   return firstPeriodImageUrl(billboard);
 }
 
-export function hasBillboardDisplayImage(billboard: Billboard): boolean {
-  return !isInvalidBillboardImageUrl(resolveBillboardImageCandidate(billboard));
+/** Prefer card/thumbnail URLs for grid covers. */
+function resolveBillboardCardImageCandidate(billboard: Billboard): string {
+  const thumbnailUrl = normalizeBillboardImageUrl(billboard.thumbnailUrl);
+  const imageUrl = normalizeBillboardImageUrl(billboard.imageUrl);
+  if (!isInvalidBillboardImageUrl(thumbnailUrl)) {
+    return resolveCardCoverUrl(imageUrl || thumbnailUrl, thumbnailUrl);
+  }
+  const fromFull = resolveBillboardFullImageCandidate(billboard);
+  if (!isInvalidBillboardImageUrl(fromFull)) return toCardThumbnailUrl(fromFull);
+  return "";
 }
 
+export function hasBillboardDisplayImage(billboard: Billboard): boolean {
+  return !isInvalidBillboardImageUrl(resolveBillboardFullImageCandidate(billboard));
+}
+
+/** Full image for modal / download (not the low-size card thumb). */
 export function getBillboardDisplayImage(billboard: Billboard): string {
-  const candidate = resolveBillboardImageCandidate(billboard);
+  const candidate = resolveBillboardFullImageCandidate(billboard);
+  if (isInvalidBillboardImageUrl(candidate)) {
+    return BILLBOARD_PLACEHOLDER_IMAGE;
+  }
+  return candidate;
+}
+
+/** Low-size cover for cards, map pins, and admin grids. */
+export function getBillboardCardImage(billboard: Billboard): string {
+  const candidate = resolveBillboardCardImageCandidate(billboard);
   if (isInvalidBillboardImageUrl(candidate)) {
     return BILLBOARD_PLACEHOLDER_IMAGE;
   }

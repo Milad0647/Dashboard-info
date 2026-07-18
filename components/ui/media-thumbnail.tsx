@@ -5,6 +5,7 @@ import {
   isLocalUploadedMediaUrl,
   OptimizedMediaImage,
 } from "@/components/ui/optimized-media-image";
+import { toCardThumbnailUrl } from "@/lib/card-image";
 import { cn } from "@/lib/utils";
 
 interface MediaThumbnailProps {
@@ -38,13 +39,14 @@ export function MediaThumbnail({
     return <MediaPlaceholder kind={kind} className={className} />;
   }
 
+  const cardSrc = toCardThumbnailUrl(src);
   const fitClass = objectFit === "contain" ? "object-contain" : "object-cover";
 
-  if (shouldUsePlainImg(src) || kind === "billboard") {
+  if (shouldUsePlainImg(cardSrc) || kind === "billboard") {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={src}
+        src={cardSrc}
         alt={alt}
         loading="lazy"
         decoding="async"
@@ -59,7 +61,7 @@ export function MediaThumbnail({
 
   return (
     <OptimizedMediaImage
-      src={src}
+      src={cardSrc}
       alt={alt}
       fill={fill}
       loading="lazy"

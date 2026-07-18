@@ -1,8 +1,12 @@
-import { open, stat } from "fs/promises";
+import { open, readFile, stat } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth/get-session";
 import { verifyFileAccessToken } from "@/lib/auth/file-access-token";
+import {
+  ensureLocalImageThumbnail,
+  isThumbnailableImageFilename,
+} from "@/lib/server/image-thumbnail";
 import { resolveUploadFilePath } from "@/lib/uploads";
 
 const MIME_TYPES: Record<string, string> = {
@@ -55,7 +59,27 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const wantCardThumb =
+    searchParams.get("thumb") === "1" && isThumbnailableImageFilename(filename);
+
   try {
+    if (wantCardThumb) {
+      const thumbName = await ensureLocalImageThumbnail(filename);
+      if (thumbName) {
+        const thumbPath = resolveUploadFilePath(thumbName);
+        const thumbBuffer = await readFile(thumbPath);
+        return new NextResponse(thumbBuffer, {
+          headers: {
+            "Content-Type": "image/webp",
+            "Content-Length": String(thumbBuffer.byteLength),
+            "Cache-Control": "private, max-age=86400",
+            "X-Content-Type-Options": "nosniff",
+          },
+        });
+      }
+    }
+
     const filePath = resolveUploadFilePath(filename);
     const fileStat = await stat(filePath);
 

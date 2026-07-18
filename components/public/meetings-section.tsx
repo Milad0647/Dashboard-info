@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import Image from "next/image";
 import { Download, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,6 +23,7 @@ import {
 import {
   clearUnlockedMeetings,
 } from "@/lib/client/meetings-unlock-storage";
+import { toCardThumbnailUrl } from "@/lib/card-image";
 import type { DataOwnerGroup, MeetingPublicDetail, MeetingPublicPreview } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 import {
@@ -66,12 +66,13 @@ function MeetingPreviewCard({
       ownerName={meeting.ownerName}
       media={
         meeting.imageUrl ? (
-          <Image
-            src={meeting.imageUrl}
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={toCardThumbnailUrl(meeting.imageUrl)}
             alt={meeting.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 1024px) 50vw, 33vw"
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

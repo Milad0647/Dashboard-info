@@ -15,6 +15,7 @@ import type { AdminUser, Billboard, CampaignSettings } from "@/lib/types";
 
 export {
   BILLBOARD_PLACEHOLDER_IMAGE,
+  getBillboardCardImage,
   getBillboardDisplayImage,
   hasBillboardDisplayImage,
 } from "@/lib/billboard-media";

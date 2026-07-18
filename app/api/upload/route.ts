@@ -3,6 +3,10 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth/get-session";
 import { assertMagicMatchesKind } from "@/lib/security/file-magic";
+import {
+  isThumbnailableImageFilename,
+  writeImageThumbnail,
+} from "@/lib/server/image-thumbnail";
 import { getUploadPublicUrl, getUploadsDir, withFileAccessToken } from "@/lib/uploads";
 
 export const runtime = "nodejs";
@@ -256,8 +260,19 @@ export async function POST(request: Request) {
 
   await writeFile(`${uploadsDir}/${filename}`, buffer);
 
+  let thumbnailUrl: string | undefined;
+  if (isThumbnailableImageFilename(filename)) {
+    try {
+      const thumbName = await writeImageThumbnail(filename, buffer);
+      thumbnailUrl = withFileAccessToken(getUploadPublicUrl(thumbName));
+    } catch (error) {
+      console.warn("Card thumbnail generation failed:", error);
+    }
+  }
+
   return NextResponse.json({
     url: withFileAccessToken(getUploadPublicUrl(filename)),
+    ...(thumbnailUrl ? { thumbnailUrl } : {}),
     fileName: file.name,
     fileSize: file.size,
     mimeType: file.type,

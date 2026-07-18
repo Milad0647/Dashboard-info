@@ -13,7 +13,7 @@ import { BillboardModal } from "@/components/public/billboard-modal";
 import { BillboardThumbnail } from "@/components/public/billboard-thumbnail";
 import { resolveBillboardCategoryDisplay } from "@/lib/billboard-categories";
 import { formatBillboardCityLine } from "@/lib/billboard-location";
-import { getBillboardDisplayImage, hasBillboardDisplayImage } from "@/lib/billboards";
+import { getBillboardCardImage, hasBillboardDisplayImage } from "@/lib/billboards";
 import type { Billboard } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
 
@@ -68,7 +68,7 @@ export function LeaderboardBillboardsModal({
                         {canShowImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={getBillboardDisplayImage(billboard)}
+                            src={getBillboardCardImage(billboard)}
                             alt={billboard.title}
                             className="h-full w-full object-cover"
                           />

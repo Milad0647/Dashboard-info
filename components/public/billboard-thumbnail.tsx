@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
-import { getBillboardDisplayImage, hasBillboardDisplayImage } from "@/lib/billboard-media";
+import { getBillboardCardImage, hasBillboardDisplayImage } from "@/lib/billboard-media";
 import type { Billboard } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +41,7 @@ export function BillboardThumbnail({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={getBillboardDisplayImage(billboard)}
+      src={getBillboardCardImage(billboard)}
       alt={alt}
       loading="lazy"
       decoding="async"
