@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "b841675230f5f85a4472863fcd1afe30785e35a7",
+      "committedAt": "2026-07-18T16:04:25+03:30",
+      "title": "افزودن دکمه لینک و هدایت به بخش‌های پنل در دستورکارها",
+      "subject": "Add directive action buttons for links and in-app destinations"
+    },
+    {
       "hash": "62f50ae8430329a9bf8f14192d991094d7a5610d",
       "committedAt": "2026-07-18T16:01:46+03:30",
       "title": "امکان پیوست تصویر و ویدیو در دستورکارها",
