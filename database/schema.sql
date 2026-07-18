@@ -740,6 +740,10 @@ CREATE TABLE IF NOT EXISTS campaign_directives (
   letter_file_size INT NOT NULL DEFAULT 0,
   audience_type TEXT NOT NULL DEFAULT 'all' CHECK (audience_type IN ('all', 'region', 'users')),
   audience_region TEXT CHECK (audience_region IS NULL OR audience_region IN ('north', 'south', 'east', 'west')),
+  action_type TEXT NOT NULL DEFAULT 'none' CHECK (action_type IN ('none', 'custom_url', 'system')),
+  action_label TEXT,
+  action_url TEXT,
+  system_action TEXT,
   published BOOLEAN NOT NULL DEFAULT true,
   published_at TIMESTAMPTZ,
   sort_order INT NOT NULL DEFAULT 0,
@@ -753,6 +757,10 @@ ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS letter_file_url TEXT;
 ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS letter_file_name TEXT;
 ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS letter_mime_type TEXT;
 ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS letter_file_size INT NOT NULL DEFAULT 0;
+ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS action_type TEXT NOT NULL DEFAULT 'none';
+ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS action_label TEXT;
+ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS action_url TEXT;
+ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS system_action TEXT;
 
 UPDATE campaign_directives
 SET end_date = due_date

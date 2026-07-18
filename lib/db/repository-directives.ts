@@ -1,12 +1,15 @@
 import { getSql } from "@/lib/db/client";
 import type {
   CampaignDirective,
+  DirectiveActionType,
   DirectiveAttachment,
   DirectiveAudienceType,
   DirectivePriority,
   DirectiveRecipient,
   DirectiveSmsStatus,
+  DirectiveSystemAction,
 } from "@/lib/types";
+import { isDirectiveActionType, isDirectiveSystemAction } from "@/lib/directive-cta";
 import type { UserRegion } from "@/lib/user-regions";
 import { generateId } from "@/lib/utils";
 
@@ -67,6 +70,14 @@ function mapSmsStatus(value: unknown): DirectiveSmsStatus {
   return "pending";
 }
 
+function mapActionType(value: unknown): DirectiveActionType {
+  return isDirectiveActionType(value) ? value : "none";
+}
+
+function mapSystemAction(value: unknown): DirectiveSystemAction | null {
+  return isDirectiveSystemAction(value) ? value : null;
+}
+
 function mapDirectiveRow(
   row: Record<string, unknown>,
   attachments: DirectiveAttachment[]
@@ -109,6 +120,10 @@ function mapDirectiveRow(
         : letterFromAttachment?.letterFileSize ?? 0,
     audienceType: mapAudienceType(row.audience_type),
     audienceRegion: mapRegion(row.audience_region),
+    actionType: mapActionType(row.action_type),
+    actionLabel: row.action_label ? String(row.action_label) : null,
+    actionUrl: row.action_url ? String(row.action_url) : null,
+    systemAction: mapSystemAction(row.system_action),
     published: Boolean(row.published),
     publishedAt: toIsoString(row.published_at),
     sortOrder: Number(row.sort_order ?? 0),
@@ -340,6 +355,10 @@ export interface SaveDirectiveInput {
   letterFileSize?: number;
   audienceType: DirectiveAudienceType;
   audienceRegion?: UserRegion | null;
+  actionType?: DirectiveActionType;
+  actionLabel?: string | null;
+  actionUrl?: string | null;
+  systemAction?: DirectiveSystemAction | null;
   published?: boolean;
   attachments?: Array<{
     id?: string;
@@ -365,6 +384,11 @@ export async function pgSaveDirective(input: SaveDirectiveInput): Promise<{ id: 
   const letterFileSize = letterFileUrl ? Number(input.letterFileSize ?? 0) : 0;
   const audienceRegion =
     input.audienceType === "region" ? (input.audienceRegion ?? null) : null;
+  const actionType = input.actionType ?? "none";
+  const actionLabel =
+    actionType === "none" ? null : input.actionLabel?.trim() || null;
+  const actionUrl = actionType === "custom_url" ? input.actionUrl?.trim() || null : null;
+  const systemAction = actionType === "system" ? input.systemAction ?? null : null;
 
   const existing = input.id
     ? await sql`SELECT id, published_at FROM campaign_directives WHERE id = ${id} LIMIT 1`
@@ -381,7 +405,8 @@ export async function pgSaveDirective(input: SaveDirectiveInput): Promise<{ id: 
     INSERT INTO campaign_directives (
       id, campaign_id, created_by_user_id, title, body, priority, due_date,
       start_date, end_date, letter_file_url, letter_file_name, letter_mime_type, letter_file_size,
-      audience_type, audience_region, published, published_at, sort_order, created_at, updated_at
+      audience_type, audience_region, action_type, action_label, action_url, system_action,
+      published, published_at, sort_order, created_at, updated_at
     ) VALUES (
       ${id},
       ${input.campaignId},
@@ -398,6 +423,10 @@ export async function pgSaveDirective(input: SaveDirectiveInput): Promise<{ id: 
       ${letterFileSize},
       ${input.audienceType},
       ${audienceRegion},
+      ${actionType},
+      ${actionLabel},
+      ${actionUrl},
+      ${systemAction},
       ${published},
       ${publishedAt},
       0,
@@ -417,6 +446,10 @@ export async function pgSaveDirective(input: SaveDirectiveInput): Promise<{ id: 
       letter_file_size = EXCLUDED.letter_file_size,
       audience_type = EXCLUDED.audience_type,
       audience_region = EXCLUDED.audience_region,
+      action_type = EXCLUDED.action_type,
+      action_label = EXCLUDED.action_label,
+      action_url = EXCLUDED.action_url,
+      system_action = EXCLUDED.system_action,
       published = EXCLUDED.published,
       published_at = COALESCE(campaign_directives.published_at, EXCLUDED.published_at),
       updated_at = EXCLUDED.updated_at

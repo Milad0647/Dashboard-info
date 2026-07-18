@@ -13,13 +13,19 @@ import {
 import { pgGetSmsProviderSettings } from "@/lib/db/system-settings";
 import type {
   CampaignDirective,
+  DirectiveActionType,
   DirectiveAudienceType,
   DirectivePriority,
   DirectiveRecipient,
+  DirectiveSystemAction,
 } from "@/lib/types";
 import type { UserRegion } from "@/lib/user-regions";
 import { isPostgresConfigured } from "@/lib/utils";
 import { stripFileAccessTokensDeep } from "@/lib/uploads";
+import {
+  isDirectiveSystemAction,
+  normalizeDirectiveActionUrl,
+} from "@/lib/directive-cta";
 
 async function assertDirectivesAccess(campaignId: string) {
   const session = await getAuthSession();
@@ -141,6 +147,10 @@ export async function saveDirectiveAction(input: {
   letterFileSize?: number;
   audienceType: DirectiveAudienceType;
   audienceRegion?: UserRegion | null;
+  actionType?: DirectiveActionType;
+  actionLabel?: string | null;
+  actionUrl?: string | null;
+  systemAction?: DirectiveSystemAction | null;
   selectedUserIds?: string[];
   attachments?: Array<{
     id?: string;
@@ -182,6 +192,27 @@ export async function saveDirectiveAction(input: {
     }
   }
 
+  const actionType: DirectiveActionType = input.actionType ?? "none";
+  let actionLabel: string | null = input.actionLabel?.trim() || null;
+  let actionUrl: string | null = null;
+  let systemAction: DirectiveSystemAction | null = null;
+
+  if (actionType === "custom_url") {
+    const normalized = normalizeDirectiveActionUrl(input.actionUrl ?? "");
+    if (!normalized) {
+      return { success: false as const, error: "لینک دکمه اقدام معتبر نیست" };
+    }
+    actionUrl = normalized;
+    if (!actionLabel) actionLabel = "مشاهده لینک";
+  } else if (actionType === "system") {
+    if (!isDirectiveSystemAction(input.systemAction)) {
+      return { success: false as const, error: "مقصد سیستمی را انتخاب کنید" };
+    }
+    systemAction = input.systemAction;
+  } else {
+    actionLabel = null;
+  }
+
   const access = await assertDirectivesAccess(input.campaignId);
   if (access.error || !access.session) {
     return { success: false as const, error: access.error ?? "Unauthorized" };
@@ -204,6 +235,10 @@ export async function saveDirectiveAction(input: {
     ...input,
     body: input.body?.trim() ?? "",
     attachments: input.attachments ?? [],
+    actionType,
+    actionLabel,
+    actionUrl,
+    systemAction,
   });
 
   const isUpdate = Boolean(cleaned.id);
@@ -225,6 +260,10 @@ export async function saveDirectiveAction(input: {
     letterFileSize: cleaned.letterFileSize,
     audienceType: cleaned.audienceType,
     audienceRegion: cleaned.audienceRegion,
+    actionType: cleaned.actionType,
+    actionLabel: cleaned.actionLabel,
+    actionUrl: cleaned.actionUrl,
+    systemAction: cleaned.systemAction,
     published: true,
     attachments: cleaned.attachments,
     selectedUserIds: cleaned.selectedUserIds,

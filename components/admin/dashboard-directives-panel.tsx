@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, ClipboardCheck, Download, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { DirectiveActionButton } from "@/components/admin/directive-action-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -305,6 +306,12 @@ export function DashboardDirectivesPanel({
                   <p className="text-sm font-medium">پیوست‌ها</p>
                   <AttachmentList attachments={extraAttachments(detailItem)} />
                 </div>
+                {detailItem.actionType !== "none" && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">اقدام</p>
+                    <DirectiveActionButton item={detailItem} />
+                  </div>
+                )}
                 {!detailItem.confirmed && (
                   <Button
                     className="w-full sm:w-auto"

@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DirectiveActionButton } from "@/components/admin/directive-action-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -40,10 +41,16 @@ import {
   CONTENT_TITLE_MAX_LENGTH,
   CONTENT_TITLE_MAX_LENGTH_MESSAGE,
 } from "@/lib/content-constraints";
+import {
+  DIRECTIVE_SYSTEM_ACTIONS,
+  getDirectiveSystemAction,
+} from "@/lib/directive-cta";
 import type {
   CampaignDirective,
+  DirectiveActionType,
   DirectiveAttachment,
   DirectiveRecipient,
+  DirectiveSystemAction,
 } from "@/lib/types";
 import { USER_REGIONS, getUserRegionLabel, type UserRegion } from "@/lib/user-regions";
 import { cn, formatPersianDate, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
@@ -56,6 +63,26 @@ const schema = z.object({
   endDate: z.string().min(1, "تاریخ پایان الزامی است"),
   audienceType: z.enum(["all", "region", "users"]),
   audienceRegion: z.enum(["north", "south", "east", "west"]).nullable().optional(),
+  actionType: z.enum(["none", "custom_url", "system"]),
+  actionLabel: z.string().optional(),
+  actionUrl: z.string().optional(),
+  systemAction: z
+    .enum([
+      "profile",
+      "posters",
+      "videos",
+      "files",
+      "raw_media",
+      "billboards",
+      "activities",
+      "submissions",
+      "social_posts",
+      "meetings",
+      "broadcast",
+      "problem_reports",
+    ])
+    .nullable()
+    .optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -256,10 +283,16 @@ export function DirectivesAdmin({
       endDate: "",
       audienceType: "all",
       audienceRegion: null,
+      actionType: "none",
+      actionLabel: "",
+      actionUrl: "",
+      systemAction: null,
     },
   });
 
   const audienceType = form.watch("audienceType");
+  const actionType = form.watch("actionType");
+  const systemAction = form.watch("systemAction");
 
   const showingInbox = !canManage || managerView === "inbox";
 
@@ -283,6 +316,10 @@ export function DirectivesAdmin({
       endDate: "",
       audienceType: "all",
       audienceRegion: null,
+      actionType: "none",
+      actionLabel: "",
+      actionUrl: "",
+      systemAction: null,
     });
     setOpen(true);
   };
@@ -314,6 +351,10 @@ export function DirectivesAdmin({
       endDate: item.endDate ?? item.dueDate ?? "",
       audienceType: item.audienceType,
       audienceRegion: item.audienceRegion,
+      actionType: item.actionType ?? "none",
+      actionLabel: item.actionLabel ?? "",
+      actionUrl: item.actionUrl ?? "",
+      systemAction: item.systemAction ?? null,
     });
 
     if (item.audienceType === "users") {
@@ -417,6 +458,10 @@ export function DirectivesAdmin({
         letterFileSize: letterUpload.fileSize || 0,
         audienceType: data.audienceType,
         audienceRegion: data.audienceType === "region" ? data.audienceRegion ?? null : null,
+        actionType: data.actionType,
+        actionLabel: data.actionLabel?.trim() || null,
+        actionUrl: data.actionType === "custom_url" ? data.actionUrl?.trim() || null : null,
+        systemAction: data.actionType === "system" ? data.systemAction ?? null : null,
         selectedUserIds: data.audienceType === "users" ? selectedUserIds : undefined,
         attachments,
         sendSmsOnPublish: true,
@@ -637,6 +682,99 @@ export function DirectivesAdmin({
               <Textarea rows={6} {...form.register("body")} />
               {form.formState.errors.body && (
                 <p className="text-sm text-destructive">{form.formState.errors.body.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-3 rounded-lg border p-3">
+              <div className="space-y-1">
+                <Label>دکمه اقدام (اختیاری)</Label>
+                <p className="text-xs text-muted-foreground">
+                  در جزئیات دستورکار یک دکمه نمایش داده می‌شود — لینک خارجی یا هدایت به بخش‌های داخل پنل
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>نوع اقدام</Label>
+                <Select
+                  value={actionType}
+                  onValueChange={(value) => {
+                    const next = value as DirectiveActionType;
+                    form.setValue("actionType", next);
+                    if (next === "none") {
+                      form.setValue("actionLabel", "");
+                      form.setValue("actionUrl", "");
+                      form.setValue("systemAction", null);
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">بدون دکمه</SelectItem>
+                    <SelectItem value="custom_url">لینک خارجی (سایت / آدرس)</SelectItem>
+                    <SelectItem value="system">بخش داخل پنل</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {actionType === "custom_url" && (
+                <div className="space-y-2">
+                  <Label>آدرس لینک</Label>
+                  <Input
+                    dir="ltr"
+                    className="text-left"
+                    placeholder="https://example.com"
+                    {...form.register("actionUrl")}
+                  />
+                </div>
+              )}
+
+              {actionType === "system" && (
+                <div className="space-y-2">
+                  <Label>مقصد داخل پنل</Label>
+                  <Select
+                    value={systemAction ?? ""}
+                    onValueChange={(value) => {
+                      const next = value as DirectiveSystemAction;
+                      const previous = form.getValues("systemAction");
+                      const previousDefault =
+                        getDirectiveSystemAction(previous)?.defaultButtonLabel;
+                      const currentLabel = form.getValues("actionLabel")?.trim() ?? "";
+                      form.setValue("systemAction", next);
+                      const option = getDirectiveSystemAction(next);
+                      if (!currentLabel || currentLabel === previousDefault) {
+                        form.setValue("actionLabel", option?.defaultButtonLabel ?? "");
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="انتخاب بخش" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DIRECTIVE_SYSTEM_ACTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {actionType !== "none" && (
+                <div className="space-y-2">
+                  <Label>متن دکمه</Label>
+                  <Input
+                    placeholder={
+                      actionType === "system"
+                        ? getDirectiveSystemAction(systemAction)?.defaultButtonLabel ??
+                          "مثلاً تکمیل پروفایل"
+                        : "مثلاً ورود به سایت"
+                    }
+                    {...form.register("actionLabel")}
+                  />
+                </div>
               )}
             </div>
 
@@ -911,6 +1049,12 @@ export function DirectivesAdmin({
                   <h3 className="mb-2 text-sm font-medium">پیوست‌ها</h3>
                   <AttachmentList attachments={extraAttachments(detailItem)} />
                 </div>
+                {detailItem.actionType !== "none" && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium">اقدام</h3>
+                    <DirectiveActionButton item={detailItem} />
+                  </div>
+                )}
                 {showingInbox && !detailItem.confirmed && (
                   <Button disabled={isPending} onClick={() => confirmSeen(detailItem)}>
                     <Check className="h-4 w-4" />

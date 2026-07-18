@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "62f50ae8430329a9bf8f14192d991094d7a5610d",
+      "committedAt": "2026-07-18T16:01:46+03:30",
+      "title": "امکان پیوست تصویر و ویدیو در دستورکارها",
+      "subject": "Allow image and video attachments on directives"
+    },
+    {
       "hash": "adabd8c1ef66308b24fea5e4b0162aa2089376f0",
       "committedAt": "2026-07-18T15:32:03+03:30",
       "title": "نمایش جدیدترین تبلیغات محیطی در بالای لیست",

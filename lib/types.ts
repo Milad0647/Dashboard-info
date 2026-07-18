@@ -368,6 +368,20 @@ export interface AdminUser {
 export type DirectivePriority = "normal" | "urgent";
 export type DirectiveAudienceType = "all" | "region" | "users";
 export type DirectiveSmsStatus = "pending" | "sent" | "failed" | "no_phone" | "skipped";
+export type DirectiveActionType = "none" | "custom_url" | "system";
+export type DirectiveSystemAction =
+  | "profile"
+  | "posters"
+  | "videos"
+  | "files"
+  | "raw_media"
+  | "billboards"
+  | "activities"
+  | "submissions"
+  | "social_posts"
+  | "meetings"
+  | "broadcast"
+  | "problem_reports";
 
 export interface DirectiveAttachment {
   id: string;
@@ -415,6 +429,14 @@ export interface CampaignDirective {
   letterFileSize?: number;
   audienceType: DirectiveAudienceType;
   audienceRegion?: import("./user-regions").UserRegion | null;
+  /** CTA button: none, external URL, or in-app system destination. */
+  actionType: DirectiveActionType;
+  /** Optional custom button label; falls back to system/default labels. */
+  actionLabel?: string | null;
+  /** External http(s) URL when actionType is custom_url. */
+  actionUrl?: string | null;
+  /** In-app destination when actionType is system. */
+  systemAction?: DirectiveSystemAction | null;
   published: boolean;
   publishedAt?: string | null;
   sortOrder: number;
