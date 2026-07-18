@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "e23cd96a945e2641572b465c14627cd04889c2dc",
+      "committedAt": "2026-07-18T10:26:42+03:30",
+      "title": "پشتیبانی از آپلود تصویر و ویدیو در فایل‌های پیوست اقدامات",
+      "subject": "Allow image and video in activity file attachments"
+    },
+    {
       "hash": "981a27a63722a46b329966872927d4912527f43b",
       "committedAt": "2026-07-18T10:24:29+03:30",
       "title": "امکان آپلود فایل با عنوان در اقدامات برای دانلود کاربران",
