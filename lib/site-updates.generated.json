@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "664e9ffcd9736001460aa4ae456673cddf6c5627",
+      "committedAt": "2026-07-18T15:28:26+03:30",
+      "title": "افزودن فیلتر دسته سازه به تبلیغات محیطی ادمین",
+      "subject": "Add billboard category filter for admin"
+    },
+    {
       "hash": "ecb48461cd8bc651cbd71f65c3935dc5ed2d9535",
       "committedAt": "2026-07-18T15:22:41+03:30",
       "title": "اجباری شدن انتخاب موضوع هنگام ثبت تبلیغات محیطی",

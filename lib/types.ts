@@ -562,6 +562,8 @@ export interface CampaignActivity extends Ownable {
   mediaItems: ActivityMediaItem[];
   attachments: ActivityAttachment[];
   description?: string | null;
+  /** Marked as a creative field activity for review/filtering. */
+  isCreative: boolean;
   published: boolean;
   sortOrder: number;
   createdAt: string;

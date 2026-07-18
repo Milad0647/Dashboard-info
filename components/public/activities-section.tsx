@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, ExternalLink, Eye, FileText, Music, Play } from "lucide-react";
+import { Download, ExternalLink, Eye, FileText, Music, Play, Star } from "lucide-react";
 import { getActivityTypeLabel } from "@/lib/activity-types";
 import { toCardThumbnailUrl } from "@/lib/card-image";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
@@ -133,8 +133,17 @@ function ActivityCard({
           </div>
         )}
 
-        <div className="absolute top-2 right-2">
-          <Badge variant="overlay" className="text-[10px] px-1.5 py-0">
+        <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+          {activity.isCreative && (
+            <Badge
+              variant="overlay"
+              className="gap-0.5 border-amber-400/60 bg-amber-500/95 px-1.5 py-0 text-[10px] text-white"
+            >
+              <Star className="h-2.5 w-2.5 fill-current" />
+              خلاقانه
+            </Badge>
+          )}
+          <Badge variant="overlay" className="px-1.5 py-0 text-[10px]">
             {getActivityTypeLabel(activity.activityType)}
           </Badge>
         </div>

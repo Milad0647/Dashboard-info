@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, RotateCcw, UserRound, X } from "lucide-react";
+import { Filter, RotateCcw, Sparkles, UserRound, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -9,15 +9,20 @@ import { formatPlanLabelDisplay, matchesAnyPlanLabelFilter } from "@/lib/content
 
 export const ADMIN_FILTER_ALL = "all";
 
+export type AdminCreativeFilter = "all" | "creative" | "standard";
+
 export interface AdminContentFilterState {
   userKey: string;
   /** Empty array means all plan labels. */
   planLabels: string[];
+  /** Only used when the section enables the creative filter (activities). */
+  creative: AdminCreativeFilter;
 }
 
 export const DEFAULT_ADMIN_CONTENT_FILTER: AdminContentFilterState = {
   userKey: ADMIN_FILTER_ALL,
   planLabels: [],
+  creative: ADMIN_FILTER_ALL,
 };
 
 export interface AdminFilterUserOption {
@@ -34,9 +39,13 @@ interface AdminContentFilterBarProps {
   categoryOptions?: string[];
   categoryValue?: string;
   onCategoryChange?: (value: string) => void;
+  /** Show creative / standard filter (activities). */
+  showCreativeFilter?: boolean;
 }
 
-export function matchesAdminContentFilter<T extends Ownable>(
+type CreativeFilterable = Ownable & { isCreative?: boolean };
+
+export function matchesAdminContentFilter<T extends CreativeFilterable>(
   item: T,
   filter: AdminContentFilterState
 ): boolean {
@@ -48,6 +57,9 @@ export function matchesAdminContentFilter<T extends Ownable>(
   if (!matchesAnyPlanLabelFilter(item.planLabels, item.planLabel, filter.planLabels)) {
     return false;
   }
+
+  if (filter.creative === "creative" && !item.isCreative) return false;
+  if (filter.creative === "standard" && item.isCreative) return false;
 
   return true;
 }
@@ -75,14 +87,18 @@ export function AdminContentFilterBar({
   categoryOptions = [],
   categoryValue = ADMIN_FILTER_ALL,
   onCategoryChange,
+  showCreativeFilter = false,
 }: AdminContentFilterBarProps) {
   const hasCategoryFilter = categoryOptions.length > 0 && Boolean(onCategoryChange);
   const active =
     filter.userKey !== ADMIN_FILTER_ALL ||
     filter.planLabels.length > 0 ||
+    (showCreativeFilter && filter.creative !== ADMIN_FILTER_ALL) ||
     (hasCategoryFilter && categoryValue !== ADMIN_FILTER_ALL);
 
-  if (users.length === 0 && plans.length === 0 && !hasCategoryFilter) return null;
+  if (users.length === 0 && plans.length === 0 && !hasCategoryFilter && !showCreativeFilter) {
+    return null;
+  }
 
   const togglePlan = (plan: string) => {
     const exists = filter.planLabels.includes(plan);
@@ -110,6 +126,12 @@ export function AdminContentFilterBar({
   const categorySelectOptions = [
     { value: ADMIN_FILTER_ALL, label: "همه دسته‌ها" },
     ...categoryOptions.map((category) => ({ value: category, label: category })),
+  ];
+
+  const creativeOptions = [
+    { value: "all", label: "همه اقدامات" },
+    { value: "creative", label: "فقط خلاقانه" },
+    { value: "standard", label: "بدون خلاقانه" },
   ];
 
   const resetFilters = () => {
@@ -161,6 +183,20 @@ export function AdminContentFilterBar({
             placeholder="دسته سازه"
             searchPlaceholder="جستجوی دسته..."
             className="w-full sm:w-56"
+          />
+        )}
+
+        {showCreativeFilter && (
+          <SearchableSelect
+            value={filter.creative}
+            onValueChange={(creative) =>
+              onChange({ ...filter, creative: creative as AdminCreativeFilter })
+            }
+            options={creativeOptions}
+            placeholder="نوع اقدام"
+            searchPlaceholder="جستجو..."
+            className="w-full sm:w-56"
+            leadingIcon={<Sparkles className="h-4 w-4 shrink-0 text-amber-500" />}
           />
         )}
 

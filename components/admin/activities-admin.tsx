@@ -8,12 +8,14 @@ import {
   CONTENT_TITLE_MAX_LENGTH,
   CONTENT_TITLE_MAX_LENGTH_MESSAGE,
 } from "@/lib/content-constraints";
-import { Trash2, Upload } from "lucide-react";
+import { Star, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -131,6 +133,7 @@ export function ActivitiesAdmin({
   const [isMediaDragging, setIsMediaDragging] = useState(false);
   const [isBatchUploadingMedia, setIsBatchUploadingMedia] = useState(false);
   const [planLabels, setPlanLabels] = useState<string[]>([]);
+  const [isCreative, setIsCreative] = useState(false);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("activities");
   const [rows, setRows] = useState(
@@ -143,7 +146,7 @@ export function ActivitiesAdmin({
     () => rows.filter((item) => matchesAdminContentFilter(item, contentFilter)),
     [rows, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${contentFilter.creative}:${viewMode}`;
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredRows.length,
     paginationResetKey
@@ -177,6 +180,7 @@ export function ActivitiesAdmin({
       setMediaItems(activity.mediaItems ?? []);
       setAttachments(activity.attachments ?? []);
       setPlanLabels(normalizePlanLabels(activity.planLabels, activity.planLabel));
+      setIsCreative(Boolean(activity.isCreative));
       form.reset({
         title: activity.title,
         activityType: resolveFieldActivityType(activity.activityType),
@@ -213,6 +217,7 @@ export function ActivitiesAdmin({
       setMediaItems([]);
       setAttachments([]);
       setPlanLabels([]);
+      setIsCreative(false);
       setHighlightFields([]);
       form.reset({
         title: "",
@@ -232,6 +237,7 @@ export function ActivitiesAdmin({
     setMediaItems(activity.mediaItems ?? []);
     setAttachments(activity.attachments ?? []);
     setPlanLabels(normalizePlanLabels(activity.planLabels, activity.planLabel));
+    setIsCreative(Boolean(activity.isCreative));
     form.reset({
       title: activity.title,
       activityType: resolveFieldActivityType(activity.activityType),
@@ -251,6 +257,7 @@ export function ActivitiesAdmin({
     setMediaItems([]);
     setAttachments([]);
     setPlanLabels([]);
+    setIsCreative(false);
     resetDeepLink();
   };
 
@@ -377,6 +384,7 @@ export function ActivitiesAdmin({
         mediaItems: filledMedia,
         attachments: filledAttachments,
         description: data.description || null,
+        isCreative,
         published: true,
         planLabels,
         planLabel: planLabels[0] ?? null,
@@ -400,6 +408,7 @@ export function ActivitiesAdmin({
         mediaItems: filledMedia,
         attachments: filledAttachments,
         description: data.description || null,
+        isCreative,
         published: true,
         planLabels,
         planLabel: planLabels[0] ?? null,
@@ -438,6 +447,7 @@ export function ActivitiesAdmin({
         onChange={setContentFilter}
         users={isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        showCreativeFilter
       />
 
       <SectionBulkEditBar
@@ -499,7 +509,18 @@ export function ActivitiesAdmin({
                   />
                 )}
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{activity.title}</p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <p className="truncate font-medium">{activity.title}</p>
+                    {activity.isCreative && (
+                      <Badge
+                        variant="warning"
+                        className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px]"
+                      >
+                        <Star className="h-2.5 w-2.5 fill-current" />
+                        خلاقانه
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {getActivityTypeLabel(activity.activityType)} · {activity.ownerName ?? "—"}
                   </p>
@@ -566,6 +587,10 @@ export function ActivitiesAdmin({
                   label: "برچسب‌ها",
                   value: previewActivity.planLabels?.length ? previewActivity.planLabels.join("، ") : "—",
                 },
+                {
+                  label: "خلاقانه",
+                  value: previewActivity.isCreative ? "بله" : "خیر",
+                },
                 { label: "امتیاز", value: previewActivity.score ?? "—" },
               ]
             : []
@@ -615,6 +640,22 @@ export function ActivitiesAdmin({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2.5">
+              <div className="space-y-0.5 text-right">
+                <Label htmlFor="activity-is-creative" className="flex items-center gap-1.5">
+                  <Star className="h-3.5 w-3.5 text-amber-500" />
+                  اقدام خلاقانه
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  با بج ستاره مشخص می‌شود و در فیلتر جدا می‌شود
+                </p>
+              </div>
+              <Switch
+                id="activity-is-creative"
+                checked={isCreative}
+                onCheckedChange={setIsCreative}
+              />
             </div>
             <div className={cn(highlightDate && "rounded-lg border border-destructive bg-destructive/5 p-3")}>
               <PersianDateField control={form.control} name="activityDate" label="تاریخ" />

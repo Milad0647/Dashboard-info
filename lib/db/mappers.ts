@@ -449,6 +449,7 @@ export function mapCampaignActivityFromDb(row: any): CampaignActivity {
           ],
     attachments: parseActivityAttachments(row.attachments),
     description: row.description ?? null,
+    isCreative: Boolean(row.is_creative),
     published: row.published ?? false,
     sortOrder: row.sort_order ?? 0,
     createdAt: toIsoString(row.created_at),
