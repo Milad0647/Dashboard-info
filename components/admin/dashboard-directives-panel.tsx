@@ -67,27 +67,52 @@ function AttachmentList({ attachments }: { attachments: DirectiveAttachment[] })
   }
 
   return (
-    <ul className="space-y-2">
-      {attachments.map((file) => (
-        <li key={file.id} className="rounded-lg border px-3 py-2">
-          <a
-            href={file.fileUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-start gap-2 text-sm text-primary hover:underline"
-          >
-            <Download className="mt-0.5 h-4 w-4 shrink-0" />
-            <span className="min-w-0">
-              <span className="block font-medium text-foreground">
-                {file.title || file.fileName}
+    <ul className="space-y-3">
+      {attachments.map((file) => {
+        const isImage = file.mimeType.startsWith("image/");
+        const isVideo = file.mimeType.startsWith("video/");
+
+        return (
+          <li key={file.id} className="space-y-2 rounded-lg border px-3 py-2">
+            {isImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={file.fileUrl}
+                alt={file.title || file.fileName}
+                className="max-h-56 w-full rounded-md object-contain bg-muted"
+              />
+            ) : null}
+            {isVideo ? (
+              <video
+                src={file.fileUrl}
+                controls
+                className="max-h-56 w-full rounded-md bg-black"
+              />
+            ) : null}
+            <a
+              href={file.fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-start gap-2 text-sm text-primary hover:underline"
+            >
+              <Download className="mt-0.5 h-4 w-4 shrink-0" />
+              <span className="min-w-0">
+                <span className="block font-medium text-foreground">
+                  {file.title || file.fileName}
+                </span>
+                {file.title && file.title !== file.fileName && (
+                  <span className="block text-xs text-muted-foreground">{file.fileName}</span>
+                )}
+                {(isImage || isVideo) && (
+                  <span className="block text-xs text-muted-foreground">
+                    {isImage ? "تصویر" : "ویدیو"} — دانلود / مشاهده
+                  </span>
+                )}
               </span>
-              {file.title && file.title !== file.fileName && (
-                <span className="block text-xs text-muted-foreground">{file.fileName}</span>
-              )}
-            </span>
-          </a>
-        </li>
-      ))}
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }

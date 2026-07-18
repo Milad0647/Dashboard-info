@@ -148,27 +148,52 @@ function AttachmentList({ attachments }: { attachments: DirectiveAttachment[] })
   }
 
   return (
-    <ul className="space-y-2">
-      {attachments.map((file) => (
-        <li key={file.id} className="rounded-lg border px-3 py-2">
-          <a
-            href={file.fileUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-start gap-2 text-sm text-primary hover:underline"
-          >
-            <Download className="mt-0.5 h-4 w-4 shrink-0" />
-            <span className="min-w-0">
-              <span className="block font-medium text-foreground">
-                {file.title || file.fileName}
+    <ul className="space-y-3">
+      {attachments.map((file) => {
+        const isImage = file.mimeType.startsWith("image/");
+        const isVideo = file.mimeType.startsWith("video/");
+
+        return (
+          <li key={file.id} className="space-y-2 rounded-lg border px-3 py-2">
+            {isImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={file.fileUrl}
+                alt={file.title || file.fileName}
+                className="max-h-56 w-full rounded-md object-contain bg-muted"
+              />
+            ) : null}
+            {isVideo ? (
+              <video
+                src={file.fileUrl}
+                controls
+                className="max-h-56 w-full rounded-md bg-black"
+              />
+            ) : null}
+            <a
+              href={file.fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-start gap-2 text-sm text-primary hover:underline"
+            >
+              <Download className="mt-0.5 h-4 w-4 shrink-0" />
+              <span className="min-w-0">
+                <span className="block font-medium text-foreground">
+                  {file.title || file.fileName}
+                </span>
+                {file.title && file.title !== file.fileName && (
+                  <span className="block text-xs text-muted-foreground">{file.fileName}</span>
+                )}
+                {(isImage || isVideo) && (
+                  <span className="block text-xs text-muted-foreground">
+                    {isImage ? "تصویر" : "ویدیو"} — دانلود / مشاهده
+                  </span>
+                )}
               </span>
-              {file.title && file.title !== file.fileName && (
-                <span className="block text-xs text-muted-foreground">{file.fileName}</span>
-              )}
-            </span>
-          </a>
-        </li>
-      ))}
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -672,9 +697,12 @@ export function DirectivesAdmin({
                   افزودن فایل
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                می‌توانید تصویر، ویدیو، PDF، Word یا Excel هم پیوست کنید
+              </p>
               {attachments.length === 0 ? (
                 <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
-                  هنوز فایلی اضافه نشده — با «افزودن فایل» پیوست بگذارید
+                  هنوز فایلی اضافه نشده — با «افزودن فایل» تصویر، ویدیو یا سند پیوست بگذارید
                 </p>
               ) : (
                 <ul className="space-y-2">
@@ -686,6 +714,13 @@ export function DirectivesAdmin({
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{file.title}</p>
                         <p className="truncate text-xs text-muted-foreground">{file.fileName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {file.mimeType.startsWith("image/")
+                            ? "تصویر"
+                            : file.mimeType.startsWith("video/")
+                              ? "ویدیو"
+                              : "سند"}
+                        </p>
                       </div>
                       <div className="flex shrink-0 gap-1">
                         <Button
@@ -814,11 +849,12 @@ export function DirectivesAdmin({
                 value={attachmentTitle}
                 maxLength={CONTENT_TITLE_MAX_LENGTH}
                 onChange={(event) => setAttachmentTitle(event.target.value)}
-                placeholder="مثلاً دستورالعمل / متن پیامک / فایل خام"
+                placeholder="مثلاً دستورالعمل / تصویر / ویدیو / فایل خام"
               />
             </div>
             <DocumentUpload
-              label="فایل"
+              label="فایل (تصویر، ویدیو یا سند)"
+              variant="attachment"
               value={attachmentUpload.url}
               fileName={attachmentUpload.fileName}
               fileSize={attachmentUpload.fileSize}

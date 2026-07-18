@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "adabd8c1ef66308b24fea5e4b0162aa2089376f0",
+      "committedAt": "2026-07-18T15:32:03+03:30",
+      "title": "نمایش جدیدترین تبلیغات محیطی در بالای لیست",
+      "subject": "Show newest billboards first by default"
+    },
+    {
+      "hash": "abf37720d97224f9e6e5f0582fe59543cbeb60ec",
+      "committedAt": "2026-07-18T15:31:56+03:30",
+      "title": "امکان علامت‌گذاری و فیلتر اقدامات خلاقانه با بج ستاره",
+      "subject": "Add creative flag for field activities"
+    },
+    {
       "hash": "664e9ffcd9736001460aa4ae456673cddf6c5627",
       "committedAt": "2026-07-18T15:28:26+03:30",
       "title": "افزودن فیلتر دسته سازه به تبلیغات محیطی ادمین",
