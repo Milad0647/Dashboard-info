@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "cd2dc99951c074e7645c4cc7128e8a415b3929e6",
+      "committedAt": "2026-07-18T10:31:41+03:30",
+      "title": "آپلود فایل پخش صدا و سیما با کشیدن و رها کردن مثل بخش ویدیو",
+      "subject": "Match broadcast upload dropzone to video section UI"
+    },
+    {
+      "hash": "554140bddeb9a4f079997c97571367683d2c069c",
+      "committedAt": "2026-07-18T10:29:10+03:30",
+      "title": "پشتیبانی از آپلود تصویر و ویدیو در فایل‌های پیوست اقدامات",
+      "subject": "Allow image and video in activity file attachments"
+    },
+    {
       "hash": "e23cd96a945e2641572b465c14627cd04889c2dc",
       "committedAt": "2026-07-18T10:26:42+03:30",
       "title": "پشتیبانی از آپلود تصویر و ویدیو در فایل‌های پیوست اقدامات",
