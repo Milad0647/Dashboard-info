@@ -191,7 +191,10 @@ export function RawMediaAdmin({
 
   const openCreate = () => {
     void requestCreate(() => {
-      resetForm();
+      // Keep in-progress create draft; only reset when switching away from an edit.
+      if (editingId !== null) {
+        resetForm();
+      }
       setHighlightFields([]);
       setDialogOpen(true);
     });
@@ -213,7 +216,13 @@ export function RawMediaAdmin({
     setDialogOpen(true);
   };
 
+  /** Soft close: keep form draft until refresh or successful save. */
   const closeDialog = () => {
+    setDialogOpen(false);
+    resetDeepLink();
+  };
+
+  const discardDialog = () => {
     setDialogOpen(false);
     resetForm();
     resetDeepLink();
@@ -299,7 +308,7 @@ export function RawMediaAdmin({
           : [nextItem, ...prev]
       );
       toast.success(editingId ? "راش به‌روزرسانی شد" : "راش تصویر ذخیره شد");
-      closeDialog();
+      discardDialog();
     });
   };
 
@@ -308,7 +317,7 @@ export function RawMediaAdmin({
       await deleteRawMediaUploadAction(item.id);
       setItems((prev) => prev.filter((row) => row.id !== item.id));
       toast.success("حذف شد — فضای ذخیره‌سازی آزاد شد");
-      closeDialog();
+      discardDialog();
     });
   };
 
@@ -558,7 +567,11 @@ export function RawMediaAdmin({
       />
 
       <Dialog open={dialogOpen} onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}>
-        <DialogContent className="max-w-lg">
+        <DialogContent
+          className="max-w-lg"
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>{editingId ? "ویرایش راش تصویر" : "آپلود راش تصویر"}</DialogTitle>
             <DialogDescription>

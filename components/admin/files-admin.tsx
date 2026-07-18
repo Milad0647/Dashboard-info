@@ -144,7 +144,10 @@ export function FilesAdmin({
 
   const openCreate = () => {
     void requestCreate(() => {
-      resetForm();
+      // Keep in-progress create draft; only reset when switching away from an edit.
+      if (editingId !== null) {
+        resetForm();
+      }
       setHighlightFields([]);
       setDialogOpen(true);
     });
@@ -165,7 +168,13 @@ export function FilesAdmin({
     setDialogOpen(true);
   };
 
+  /** Soft close: keep form draft until refresh or successful save. */
   const closeDialog = () => {
+    setDialogOpen(false);
+    resetDeepLink();
+  };
+
+  const discardDialog = () => {
     setDialogOpen(false);
     resetForm();
     resetDeepLink();
@@ -249,7 +258,7 @@ export function FilesAdmin({
           : [...prev, nextFile]
       );
       toast.success(editingId ? "فایل به‌روزرسانی شد" : "فایل اضافه شد");
-      closeDialog();
+      discardDialog();
     });
   };
 
@@ -258,7 +267,7 @@ export function FilesAdmin({
       await deleteCampaignFileAction(file.id);
       setFiles((prev) => prev.filter((item) => item.id !== file.id));
       toast.success("فایل حذف شد");
-      closeDialog();
+      discardDialog();
     });
   };
 
@@ -434,7 +443,11 @@ export function FilesAdmin({
       />
 
       <Dialog open={dialogOpen} onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}>
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+        <DialogContent
+          className="max-h-[90vh] max-w-lg overflow-y-auto"
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>{editingId ? "ویرایش فایل" : "افزودن فایل"}</DialogTitle>
             <DialogDescription className="sr-only">

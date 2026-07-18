@@ -41,6 +41,7 @@ import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-s
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import { VideoModal } from "@/components/media/video-modal";
 import type { AdminUser, MediaCategory, Video, VideoVersion } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { pickDefaultVideoCategoryId } from "@/lib/video-types";
 
 interface VideosAdminProps {
@@ -177,12 +178,29 @@ export function VideosAdmin({
   };
 
   const openEditor = (videoId: string, fields: EditSuggestionMissingField[] = []) => {
+    if (draftVideo && draftVideo.id !== videoId) {
+      setDraftVideo(null);
+    }
     setHighlightFields(fields);
     setActiveVideoId(videoId);
     setEditorOpen(true);
   };
 
+  /** Soft close: keep unsaved create draft so Add can reopen it (cleared on refresh). */
   const closeEditor = () => {
+    setEditorOpen(false);
+    setHighlightFields([]);
+    openedFromQueryRef.current = null;
+    clearEditQuery();
+    if (draftVideo && activeVideoId === draftVideo.id) {
+      return;
+    }
+    setActiveVideoId(null);
+    setDraftVideo(null);
+  };
+
+  /** Hard clear after save, discard, or leaving create entirely. */
+  const discardEditor = () => {
     setEditorOpen(false);
     setActiveVideoId(null);
     setDraftVideo(null);
@@ -193,6 +211,13 @@ export function VideosAdmin({
 
   const handleCreateVideo = () => {
     void requestCreate(() => {
+      if (draftVideo) {
+        setHighlightFields([]);
+        setActiveVideoId(draftVideo.id);
+        setEditorOpen(true);
+        return;
+      }
+
       const videoId = crypto.randomUUID();
       const categoryId = pickDefaultVideoCategoryId(initialCategories);
       const now = new Date().toISOString();
@@ -351,7 +376,12 @@ export function VideosAdmin({
       />
 
       <Dialog open={editorOpen} onOpenChange={(open) => (open ? setEditorOpen(true) : closeEditor())}>
-        <DialogContent className={editorDialogClass}>
+        <DialogContent
+          forceMount={Boolean(draftVideo) || undefined}
+          className={cn(editorDialogClass, !editorOpen && "!hidden")}
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
           <DialogHeader className="shrink-0 border-b px-6 py-4 pr-12">
             <DialogTitle>{activeVideo?.title ?? "ویرایش ویدیو"}</DialogTitle>
             <DialogDescription className="sr-only">
@@ -369,7 +399,7 @@ export function VideosAdmin({
                 canScore={canScore}
                 isNew={isDraftVideo}
                 highlightFields={highlightFields}
-                onClose={closeEditor}
+                onClose={discardEditor}
                 onSaved={(savedVideo) => {
                   setVideos((prev) => {
                     const exists = prev.some((item) => item.id === savedVideo.id);
@@ -377,8 +407,7 @@ export function VideosAdmin({
                       ? prev.map((item) => (item.id === savedVideo.id ? savedVideo : item))
                       : [...prev, savedVideo];
                   });
-                  setDraftVideo(null);
-                  closeEditor();
+                  discardEditor();
                   refresh();
                 }}
               />

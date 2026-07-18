@@ -38,7 +38,7 @@ import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { resolveDisplayVersion } from "@/lib/media-utils";
-import { formatPersianDate } from "@/lib/utils";
+import { cn, formatPersianDate } from "@/lib/utils";
 import type { AdminUser, MediaCategory, Poster, PosterVersion } from "@/lib/types";
 
 interface PostersAdminProps {
@@ -146,12 +146,29 @@ export function PostersAdmin({
   };
 
   const openEditor = (posterId: string, fields: EditSuggestionMissingField[] = []) => {
+    if (draftPoster && draftPoster.id !== posterId) {
+      setDraftPoster(null);
+    }
     setHighlightFields(fields);
     setActivePosterId(posterId);
     setEditorOpen(true);
   };
 
+  /** Soft close: keep unsaved create draft so Add can reopen it (cleared on refresh). */
   const closeEditor = () => {
+    setEditorOpen(false);
+    setHighlightFields([]);
+    openedFromQueryRef.current = null;
+    clearEditQuery();
+    if (draftPoster && activePosterId === draftPoster.id) {
+      return;
+    }
+    setActivePosterId(null);
+    setDraftPoster(null);
+  };
+
+  /** Hard clear after save, discard, or leaving create entirely. */
+  const discardEditor = () => {
     setEditorOpen(false);
     setActivePosterId(null);
     setDraftPoster(null);
@@ -162,6 +179,13 @@ export function PostersAdmin({
 
   const handleCreatePoster = () => {
     void requestCreate(() => {
+      if (draftPoster) {
+        setHighlightFields([]);
+        setActivePosterId(draftPoster.id);
+        setEditorOpen(true);
+        return;
+      }
+
       const posterId = crypto.randomUUID();
       const categoryId = initialCategories[0]?.id ?? "";
       const now = new Date().toISOString();
@@ -316,7 +340,12 @@ export function PostersAdmin({
       />
 
       <Dialog open={editorOpen} onOpenChange={(open) => (open ? setEditorOpen(true) : closeEditor())}>
-        <DialogContent className={editorDialogClass}>
+        <DialogContent
+          forceMount={Boolean(draftPoster) || undefined}
+          className={cn(editorDialogClass, !editorOpen && "!hidden")}
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
           <DialogHeader className="shrink-0 border-b px-6 py-4 pr-12">
             <DialogTitle>{activePoster?.title ?? "ویرایش پوستر"}</DialogTitle>
             <DialogDescription className="sr-only">
@@ -334,7 +363,7 @@ export function PostersAdmin({
                 canScore={canScore}
                 isNew={isDraftPoster}
                 highlightFields={highlightFields}
-                onClose={closeEditor}
+                onClose={discardEditor}
                 onSaved={(savedPoster) => {
                   setPosters((prev) => {
                     const exists = prev.some((item) => item.id === savedPoster.id);
@@ -342,8 +371,7 @@ export function PostersAdmin({
                       ? prev.map((item) => (item.id === savedPoster.id ? savedPoster : item))
                       : [...prev, savedPoster];
                   });
-                  setDraftPoster(null);
-                  closeEditor();
+                  discardEditor();
                   refresh();
                 }}
               />

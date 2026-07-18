@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "bdb500799b985ccce9f94daa7840b311a813f2f2",
+      "committedAt": "2026-07-18T15:14:26+03:30",
+      "title": "رفع خطای نمایش صفحه کمپین پس از افزودن ورود",
+      "subject": "Fix campaign page crash from client-only header helper"
+    },
+    {
+      "hash": "fff28bae33c59a0d1ee7d3af9d2f47d4e6650cd6",
+      "committedAt": "2026-07-18T12:24:33+03:30",
+      "title": "افزودن ورود و پروفایل کاربر در بالای صفحه کمپین",
+      "subject": "Add login/profile control to campaign header"
+    },
+    {
       "hash": "431e909813a4bc9cd570967275cf14145ece2675",
       "committedAt": "2026-07-18T11:01:29+03:30",
       "title": "افزودن دکمه مشکلات ثبت‌شده برای ادمین در تنظیمات و مدیریت",
