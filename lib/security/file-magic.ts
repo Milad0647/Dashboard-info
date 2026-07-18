@@ -61,9 +61,27 @@ export function detectFileKind(buffer: Buffer): DetectedFileKind {
   return "unknown";
 }
 
+/**
+ * Detect SVG by text structure near the start of the file.
+ * Do not scan binary payloads for "<?xml" — PNG/JPEG from design tools often
+ * embed XMP metadata containing that substring.
+ */
 export function looksLikeSvg(buffer: Buffer): boolean {
-  const head = buffer.subarray(0, Math.min(buffer.length, 512)).toString("utf8").toLowerCase();
-  return head.includes("<svg") || head.includes("<?xml");
+  // Known binary formats are never SVG, even if metadata contains XML.
+  const detected = detectFileKind(buffer);
+  if (detected !== "unknown") return false;
+
+  const head = buffer
+    .subarray(0, Math.min(buffer.length, 1024))
+    .toString("utf8")
+    .replace(/^\uFEFF/, "")
+    .trimStart()
+    .toLowerCase();
+
+  // Require an actual <svg> root (optional XML declaration / doctype / comments before it).
+  return /^(?:\s*<\?xml\b[^>]*>\s*)?(?:\s*<!doctype\b[^>]*>\s*)?(?:\s*<!--[\s\S]*?-->\s*)*<svg\b/.test(
+    head
+  );
 }
 
 const IMAGE_KINDS = new Set<DetectedFileKind>(["jpeg", "png", "gif", "webp"]);
@@ -75,11 +93,11 @@ export function assertMagicMatchesKind(
   buffer: Buffer,
   kind: string
 ): { ok: true } | { ok: false; error: string } {
+  const detected = detectFileKind(buffer);
+
   if (looksLikeSvg(buffer)) {
     return { ok: false, error: "آپلود فایل SVG مجاز نیست" };
   }
-
-  const detected = detectFileKind(buffer);
 
   if (kind === "image") {
     if (!IMAGE_KINDS.has(detected)) {
