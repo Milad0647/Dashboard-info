@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "ecb48461cd8bc651cbd71f65c3935dc5ed2d9535",
+      "committedAt": "2026-07-18T15:22:41+03:30",
+      "title": "اجباری شدن انتخاب موضوع هنگام ثبت تبلیغات محیطی",
+      "subject": "Require topic selection for billboard registration"
+    },
+    {
       "hash": "943d95cf9c511b7f4652e1c147b76c8f3a132276",
       "committedAt": "2026-07-18T15:19:28+03:30",
       "title": "حفظ اطلاعات فرم آپلود محتوا هنگام بستن تصادفی مودال",
