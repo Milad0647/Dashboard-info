@@ -98,12 +98,19 @@ const allNavItems: {
   { href: "/admin/users", label: "کاربران", icon: Users, adminOrClientOnly: true },
   { href: "/admin/updates", label: "آپدیت‌های سایت", icon: Rocket, adminOrClientOnly: true },
   { href: "/admin/backups", label: "پشتیبان‌گیری", icon: Archive, adminOnly: true },
+  {
+    href: "/admin/reported-problems",
+    label: "مشکلات ثبت‌شده",
+    icon: TriangleAlert,
+    adminOnly: true,
+  },
   { href: "/admin/audit", label: "رصد کاربران", icon: ScrollText, adminOnly: true },
 ];
 
 const managementNavHrefs = new Set([
   "/admin/integrations",
   "/admin/users",
+  "/admin/reported-problems",
   "/admin/audit",
   "/admin/settings",
   "/admin/tutorials",

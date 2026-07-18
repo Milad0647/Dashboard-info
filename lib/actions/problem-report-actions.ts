@@ -149,6 +149,7 @@ export async function submitProblemReportAction(
   });
 
   revalidatePath("/admin/audit");
+  revalidatePath("/admin/reported-problems");
   revalidatePath("/admin/problem-reports");
   return { success: true };
 }
@@ -253,6 +254,7 @@ export async function updateProblemReportStatusAction(input: {
     });
 
     revalidatePath("/admin/audit");
+    revalidatePath("/admin/reported-problems");
     revalidatePath("/admin/problem-reports");
     return { success: true };
   } catch (error) {
