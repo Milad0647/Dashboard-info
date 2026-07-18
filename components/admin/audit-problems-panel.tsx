@@ -76,7 +76,11 @@ export function AuditProblemsPanel({
     return reports.filter((r) => r.status === statusFilter);
   }, [reports, statusFilter]);
 
-  const handleStatus = async (id: string, status: ProblemReportStatus) => {
+  const handleStatus = async (
+    id: string,
+    status: ProblemReportStatus,
+    options?: { replyOnly?: boolean }
+  ) => {
     setBusyId(id);
     try {
       const result = await updateProblemReportStatusAction({
@@ -88,7 +92,7 @@ export function AuditProblemsPanel({
         toast.error(result.error ?? "به‌روزرسانی ناموفق بود");
         return;
       }
-      toast.success("وضعیت گزارش به‌روز شد");
+      toast.success(options?.replyOnly ? "پاسخ برای کاربر ارسال شد" : "وضعیت گزارش به‌روز شد");
     } catch (error) {
       console.error("handleStatus failed:", error);
       toast.error("خطا در به‌روزرسانی گزارش");
@@ -231,14 +235,14 @@ export function AuditProblemsPanel({
 
                 {report.adminNote && (
                   <div className="rounded-md bg-muted/50 px-3 py-2 text-sm">
-                    <span className="font-medium">یادداشت ادمین: </span>
+                    <span className="font-medium">پاسخ فعلی به کاربر: </span>
                     {report.adminNote}
                   </div>
                 )}
 
                 <div className="space-y-2">
                   <Textarea
-                    placeholder="یادداشت رسیدگی (اختیاری)…"
+                    placeholder="پاسخ به کاربر (برای گزارش‌دهنده قابل مشاهده است)…"
                     value={notes[report.id] ?? report.adminNote ?? ""}
                     onChange={(event) =>
                       setNotes((prev) => ({ ...prev, [report.id]: event.target.value }))
@@ -246,6 +250,28 @@ export function AuditProblemsPanel({
                     className="min-h-[70px]"
                   />
                   <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={
+                        busyId === report.id ||
+                        !(notes[report.id] ?? report.adminNote ?? "").trim()
+                      }
+                      onClick={() =>
+                        handleStatus(
+                          report.id,
+                          report.status === "pending" ? "in_progress" : report.status,
+                          { replyOnly: true }
+                        )
+                      }
+                      data-audit-label="ارسال پاسخ گزارش مشکل"
+                    >
+                      {busyId === report.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : null}
+                      ارسال پاسخ
+                    </Button>
                     <Button
                       type="button"
                       size="sm"

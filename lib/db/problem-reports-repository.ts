@@ -122,6 +122,41 @@ export async function pgCountOpenProblemReports(): Promise<number> {
   return Number(rows[0]?.count ?? 0);
 }
 
+/** Reports filed by the current user (db user id, or all env_admin snapshots). */
+export async function pgListMyProblemReports(input: {
+  reporterUserId?: string | null;
+  reporterType?: ProblemReport["reporterType"];
+  limit?: number;
+}): Promise<ProblemReport[]> {
+  if (!isPostgresConfigured()) return [];
+
+  const sql = getSql();
+  const limit = Math.min(Math.max(input.limit ?? 50, 1), 100);
+  const reporterUserId = input.reporterUserId?.trim() || null;
+  const reporterType = input.reporterType ?? null;
+
+  if (!reporterUserId && reporterType !== "env_admin") {
+    return [];
+  }
+
+  const rows = await sql`
+    SELECT *
+    FROM user_problem_reports
+    WHERE (
+      (${reporterUserId}::uuid IS NOT NULL AND reporter_user_id = ${reporterUserId}::uuid)
+      OR (
+        ${reporterUserId}::uuid IS NULL
+        AND ${reporterType}::text = 'env_admin'
+        AND reporter_type = 'env_admin'
+      )
+    )
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `;
+
+  return rows.map((row) => mapReportRow(row as Record<string, unknown>));
+}
+
 export async function pgUpdateProblemReportStatus(input: {
   id: string;
   status: ProblemReportStatus;

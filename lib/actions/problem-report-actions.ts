@@ -12,9 +12,41 @@ import { PROBLEM_REPORT_CATEGORY_LABELS, PROBLEM_REPORT_STATUS_LABELS } from "@/
 import { pgGetUserById } from "@/lib/db/repository-extended";
 import {
   pgInsertProblemReport,
+  pgListMyProblemReports,
   pgUpdateProblemReportStatus,
 } from "@/lib/db/problem-reports-repository";
+import type { ProblemReport } from "@/lib/audit/problem-types";
 import { isPostgresConfigured } from "@/lib/utils";
+
+/** Fields safe to show the reporter (their own history + admin reply). */
+export type MyProblemReport = Pick<
+  ProblemReport,
+  | "id"
+  | "category"
+  | "title"
+  | "description"
+  | "path"
+  | "status"
+  | "adminNote"
+  | "createdAt"
+  | "updatedAt"
+  | "resolvedAt"
+>;
+
+function toMyProblemReport(report: ProblemReport): MyProblemReport {
+  return {
+    id: report.id,
+    category: report.category,
+    title: report.title,
+    description: report.description,
+    path: report.path,
+    status: report.status,
+    adminNote: report.adminNote,
+    createdAt: report.createdAt,
+    updatedAt: report.updatedAt,
+    resolvedAt: report.resolvedAt,
+  };
+}
 
 const VALID_CATEGORIES = new Set<ProblemReportCategory>([
   "ui_bug",
@@ -101,6 +133,27 @@ export async function submitProblemReportAction(
 
   revalidatePath("/admin/audit");
   return { success: true };
+}
+
+export async function listMyProblemReportsAction(): Promise<{
+  success: boolean;
+  reports?: MyProblemReport[];
+  error?: string;
+}> {
+  const session = await getAuthSession();
+  if (!session) {
+    return { success: false, error: "برای مشاهده گزارش‌ها باید وارد شوید" };
+  }
+  if (!isPostgresConfigured()) {
+    return { success: false, error: "دیتابیس فعال نیست" };
+  }
+
+  const reports = await pgListMyProblemReports({
+    reporterUserId: session.userId,
+    reporterType: session.type === "env_admin" ? "env_admin" : "db_user",
+  });
+
+  return { success: true, reports: reports.map(toMyProblemReport) };
 }
 
 export async function updateProblemReportStatusAction(input: {

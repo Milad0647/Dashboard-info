@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "0d5ad12c9a1dbba0100e0e1364099d805ea4a83e",
+      "committedAt": "2026-07-17T23:06:47+03:30",
+      "title": "بازگردانی امکان افزودن چند فایل با عنوان به دستورکارها",
+      "subject": "Restore titled multi-file attachments on directives"
+    },
+    {
       "hash": "e4772758151ce7ae1ed42705de4a036cd00d30cd",
       "committedAt": "2026-07-17T20:42:25+03:30",
       "title": "خواندن خودکار بازدید و لایک ویدیوهای آپارات از لینک",
