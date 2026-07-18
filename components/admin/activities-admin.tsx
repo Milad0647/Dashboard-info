@@ -771,7 +771,7 @@ export function ActivitiesAdmin({
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                برای هر فایل یک عنوان و فایل آپلود کنید تا کاربران بتوانند دانلود کنند.
+                برای هر فایل یک عنوان بگذارید؛ تصویر، ویدیو، PDF، Word یا Excel قابل آپلود و دانلود است.
               </p>
               {attachments.map((item, index) => (
                 <div key={item.id} className="space-y-3 rounded-lg border p-3">
@@ -799,6 +799,7 @@ export function ActivitiesAdmin({
                   </div>
                   <DocumentUpload
                     label="فایل"
+                    variant="attachment"
                     value={item.fileUrl}
                     fileName={item.fileName}
                     fileSize={item.fileSize}

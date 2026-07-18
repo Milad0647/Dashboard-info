@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "981a27a63722a46b329966872927d4912527f43b",
+      "committedAt": "2026-07-18T10:24:29+03:30",
+      "title": "امکان آپلود فایل با عنوان در اقدامات برای دانلود کاربران",
+      "subject": "Add downloadable file attachments to activities"
+    },
+    {
       "hash": "a97d2147c6bea9fc3cbd546bbf43a51eb9ce326b",
       "committedAt": "2026-07-18T10:13:15+03:30",
       "title": "رفع مشکل ذخیره نشدن ویدیو و محتوای جدید",

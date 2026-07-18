@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileText, Music } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, ImageIcon, Music, Video } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,13 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${formatPersianNumber(bytes)} B`;
   if (bytes < 1024 * 1024) return `${formatPersianNumber(Math.round(bytes / 1024))} KB`;
   return `${formatPersianNumber(Math.round(bytes / (1024 * 1024)))} MB`;
+}
+
+function attachmentIcon(mimeType: string) {
+  if (mimeType.startsWith("image/")) return ImageIcon;
+  if (mimeType.startsWith("video/")) return Video;
+  if (mimeType.includes("sheet") || mimeType.includes("excel")) return FileSpreadsheet;
+  return FileText;
 }
 
 export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMediaDialogProps) {
@@ -172,13 +179,15 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
         {attachments.length > 0 && (
           <div className="space-y-3 px-4 pt-2">
             <p className="text-sm font-medium">فایل‌های قابل دانلود</p>
-            {attachments.map((item) => (
+            {attachments.map((item) => {
+              const Icon = attachmentIcon(item.mimeType);
+              return (
               <div
                 key={item.id}
                 className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex min-w-0 items-start gap-2">
-                  <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{item.title}</p>
                     <p className="truncate text-xs text-muted-foreground">
@@ -199,7 +208,8 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
                   دانلود
                 </Button>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
