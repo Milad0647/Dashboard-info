@@ -8,7 +8,7 @@ import {
   CONTENT_TITLE_MAX_LENGTH,
   CONTENT_TITLE_MAX_LENGTH_MESSAGE,
 } from "@/lib/content-constraints";
-import { FileText, Plus, Video } from "lucide-react";
+import { FileText, Play, Plus, Upload, Video } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { DocumentUpload } from "@/components/ui/document-upload";
 import { MediaUpload } from "@/components/ui/media-upload";
+import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteBroadcastReportAction, saveBroadcastReportAction } from "@/lib/actions/extended-actions";
 import { resolveBroadcastMediaType, type BroadcastMediaType } from "@/lib/broadcast-media";
@@ -97,6 +98,8 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
   const watchedReportDate = form.watch("reportDate");
   const watchedPdfUrl = form.watch("pdfUrl");
   const watchedMediaType = form.watch("mediaType");
+  const watchedFileName = form.watch("fileName");
+  const watchedCoverImageUrl = form.watch("coverImageUrl");
   const highlightTitle = highlightFields.includes("title") && !watchedTitle?.trim();
   const highlightDate = highlightFields.includes("date") && !watchedReportDate?.trim();
   const highlightFile = highlightFields.includes("file") && !watchedPdfUrl?.trim();
@@ -293,8 +296,8 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                   label="فایل ویدیو"
                   kind="video"
                   fileOnly
-                  value={form.watch("pdfUrl")}
-                  coverImageUrl={form.watch("coverImageUrl")}
+                  value={watchedPdfUrl}
+                  coverImageUrl={watchedCoverImageUrl}
                   onChange={(url) => form.setValue("pdfUrl", url)}
                   onCoverImageUrlChange={(url) => form.setValue("coverImageUrl", url)}
                   onUploadedMeta={(meta) => {
@@ -308,13 +311,55 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                     }
                   }}
                   accept="video/mp4,video/webm,video/quicktime"
+                  showPreview={false}
                   showLinkInput={false}
+                  dropzoneContent={
+                    <div
+                      className={cn(
+                        "relative aspect-video w-full overflow-hidden rounded-[10px] bg-muted",
+                        highlightFile && "ring-2 ring-destructive ring-offset-2"
+                      )}
+                    >
+                      {watchedPdfUrl ? (
+                        watchedCoverImageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={watchedCoverImageUrl}
+                            alt={watchedTitle || "ویدیو"}
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <VideoThumbnail
+                            videoUrl={watchedPdfUrl}
+                            thumbnailUrl={watchedCoverImageUrl || undefined}
+                            alt={watchedTitle || "ویدیو"}
+                            className="object-contain"
+                          />
+                        )
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-sm text-muted-foreground">
+                          <Video className="h-10 w-10" />
+                          <span className="text-sm">ویدیو را بکشید و رها کنید یا انتخاب کنید</span>
+                          <span className="inline-flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm">
+                            <Upload className="h-3.5 w-3.5" />
+                            انتخاب ویدیو
+                          </span>
+                        </div>
+                      )}
+                      {watchedPdfUrl ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <Play className="h-12 w-12 text-white" />
+                        </div>
+                      ) : null}
+                    </div>
+                  }
                 />
               ) : (
                 <DocumentUpload
                   label="فایل PDF گزارش"
-                  value={form.watch("pdfUrl")}
-                  fileName={form.watch("fileName")}
+                  layout="card"
+                  value={watchedPdfUrl}
+                  fileName={watchedFileName}
                   onChange={(payload) => {
                     form.setValue("pdfUrl", payload.url);
                     form.setValue("fileName", payload.fileName || "report.pdf");
