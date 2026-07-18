@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "9fbab51af7cfc9ca83abe57915ac5a3eaa0d6c9a",
+      "committedAt": "2026-07-18T10:03:14+03:30",
+      "title": "امکان آپلود ویدیو در بخش پخش صدا و سیما",
+      "subject": "Allow video uploads in broadcast reports section"
+    },
+    {
+      "hash": "c9fe54b01a0d84bec6728cfbeaef1b0dc714f409",
+      "committedAt": "2026-07-18T09:28:47+03:30",
+      "title": "مشاهده گزارش‌های قبلی و پاسخ ادمین در بخش گزارش مشکل",
+      "subject": "Let users view past problem reports and admin replies"
+    },
+    {
       "hash": "0d5ad12c9a1dbba0100e0e1364099d805ea4a83e",
       "committedAt": "2026-07-17T23:06:47+03:30",
       "title": "بازگردانی امکان افزودن چند فایل با عنوان به دستورکارها",
