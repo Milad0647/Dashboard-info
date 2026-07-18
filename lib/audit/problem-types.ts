@@ -25,6 +25,7 @@ export interface ProblemReport {
   campaignId: string | null;
   status: ProblemReportStatus;
   adminNote: string | null;
+  adminNoteSeenAt: string | null;
   resolvedByUserId: string | null;
   resolvedAt: string | null;
   metadata: Record<string, unknown>;

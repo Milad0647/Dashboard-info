@@ -6,13 +6,7 @@ import { AlertTriangle, Loader2, MessageSquareText } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -24,7 +18,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  getMyUnreadProblemReplyCountAction,
   listMyProblemReportsAction,
   markMyProblemReportsSeenAction,
   submitProblemReportAction,
@@ -37,7 +30,6 @@ import {
   type ProblemReportStatus,
 } from "@/lib/audit/problem-types";
 import { formatPersianDateTime } from "@/lib/utils";
-import { emitProblemReportsUnreadChanged } from "@/lib/problem-reports-unread";
 
 const CATEGORIES = Object.keys(PROBLEM_REPORT_CATEGORY_LABELS) as ProblemReportCategory[];
 
@@ -51,44 +43,38 @@ const STATUS_BADGE: Record<
   dismissed: "outline",
 };
 
-export function ProblemReportButton() {
+type PanelTab = "new" | "history";
+
+interface ProblemReportsPanelProps {
+  /** Prefer opening history when the user arrives with unread replies. */
+  initialTab?: PanelTab;
+  onUnreadChange?: (count: number) => void;
+}
+
+export function ProblemReportsPanel({
+  initialTab = "new",
+  onUnreadChange,
+}: ProblemReportsPanelProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"new" | "history">("new");
+  const [tab, setTab] = useState<PanelTab>(initialTab);
   const [category, setCategory] = useState<ProblemReportCategory>("other");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [myReports, setMyReports] = useState<MyProblemReport[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
 
-  const reset = () => {
-    setCategory("other");
-    setTitle("");
-    setDescription("");
-    setTab("new");
+  const unreadCount = myReports.filter((report) => report.hasUnreadReply).length;
+  const unrepliedOpenCount = myReports.filter(
+    (report) =>
+      (report.status === "pending" || report.status === "in_progress") && !report.adminNote
+  ).length;
+  const withReplyCount = myReports.filter((report) => Boolean(report.adminNote)).length;
+
+  const notifyUnread = (reports: MyProblemReport[]) => {
+    onUnreadChange?.(reports.filter((report) => report.hasUnreadReply).length);
   };
-
-  const refreshUnreadBadge = async () => {
-    try {
-      const result = await getMyUnreadProblemReplyCountAction();
-      const count = result.success ? (result.count ?? 0) : 0;
-      setUnreadCount(count);
-      emitProblemReportsUnreadChanged(count);
-    } catch {
-      setUnreadCount(0);
-    }
-  };
-
-  useEffect(() => {
-    void refreshUnreadBadge();
-    const timer = window.setInterval(() => {
-      void refreshUnreadBadge();
-    }, 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const loadHistory = async (options?: { markSeen?: boolean }) => {
     setHistoryLoading(true);
@@ -97,54 +83,56 @@ export function ProblemReportButton() {
       if (!result.success) {
         toast.error(result.error ?? "بارگذاری گزارش‌ها ناموفق بود");
         setMyReports([]);
+        onUnreadChange?.(0);
         return;
       }
 
       const reports = result.reports ?? [];
       const hasUnread = reports.some((report) => report.hasUnreadReply);
-      const nextUnread = reports.filter((report) => report.hasUnreadReply).length;
 
       setMyReports(reports);
 
       if (options?.markSeen && hasUnread) {
         const seenResult = await markMyProblemReportsSeenAction();
-        // Clear nav / button red-dot; keep local "پاسخ جدید" badges for this open.
+        // Clear nav red-dot, but keep local "پاسخ جدید" badges for this visit.
         if (seenResult.success) {
-          setUnreadCount(0);
-          emitProblemReportsUnreadChanged(0);
+          onUnreadChange?.(0);
         } else {
-          setUnreadCount(nextUnread);
-          emitProblemReportsUnreadChanged(nextUnread);
+          notifyUnread(reports);
         }
       } else {
-        setUnreadCount(nextUnread);
-        emitProblemReportsUnreadChanged(nextUnread);
+        notifyUnread(reports);
       }
     } catch {
       toast.error("بارگذاری گزارش‌ها با خطا مواجه شد");
       setMyReports([]);
+      onUnreadChange?.(0);
     } finally {
       setHistoryLoading(false);
     }
   };
 
-  const handleOpenChange = (next: boolean) => {
-    setOpen(next);
-    if (!next) {
-      reset();
-      return;
-    }
-    const openOnHistory = unreadCount > 0;
-    setTab(openOnHistory ? "history" : "new");
-    void loadHistory({ markSeen: openOnHistory });
-  };
+  useEffect(() => {
+    void loadHistory({ markSeen: initialTab === "history" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount / initialTab
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (initialTab === "history") setTab("history");
+  }, [initialTab]);
 
   const handleTabChange = (value: string) => {
-    const next = value as "new" | "history";
+    const next = value as PanelTab;
     setTab(next);
     if (next === "history") {
       void loadHistory({ markSeen: true });
     }
+  };
+
+  const resetForm = () => {
+    setCategory("other");
+    setTitle("");
+    setDescription("");
   };
 
   const handleSubmit = async () => {
@@ -168,7 +156,7 @@ export function ProblemReportButton() {
       }
 
       toast.success("گزارش مشکل ثبت شد. ادمین رسیدگی می‌کند.");
-      reset();
+      resetForm();
       setTab("history");
       await loadHistory({ markSeen: true });
     } catch {
@@ -178,55 +166,39 @@ export function ProblemReportButton() {
     }
   };
 
-  const unrepliedOpenCount = myReports.filter(
-    (report) =>
-      (report.status === "pending" || report.status === "in_progress") && !report.adminNote
-  ).length;
-  const withReplyCount = myReports.filter((report) => Boolean(report.adminNote)).length;
-  const localUnreadCount = myReports.filter((report) => report.hasUnreadReply).length;
-
   return (
-    <>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="fixed bottom-5 left-5 z-[80] gap-2 shadow-md lg:left-6"
-        data-audit-label="گزارش مشکل"
-        onClick={() => handleOpenChange(true)}
-      >
-        <span className="relative">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <AlertTriangle className="h-6 w-6 text-amber-500" />
+          گزارش مشکل
           {unreadCount > 0 && (
             <span
-              className="absolute -top-1 -start-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-background"
+              className="inline-block h-2.5 w-2.5 rounded-full bg-red-500"
+              title="پاسخ خوانده‌نشده"
               aria-label="پاسخ خوانده‌نشده"
             />
           )}
-        </span>
-        گزارش مشکل
-      </Button>
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          مشکل جدید ثبت کنید یا گزارش‌های قبلی و پاسخ ادمین را ببینید.
+        </p>
+      </div>
 
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              گزارش مشکل
-              {localUnreadCount > 0 && (
-                <span className="inline-block h-2 w-2 rounded-full bg-red-500" aria-hidden />
-              )}
-            </DialogTitle>
-            <DialogDescription>
-              مشکل جدید ثبت کنید یا گزارش‌های قبلی و پاسخ ادمین را ببینید.
-            </DialogDescription>
-          </DialogHeader>
-
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">گزارش‌های شما</CardTitle>
+          <CardDescription>
+            وضعیت هر گزارش و پاسخ ادمین در همین صفحه نمایش داده می‌شود.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="new">گزارش جدید</TabsTrigger>
               <TabsTrigger value="history" className="gap-1.5">
                 گزارش‌های من
-                {localUnreadCount > 0 ? (
+                {unreadCount > 0 ? (
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
@@ -239,7 +211,7 @@ export function ProblemReportButton() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="new" className="space-y-4 py-2">
+            <TabsContent value="new" className="space-y-4 py-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">نوع مشکل</label>
                 <Select
@@ -275,7 +247,7 @@ export function ProblemReportButton() {
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
                   placeholder="چه کاری می‌خواستید انجام دهید و چه اتفاقی افتاد؟"
-                  className="min-h-[120px]"
+                  className="min-h-[140px]"
                   maxLength={4000}
                 />
               </div>
@@ -285,15 +257,7 @@ export function ProblemReportButton() {
                 {searchParams.toString() ? `?${searchParams.toString()}` : ""}
               </p>
 
-              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                  disabled={submitting}
-                >
-                  انصراف
-                </Button>
+              <div className="flex justify-end">
                 <Button
                   type="button"
                   onClick={handleSubmit}
@@ -312,7 +276,7 @@ export function ProblemReportButton() {
               </div>
             </TabsContent>
 
-            <TabsContent value="history" className="space-y-3 py-2">
+            <TabsContent value="history" className="space-y-3 py-4">
               {(unrepliedOpenCount > 0 || withReplyCount > 0) && (
                 <p className="text-xs text-muted-foreground">
                   {withReplyCount > 0 ? `${withReplyCount} گزارش پاسخ ادمین دارد.` : null}
@@ -323,20 +287,20 @@ export function ProblemReportButton() {
               )}
 
               {historyLoading ? (
-                <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+                <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   در حال بارگذاری…
                 </div>
               ) : myReports.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">
+                <p className="text-sm text-muted-foreground py-12 text-center">
                   هنوز گزارشی ثبت نکرده‌اید.
                 </p>
               ) : (
-                <div className="space-y-3 max-h-[55vh] overflow-y-auto pe-1">
+                <div className="space-y-3">
                   {myReports.map((report) => (
                     <div
                       key={report.id}
-                      className={`rounded-lg border p-3 space-y-2 ${
+                      className={`rounded-lg border p-4 space-y-2 ${
                         report.hasUnreadReply ? "border-red-400/60 bg-red-500/[0.03]" : ""
                       }`}
                     >
@@ -349,6 +313,7 @@ export function ProblemReportButton() {
                         </Badge>
                         {report.hasUnreadReply && (
                           <Badge variant="destructive" className="gap-1">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-white" />
                             پاسخ جدید
                           </Badge>
                         )}
@@ -357,7 +322,7 @@ export function ProblemReportButton() {
                         </span>
                       </div>
                       <h3 className="font-medium text-sm">{report.title}</h3>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-4">
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                         {report.description}
                       </p>
                       {report.adminNote ? (
@@ -377,8 +342,8 @@ export function ProblemReportButton() {
               )}
             </TabsContent>
           </Tabs>
-        </DialogContent>
-      </Dialog>
-    </>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

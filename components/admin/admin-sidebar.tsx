@@ -24,6 +24,7 @@ import {
   Settings,
   Share2,
   Sparkles,
+  TriangleAlert,
   Unplug,
   Users,
   UserCircle,
@@ -50,6 +51,11 @@ import {
   type ContributorPermissionKey,
   type ContributorPermissions,
 } from "@/lib/contributor-permissions";
+import { getMyUnreadProblemReplyCountAction } from "@/lib/actions/problem-report-actions";
+import {
+  PROBLEM_REPORTS_UNREAD_EVENT,
+  readUnreadCountFromEvent,
+} from "@/lib/problem-reports-unread";
 
 const allNavItems: {
   href: string;
@@ -79,6 +85,12 @@ const allNavItems: {
   { href: "/admin/activities", label: "اقدامات", icon: Sparkles, permissionKey: "activities" },
   { href: "/admin/elanha", label: "اعلان‌ها", icon: Bell, adminOrClientOnly: true },
   { href: "/admin/directives", label: "دستورکارها", icon: ClipboardCheck, alwaysVisible: true },
+  {
+    href: "/admin/problem-reports",
+    label: "گزارش مشکل",
+    icon: TriangleAlert,
+    alwaysVisible: true,
+  },
   { href: "/admin/broadcast", label: "پخش صدا و سیما", icon: Radio, permissionKey: "broadcast" },
   { href: "/admin/meetings", label: "جلسات و مصوبات", icon: ClipboardList, permissionKey: "meetings" },
   { href: "/admin/submissions", label: "مشارکت‌ها", icon: FileText, permissionKey: "submissions" },
@@ -106,6 +118,7 @@ export function AdminSidebar() {
   const [isFullAdminUser, setIsFullAdminUser] = useState(true);
   const [isClientRole, setIsClientRole] = useState(false);
   const [permissions, setPermissions] = useState<ContributorPermissions | null>(null);
+  const [problemReportsUnread, setProblemReportsUnread] = useState(0);
   const { campaignId, campaigns, currentCampaign, setCampaignId } = useAdminCampaign();
 
   useEffect(() => {
@@ -116,6 +129,37 @@ export function AdminSidebar() {
       setPermissions(session.permissions ?? null);
     });
   }, [campaignId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const refreshUnread = async () => {
+      try {
+        const result = await getMyUnreadProblemReplyCountAction();
+        if (cancelled || !result.success) return;
+        setProblemReportsUnread(result.count ?? 0);
+      } catch {
+        if (!cancelled) setProblemReportsUnread(0);
+      }
+    };
+
+    void refreshUnread();
+    const timer = window.setInterval(() => {
+      void refreshUnread();
+    }, 60_000);
+
+    const onUnreadEvent = (event: Event) => {
+      const count = readUnreadCountFromEvent(event);
+      if (count !== null) setProblemReportsUnread(count);
+    };
+    window.addEventListener(PROBLEM_REPORTS_UNREAD_EVENT, onUnreadEvent);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener(PROBLEM_REPORTS_UNREAD_EVENT, onUnreadEvent);
+    };
+  }, []);
 
   const navItems = allNavItems.filter((item) => {
     if (item.alwaysVisible) return true;
@@ -210,7 +254,14 @@ export function AdminSidebar() {
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{item.label}</span>
+                <span className="truncate flex-1">{item.label}</span>
+                {item.href === "/admin/problem-reports" && problemReportsUnread > 0 && (
+                  <span
+                    className="ms-auto h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
+                    title="پاسخ خوانده‌نشده"
+                    aria-label="پاسخ خوانده‌نشده"
+                  />
+                )}
               </Link>
             );
           })}

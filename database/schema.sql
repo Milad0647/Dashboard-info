@@ -648,12 +648,18 @@ CREATE TABLE IF NOT EXISTS user_problem_reports (
   status TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'in_progress', 'resolved', 'dismissed')),
   admin_note TEXT,
+  -- NULL means the reporter has not opened the latest admin reply yet.
+  admin_note_seen_at TIMESTAMPTZ,
   resolved_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   resolved_at TIMESTAMPTZ,
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Existing deployments created before admin_note_seen_at existed.
+ALTER TABLE user_problem_reports
+  ADD COLUMN IF NOT EXISTS admin_note_seen_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_user_problem_reports_status
   ON user_problem_reports(status, created_at DESC);
@@ -663,6 +669,10 @@ CREATE INDEX IF NOT EXISTS idx_user_problem_reports_reporter
 
 CREATE INDEX IF NOT EXISTS idx_user_problem_reports_created
   ON user_problem_reports(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_user_problem_reports_unread_reply
+  ON user_problem_reports(reporter_user_id, created_at DESC)
+  WHERE admin_note IS NOT NULL AND admin_note_seen_at IS NULL;
 
 -- ─── Database privilege + RLS hardening ───
 -- ENABLE RLS (without FORCE) so the table-owning app role keeps normal access.

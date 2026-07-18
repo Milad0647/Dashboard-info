@@ -13,6 +13,8 @@ import { pgGetUserById } from "@/lib/db/repository-extended";
 import {
   pgInsertProblemReport,
   pgListMyProblemReports,
+  pgCountMyUnreadProblemReplies,
+  pgMarkMyProblemReportsSeen,
   pgUpdateProblemReportStatus,
 } from "@/lib/db/problem-reports-repository";
 import type { ProblemReport } from "@/lib/audit/problem-types";
@@ -28,12 +30,16 @@ export type MyProblemReport = Pick<
   | "path"
   | "status"
   | "adminNote"
+  | "adminNoteSeenAt"
   | "createdAt"
   | "updatedAt"
   | "resolvedAt"
->;
+> & {
+  hasUnreadReply: boolean;
+};
 
 function toMyProblemReport(report: ProblemReport): MyProblemReport {
+  const hasUnreadReply = Boolean(report.adminNote) && !report.adminNoteSeenAt;
   return {
     id: report.id,
     category: report.category,
@@ -42,9 +48,20 @@ function toMyProblemReport(report: ProblemReport): MyProblemReport {
     path: report.path,
     status: report.status,
     adminNote: report.adminNote,
+    adminNoteSeenAt: report.adminNoteSeenAt,
     createdAt: report.createdAt,
     updatedAt: report.updatedAt,
     resolvedAt: report.resolvedAt,
+    hasUnreadReply,
+  };
+}
+
+function reporterScope(session: NonNullable<Awaited<ReturnType<typeof getAuthSession>>>) {
+  return {
+    reporterUserId: session.userId,
+    reporterType: (session.type === "env_admin" ? "env_admin" : "db_user") as
+      | "env_admin"
+      | "db_user",
   };
 }
 
@@ -132,6 +149,7 @@ export async function submitProblemReportAction(
   });
 
   revalidatePath("/admin/audit");
+  revalidatePath("/admin/problem-reports");
   return { success: true };
 }
 
@@ -154,6 +172,41 @@ export async function listMyProblemReportsAction(): Promise<{
   });
 
   return { success: true, reports: reports.map(toMyProblemReport) };
+}
+
+export async function getMyUnreadProblemReplyCountAction(): Promise<{
+  success: boolean;
+  count?: number;
+  error?: string;
+}> {
+  const session = await getAuthSession();
+  if (!session) {
+    return { success: false, error: "برای مشاهده گزارش‌ها باید وارد شوید" };
+  }
+  if (!isPostgresConfigured()) {
+    return { success: true, count: 0 };
+  }
+
+  const count = await pgCountMyUnreadProblemReplies(reporterScope(session));
+  return { success: true, count };
+}
+
+export async function markMyProblemReportsSeenAction(): Promise<{
+  success: boolean;
+  marked?: number;
+  error?: string;
+}> {
+  const session = await getAuthSession();
+  if (!session) {
+    return { success: false, error: "برای مشاهده گزارش‌ها باید وارد شوید" };
+  }
+  if (!isPostgresConfigured()) {
+    return { success: false, error: "دیتابیس فعال نیست" };
+  }
+
+  const marked = await pgMarkMyProblemReportsSeen(reporterScope(session));
+  revalidatePath("/admin/problem-reports");
+  return { success: true, marked };
 }
 
 export async function updateProblemReportStatusAction(input: {
@@ -200,6 +253,7 @@ export async function updateProblemReportStatusAction(input: {
     });
 
     revalidatePath("/admin/audit");
+    revalidatePath("/admin/problem-reports");
     return { success: true };
   } catch (error) {
     console.error("updateProblemReportStatusAction failed:", error);

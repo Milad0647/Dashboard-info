@@ -26,11 +26,27 @@ function mapReportRow(row: Record<string, unknown>): ProblemReport {
     campaignId: row.campaign_id ? String(row.campaign_id) : null,
     status: row.status as ProblemReportStatus,
     adminNote: row.admin_note ? String(row.admin_note) : null,
+    adminNoteSeenAt: row.admin_note_seen_at
+      ? new Date(String(row.admin_note_seen_at)).toISOString()
+      : null,
     resolvedByUserId: row.resolved_by_user_id ? String(row.resolved_by_user_id) : null,
     resolvedAt: row.resolved_at ? new Date(String(row.resolved_at)).toISOString() : null,
     metadata,
     createdAt: new Date(String(row.created_at)).toISOString(),
     updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
+function reporterMatchClause(input: {
+  reporterUserId?: string | null;
+  reporterType?: ProblemReport["reporterType"];
+}): { reporterUserId: string | null; reporterType: string | null; ok: boolean } {
+  const reporterUserId = input.reporterUserId?.trim() || null;
+  const reporterType = input.reporterType ?? null;
+  return {
+    reporterUserId,
+    reporterType,
+    ok: Boolean(reporterUserId) || reporterType === "env_admin",
   };
 }
 
@@ -130,14 +146,12 @@ export async function pgListMyProblemReports(input: {
 }): Promise<ProblemReport[]> {
   if (!isPostgresConfigured()) return [];
 
+  const match = reporterMatchClause(input);
+  if (!match.ok) return [];
+
   const sql = getSql();
   const limit = Math.min(Math.max(input.limit ?? 50, 1), 100);
-  const reporterUserId = input.reporterUserId?.trim() || null;
-  const reporterType = input.reporterType ?? null;
-
-  if (!reporterUserId && reporterType !== "env_admin") {
-    return [];
-  }
+  const { reporterUserId, reporterType } = match;
 
   const rows = await sql`
     SELECT *
@@ -155,6 +169,71 @@ export async function pgListMyProblemReports(input: {
   `;
 
   return rows.map((row) => mapReportRow(row as Record<string, unknown>));
+}
+
+/** Count replies the reporter has not opened yet. */
+export async function pgCountMyUnreadProblemReplies(input: {
+  reporterUserId?: string | null;
+  reporterType?: ProblemReport["reporterType"];
+}): Promise<number> {
+  if (!isPostgresConfigured()) return 0;
+
+  const match = reporterMatchClause(input);
+  if (!match.ok) return 0;
+
+  const sql = getSql();
+  const { reporterUserId, reporterType } = match;
+
+  const rows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM user_problem_reports
+    WHERE admin_note IS NOT NULL
+      AND admin_note_seen_at IS NULL
+      AND (
+        (${reporterUserId}::uuid IS NOT NULL AND reporter_user_id = ${reporterUserId}::uuid)
+        OR (
+          ${reporterUserId}::uuid IS NULL
+          AND ${reporterType}::text = 'env_admin'
+          AND reporter_type = 'env_admin'
+        )
+      )
+  `;
+
+  return Number(rows[0]?.count ?? 0);
+}
+
+/** Mark all unread admin replies as seen for the current reporter. */
+export async function pgMarkMyProblemReportsSeen(input: {
+  reporterUserId?: string | null;
+  reporterType?: ProblemReport["reporterType"];
+}): Promise<number> {
+  if (!isPostgresConfigured()) return 0;
+
+  const match = reporterMatchClause(input);
+  if (!match.ok) return 0;
+
+  const sql = getSql();
+  const { reporterUserId, reporterType } = match;
+
+  const rows = await sql`
+    UPDATE user_problem_reports
+    SET
+      admin_note_seen_at = now(),
+      updated_at = now()
+    WHERE admin_note IS NOT NULL
+      AND admin_note_seen_at IS NULL
+      AND (
+        (${reporterUserId}::uuid IS NOT NULL AND reporter_user_id = ${reporterUserId}::uuid)
+        OR (
+          ${reporterUserId}::uuid IS NULL
+          AND ${reporterType}::text = 'env_admin'
+          AND reporter_type = 'env_admin'
+        )
+      )
+    RETURNING id
+  `;
+
+  return rows.length;
 }
 
 export async function pgUpdateProblemReportStatus(input: {
@@ -179,6 +258,11 @@ export async function pgUpdateProblemReportStatus(input: {
         SET
           status = ${input.status},
           admin_note = ${adminNote},
+          -- New/changed reply becomes unread until the reporter opens it.
+          admin_note_seen_at = CASE
+            WHEN ${adminNote} IS DISTINCT FROM admin_note THEN NULL
+            ELSE admin_note_seen_at
+          END,
           resolved_by_user_id = ${resolvedByUserId},
           resolved_at = ${resolvedAt},
           updated_at = now()
