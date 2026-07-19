@@ -31,6 +31,7 @@ import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
+import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import {
   BulkItemShell,
@@ -108,6 +109,7 @@ interface ActivitiesAdminProps {
   contentTopics?: ContentTopic[];
   canScore?: boolean;
   isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
   users?: AdminUser[];
 }
 
@@ -122,6 +124,7 @@ export function ActivitiesAdmin({
   contentTopics = [],
   canScore = false,
   isFullAdmin = false,
+  canTransferOwnership = false,
   users = [],
 }: ActivitiesAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("activities");
@@ -133,6 +136,7 @@ export function ActivitiesAdmin({
   const [isMediaDragging, setIsMediaDragging] = useState(false);
   const [isBatchUploadingMedia, setIsBatchUploadingMedia] = useState(false);
   const [planLabels, setPlanLabels] = useState<string[]>([]);
+  const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(null);
   const [isCreative, setIsCreative] = useState(false);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("activities");
@@ -180,6 +184,7 @@ export function ActivitiesAdmin({
       setMediaItems(activity.mediaItems ?? []);
       setAttachments(activity.attachments ?? []);
       setPlanLabels(normalizePlanLabels(activity.planLabels, activity.planLabel));
+      setEditOwnerUserId(activity.ownerUserId ?? null);
       setIsCreative(Boolean(activity.isCreative));
       form.reset({
         title: activity.title,
@@ -217,6 +222,7 @@ export function ActivitiesAdmin({
       setMediaItems([]);
       setAttachments([]);
       setPlanLabels([]);
+      setEditOwnerUserId(null);
       setIsCreative(false);
       setHighlightFields([]);
       form.reset({
@@ -237,6 +243,7 @@ export function ActivitiesAdmin({
     setMediaItems(activity.mediaItems ?? []);
     setAttachments(activity.attachments ?? []);
     setPlanLabels(normalizePlanLabels(activity.planLabels, activity.planLabel));
+    setEditOwnerUserId(activity.ownerUserId ?? null);
     setIsCreative(Boolean(activity.isCreative));
     form.reset({
       title: activity.title,
@@ -257,6 +264,7 @@ export function ActivitiesAdmin({
     setMediaItems([]);
     setAttachments([]);
     setPlanLabels([]);
+    setEditOwnerUserId(null);
     setIsCreative(false);
     resetDeepLink();
   };
@@ -372,6 +380,10 @@ export function ActivitiesAdmin({
       }));
 
     startTransition(async () => {
+      const existing = editingId ? rows.find((row) => row.id === editingId) : undefined;
+      const selectedOwner = canTransferOwnership
+        ? users.find((user) => user.id === editOwnerUserId)
+        : null;
       const result = await saveCampaignActivityAction({
         campaignId,
         id: editingId ?? undefined,
@@ -388,6 +400,12 @@ export function ActivitiesAdmin({
         published: true,
         planLabels,
         planLabel: planLabels[0] ?? null,
+        ...(canTransferOwnership
+          ? {
+              ownerUserId: editOwnerUserId,
+              ownerName: selectedOwner?.name ?? existing?.ownerName ?? null,
+            }
+          : {}),
       });
 
       if (!result.success) {
@@ -413,7 +431,13 @@ export function ActivitiesAdmin({
         planLabels,
         planLabel: planLabels[0] ?? null,
         sortOrder: rows.length + 1,
-        createdAt: new Date().toISOString(),
+        ownerUserId: canTransferOwnership
+          ? editOwnerUserId
+          : existing?.ownerUserId,
+        ownerName: canTransferOwnership
+          ? selectedOwner?.name ?? existing?.ownerName ?? null
+          : existing?.ownerName,
+        createdAt: existing?.createdAt ?? new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
@@ -445,7 +469,7 @@ export function ActivitiesAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={isFullAdmin ? filterUsers : []}
+        users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
         showCreativeFilter
       />
@@ -463,6 +487,7 @@ export function ActivitiesAdmin({
         contentPlans={contentPlans}
         contentTopics={contentTopics}
         isFullAdmin={isFullAdmin}
+        canTransferOwnership={canTransferOwnership || isFullAdmin}
         users={users}
       />
 
@@ -692,6 +717,13 @@ export function ActivitiesAdmin({
                     prev.map((row) => (row.id === editingId ? { ...row, score } : row))
                   )
                 }
+              />
+            )}
+            {canTransferOwnership && (
+              <ContentOwnerSelect
+                users={users}
+                value={editOwnerUserId}
+                onChange={setEditOwnerUserId}
               />
             )}
             <div

@@ -20,6 +20,7 @@ import {
   SectionBulkEditBar,
   useSectionBulkEdit,
 } from "@/components/admin/section-bulk-edit";
+import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ interface FilesAdminProps {
   contentTopics?: ContentTopic[];
   canScore?: boolean;
   isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
   users?: AdminUser[];
 }
 
@@ -76,6 +78,7 @@ export function FilesAdmin({
   contentTopics = [],
   canScore = false,
   isFullAdmin = false,
+  canTransferOwnership = false,
   users = [],
 }: FilesAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("files");
@@ -85,6 +88,7 @@ export function FilesAdmin({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [planLabels, setPlanLabels] = useState<string[]>([]);
+  const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(null);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("files");
   const [upload, setUpload] = useState({
@@ -117,6 +121,7 @@ export function FilesAdmin({
     setTitle("");
     setDescription("");
     setPlanLabels([]);
+    setEditOwnerUserId(null);
     setUpload({ url: "", fileName: "", fileSize: 0, mimeType: "" });
   };
 
@@ -131,6 +136,7 @@ export function FilesAdmin({
       setPlanLabels(
         file.planLabels?.length ? file.planLabels : file.planLabel ? [file.planLabel] : []
       );
+      setEditOwnerUserId(file.ownerUserId ?? null);
       setUpload({
         url: file.fileUrl,
         fileName: file.fileName,
@@ -158,6 +164,7 @@ export function FilesAdmin({
     setTitle(file.title);
     setDescription(file.description ?? "");
     setPlanLabels(file.planLabels?.length ? file.planLabels : file.planLabel ? [file.planLabel] : []);
+    setEditOwnerUserId(file.ownerUserId ?? null);
     setUpload({
       url: file.fileUrl,
       fileName: file.fileName,
@@ -196,6 +203,10 @@ export function FilesAdmin({
     }
 
     startTransition(async () => {
+      const existing = editingId ? files.find((item) => item.id === editingId) : undefined;
+      const selectedOwner = canTransferOwnership
+        ? users.find((user) => user.id === editOwnerUserId)
+        : null;
       const result = await saveCampaignFileAction({
         id: editingId ?? undefined,
         campaignId,
@@ -206,11 +217,15 @@ export function FilesAdmin({
         fileSize: upload.fileSize,
         mimeType: upload.mimeType,
         published: true,
-        sortOrder: editingId
-          ? files.find((item) => item.id === editingId)?.sortOrder ?? files.length + 1
-          : files.length + 1,
+        sortOrder: existing?.sortOrder ?? files.length + 1,
         planLabels,
         planLabel: planLabels[0] ?? null,
+        ...(canTransferOwnership
+          ? {
+              ownerUserId: editOwnerUserId,
+              ownerName: selectedOwner?.name ?? existing?.ownerName ?? null,
+            }
+          : {}),
       });
 
       if (!result.success) {
@@ -238,17 +253,17 @@ export function FilesAdmin({
         fileSize: upload.fileSize,
         mimeType: upload.mimeType,
         published: true,
-        sortOrder: editingId
-          ? files.find((item) => item.id === editingId)?.sortOrder ?? files.length + 1
-          : files.length + 1,
+        sortOrder: existing?.sortOrder ?? files.length + 1,
         planLabels,
         planLabel: planLabels[0] ?? null,
-        score: editingId ? files.find((item) => item.id === editingId)?.score : undefined,
-        ownerUserId: editingId ? files.find((item) => item.id === editingId)?.ownerUserId : undefined,
-        ownerName: editingId ? files.find((item) => item.id === editingId)?.ownerName : undefined,
-        createdAt: editingId
-          ? files.find((item) => item.id === editingId)?.createdAt ?? now
-          : now,
+        score: existing?.score,
+        ownerUserId: canTransferOwnership
+          ? editOwnerUserId
+          : existing?.ownerUserId,
+        ownerName: canTransferOwnership
+          ? selectedOwner?.name ?? existing?.ownerName ?? null
+          : existing?.ownerName,
+        createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       };
 
@@ -289,7 +304,7 @@ export function FilesAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={isFullAdmin ? filterUsers : []}
+        users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
       />
 
@@ -306,6 +321,7 @@ export function FilesAdmin({
         contentPlans={contentPlans}
         contentTopics={contentTopics}
         isFullAdmin={isFullAdmin}
+        canTransferOwnership={canTransferOwnership || isFullAdmin}
         users={users}
       />
 
@@ -491,6 +507,13 @@ export function FilesAdmin({
               values={planLabels}
               onChangeMultiple={setPlanLabels}
             />
+            {canTransferOwnership && (
+              <ContentOwnerSelect
+                users={users}
+                value={editOwnerUserId}
+                onChange={setEditOwnerUserId}
+              />
+            )}
             <div
               className={cn(
                 highlightFile && "rounded-lg border border-destructive bg-destructive/5 p-3"

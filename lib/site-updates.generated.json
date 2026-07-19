@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "05b376f4a766a1795e300dbead031e34a4f05486",
+      "committedAt": "2026-07-19T11:47:17+03:30",
+      "title": "رفع خطای ساخت کدهای دسترسی صفحه کمپین",
+      "subject": "Fix campaign access code generation crash"
+    },
+    {
       "hash": "5519032ea1d1a20e2348bf809a877e6195f79e0d",
       "committedAt": "2026-07-19T11:45:29+03:30",
       "title": "رفع خطای ارسال پیام هنگام زدن حل شد در مشکلات ثبت‌شده",

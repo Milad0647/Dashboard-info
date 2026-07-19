@@ -30,6 +30,7 @@ export default async function SitePublicationsPage({ searchParams }: PageProps) 
       contentTopics={data.settings?.contentTopics ?? []}
       canScore={canScore}
       isFullAdmin={bulkProps.isFullAdmin}
+      canTransferOwnership={bulkProps.canTransferOwnership}
       users={bulkProps.users}
     />
   );

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
+import { canTransferContentOwnership } from "@/lib/auth/access";
 import { assertTutorialForPossibleCreate } from "@/lib/auth/require-tutorial-completion";
 import { resolveDefaultAdminOwnerUserId } from "@/lib/admin-content-owner";
 import { pgGetCampaignById } from "@/lib/db/repository";
@@ -90,11 +91,13 @@ export async function POST(request: Request) {
   }
 
   const fullAdmin = session ? isFullAdmin(session) : true;
+  const canTransfer = Boolean(session && canTransferContentOwnership(session));
+  const requestedOwnerUserId = String(formData.get("ownerUserId") ?? "").trim() || null;
   let ownerUserId: string | null = null;
   let province = String(formData.get("province") ?? "").trim() || null;
   let city = String(formData.get("city") ?? "").trim() || null;
 
-  if (!fullAdmin && session?.userId) {
+  if (!canTransfer && session?.userId) {
     const user = await pgGetUserById(session.userId);
     if (!user) {
       return NextResponse.json({ error: "کاربر یافت نشد" }, { status: 404 });
@@ -103,6 +106,18 @@ export async function POST(request: Request) {
     // Prefer explicit form selection; fall back to profile only when form left empty.
     province = province || user.province || null;
     city = city || user.city || null;
+  } else if (canTransfer) {
+    if (requestedOwnerUserId) {
+      const owner = await pgGetUserById(requestedOwnerUserId);
+      if (!owner) {
+        return NextResponse.json({ error: "مالک انتخاب‌شده یافت نشد" }, { status: 400 });
+      }
+      ownerUserId = owner.id;
+    } else if (!billboardId) {
+      // Create without explicit owner: default company account.
+      ownerUserId = await resolveDefaultAdminOwnerUserId();
+    }
+    // Edit without ownerUserId: leave null so COALESCE keeps previous owner.
   } else if (fullAdmin && !billboardId) {
     ownerUserId = await resolveDefaultAdminOwnerUserId();
   }

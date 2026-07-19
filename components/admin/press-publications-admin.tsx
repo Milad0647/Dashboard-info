@@ -20,6 +20,7 @@ import { AdminActivityCompactCard } from "@/components/admin/admin-activity-comp
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
+import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import {
   BulkItemShell,
   SectionBulkEditBar,
@@ -69,6 +70,7 @@ interface PressPublicationsAdminProps {
   contentPlans?: string[];
   contentTopics?: ContentTopic[];
   isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
   users?: AdminUser[];
 }
 
@@ -78,6 +80,7 @@ export function PressPublicationsAdmin({
   contentPlans = [],
   contentTopics = [],
   isFullAdmin = false,
+  canTransferOwnership = false,
   users = [],
 }: PressPublicationsAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("pressPublications");
@@ -85,6 +88,7 @@ export function PressPublicationsAdmin({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [mediaItems, setMediaItems] = useState<ActivityMediaItem[]>([]);
   const [planLabels, setPlanLabels] = useState<string[]>([]);
+  const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(null);
   const [rows, setRows] = useState(
     initialActivities.filter((activity) => isPressPublication(activity))
   );
@@ -125,6 +129,7 @@ export function PressPublicationsAdmin({
       setEditingId(null);
       setMediaItems([]);
       setPlanLabels([]);
+      setEditOwnerUserId(null);
       form.reset({
         title: "",
         activityType: "magazine",
@@ -141,6 +146,7 @@ export function PressPublicationsAdmin({
     setEditingId(activity.id);
     setMediaItems(activity.mediaItems ?? []);
     setPlanLabels(normalizePlanLabels(activity.planLabels, activity.planLabel));
+    setEditOwnerUserId(activity.ownerUserId ?? null);
     form.reset({
       title: activity.title,
       activityType: activity.activityType === "newspaper" ? "newspaper" : "magazine",
@@ -231,6 +237,10 @@ export function PressPublicationsAdmin({
   const onSubmit = form.handleSubmit((data) => {
     const filledMedia = mediaItems.filter((item) => item.url.trim());
     startTransition(async () => {
+      const existing = editingId ? rows.find((row) => row.id === editingId) : undefined;
+      const selectedOwner = canTransferOwnership
+        ? users.find((user) => user.id === editOwnerUserId)
+        : null;
       const result = await saveCampaignActivityAction({
         campaignId,
         id: editingId ?? undefined,
@@ -248,6 +258,12 @@ export function PressPublicationsAdmin({
         published: true,
         planLabels,
         planLabel: planLabels[0] ?? null,
+        ...(canTransferOwnership
+          ? {
+              ownerUserId: editOwnerUserId,
+              ownerName: selectedOwner?.name ?? existing?.ownerName ?? null,
+            }
+          : {}),
       });
 
       if (!result.success) {
@@ -274,7 +290,13 @@ export function PressPublicationsAdmin({
         planLabels,
         planLabel: planLabels[0] ?? null,
         sortOrder: rows.length + 1,
-        createdAt: new Date().toISOString(),
+        ownerUserId: canTransferOwnership
+          ? editOwnerUserId
+          : existing?.ownerUserId,
+        ownerName: canTransferOwnership
+          ? selectedOwner?.name ?? existing?.ownerName ?? null
+          : existing?.ownerName,
+        createdAt: existing?.createdAt ?? new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
@@ -311,6 +333,7 @@ export function PressPublicationsAdmin({
         contentPlans={contentPlans}
         contentTopics={contentTopics}
         isFullAdmin={isFullAdmin}
+        canTransferOwnership={canTransferOwnership || isFullAdmin}
         users={users}
       />
 
@@ -546,6 +569,13 @@ export function PressPublicationsAdmin({
               values={planLabels}
               onChangeMultiple={setPlanLabels}
             />
+            {canTransferOwnership && (
+              <ContentOwnerSelect
+                users={users}
+                value={editOwnerUserId}
+                onChange={setEditOwnerUserId}
+              />
+            )}
             <Button type="submit" disabled={isPending} className="w-full">
               ذخیره
             </Button>

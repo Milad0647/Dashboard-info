@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
+import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import {
   deletePosterAction,
@@ -26,7 +27,7 @@ import {
 } from "@/lib/edit-suggestions";
 import { todayISO } from "@/lib/jalali";
 import { resolveDisplayVersion } from "@/lib/media-utils";
-import type { MediaCategory, Poster, PosterVersion } from "@/lib/types";
+import type { AdminUser, MediaCategory, Poster, PosterVersion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface AdminPosterEditorProps {
@@ -36,6 +37,8 @@ interface AdminPosterEditorProps {
   contentPlans?: string[];
   contentTopics?: ContentTopic[];
   canScore?: boolean;
+  canTransferOwnership?: boolean;
+  users?: AdminUser[];
   isNew?: boolean;
   highlightFields?: EditSuggestionMissingField[];
   onClose: () => void;
@@ -48,6 +51,8 @@ export function AdminPosterEditor({
   contentPlans = [],
   contentTopics = [],
   canScore = false,
+  canTransferOwnership = false,
+  users = [],
   isNew = false,
   highlightFields = [],
   onClose,
@@ -69,6 +74,7 @@ export function AdminPosterEditor({
     normalizePlanLabels(poster.planLabels, poster.planLabel)
   );
   const [editScore, setEditScore] = useState<number | null | undefined>(poster.score);
+  const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(poster.ownerUserId ?? null);
 
   useEffect(() => {
     const current = resolveDisplayVersion(versions);
@@ -77,6 +83,7 @@ export function AdminPosterEditor({
     setEditCategoryId(poster.categoryId);
     setEditPlanLabels(normalizePlanLabels(poster.planLabels, poster.planLabel));
     setEditScore(poster.score);
+    setEditOwnerUserId(poster.ownerUserId ?? null);
     setImageUrl(current?.imageUrl || "");
     setThumbnailUrl(current?.thumbnailUrl || "");
     setNotes(current?.notes ?? "");
@@ -88,6 +95,7 @@ export function AdminPosterEditor({
     poster.planLabel,
     poster.planLabels,
     poster.score,
+    poster.ownerUserId,
     versions,
   ]);
 
@@ -100,6 +108,9 @@ export function AdminPosterEditor({
     }
 
     startTransition(async () => {
+      const selectedOwner = canTransferOwnership
+        ? users.find((user) => user.id === editOwnerUserId)
+        : null;
       const savedPoster = {
         ...poster,
         title: editTitle,
@@ -109,6 +120,12 @@ export function AdminPosterEditor({
         planLabels: editPlanLabels,
         planLabel: editPlanLabels[0] ?? null,
         score: editScore,
+        ...(canTransferOwnership
+          ? {
+              ownerUserId: editOwnerUserId,
+              ownerName: selectedOwner?.name ?? poster.ownerName ?? null,
+            }
+          : {}),
         updatedAt: new Date().toISOString(),
       };
 
@@ -262,6 +279,13 @@ export function AdminPosterEditor({
                 score={editScore}
                 canScore={canScore}
                 onScoreSaved={setEditScore}
+              />
+            )}
+            {canTransferOwnership && (
+              <ContentOwnerSelect
+                users={users}
+                value={editOwnerUserId}
+                onChange={setEditOwnerUserId}
               />
             )}
             {highlightMedia && (

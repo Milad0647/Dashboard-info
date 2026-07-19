@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
+import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import {
   deleteVideoAction,
@@ -31,7 +32,7 @@ import {
   resolveDisplayVersion,
   resolveVideoThumbnail,
 } from "@/lib/media-utils";
-import type { MediaCategory, Video, VideoVersion } from "@/lib/types";
+import type { AdminUser, MediaCategory, Video, VideoVersion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { pickDefaultVideoCategoryId, videoTypeSelectOptions } from "@/lib/video-types";
 
@@ -42,6 +43,8 @@ interface AdminVideoEditorProps {
   contentPlans?: string[];
   contentTopics?: ContentTopic[];
   canScore?: boolean;
+  canTransferOwnership?: boolean;
+  users?: AdminUser[];
   isNew?: boolean;
   highlightFields?: EditSuggestionMissingField[];
   onClose: () => void;
@@ -93,6 +96,8 @@ export function AdminVideoEditor({
   contentPlans = [],
   contentTopics = [],
   canScore = false,
+  canTransferOwnership = false,
+  users = [],
   isNew = false,
   highlightFields = [],
   onClose,
@@ -119,6 +124,7 @@ export function AdminVideoEditor({
     normalizePlanLabels(video.planLabels, video.planLabel)
   );
   const [editScore, setEditScore] = useState<number | null | undefined>(video.score);
+  const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(video.ownerUserId ?? null);
 
   const typeOptions = useMemo(() => videoTypeSelectOptions(categories), [categories]);
   const selectOptions = useMemo(() => {
@@ -135,6 +141,7 @@ export function AdminVideoEditor({
     setEditCategoryId(video.categoryId || pickDefaultVideoCategoryId(categories));
     setEditPlanLabels(normalizePlanLabels(video.planLabels, video.planLabel));
     setEditScore(video.score);
+    setEditOwnerUserId(video.ownerUserId ?? null);
     setVideoUrl(current?.videoUrl || "");
     setThumbnailUrl(current ? draftCoverFromVersion(current) : "");
     setDuration(current?.duration ?? "");
@@ -147,6 +154,7 @@ export function AdminVideoEditor({
     video.planLabel,
     video.planLabels,
     video.score,
+    video.ownerUserId,
     versions,
     categories,
   ]);
@@ -168,6 +176,9 @@ export function AdminVideoEditor({
     }
 
     startTransition(async () => {
+      const selectedOwner = canTransferOwnership
+        ? users.find((user) => user.id === editOwnerUserId)
+        : null;
       const savedVideo = {
         ...video,
         title: editTitle,
@@ -177,6 +188,12 @@ export function AdminVideoEditor({
         planLabels: editPlanLabels,
         planLabel: editPlanLabels[0] ?? null,
         score: editScore,
+        ...(canTransferOwnership
+          ? {
+              ownerUserId: editOwnerUserId,
+              ownerName: selectedOwner?.name ?? video.ownerName ?? null,
+            }
+          : {}),
         updatedAt: new Date().toISOString(),
       };
 
@@ -366,6 +383,13 @@ export function AdminVideoEditor({
                 score={editScore}
                 canScore={canScore}
                 onScoreSaved={setEditScore}
+              />
+            )}
+            {canTransferOwnership && (
+              <ContentOwnerSelect
+                users={users}
+                value={editOwnerUserId}
+                onChange={setEditOwnerUserId}
               />
             )}
             {highlightMedia && (

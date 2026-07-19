@@ -33,6 +33,7 @@ export default async function RawMediaPage({ searchParams }: RawMediaPageProps) 
       contentTopics={data.settings?.contentTopics ?? []}
       canScore={canScore}
       isFullAdmin={bulkProps.isFullAdmin}
+      canTransferOwnership={bulkProps.canTransferOwnership}
       users={bulkProps.users}
     />
   );

@@ -25,6 +25,7 @@ export default async function PressPublicationsPage({ searchParams }: PageProps)
       contentPlans={data.settings?.contentPlans ?? []}
       contentTopics={data.settings?.contentTopics ?? []}
       isFullAdmin={bulkProps.isFullAdmin}
+      canTransferOwnership={bulkProps.canTransferOwnership}
       users={bulkProps.users}
     />
   );

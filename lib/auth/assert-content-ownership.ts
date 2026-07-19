@@ -1,4 +1,5 @@
-import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
+import { canManageAllContent } from "@/lib/auth/access";
+import { getAuthSession } from "@/lib/auth/get-session";
 import { getSql } from "@/lib/db/client";
 import type { AuthSession } from "@/lib/types";
 import { isPostgresConfigured } from "@/lib/utils";
@@ -92,15 +93,15 @@ async function getVideoOwnerFromVersion(versionId: string): Promise<OwnershipRow
 }
 
 /**
- * Full admins may manage all content.
- * Contributors (and clients) may only mutate rows they own.
+ * Full admins and کارفرما may manage all content.
+ * Contributors may only mutate rows they own.
  */
 export async function assertCanMutateOwnedContent(
   session: AuthSession,
   table: OwnedContentTable | "poster_versions" | "video_versions",
   id: string
 ): Promise<{ success: false; error: string } | null> {
-  if (isFullAdmin(session)) return null;
+  if (canManageAllContent(session)) return null;
   if (!isPostgresConfigured()) return null;
 
   const row =
@@ -126,7 +127,7 @@ export async function assertCanMutateOwnedContentIfExists(
   table: OwnedContentTable,
   id: string
 ): Promise<{ success: false; error: string } | null> {
-  if (isFullAdmin(session)) return null;
+  if (canManageAllContent(session)) return null;
   if (!isPostgresConfigured()) return null;
 
   const row = await getOwnedRow(table, id);

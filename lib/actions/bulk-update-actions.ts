@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { canTransferContentOwnership } from "@/lib/auth/access";
 import { getAuthSession, getOwnerFilter, isFullAdmin } from "@/lib/auth/get-session";
 import { hasContributorPermission, type ContributorPermissionKey } from "@/lib/contributor-permissions";
 import { normalizePlanLabels } from "@/lib/content-topics";
@@ -30,7 +31,7 @@ export interface BulkContentPatch {
   status?: ItemStatus;
   categoryId?: string;
   activityType?: ActivityType;
-  /** Admin-only: transfer content ownership (null clears owner). */
+  /** Admin / کارفرما: transfer content ownership (null clears owner). */
   ownerUserId?: string | null;
 }
 
@@ -123,8 +124,8 @@ export async function bulkUpdateContentAction(input: {
   const session = await getAuthSession();
   if (!session) return { success: false, updated: 0, error: "ورود لازم است" };
 
-  if (input.patch.ownerUserId !== undefined && !isFullAdmin(session)) {
-    return { success: false, updated: 0, error: "فقط مدیر می‌تواند مالک محتوا را تغییر دهد" };
+  if (input.patch.ownerUserId !== undefined && !canTransferContentOwnership(session)) {
+    return { success: false, updated: 0, error: "فقط مدیر یا کارفرما می‌تواند مالک محتوا را تغییر دهد" };
   }
 
   if (input.patch.ownerUserId) {

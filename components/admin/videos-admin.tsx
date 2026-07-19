@@ -53,6 +53,7 @@ interface VideosAdminProps {
   contentTopics?: ContentTopic[];
   canScore?: boolean;
   isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
   users?: AdminUser[];
 }
 
@@ -68,6 +69,7 @@ export function VideosAdmin({
   contentTopics = [],
   canScore = false,
   isFullAdmin = false,
+  canTransferOwnership = false,
   users = [],
 }: VideosAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("videos");
@@ -271,7 +273,7 @@ export function VideosAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={isFullAdmin ? filterUsers : []}
+        users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
       />
 
@@ -289,6 +291,7 @@ export function VideosAdmin({
         contentTopics={contentTopics}
         mediaCategories={initialCategories}
         isFullAdmin={isFullAdmin}
+        canTransferOwnership={canTransferOwnership || isFullAdmin}
         users={users}
       />
 
@@ -397,6 +400,8 @@ export function VideosAdmin({
                 contentPlans={contentPlans}
                 contentTopics={contentTopics}
                 canScore={canScore}
+                canTransferOwnership={canTransferOwnership || isFullAdmin}
+                users={users}
                 isNew={isDraftVideo}
                 highlightFields={highlightFields}
                 onClose={discardEditor}

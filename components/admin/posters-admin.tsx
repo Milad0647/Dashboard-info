@@ -50,6 +50,7 @@ interface PostersAdminProps {
   contentTopics?: ContentTopic[];
   canScore?: boolean;
   isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
   users?: AdminUser[];
 }
 
@@ -65,6 +66,7 @@ export function PostersAdmin({
   contentTopics = [],
   canScore = false,
   isFullAdmin = false,
+  canTransferOwnership = false,
   users = [],
 }: PostersAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("posters");
@@ -235,7 +237,7 @@ export function PostersAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={isFullAdmin ? filterUsers : []}
+        users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
       />
 
@@ -253,6 +255,7 @@ export function PostersAdmin({
         contentTopics={contentTopics}
         mediaCategories={initialCategories}
         isFullAdmin={isFullAdmin}
+        canTransferOwnership={canTransferOwnership || isFullAdmin}
         users={users}
       />
 
@@ -361,6 +364,8 @@ export function PostersAdmin({
                 contentPlans={contentPlans}
                 contentTopics={contentTopics}
                 canScore={canScore}
+                canTransferOwnership={canTransferOwnership || isFullAdmin}
+                users={users}
                 isNew={isDraftPoster}
                 highlightFields={highlightFields}
                 onClose={discardEditor}

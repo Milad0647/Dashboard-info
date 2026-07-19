@@ -1,4 +1,4 @@
-import { isFullAdmin } from "@/lib/auth/get-session";
+import { canTransferContentOwnership } from "@/lib/auth/access";
 import { pgFindUserIdByName, pgGetUserByEmail } from "@/lib/db/repository-extended";
 import type { AuthSession } from "@/lib/types";
 import { isPostgresConfigured } from "@/lib/utils";
@@ -56,9 +56,9 @@ export async function resolveDefaultAdminOwnerUserId(): Promise<string | null> {
 /**
  * Owner to persist on save:
  * - Contributor → their own user id
- * - Admin with explicit owner (bulk transfer) → that owner
+ * - Admin / کارفرما with explicit owner → that owner
  * - Admin creating new content → Tavanir (or env) account
- * - Admin updating existing content without explicit owner → null
+ * - Admin / کارفرما updating existing content without explicit owner → null
  *   (DB COALESCE keeps the previous owner)
  */
 export async function resolveSaveOwnerUserId(options: {
@@ -68,7 +68,7 @@ export async function resolveSaveOwnerUserId(options: {
 }): Promise<string | null> {
   const { session, explicitOwnerUserId, contentId } = options;
 
-  if (!isFullAdmin(session)) {
+  if (!canTransferContentOwnership(session)) {
     return session.userId ?? null;
   }
 

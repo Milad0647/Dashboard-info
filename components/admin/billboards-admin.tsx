@@ -71,6 +71,7 @@ interface BillboardsAdminProps {
   externalCampaignSlug?: string | null;
   externalCampaignId?: string | null;
   isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
   users?: AdminUser[];
   contributorProfile?: ContributorProfile | null;
 }
@@ -85,6 +86,7 @@ export function BillboardsAdmin({
   externalCampaignSlug = null,
   externalCampaignId = null,
   isFullAdmin = false,
+  canTransferOwnership = false,
   users = [],
   contributorProfile = null,
 }: BillboardsAdminProps) {
@@ -289,7 +291,7 @@ export function BillboardsAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={isFullAdmin ? filterUsers : []}
+        users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
         categoryOptions={billboardCategoryOptions}
         categoryValue={categoryFilter}
@@ -309,6 +311,7 @@ export function BillboardsAdmin({
         contentPlans={contentPlans}
         contentTopics={contentTopics}
         isFullAdmin={isFullAdmin}
+        canTransferOwnership={canTransferOwnership || isFullAdmin}
         users={users}
       />
 
@@ -355,6 +358,8 @@ export function BillboardsAdmin({
         contentPlans={contentPlans}
         contentTopics={contentTopics}
         canScore={canScore}
+        canTransferOwnership={canTransferOwnership || isFullAdmin}
+        users={users}
         mode={isFullAdmin ? "admin" : "client"}
         contributorProfile={contributorProfile}
         editingBillboard={editingBillboard}

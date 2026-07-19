@@ -5,6 +5,15 @@ export function isClientUser(session: AuthSession): boolean {
   return session.role === "client";
 }
 
+/** Admin and کارفرما can manage any campaign content and transfer ownership. */
+export function canManageAllContent(session: AuthSession): boolean {
+  return isFullAdmin(session) || isClientUser(session);
+}
+
+export function canTransferContentOwnership(session: AuthSession): boolean {
+  return canManageAllContent(session);
+}
+
 export function canAccessNotifications(session: AuthSession): boolean {
   return isFullAdmin(session) || isClientUser(session);
 }

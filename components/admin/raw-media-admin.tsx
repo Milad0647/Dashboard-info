@@ -12,6 +12,7 @@ import {
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
+import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
@@ -73,6 +74,7 @@ interface RawMediaAdminProps {
   contentTopics?: ContentTopic[];
   canScore?: boolean;
   isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
   users?: AdminUser[];
 }
 
@@ -83,6 +85,7 @@ export function RawMediaAdmin({
   contentTopics = [],
   canScore = false,
   isFullAdmin = false,
+  canTransferOwnership = false,
   users = [],
 }: RawMediaAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("rawMedia");
@@ -93,6 +96,7 @@ export function RawMediaAdmin({
   const [description, setDescription] = useState("");
   const [mediaKind, setMediaKind] = useState<RawMediaKind>("image");
   const [planLabels, setPlanLabels] = useState<string[]>([]);
+  const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(null);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("raw-media");
   const [upload, setUpload] = useState({
@@ -163,6 +167,7 @@ export function RawMediaAdmin({
     setDescription("");
     setMediaKind("image");
     setPlanLabels([]);
+    setEditOwnerUserId(null);
     setUpload({ url: "", fileName: "", fileSize: 0, mimeType: "" });
   };
 
@@ -178,6 +183,7 @@ export function RawMediaAdmin({
       setPlanLabels(
         item.planLabels?.length ? item.planLabels : item.planLabel ? [item.planLabel] : []
       );
+      setEditOwnerUserId(item.ownerUserId ?? null);
       setUpload({
         url: item.fileUrl,
         fileName: item.fileName,
@@ -206,6 +212,7 @@ export function RawMediaAdmin({
     setDescription(item.description ?? "");
     setMediaKind(item.mediaKind);
     setPlanLabels(item.planLabels?.length ? item.planLabels : item.planLabel ? [item.planLabel] : []);
+    setEditOwnerUserId(item.ownerUserId ?? null);
     setUpload({
       url: item.fileUrl,
       fileName: item.fileName,
@@ -250,6 +257,9 @@ export function RawMediaAdmin({
 
     startTransition(async () => {
       const existing = editingId ? items.find((item) => item.id === editingId) : undefined;
+      const selectedOwner = canTransferOwnership
+        ? users.find((user) => user.id === editOwnerUserId)
+        : null;
       const result = await saveRawMediaUploadAction({
         id: editingId ?? undefined,
         campaignId,
@@ -264,6 +274,12 @@ export function RawMediaAdmin({
         sortOrder: existing?.sortOrder ?? items.length + 1,
         planLabels,
         planLabel: planLabels[0] ?? null,
+        ...(canTransferOwnership
+          ? {
+              ownerUserId: editOwnerUserId,
+              ownerName: selectedOwner?.name ?? existing?.ownerName ?? null,
+            }
+          : {}),
       });
 
       if (!result.success) {
@@ -296,8 +312,12 @@ export function RawMediaAdmin({
         planLabels,
         planLabel: planLabels[0] ?? null,
         score: existing?.score,
-        ownerUserId: existing?.ownerUserId,
-        ownerName: existing?.ownerName,
+        ownerUserId: canTransferOwnership
+          ? editOwnerUserId
+          : existing?.ownerUserId,
+        ownerName: canTransferOwnership
+          ? selectedOwner?.name ?? existing?.ownerName ?? null
+          : existing?.ownerName,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       };
@@ -386,7 +406,7 @@ export function RawMediaAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={isFullAdmin ? filterUsers : []}
+        users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
       />
 
@@ -403,6 +423,7 @@ export function RawMediaAdmin({
         contentPlans={contentPlans}
         contentTopics={contentTopics}
         isFullAdmin={isFullAdmin}
+        canTransferOwnership={canTransferOwnership || isFullAdmin}
         users={users}
       />
 
@@ -629,6 +650,13 @@ export function RawMediaAdmin({
               </Select>
             </div>
             <PlanLabelSelect topics={contentTopics} plans={contentPlans} values={planLabels} onChangeMultiple={setPlanLabels} />
+            {canTransferOwnership && (
+              <ContentOwnerSelect
+                users={users}
+                value={editOwnerUserId}
+                onChange={setEditOwnerUserId}
+              />
+            )}
             <div
               className={cn(
                 highlightFile && "rounded-lg border border-destructive bg-destructive/5 p-3"

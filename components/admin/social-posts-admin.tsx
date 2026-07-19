@@ -25,6 +25,7 @@ import { AdminContentPreviewDialog } from "@/components/admin/admin-content-prev
 import { AdminSocialPostCompactCard } from "@/components/admin/admin-social-post-compact-card";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
+import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import {
   BulkItemShell,
@@ -95,6 +96,7 @@ interface SocialPostsAdminProps {
   contentTopics?: ContentTopic[];
   canScore?: boolean;
   isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
   users?: AdminUser[];
 }
 
@@ -105,6 +107,7 @@ export function SocialPostsAdmin({
   contentTopics = [],
   canScore = false,
   isFullAdmin = false,
+  canTransferOwnership = false,
   users = [],
 }: SocialPostsAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("socialPosts");
@@ -115,6 +118,7 @@ export function SocialPostsAdmin({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewPost, setPreviewPost] = useState<SocialMediaPost | null>(null);
   const [planLabels, setPlanLabels] = useState<string[]>([]);
+  const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(null);
   const [highlightFields, setHighlightFields] = useState<EditSuggestionMissingField[]>([]);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("social-posts");
@@ -208,6 +212,7 @@ export function SocialPostsAdmin({
       setEditingId(null);
       setHighlightFields([]);
       setPlanLabels([]);
+      setEditOwnerUserId(null);
       form.reset({
         platform: "instagram",
         title: "",
@@ -231,6 +236,7 @@ export function SocialPostsAdmin({
     setEditingId(post.id);
     setHighlightFields(fields);
     setPlanLabels(normalizePlanLabels(post.planLabels, post.planLabel));
+    setEditOwnerUserId(post.ownerUserId ?? null);
     form.reset({
       platform: post.platform as SocialPlatform,
       title: post.title,
@@ -351,6 +357,10 @@ export function SocialPostsAdmin({
 
   const onSubmit = form.handleSubmit((data) => {
     startTransition(async () => {
+      const existing = editingId ? rows.find((row) => row.id === editingId) : undefined;
+      const selectedOwner = canTransferOwnership
+        ? users.find((user) => user.id === editOwnerUserId)
+        : null;
       const result = await saveSocialPostAction({
         ...data,
         campaignId,
@@ -358,6 +368,12 @@ export function SocialPostsAdmin({
         published: true,
         planLabels,
         planLabel: planLabels[0] ?? null,
+        ...(canTransferOwnership
+          ? {
+              ownerUserId: editOwnerUserId,
+              ownerName: selectedOwner?.name ?? existing?.ownerName ?? null,
+            }
+          : {}),
       });
       if (!result.success) {
         toast.error("ذخیره نشد");
@@ -369,11 +385,18 @@ export function SocialPostsAdmin({
           ? result.id
           : editingId ?? crypto.randomUUID();
 
+      const ownerPatch = canTransferOwnership
+        ? {
+            ownerUserId: editOwnerUserId,
+            ownerName: selectedOwner?.name ?? existing?.ownerName ?? null,
+          }
+        : {};
+
       if (editingId) {
         setRows((prev) =>
           prev.map((row) =>
             row.id === editingId
-              ? { ...row, ...data, campaignId, link: data.link ?? "", published: true, planLabels, planLabel: planLabels[0] ?? null } as SocialMediaPost
+              ? { ...row, ...data, campaignId, link: data.link ?? "", published: true, planLabels, planLabel: planLabels[0] ?? null, ...ownerPatch } as SocialMediaPost
               : row
           )
         );
@@ -391,6 +414,7 @@ export function SocialPostsAdmin({
             published: true,
             planLabels,
             planLabel: planLabels[0] ?? null,
+            ...ownerPatch,
           } as SocialMediaPost,
         ]);
       }
@@ -417,7 +441,7 @@ export function SocialPostsAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={isFullAdmin ? filterUsers : []}
+        users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
       />
 
@@ -434,6 +458,7 @@ export function SocialPostsAdmin({
         contentPlans={contentPlans}
         contentTopics={contentTopics}
         isFullAdmin={isFullAdmin}
+        canTransferOwnership={canTransferOwnership || isFullAdmin}
         users={users}
       />
 
@@ -639,6 +664,13 @@ export function SocialPostsAdmin({
                     prev.map((row) => (row.id === editingId ? { ...row, score } : row))
                   )
                 }
+              />
+            )}
+            {canTransferOwnership && (
+              <ContentOwnerSelect
+                users={users}
+                value={editOwnerUserId}
+                onChange={setEditOwnerUserId}
               />
             )}
 

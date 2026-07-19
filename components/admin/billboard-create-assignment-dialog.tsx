@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
+import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { BillboardLocationMapPicker } from "@/components/admin/billboard-location-map-picker";
 import { ProvinceCityFields } from "@/components/admin/province-city-fields";
@@ -49,7 +50,7 @@ import {
   type EditSuggestionMissingField,
 } from "@/lib/edit-suggestions";
 import { getLocationCenter, resolveLocationNames } from "@/lib/iran-location-center";
-import type { Billboard, BillboardDisplayPeriod } from "@/lib/types";
+import type { AdminUser, Billboard, BillboardDisplayPeriod } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface ContributorProfile {
@@ -66,6 +67,8 @@ interface BillboardCreateAssignmentDialogProps {
   contentPlans?: string[];
   contentTopics?: ContentTopic[];
   canScore?: boolean;
+  canTransferOwnership?: boolean;
+  users?: AdminUser[];
   mode: "admin" | "client";
   contributorProfile?: ContributorProfile | null;
   editingBillboard?: Billboard | null;
@@ -110,6 +113,8 @@ export function BillboardCreateAssignmentDialog({
   contentPlans = [],
   contentTopics = [],
   canScore = false,
+  canTransferOwnership = false,
+  users = [],
   mode,
   contributorProfile = null,
   editingBillboard = null,
@@ -133,6 +138,7 @@ export function BillboardCreateAssignmentDialog({
   const [periods, setPeriods] = useState<DisplayPeriodDraft[]>([createDisplayPeriod()]);
   const [planLabels, setPlanLabels] = useState<string[]>([]);
   const [editScore, setEditScore] = useState<number | null | undefined>(null);
+  const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(null);
 
   const isEditing = Boolean(editingBillboard);
 
@@ -167,6 +173,7 @@ export function BillboardCreateAssignmentDialog({
         setNotes(editingBillboard.notes ?? "");
         setPlanLabels(normalizePlanLabels(editingBillboard.planLabels, editingBillboard.planLabel));
         setEditScore(editingBillboard.score);
+        setEditOwnerUserId(editingBillboard.ownerUserId ?? null);
         setCoords({
           latitude: editingBillboard.latitude ?? center.lat,
           longitude: editingBillboard.longitude ?? center.lng,
@@ -207,6 +214,7 @@ export function BillboardCreateAssignmentDialog({
       setNotes("");
       setPlanLabels([]);
       setEditScore(null);
+      setEditOwnerUserId(null);
       setCoords({ latitude: center.lat, longitude: center.lng });
       setMapCenter({ lat: center.lat, lng: center.lng, revision: Date.now() });
       setPeriods([createDisplayPeriod()]);
@@ -265,6 +273,9 @@ export function BillboardCreateAssignmentDialog({
         formData.append("planLabels", label);
       }
       if (planLabels[0]) formData.append("planLabel", planLabels[0]);
+      if (canTransferOwnership && editOwnerUserId) {
+        formData.append("ownerUserId", editOwnerUserId);
+      }
 
       formData.append("periods", JSON.stringify(buildPeriodsFormPayload(periods)));
       appendPeriodFilesToFormData(formData, periods);
@@ -418,6 +429,14 @@ export function BillboardCreateAssignmentDialog({
               score={editScore}
               canScore={canScore}
               onScoreSaved={setEditScore}
+            />
+          )}
+
+          {canTransferOwnership && (
+            <ContentOwnerSelect
+              users={users}
+              value={editOwnerUserId}
+              onChange={setEditOwnerUserId}
             />
           )}
 

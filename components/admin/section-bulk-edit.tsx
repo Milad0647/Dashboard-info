@@ -152,6 +152,7 @@ interface SectionBulkEditBarProps {
   contentTopics?: ContentTopic[];
   mediaCategories?: MediaCategory[];
   isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
   users?: AdminUser[];
   onApplied?: () => void;
 }
@@ -170,12 +171,14 @@ export function SectionBulkEditBar({
   contentTopics = [],
   mediaCategories = [],
   isFullAdmin = false,
+  canTransferOwnership = false,
   users = [],
   onApplied,
 }: SectionBulkEditBarProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [panelOpen, setPanelOpen] = useState(false);
+  const allowOwnerTransfer = canTransferOwnership || isFullAdmin;
 
   const [changeTopic, setChangeTopic] = useState(false);
   const [planLabels, setPlanLabels] = useState<string[]>([]);
@@ -245,7 +248,7 @@ export function SectionBulkEditBar({
       patch.activityType = activityType as ActivityType;
     }
 
-    if (isFullAdmin && ownerMode !== "unchanged") {
+    if (allowOwnerTransfer && ownerMode !== "unchanged") {
       patch.ownerUserId = ownerMode === "clear" ? null : ownerMode;
     }
 
@@ -450,7 +453,7 @@ export function SectionBulkEditBar({
             )}
           </div>
 
-          {isFullAdmin && (
+          {allowOwnerTransfer && (
             <div className="space-y-2 rounded-lg border border-dashed p-3">
               <Label>انتقال مالکیت</Label>
               <div className="flex flex-wrap gap-2">
