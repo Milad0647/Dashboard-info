@@ -38,14 +38,16 @@ export default async function DirectivesPage({ searchParams }: PageProps) {
         campaignId={campaignId}
         canManage={canManage}
         initialDirectives={[]}
+        archivedDirectives={[]}
         inboxDirectives={[]}
         campaignUsers={[]}
       />
     );
   }
 
-  const [manageDirectives, inboxDirectives, campaignUsers] = await Promise.all([
-    canManage ? pgListDirectivesForCampaign(campaignId) : Promise.resolve([]),
+  const [manageDirectives, archivedDirectives, inboxDirectives, campaignUsers] = await Promise.all([
+    canManage ? pgListDirectivesForCampaign(campaignId, { scope: "active" }) : Promise.resolve([]),
+    canManage ? pgListDirectivesForCampaign(campaignId, { scope: "archived" }) : Promise.resolve([]),
     session.userId
       ? pgListDirectivesForUserInbox(campaignId, session.userId)
       : Promise.resolve([]),
@@ -59,6 +61,7 @@ export default async function DirectivesPage({ searchParams }: PageProps) {
       campaignId={campaignId}
       canManage={canManage}
       initialDirectives={withFileAccessTokensDeep(initialDirectives)}
+      archivedDirectives={withFileAccessTokensDeep(archivedDirectives)}
       inboxDirectives={withFileAccessTokensDeep(inboxDirectives)}
       campaignUsers={campaignUsers}
     />

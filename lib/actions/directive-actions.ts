@@ -243,6 +243,9 @@ export async function saveDirectiveAction(input: {
 
   const isUpdate = Boolean(cleaned.id);
   const previous = cleaned.id ? await pgDirectives.pgGetDirectiveById(cleaned.id) : null;
+  if (previous?.archivedAt) {
+    return { success: false as const, error: "دستورکار آرشیو شده قابل ویرایش نیست" };
+  }
   const wasAlreadyPublished = Boolean(previous?.publishedAt);
 
   const result = await pgDirectives.pgSaveDirective({
@@ -323,7 +326,7 @@ async function dispatchDirectiveSms(
   }
 }
 
-export async function deleteDirectiveAction(id: string, campaignId: string) {
+export async function archiveDirectiveAction(id: string, campaignId: string) {
   const access = await assertDirectivesAccess(campaignId);
   if (access.error || !access.session) {
     return { success: false as const, error: access.error ?? "Unauthorized" };
@@ -335,9 +338,22 @@ export async function deleteDirectiveAction(id: string, campaignId: string) {
     return { success: false as const, error: "Database required" };
   }
 
-  await pgDirectives.pgDeleteDirective(id);
+  const directive = await pgDirectives.pgGetDirectiveById(id);
+  if (!directive || directive.campaignId !== campaignId) {
+    return { success: false as const, error: "یافت نشد" };
+  }
+  if (directive.archivedAt) {
+    return { success: true as const };
+  }
+
+  await pgDirectives.pgArchiveDirective(id);
   revalidateDirectives(campaignId);
   return { success: true as const };
+}
+
+/** @deprecated Use archiveDirectiveAction — directives are never hard-deleted. */
+export async function deleteDirectiveAction(id: string, campaignId: string) {
+  return archiveDirectiveAction(id, campaignId);
 }
 
 export async function confirmDirectiveSeenAction(directiveId: string, campaignId: string) {

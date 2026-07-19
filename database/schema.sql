@@ -746,6 +746,7 @@ CREATE TABLE IF NOT EXISTS campaign_directives (
   system_action TEXT,
   published BOOLEAN NOT NULL DEFAULT true,
   published_at TIMESTAMPTZ,
+  archived_at TIMESTAMPTZ,
   sort_order INT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -761,6 +762,7 @@ ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS action_type TEXT NOT NU
 ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS action_label TEXT;
 ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS action_url TEXT;
 ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS system_action TEXT;
+ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
 
 UPDATE campaign_directives
 SET end_date = due_date
@@ -768,6 +770,9 @@ WHERE end_date IS NULL AND due_date IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_campaign_directives_campaign
   ON campaign_directives(campaign_id, published, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_campaign_directives_archived
+  ON campaign_directives(campaign_id, archived_at DESC NULLS LAST);
 
 CREATE TABLE IF NOT EXISTS directive_attachments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

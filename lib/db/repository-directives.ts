@@ -126,6 +126,7 @@ function mapDirectiveRow(
     systemAction: mapSystemAction(row.system_action),
     published: Boolean(row.published),
     publishedAt: toIsoString(row.published_at),
+    archivedAt: toIsoString(row.archived_at),
     sortOrder: Number(row.sort_order ?? 0),
     attachments,
     seenCount: row.seen_count != null ? Number(row.seen_count) : undefined,
@@ -213,9 +214,18 @@ export async function pgResolveDirectiveAudienceUserIds(input: {
 }
 
 export async function pgListDirectivesForCampaign(
-  campaignId: string
+  campaignId: string,
+  options?: { scope?: "active" | "archived" | "all" }
 ): Promise<CampaignDirective[]> {
   const sql = getSql();
+  const scope = options?.scope ?? "active";
+  const archivedFilter =
+    scope === "archived"
+      ? sql`AND d.archived_at IS NOT NULL`
+      : scope === "all"
+        ? sql``
+        : sql`AND d.archived_at IS NULL`;
+
   const rows = await sql`
     SELECT
       d.*,
@@ -234,7 +244,10 @@ export async function pgListDirectivesForCampaign(
       WHERE r.directive_id = d.id
     ) stats ON true
     WHERE d.campaign_id = ${campaignId}
-    ORDER BY d.created_at DESC
+      ${archivedFilter}
+    ORDER BY
+      CASE WHEN d.archived_at IS NULL THEN 0 ELSE 1 END,
+      COALESCE(d.archived_at, d.created_at) DESC
   `;
 
   const ids = rows.map((row) => String(row.id));
@@ -261,6 +274,7 @@ export async function pgListDirectivesForUserInbox(
     LEFT JOIN users creator ON creator.id = d.created_by_user_id
     WHERE d.campaign_id = ${campaignId}
       AND d.published = true
+      AND d.archived_at IS NULL
     ORDER BY d.created_at DESC
   `;
 
@@ -521,9 +535,18 @@ export async function pgSaveDirective(input: SaveDirectiveInput): Promise<{ id: 
   return { id };
 }
 
-export async function pgDeleteDirective(id: string): Promise<void> {
+/** Soft-archive a directive; never hard-delete. */
+export async function pgArchiveDirective(id: string): Promise<boolean> {
   const sql = getSql();
-  await sql`DELETE FROM campaign_directives WHERE id = ${id}`;
+  const now = new Date().toISOString();
+  const rows = await sql`
+    UPDATE campaign_directives
+    SET archived_at = COALESCE(archived_at, ${now}),
+        updated_at = ${now}
+    WHERE id = ${id}
+    RETURNING id
+  `;
+  return rows.length > 0;
 }
 
 export async function pgConfirmDirectiveSeen(
@@ -533,12 +556,15 @@ export async function pgConfirmDirectiveSeen(
   const sql = getSql();
   const now = new Date().toISOString();
   const rows = await sql`
-    UPDATE directive_recipients
+    UPDATE directive_recipients r
     SET confirmed = true,
-        seen_at = COALESCE(seen_at, ${now})
-    WHERE directive_id = ${directiveId}
-      AND user_id = ${userId}
-    RETURNING user_id
+        seen_at = COALESCE(r.seen_at, ${now})
+    FROM campaign_directives d
+    WHERE r.directive_id = ${directiveId}
+      AND r.user_id = ${userId}
+      AND d.id = r.directive_id
+      AND d.archived_at IS NULL
+    RETURNING r.user_id
   `;
   return rows.length > 0;
 }

@@ -5,12 +5,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
+  Archive,
   Check,
   ClipboardList,
   Download,
   Eye,
   Plus,
-  Trash2,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,8 +32,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  archiveDirectiveAction,
   confirmDirectiveSeenAction,
-  deleteDirectiveAction,
   getDirectiveRecipientsAction,
   saveDirectiveAction,
 } from "@/lib/actions/directive-actions";
@@ -88,7 +88,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 type InboxTab = "new" | "seen" | "all";
-type ManagerView = "manage" | "inbox";
+type ManagerView = "manage" | "archive" | "inbox";
 
 type DraftAttachment = {
   id?: string;
@@ -111,8 +111,10 @@ interface CampaignUserOption {
 interface DirectivesAdminProps {
   campaignId: string;
   canManage: boolean;
-  /** All campaign directives for managers. */
+  /** Active (non-archived) campaign directives for managers. */
   initialDirectives: CampaignDirective[];
+  /** Archived directives for managers. */
+  archivedDirectives?: CampaignDirective[];
   /** Directives addressed to the current user (kartabl). */
   inboxDirectives: CampaignDirective[];
   campaignUsers: CampaignUserOption[];
@@ -241,10 +243,12 @@ export function DirectivesAdmin({
   campaignId,
   canManage,
   initialDirectives,
+  archivedDirectives: initialArchived = [],
   inboxDirectives: initialInbox,
   campaignUsers,
 }: DirectivesAdminProps) {
   const [rows, setRows] = useState(initialDirectives);
+  const [archivedRows, setArchivedRows] = useState(initialArchived);
   const [inboxRowsState, setInboxRowsState] = useState(initialInbox);
   const [managerView, setManagerView] = useState<ManagerView>("manage");
   const [inboxTab, setInboxTab] = useState<InboxTab>("new");
@@ -295,13 +299,15 @@ export function DirectivesAdmin({
   const systemAction = form.watch("systemAction");
 
   const showingInbox = !canManage || managerView === "inbox";
+  const showingArchive = canManage && managerView === "archive";
 
   const listRows = useMemo(() => {
+    if (showingArchive) return archivedRows;
     if (!showingInbox) return rows;
     if (inboxTab === "new") return inboxRowsState.filter((row) => !row.confirmed);
     if (inboxTab === "seen") return inboxRowsState.filter((row) => row.confirmed);
     return inboxRowsState;
-  }, [showingInbox, inboxTab, rows, inboxRowsState]);
+  }, [showingArchive, showingInbox, inboxTab, rows, archivedRows, inboxRowsState]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -526,7 +532,7 @@ export function DirectivesAdmin({
           <h1 className="text-2xl font-bold">دستورکارها</h1>
           <p className="text-sm text-muted-foreground">
             {canManage
-              ? "انتشار دستورکار برای کاربران و پیگیری مشاهده و پیامک"
+              ? "انتشار دستورکار مشترک برای کاربران؛ پس از اتمام به آرشیو می‌رود و حذف نمی‌شود"
               : "دستورکارهای جدید را ببینید، نامه رسمی را مشاهده کنید و تأیید مشاهده بزنید"}
           </p>
         </div>
@@ -544,7 +550,12 @@ export function DirectivesAdmin({
           onValueChange={(value) => setManagerView(value as ManagerView)}
         >
           <TabsList>
-            <TabsTrigger value="manage">مدیریت</TabsTrigger>
+            <TabsTrigger value="manage">
+              مدیریت ({formatPersianNumber(rows.length)})
+            </TabsTrigger>
+            <TabsTrigger value="archive">
+              آرشیو ({formatPersianNumber(archivedRows.length)})
+            </TabsTrigger>
             <TabsTrigger value="inbox">
               کارتابل من (
               {formatPersianNumber(inboxRowsState.filter((row) => !row.confirmed).length)}
@@ -578,7 +589,7 @@ export function DirectivesAdmin({
         {listRows.length === 0 ? (
           <div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
             <ClipboardList className="mx-auto mb-3 h-8 w-8 opacity-50" />
-            هنوز دستورکاری نیست
+            {showingArchive ? "هنوز دستورکاری آرشیو نشده" : "هنوز دستورکاری نیست"}
           </div>
         ) : (
           listRows.map((item) => (
@@ -594,6 +605,7 @@ export function DirectivesAdmin({
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-lg font-semibold">{item.title}</h2>
                     {item.priority === "urgent" && <Badge variant="destructive">فوری</Badge>}
+                    {showingArchive && <Badge variant="secondary">آرشیو</Badge>}
                     {showingInbox && !item.confirmed && <Badge>جدید</Badge>}
                     {showingInbox && item.confirmed && (
                       <Badge variant="secondary">دیده‌شده</Badge>
@@ -604,6 +616,9 @@ export function DirectivesAdmin({
                   </p>
                   <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                     <span>انتشار: {formatPersianDateTime(item.publishedAt ?? item.createdAt)}</span>
+                    {showingArchive && item.archivedAt && (
+                      <span>آرشیو: {formatPersianDateTime(item.archivedAt)}</span>
+                    )}
                     <DirectiveDateRange item={item} />
                     {!showingInbox && (
                       <span>
@@ -631,27 +646,36 @@ export function DirectivesAdmin({
                         <Users className="h-4 w-4" />
                         پیگیری
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
-                        ویرایش
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={isPending}
-                        onClick={() => {
-                          startTransition(async () => {
-                            const result = await deleteDirectiveAction(item.id, campaignId);
-                            if (!result.success) {
-                              toast.error(result.error ?? "حذف نشد");
-                              return;
-                            }
-                            setRows((prev) => prev.filter((row) => row.id !== item.id));
-                            toast.success("حذف شد");
-                          });
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {!showingArchive && (
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                            ویرایش
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isPending}
+                            onClick={() => {
+                              startTransition(async () => {
+                                const result = await archiveDirectiveAction(item.id, campaignId);
+                                if (!result.success) {
+                                  toast.error(result.error ?? "آرشیو نشد");
+                                  return;
+                                }
+                                setRows((prev) => prev.filter((row) => row.id !== item.id));
+                                setArchivedRows((prev) => [
+                                  { ...item, archivedAt: item.archivedAt ?? new Date().toISOString() },
+                                  ...prev,
+                                ]);
+                                toast.success("به آرشیو منتقل شد");
+                              });
+                            }}
+                          >
+                            <Archive className="h-4 w-4" />
+                            آرشیو
+                          </Button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>

@@ -439,6 +439,8 @@ export interface CampaignDirective {
   systemAction?: DirectiveSystemAction | null;
   published: boolean;
   publishedAt?: string | null;
+  /** When set, directive is archived (never hard-deleted). */
+  archivedAt?: string | null;
   sortOrder: number;
   attachments: DirectiveAttachment[];
   /** Present for managers; optional summary counts. */
