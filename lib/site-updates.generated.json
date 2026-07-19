@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "46cdc12f1e265f87b5d4006a6dbcd18e105c5864",
+      "committedAt": "2026-07-19T12:14:55+03:30",
+      "title": "افزودن نمودار دسته‌بندی و مرتب‌سازی بر اساس دسته در تبلیغات محیطی",
+      "subject": "Add billboard category chart and sort-by-category filters"
+    },
+    {
+      "hash": "5ba42c4619b43cefda5849708da8536e1b0ca84c",
+      "committedAt": "2026-07-19T12:14:42+03:30",
+      "title": "افزودن فیلتر ترتیب نمایش (جدیدترین و ...) به بخش‌های محتوا در داشبورد",
+      "subject": "Add display-order sort filter across admin content sections"
+    },
+    {
       "hash": "91802c68d188e67f12a94eba46715f2991b3c144",
       "committedAt": "2026-07-19T12:09:37+03:30",
       "title": "افزودن فیلتر ترتیب نمایش کنار دسته‌بندی تبلیغات محیطی",
