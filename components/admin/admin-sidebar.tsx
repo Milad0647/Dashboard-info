@@ -32,7 +32,7 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -57,6 +57,7 @@ import {
   PROBLEM_REPORTS_UNREAD_EVENT,
   readUnreadCountFromEvent,
 } from "@/lib/problem-reports-unread";
+import type { CampaignSettings } from "@/lib/types";
 
 const allNavItems: {
   href: string;
@@ -121,6 +122,189 @@ const managementNavHrefs = new Set([
 
 const DIRECTIVES_HREF = "/admin/directives";
 
+const SIDEBAR_NAV_SCROLL_KEY = "admin-sidebar-nav-scroll";
+
+type SidebarNavBodyProps = {
+  campaignId: string;
+  campaigns: CampaignSettings[];
+  pathname: string;
+  showDirectivesAlert: boolean;
+  directivesNavItem: (typeof allNavItems)[number] | undefined;
+  contentNavItems: typeof allNavItems;
+  managementNavItems: typeof allNavItems;
+  problemReportsUnread: number;
+  isFullAdminUser: boolean;
+  currentCampaign: CampaignSettings | undefined;
+  setCampaignId: (id: string) => void;
+  setMobileOpen: (open: boolean) => void;
+  onLogout: () => void;
+  navRef?: RefObject<HTMLElement | null>;
+};
+
+function SidebarNavBody({
+  campaignId,
+  campaigns,
+  pathname,
+  showDirectivesAlert,
+  directivesNavItem,
+  contentNavItems,
+  managementNavItems,
+  problemReportsUnread,
+  isFullAdminUser,
+  currentCampaign,
+  setCampaignId,
+  setMobileOpen,
+  onLogout,
+  navRef,
+}: SidebarNavBodyProps) {
+  return (
+    <>
+      <div className="p-4 border-b space-y-3">
+        <Link href="/admin" className="font-bold text-lg block">
+          پنل مدیریت
+        </Link>
+        {campaigns.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground">کمپین فعال</p>
+            <Select value={campaignId} onValueChange={setCampaignId}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="انتخاب کمپین" />
+              </SelectTrigger>
+              <SelectContent>
+                {campaigns.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
+      <nav
+        ref={navRef}
+        className="flex-1 overflow-y-auto p-3"
+        onScroll={(event) => {
+          if (!navRef) return;
+          try {
+            sessionStorage.setItem(
+              SIDEBAR_NAV_SCROLL_KEY,
+              String(event.currentTarget.scrollTop)
+            );
+          } catch {
+            // Ignore storage failures (private mode / quota).
+          }
+        }}
+      >
+        {showDirectivesAlert && directivesNavItem && (
+          <div className="mb-3">
+            <Link
+              href={adminHref(DIRECTIVES_HREF, campaignId)}
+              prefetch={false}
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                "flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-extrabold tracking-wide",
+                "bg-red-600 text-white shadow-lg shadow-red-600/40",
+                "ring-2 ring-red-400/70 hover:bg-red-700 hover:shadow-red-700/50",
+                "transition-colors",
+                pathname === DIRECTIVES_HREF && "ring-4 ring-white/70"
+              )}
+            >
+              <ClipboardCheck className="h-5 w-5 shrink-0" />
+              <span>دستورکارها</span>
+            </Link>
+          </div>
+        )}
+
+        <div className="space-y-1">
+          {contentNavItems.map((item) => {
+            const Icon = item.icon;
+            const href = adminHref(item.href, campaignId);
+            const isActive =
+              pathname === item.href ||
+              (item.href === "/admin/elanha" && pathname === "/admin/notifications");
+            return (
+              <Link
+                key={item.href}
+                href={href}
+                prefetch={false}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "apple-nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate flex-1">{item.label}</span>
+                {item.href === "/admin/problem-reports" && problemReportsUnread > 0 && (
+                  <span
+                    className="ms-auto h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
+                    title="پاسخ خوانده‌نشده"
+                    aria-label="پاسخ خوانده‌نشده"
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+
+        {managementNavItems.length > 0 && (
+          <div className="mt-4 border-t pt-3">
+            <p className="px-3 pb-2 text-xs font-medium text-muted-foreground">
+              تنظیمات و مدیریت
+            </p>
+            <div className="space-y-1">
+              {managementNavItems.map((item) => {
+                const Icon = item.icon;
+                const href = adminHref(item.href, campaignId);
+                const isActive =
+                  pathname === item.href ||
+                  (item.href === "/admin/elanha" && pathname === "/admin/notifications");
+                return (
+                  <Link
+                    key={item.href}
+                    href={href}
+                    prefetch={false}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "apple-nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </nav>
+      <div className="p-3 border-t space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">تم</span>
+          <ThemeToggle />
+        </div>
+        {isFullAdminUser && currentCampaign && (
+          <Link href={`/campaign/${currentCampaign.slug}`} target="_blank">
+            <Button variant="outline" size="sm" className="w-full">
+              مشاهده صفحه عمومی
+            </Button>
+          </Link>
+        )}
+        <Button variant="ghost" size="sm" className="w-full" onClick={onLogout}>
+          <LogOut className="h-4 w-4" />
+          خروج
+        </Button>
+      </div>
+    </>
+  );
+}
+
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -130,6 +314,7 @@ export function AdminSidebar() {
   const [permissions, setPermissions] = useState<ContributorPermissions | null>(null);
   const [problemReportsUnread, setProblemReportsUnread] = useState(0);
   const { campaignId, campaigns, currentCampaign, setCampaignId } = useAdminCampaign();
+  const desktopNavRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     getSessionContextAction(campaignId).then((session) => {
@@ -171,6 +356,21 @@ export function AdminSidebar() {
     };
   }, []);
 
+  // Restore sidebar scroll after navigation remounts / soft refreshes.
+  useEffect(() => {
+    const nav = desktopNavRef.current;
+    if (!nav) return;
+    try {
+      const raw = sessionStorage.getItem(SIDEBAR_NAV_SCROLL_KEY);
+      if (!raw) return;
+      const top = Number(raw);
+      if (!Number.isFinite(top) || top <= 0) return;
+      nav.scrollTop = top;
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [pathname]);
+
   const navItems = allNavItems.filter((item) => {
     if (item.alwaysVisible) return true;
     if (item.adminOrClientOnly) {
@@ -203,130 +403,21 @@ export function AdminSidebar() {
     router.refresh();
   };
 
-  const NavContent = () => (
-    <>
-      <div className="p-4 border-b space-y-3">
-        <Link href="/admin" className="font-bold text-lg block">پنل مدیریت</Link>
-        {campaigns.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-xs text-muted-foreground">کمپین فعال</p>
-            <Select value={campaignId} onValueChange={setCampaignId}>
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="انتخاب کمپین" />
-              </SelectTrigger>
-              <SelectContent>
-                {campaigns.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </div>
-      <nav className="flex-1 overflow-y-auto p-3">
-        {showDirectivesAlert && directivesNavItem && (
-          <div className="mb-3">
-            <Link
-              href={adminHref(DIRECTIVES_HREF, campaignId)}
-              prefetch={false}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-extrabold tracking-wide",
-                "bg-red-600 text-white shadow-lg shadow-red-600/40",
-                "ring-2 ring-red-400/70 hover:bg-red-700 hover:shadow-red-700/50",
-                "transition-colors",
-                pathname === DIRECTIVES_HREF && "ring-4 ring-white/70"
-              )}
-            >
-              <ClipboardCheck className="h-5 w-5 shrink-0" />
-              <span>دستورکارها</span>
-            </Link>
-          </div>
-        )}
-
-        <div className="space-y-1">
-          {contentNavItems.map((item) => {
-            const Icon = item.icon;
-            const href = adminHref(item.href, campaignId);
-            const isActive =
-              pathname === item.href || (item.href === "/admin/elanha" && pathname === "/admin/notifications");
-            return (
-              <Link
-                key={item.href}
-                href={href}
-                prefetch={false}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "apple-nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="truncate flex-1">{item.label}</span>
-                {item.href === "/admin/problem-reports" && problemReportsUnread > 0 && (
-                  <span
-                    className="ms-auto h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
-                    title="پاسخ خوانده‌نشده"
-                    aria-label="پاسخ خوانده‌نشده"
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </div>
-
-        {managementNavItems.length > 0 && (
-          <div className="mt-4 border-t pt-3">
-            <p className="px-3 pb-2 text-xs font-medium text-muted-foreground">تنظیمات و مدیریت</p>
-            <div className="space-y-1">
-              {managementNavItems.map((item) => {
-                const Icon = item.icon;
-                const href = adminHref(item.href, campaignId);
-                const isActive =
-                  pathname === item.href || (item.href === "/admin/elanha" && pathname === "/admin/notifications");
-                return (
-                  <Link
-                    key={item.href}
-                    href={href}
-                    prefetch={false}
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "apple-nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </nav>
-      <div className="p-3 border-t space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">تم</span>
-          <ThemeToggle />
-        </div>
-        {isFullAdminUser && currentCampaign && (
-          <Link href={`/campaign/${currentCampaign.slug}`} target="_blank">
-            <Button variant="outline" size="sm" className="w-full">
-              مشاهده صفحه عمومی
-            </Button>
-          </Link>
-        )}
-        <Button variant="ghost" size="sm" className="w-full" onClick={handleLogout}>
-          <LogOut className="h-4 w-4" />
-          خروج
-        </Button>
-      </div>
-    </>
-  );
+  const sharedNavProps = {
+    campaignId,
+    campaigns,
+    pathname,
+    showDirectivesAlert,
+    directivesNavItem,
+    contentNavItems,
+    managementNavItems,
+    problemReportsUnread,
+    isFullAdminUser,
+    currentCampaign,
+    setCampaignId,
+    setMobileOpen,
+    onLogout: handleLogout,
+  };
 
   return (
     <>
@@ -351,14 +442,15 @@ export function AdminSidebar() {
             >
               <X className="h-4 w-4" />
             </Button>
-            <NavContent />
+            <SidebarNavBody {...sharedNavProps} />
           </aside>
         </div>
       )}
 
       <aside className="hidden lg:fixed lg:inset-y-0 lg:right-0 lg:z-[80] lg:flex lg:w-64 lg:flex-col border-l bg-card">
-        <NavContent />
+        <SidebarNavBody {...sharedNavProps} navRef={desktopNavRef} />
       </aside>
     </>
   );
 }
+

@@ -7,13 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { updateProblemReportStatusAction } from "@/lib/actions/problem-report-actions";
 import {
   PROBLEM_REPORT_CATEGORY_LABELS,
@@ -51,8 +45,16 @@ const SEVERITY_LABEL: Record<StuckBehaviorSignal["severity"], string> = {
   low: "کم",
 };
 
+type ProblemTab = "open" | "in_progress" | "resolved";
+
 function resolveName(name?: string | null, email?: string | null) {
   return name?.trim() || email?.trim() || "ناشناس";
+}
+
+function matchesTab(report: ProblemReport, tab: ProblemTab): boolean {
+  if (tab === "open") return report.status === "pending";
+  if (tab === "in_progress") return report.status === "in_progress";
+  return report.status === "resolved" || report.status === "dismissed";
 }
 
 export function AuditProblemsPanel({
@@ -65,19 +67,25 @@ export function AuditProblemsPanel({
   /** When false, hides stuck-behavior card (e.g. dedicated reported-problems page). */
   showSignals?: boolean;
 }) {
-  const [statusFilter, setStatusFilter] = useState<ProblemReportStatus | "open" | "all">(
-    "all"
-  );
+  const [activeTab, setActiveTab] = useState<ProblemTab>("open");
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const filteredReports = useMemo(() => {
-    if (statusFilter === "all") return reports;
-    if (statusFilter === "open") {
-      return reports.filter((r) => r.status === "pending" || r.status === "in_progress");
-    }
-    return reports.filter((r) => r.status === statusFilter);
-  }, [reports, statusFilter]);
+  const tabCounts = useMemo(
+    () => ({
+      open: reports.filter((r) => r.status === "pending").length,
+      in_progress: reports.filter((r) => r.status === "in_progress").length,
+      resolved: reports.filter(
+        (r) => r.status === "resolved" || r.status === "dismissed"
+      ).length,
+    }),
+    [reports]
+  );
+
+  const filteredReports = useMemo(
+    () => reports.filter((r) => matchesTab(r, activeTab)),
+    [reports, activeTab]
+  );
 
   const handleStatus = async (
     id: string,
@@ -178,42 +186,53 @@ export function AuditProblemsPanel({
 
       <Card>
         <CardHeader className="pb-2 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-              گزارش‌های مشکل کاربران
-              <Badge variant="warning">
-                {formatPersianNumber(
-                  reports.filter((r) => r.status === "pending" || r.status === "in_progress")
-                    .length
-                )}{" "}
-                باز
-              </Badge>
-            </CardTitle>
-            <Select
-              value={statusFilter}
-              onValueChange={(value) =>
-                setStatusFilter(value as ProblemReportStatus | "open" | "all")
-              }
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">همه</SelectItem>
-                <SelectItem value="open">بازها</SelectItem>
-                <SelectItem value="pending">در انتظار</SelectItem>
-                <SelectItem value="in_progress">در حال بررسی</SelectItem>
-                <SelectItem value="resolved">حل شده</SelectItem>
-                <SelectItem value="dismissed">بسته شده</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            گزارش‌های مشکل کاربران
+          </CardTitle>
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value as ProblemTab)}
+          >
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="open" className="gap-1.5">
+                مشکلات باز
+                <Badge
+                  variant={activeTab === "open" ? "warning" : "outline"}
+                  className="text-[10px] px-1.5 py-0"
+                >
+                  {formatPersianNumber(tabCounts.open)}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="in_progress" className="gap-1.5">
+                در حال بررسی
+                <Badge
+                  variant={activeTab === "in_progress" ? "default" : "outline"}
+                  className="text-[10px] px-1.5 py-0"
+                >
+                  {formatPersianNumber(tabCounts.in_progress)}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="resolved" className="gap-1.5">
+                مشکلات حل‌شده
+                <Badge
+                  variant={activeTab === "resolved" ? "success" : "outline"}
+                  className="text-[10px] px-1.5 py-0"
+                >
+                  {formatPersianNumber(tabCounts.resolved)}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent className="space-y-4">
           {filteredReports.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              گزارشی در این فیلتر نیست.
+              {activeTab === "open"
+                ? "مشکل بازی ثبت نشده است."
+                : activeTab === "in_progress"
+                  ? "مشکلی در حال بررسی نیست."
+                  : "مشکل حل‌شده‌ای نیست."}
             </p>
           ) : (
             filteredReports.map((report) => (

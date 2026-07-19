@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "94c3fc592517eb48ed4e206e407187e5d177112a",
+      "committedAt": "2026-07-19T09:01:28+03:30",
+      "title": "نمایش همه تیکت‌ها با آمار میانگین پاسخ و تشخیص دقیق‌تر گیر کردن در ثبت محتوا",
+      "subject": "Improve reported problems page and content-focused stuck signals"
+    },
+    {
       "hash": "f956fc2e294c212fc78f61f05b4495a2097c4166",
       "committedAt": "2026-07-19T09:00:32+03:30",
       "title": "به‌روزرسانی دسته‌بندی تبلیغات محیطی و انتقال داده‌های قبلی به دسته‌های جدید",
