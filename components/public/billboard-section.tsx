@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { ArrowUpDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -123,19 +123,6 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
 
   const controls = (
     <>
-      {filter.sortOrder === "default" && (
-      <Select value={sort} onValueChange={(value) => setSort(value as PublicMediaSort)}>
-        <SelectTrigger className="w-36">
-          <SelectValue placeholder="مرتب‌سازی" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="default">ترتیب پیش‌فرض</SelectItem>
-          <SelectItem value="title">عنوان</SelectItem>
-          <SelectItem value="newest">جدیدترین</SelectItem>
-          <SelectItem value="oldest">قدیمی‌ترین</SelectItem>
-        </SelectContent>
-      </Select>
-      )}
       <div className="relative">
         <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -170,6 +157,22 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
                 {category}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      )}
+      {filter.sortOrder === "default" && (
+        <Select value={sort} onValueChange={(value) => setSort(value as PublicMediaSort)}>
+          <SelectTrigger className="w-44">
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <SelectValue placeholder="ترتیب نمایش" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">جدیدترین</SelectItem>
+            <SelectItem value="oldest">قدیمی‌ترین</SelectItem>
+            <SelectItem value="title">عنوان</SelectItem>
+            <SelectItem value="default">ترتیب پیش‌فرض</SelectItem>
           </SelectContent>
         </Select>
       )}

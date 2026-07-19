@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "a138ce2b3a96a4b3fbda9fb6bcbb944a43e0cd20",
+      "committedAt": "2026-07-19T11:51:20+03:30",
+      "title": "امکان ویرایش و انتقال مالکیت محتوا برای کارفرما",
+      "subject": "Allow client role to mutate any owned content"
+    },
+    {
       "hash": "855067cff71632e311c5a158009c6541e3a9e9f7",
       "committedAt": "2026-07-19T11:49:00+03:30",
       "title": "امکان انتقال مالکیت محتوا در ویرایش بخش‌های ادمین",

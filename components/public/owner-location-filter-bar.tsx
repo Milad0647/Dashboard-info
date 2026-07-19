@@ -151,7 +151,7 @@ export function OwnerLocationFilterBar() {
           <SelectTrigger className="w-full">
             <div className="flex items-center gap-2">
               <ArrowUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <SelectValue placeholder="مرتب‌سازی بر اساس آپلود" />
+              <SelectValue placeholder="ترتیب نمایش" />
             </div>
           </SelectTrigger>
           <SelectContent>
