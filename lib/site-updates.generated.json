@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "d6a7e548d52e5c73e120cfeb6785a8de162cc0e7",
+      "committedAt": "2026-07-19T08:46:48+03:30",
+      "title": "رفع مشکل باز نشدن صفحه و خطای پشتیبان‌گیری دستی",
+      "subject": "Stabilize campaign backups to prevent OOM hangs"
+    },
+    {
+      "hash": "fddc6f40bba02f67afb1520e6ca5f9a24d953b0e",
+      "committedAt": "2026-07-19T08:46:01+03:30",
+      "title": "دستورکارها دیگر حذف نمی‌شوند و به آرشیو ادمین منتقل می‌شوند",
+      "subject": "Replace directive hard-delete with archive for managers"
+    },
+    {
       "hash": "b841675230f5f85a4472863fcd1afe30785e35a7",
       "committedAt": "2026-07-18T16:04:25+03:30",
       "title": "افزودن دکمه لینک و هدایت به بخش‌های پنل در دستورکارها",
