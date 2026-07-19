@@ -3,6 +3,7 @@ import { isPostgresConfigured } from "@/lib/utils";
 import type {
   CreateProblemReportInput,
   ProblemReport,
+  ProblemReportStats,
   ProblemReportStatus,
 } from "@/lib/audit/problem-types";
 
@@ -28,6 +29,9 @@ function mapReportRow(row: Record<string, unknown>): ProblemReport {
     adminNote: row.admin_note ? String(row.admin_note) : null,
     adminNoteSeenAt: row.admin_note_seen_at
       ? new Date(String(row.admin_note_seen_at)).toISOString()
+      : null,
+    firstRepliedAt: row.first_replied_at
+      ? new Date(String(row.first_replied_at)).toISOString()
       : null,
     resolvedByUserId: row.resolved_by_user_id ? String(row.resolved_by_user_id) : null,
     resolvedAt: row.resolved_at ? new Date(String(row.resolved_at)).toISOString() : null,
@@ -136,6 +140,69 @@ export async function pgCountOpenProblemReports(): Promise<number> {
     WHERE status IN ('pending', 'in_progress')
   `;
   return Number(rows[0]?.count ?? 0);
+}
+
+export async function pgGetProblemReportStats(): Promise<ProblemReportStats> {
+  const empty: ProblemReportStats = {
+    total: 0,
+    open: 0,
+    pending: 0,
+    inProgress: 0,
+    answered: 0,
+    resolved: 0,
+    dismissed: 0,
+    avgFirstReplySeconds: null,
+  };
+  if (!isPostgresConfigured()) return empty;
+
+  const sql = getSql();
+  // Ensure column exists on older deployments (same pattern as schema.sql).
+  await sql`
+    ALTER TABLE user_problem_reports
+      ADD COLUMN IF NOT EXISTS first_replied_at TIMESTAMPTZ
+  `;
+
+  const rows = await sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE status IN ('pending', 'in_progress'))::int AS open_count,
+      COUNT(*) FILTER (WHERE status = 'pending')::int AS pending_count,
+      COUNT(*) FILTER (WHERE status = 'in_progress')::int AS in_progress_count,
+      COUNT(*) FILTER (WHERE admin_note IS NOT NULL AND btrim(admin_note) <> '')::int AS answered_count,
+      COUNT(*) FILTER (WHERE status = 'resolved')::int AS resolved_count,
+      COUNT(*) FILTER (WHERE status = 'dismissed')::int AS dismissed_count,
+      AVG(
+        EXTRACT(
+          EPOCH FROM (
+            COALESCE(first_replied_at, updated_at) - created_at
+          )
+        )
+      ) FILTER (
+        WHERE admin_note IS NOT NULL AND btrim(admin_note) <> ''
+      ) AS avg_first_reply_seconds
+    FROM user_problem_reports
+  `;
+
+  const row = rows[0];
+  if (!row) return empty;
+
+  const avgRaw = row.avg_first_reply_seconds;
+  const avgFirstReplySeconds =
+    avgRaw === null || avgRaw === undefined ? null : Number(avgRaw);
+
+  return {
+    total: Number(row.total ?? 0),
+    open: Number(row.open_count ?? 0),
+    pending: Number(row.pending_count ?? 0),
+    inProgress: Number(row.in_progress_count ?? 0),
+    answered: Number(row.answered_count ?? 0),
+    resolved: Number(row.resolved_count ?? 0),
+    dismissed: Number(row.dismissed_count ?? 0),
+    avgFirstReplySeconds:
+      avgFirstReplySeconds !== null && Number.isFinite(avgFirstReplySeconds)
+        ? Math.max(0, avgFirstReplySeconds)
+        : null,
+  };
 }
 
 /** Reports filed by the current user (db user id, or all env_admin snapshots). */
@@ -253,6 +320,11 @@ export async function pgUpdateProblemReportStatus(input: {
   try {
     if (input.adminNote !== undefined) {
       const adminNote = input.adminNote?.trim() || null;
+      // Ensure column exists on older deployments.
+      await sql`
+        ALTER TABLE user_problem_reports
+          ADD COLUMN IF NOT EXISTS first_replied_at TIMESTAMPTZ
+      `;
       const rows = await sql`
         UPDATE user_problem_reports
         SET
@@ -262,6 +334,11 @@ export async function pgUpdateProblemReportStatus(input: {
           admin_note_seen_at = CASE
             WHEN ${adminNote} IS DISTINCT FROM admin_note THEN NULL
             ELSE admin_note_seen_at
+          END,
+          -- Stamp first reply time once; keep it stable afterwards.
+          first_replied_at = CASE
+            WHEN ${adminNote} IS NOT NULL AND first_replied_at IS NULL THEN now()
+            ELSE first_replied_at
           END,
           resolved_by_user_id = ${resolvedByUserId},
           resolved_at = ${resolvedAt},

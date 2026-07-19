@@ -658,6 +658,8 @@ CREATE TABLE IF NOT EXISTS user_problem_reports (
   admin_note TEXT,
   -- NULL means the reporter has not opened the latest admin reply yet.
   admin_note_seen_at TIMESTAMPTZ,
+  -- First time an admin reply was written (stable for avg response time).
+  first_replied_at TIMESTAMPTZ,
   resolved_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   resolved_at TIMESTAMPTZ,
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,

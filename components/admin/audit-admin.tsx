@@ -557,7 +557,7 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
           label="هشدار رفتار"
           value={summary.stuckSignals}
           icon={TriangleAlert}
-          hint="احتمال گیر کردن کاربر"
+          hint="تلاش تکراری ثبت محتوا یا خطای پیاپی"
         />
         <StatCard label="ورود امروز" value={summary.loginsToday} icon={LogIn} />
         <StatCard label="تغییرات محتوا امروز" value={summary.contentChangesToday} icon={FileStack} />

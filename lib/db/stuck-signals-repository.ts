@@ -2,6 +2,13 @@ import { getSql } from "@/lib/db/client";
 import { isPostgresConfigured } from "@/lib/utils";
 import type { StuckBehaviorSignal } from "@/lib/audit/problem-types";
 
+/**
+ * Labels that indicate content registration / mutation actions
+ * (save, add, edit, close, create new, upload, submit, …).
+ */
+const CONTENT_ACTION_LABEL_PATTERN =
+  "(ذخیره|افزودن|ویرایش|بستن|ثبت|ایجاد|حذف|آپلود|ارسال|جدید|به‌روزرسانی|به\\s*روزرسانی|انتشار|save|add|edit|delete|upload|submit|create|update|close|new)";
+
 function resolveActorName(row: Record<string, unknown>): string {
   return (
     String(row.user_name ?? "").trim() ||
@@ -28,10 +35,18 @@ function resolveActorRole(row: Record<string, unknown>): string | null {
   );
 }
 
+function parseErrorLabels(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean)
+    .slice(0, 5);
+}
+
 /**
- * Detect users who appear stuck from recent audit behavior:
- * - repeated clicks on the same control
- * - thrashing the same page with many views
+ * Detect suspicious / stuck behavior focused on content workflows:
+ * - repeated clicks on save/add/edit/close/create controls
+ * - bursts of user-facing UI errors
  * - bursts of failed logins
  */
 export async function pgGetStuckBehaviorSignals(): Promise<StuckBehaviorSignal[]> {
@@ -39,6 +54,7 @@ export async function pgGetStuckBehaviorSignals(): Promise<StuckBehaviorSignal[]
 
   const sql = getSql();
   const signals: StuckBehaviorSignal[] = [];
+  const contentPattern = CONTENT_ACTION_LABEL_PATTERN;
 
   const clickRows = await sql`
     WITH click_groups AS (
@@ -60,43 +76,73 @@ export async function pgGetStuckBehaviorSignals(): Promise<StuckBehaviorSignal[]
       LEFT JOIN users u ON u.id = e.actor_user_id
       WHERE e.action = 'ui.click'
         AND e.created_at >= now() - interval '30 minutes'
+        AND COALESCE(e.label, '') ~* ${contentPattern}
       GROUP BY
         COALESCE(e.actor_user_id::text, NULLIF(e.actor_email, ''), NULLIF(e.actor_name, ''), 'unknown'),
         e.actor_user_id,
         COALESCE(NULLIF(e.label, ''), '(بدون برچسب)')
-      HAVING COUNT(*) >= 8
+      HAVING COUNT(*) >= 4
+    ),
+    actor_errors AS (
+      SELECT
+        COALESCE(err.actor_user_id::text, NULLIF(err.actor_email, ''), NULLIF(err.actor_name, ''), 'unknown') AS actor_key,
+        array_remove(
+          array_agg(DISTINCT NULLIF(btrim(err.label), '')),
+          NULL
+        ) AS recent_errors
+      FROM user_audit_events err
+      WHERE err.action = 'ui.error'
+        AND err.created_at >= now() - interval '30 minutes'
+      GROUP BY
+        COALESCE(err.actor_user_id::text, NULLIF(err.actor_email, ''), NULLIF(err.actor_name, ''), 'unknown')
     )
-    SELECT * FROM click_groups
-    ORDER BY click_count DESC
+    SELECT
+      c.*,
+      ae.recent_errors
+    FROM click_groups c
+    LEFT JOIN actor_errors ae ON ae.actor_key = c.actor_key
+    ORDER BY c.click_count DESC
     LIMIT 25
   `;
 
   for (const row of clickRows) {
     const count = Number(row.click_count ?? 0);
-    const severity = count >= 20 ? "high" : count >= 12 ? "medium" : "low";
+    const recentErrors = parseErrorLabels(row.recent_errors);
+    const hasErrors = recentErrors.length > 0;
+    const severity =
+      count >= 12 || (hasErrors && count >= 6)
+        ? "high"
+        : count >= 7 || hasErrors
+          ? "medium"
+          : "low";
     const label = String(row.click_label);
+    const errorHint = hasErrors
+      ? ` همزمان خطا هم دیده: «${recentErrors[0]}».`
+      : " احتمالاً ذخیره/ثبت انجام نشده و دوباره تلاش کرده است.";
+
     signals.push({
-      id: `click:${row.actor_key}:${label}`,
-      kind: "repeated_click",
+      id: `content_click:${row.actor_key}:${label}`,
+      kind: "content_action_retry",
       severity,
       actorKey: String(row.actor_key),
       actorUserId: row.actor_user_id ? String(row.actor_user_id) : null,
       actorName: resolveActorName(row as Record<string, unknown>),
       actorEmail: resolveActorEmail(row as Record<string, unknown>),
       actorRole: resolveActorRole(row as Record<string, unknown>),
-      title: "کلیک تکراری روی یک دکمه",
-      detail: `در ۳۰ دقیقه اخیر ${count} بار روی «${label}» کلیک کرده است — احتمالاً گیر کرده یا دکمه کار نمی‌کند.`,
+      title: "تلاش تکراری روی عملیات ثبت محتوا",
+      detail: `در ۳۰ دقیقه اخیر ${count} بار روی «${label}» کلیک کرده است.${errorHint}`,
       path: row.path ? String(row.path) : null,
       label,
       count,
       windowMinutes: 30,
       firstSeenAt: new Date(String(row.first_seen_at)).toISOString(),
       lastSeenAt: new Date(String(row.last_seen_at)).toISOString(),
+      recentErrors: hasErrors ? recentErrors : undefined,
     });
   }
 
-  const pageRows = await sql`
-    WITH page_groups AS (
+  const errorRows = await sql`
+    WITH error_groups AS (
       SELECT
         COALESCE(e.actor_user_id::text, NULLIF(e.actor_email, ''), NULLIF(e.actor_name, ''), 'unknown') AS actor_key,
         e.actor_user_id,
@@ -106,48 +152,58 @@ export async function pgGetStuckBehaviorSignals(): Promise<StuckBehaviorSignal[]
         MAX(u.name) AS user_name,
         MAX(u.email) AS user_email,
         MAX(u.role) AS user_role,
-        e.path AS path,
-        COUNT(*)::int AS view_count,
+        MAX(e.path) AS path,
+        COUNT(*)::int AS error_count,
         MIN(e.created_at) AS first_seen_at,
-        MAX(e.created_at) AS last_seen_at
+        MAX(e.created_at) AS last_seen_at,
+        array_remove(
+          array_agg(DISTINCT NULLIF(btrim(e.label), '')),
+          NULL
+        ) AS recent_errors
       FROM user_audit_events e
       LEFT JOIN users u ON u.id = e.actor_user_id
-      WHERE e.action = 'navigation.page_view'
-        AND e.path IS NOT NULL
-        AND e.path <> ''
-        AND e.created_at >= now() - interval '20 minutes'
+      WHERE e.action = 'ui.error'
+        AND e.created_at >= now() - interval '30 minutes'
       GROUP BY
         COALESCE(e.actor_user_id::text, NULLIF(e.actor_email, ''), NULLIF(e.actor_name, ''), 'unknown'),
-        e.actor_user_id,
-        e.path
-      HAVING COUNT(*) >= 6
+        e.actor_user_id
+      HAVING COUNT(*) >= 3
     )
-    SELECT * FROM page_groups
-    ORDER BY view_count DESC
+    SELECT * FROM error_groups
+    ORDER BY error_count DESC
     LIMIT 25
   `;
 
-  for (const row of pageRows) {
-    const count = Number(row.view_count ?? 0);
-    const severity = count >= 15 ? "high" : count >= 10 ? "medium" : "low";
-    const path = String(row.path);
+  for (const row of errorRows) {
+    const actorKey = String(row.actor_key);
+    // Skip if we already have a content-retry signal for this actor (richer context).
+    if (signals.some((s) => s.actorKey === actorKey && s.kind === "content_action_retry")) {
+      continue;
+    }
+
+    const count = Number(row.error_count ?? 0);
+    const recentErrors = parseErrorLabels(row.recent_errors);
+    const severity = count >= 8 ? "high" : count >= 5 ? "medium" : "low";
+    const preview = recentErrors[0] ? ` آخرین خطا: «${recentErrors[0]}».` : "";
+
     signals.push({
-      id: `page:${row.actor_key}:${path}`,
-      kind: "page_thrash",
+      id: `error:${actorKey}`,
+      kind: "error_burst",
       severity,
-      actorKey: String(row.actor_key),
+      actorKey,
       actorUserId: row.actor_user_id ? String(row.actor_user_id) : null,
       actorName: resolveActorName(row as Record<string, unknown>),
       actorEmail: resolveActorEmail(row as Record<string, unknown>),
       actorRole: resolveActorRole(row as Record<string, unknown>),
-      title: "رفت‌وآمد زیاد در یک صفحه",
-      detail: `در ۲۰ دقیقه اخیر ${count} بار صفحه «${path}» را باز کرده است — ممکن است گیج شده باشد یا صفحه درست لود نشود.`,
-      path,
-      label: null,
+      title: "خطاهای پیاپی در رابط کاربری",
+      detail: `در ۳۰ دقیقه اخیر ${count} خطای قابل‌نمایش برای کاربر ثبت شده است.${preview}`,
+      path: row.path ? String(row.path) : null,
+      label: recentErrors[0] ?? null,
       count,
-      windowMinutes: 20,
+      windowMinutes: 30,
       firstSeenAt: new Date(String(row.first_seen_at)).toISOString(),
       lastSeenAt: new Date(String(row.last_seen_at)).toISOString(),
+      recentErrors: recentErrors.length > 0 ? recentErrors : undefined,
     });
   }
 

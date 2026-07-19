@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "f956fc2e294c212fc78f61f05b4495a2097c4166",
+      "committedAt": "2026-07-19T09:00:32+03:30",
+      "title": "به‌روزرسانی دسته‌بندی تبلیغات محیطی و انتقال داده‌های قبلی به دسته‌های جدید",
+      "subject": "Update billboard category taxonomy and remap legacy values"
+    },
+    {
       "hash": "9a9bf725535a6ed60ac44f6f85380c19829001d8",
       "committedAt": "2026-07-19T08:47:37+03:30",
       "title": "رفع مشکل لود نشدن صفحات ادمین و بخش مشکلات ثبت‌شده",

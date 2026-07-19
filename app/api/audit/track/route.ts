@@ -7,6 +7,7 @@ import { isPostgresConfigured } from "@/lib/utils";
 const ALLOWED_ACTIONS = new Set([
   "navigation.page_view",
   "ui.click",
+  "ui.error",
   "presence.heartbeat",
 ]);
 const MAX_LABEL_LENGTH = 200;
@@ -52,7 +53,11 @@ export async function POST(request: Request) {
   }
 
   const category: AuditCategory =
-    action === "ui.click" ? "ui" : action === "presence.heartbeat" ? "system" : "navigation";
+    action === "ui.click" || action === "ui.error"
+      ? "ui"
+      : action === "presence.heartbeat"
+        ? "system"
+        : "navigation";
   const metadata =
     payload.metadata && typeof payload.metadata === "object" && !Array.isArray(payload.metadata)
       ? payload.metadata

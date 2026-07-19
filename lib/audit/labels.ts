@@ -15,6 +15,7 @@ const ACTION_LABELS: Record<string, string> = {
   "auth.login_failed": "ورود ناموفق",
   "navigation.page_view": "بازدید صفحه",
   "ui.click": "کلیک روی دکمه",
+  "ui.error": "خطای کاربر",
   "content.create": "ایجاد محتوا",
   "content.update": "ویرایش محتوا",
   "content.delete": "حذف محتوا",

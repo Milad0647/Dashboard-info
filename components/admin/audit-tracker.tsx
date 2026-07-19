@@ -2,8 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 const MAX_LABEL_LENGTH = 120;
+const MAX_ERROR_LABEL_LENGTH = 200;
 
 function sendTrack(body: Record<string, unknown>) {
   try {
@@ -24,6 +26,22 @@ function sendTrack(body: Record<string, unknown>) {
   } catch {
     // Never break the UI because of tracking.
   }
+}
+
+function currentPath(): string {
+  if (typeof window === "undefined") return "";
+  return window.location.pathname + window.location.search;
+}
+
+function trackUiError(message: string, metadata?: Record<string, unknown>) {
+  const label = message.replace(/\s+/g, " ").trim().slice(0, MAX_ERROR_LABEL_LENGTH);
+  if (!label) return;
+  sendTrack({
+    action: "ui.error",
+    path: currentPath(),
+    label,
+    metadata: { source: "client", ...metadata },
+  });
 }
 
 function resolveClickTarget(target: EventTarget | null): {
@@ -59,9 +77,19 @@ function resolveClickTarget(target: EventTarget | null): {
   return { label: label.slice(0, MAX_LABEL_LENGTH), role };
 }
 
+function toastMessageToString(message: unknown): string {
+  if (typeof message === "string") return message;
+  if (typeof message === "number" || typeof message === "boolean") return String(message);
+  if (message && typeof message === "object" && "message" in message) {
+    const nested = (message as { message?: unknown }).message;
+    if (typeof nested === "string") return nested;
+  }
+  return "خطای کاربر";
+}
+
 /**
  * Client-side audit tracker for the admin panel.
- * Records page views on navigation and clicks on interactive elements.
+ * Records page views, clicks, user-facing errors, and presence heartbeats.
  */
 export function AuditTracker() {
   const pathname = usePathname();
@@ -98,7 +126,10 @@ export function AuditTracker() {
     };
 
     document.addEventListener("click", handleClick, { capture: true });
-    return () => document.removeEventListener("click", handleClick, { capture: true } as EventListenerOptions);
+    return () =>
+      document.removeEventListener("click", handleClick, {
+        capture: true,
+      } as EventListenerOptions);
   }, []);
 
   useEffect(() => {
@@ -113,6 +144,44 @@ export function AuditTracker() {
     sendHeartbeat();
     const intervalId = window.setInterval(sendHeartbeat, 60_000);
     return () => window.clearInterval(intervalId);
+  }, []);
+
+  // Capture toast errors shown to users (save failures, validation, etc.).
+  useEffect(() => {
+    const originalError = toast.error.bind(toast);
+    toast.error = ((message, data) => {
+      trackUiError(toastMessageToString(message), { source: "toast" });
+      return originalError(message, data);
+    }) as typeof toast.error;
+
+    return () => {
+      toast.error = originalError;
+    };
+  }, []);
+
+  // Capture uncaught runtime / promise errors as a fallback signal.
+  useEffect(() => {
+    const onError = (event: ErrorEvent) => {
+      const message = event.message?.trim() || event.error?.message || "خطای زمان اجرا";
+      trackUiError(message, { source: "window.error" });
+    };
+    const onRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      const message =
+        typeof reason === "string"
+          ? reason
+          : reason instanceof Error
+            ? reason.message
+            : "خطای Promise رسیدگی‌نشده";
+      trackUiError(message, { source: "unhandledrejection" });
+    };
+
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
   }, []);
 
   return null;

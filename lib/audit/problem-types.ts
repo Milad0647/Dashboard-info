@@ -9,7 +9,10 @@ export type ProblemReportCategory =
 
 export type ProblemReportStatus = "pending" | "in_progress" | "resolved" | "dismissed";
 
-export type StuckSignalKind = "repeated_click" | "page_thrash" | "failed_login_burst";
+export type StuckSignalKind =
+  | "content_action_retry"
+  | "error_burst"
+  | "failed_login_burst";
 
 export interface ProblemReport {
   id: string;
@@ -26,11 +29,24 @@ export interface ProblemReport {
   status: ProblemReportStatus;
   adminNote: string | null;
   adminNoteSeenAt: string | null;
+  firstRepliedAt: string | null;
   resolvedByUserId: string | null;
   resolvedAt: string | null;
   metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProblemReportStats {
+  total: number;
+  open: number;
+  pending: number;
+  inProgress: number;
+  answered: number;
+  resolved: number;
+  dismissed: number;
+  /** Average seconds from report creation to first admin reply; null if none answered. */
+  avgFirstReplySeconds: number | null;
 }
 
 export interface CreateProblemReportInput {
@@ -58,6 +74,8 @@ export interface StuckBehaviorSignal {
   windowMinutes: number;
   firstSeenAt: string;
   lastSeenAt: string;
+  /** Recent user-facing error messages correlated with this signal. */
+  recentErrors?: string[];
 }
 
 export const PROBLEM_REPORT_CATEGORY_LABELS: Record<ProblemReportCategory, string> = {
@@ -78,7 +96,7 @@ export const PROBLEM_REPORT_STATUS_LABELS: Record<ProblemReportStatus, string> =
 };
 
 export const STUCK_SIGNAL_KIND_LABELS: Record<StuckSignalKind, string> = {
-  repeated_click: "کلیک تکراری",
-  page_thrash: "رفت‌وآمد زیاد در صفحه",
+  content_action_retry: "تلاش تکراری ثبت محتوا",
+  error_burst: "خطاهای پیاپی کاربر",
   failed_login_burst: "ورود ناموفق پیاپی",
 };

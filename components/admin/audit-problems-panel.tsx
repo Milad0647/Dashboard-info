@@ -57,13 +57,16 @@ function resolveName(name?: string | null, email?: string | null) {
 
 export function AuditProblemsPanel({
   reports,
-  signals,
+  signals = [],
+  showSignals = true,
 }: {
   reports: ProblemReport[];
-  signals: StuckBehaviorSignal[];
+  signals?: StuckBehaviorSignal[];
+  /** When false, hides stuck-behavior card (e.g. dedicated reported-problems page). */
+  showSignals?: boolean;
 }) {
   const [statusFilter, setStatusFilter] = useState<ProblemReportStatus | "open" | "all">(
-    "open"
+    "all"
   );
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -103,63 +106,75 @@ export function AuditProblemsPanel({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <TriangleAlert className="h-4 w-4 text-amber-500" />
-            هشدار رفتار مشکوک / گیر کرده
-            <Badge variant="warning">{formatPersianNumber(signals.length)}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            سیستم از روی کلیک‌های تکراری، رفت‌وآمد زیاد در یک صفحه و ورودهای ناموفق،
-            کاربرانی را که احتمالاً مشکل دارند تشخیص می‌دهد.
-          </p>
-          {signals.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              فعلاً هشدار رفتاری ثبت نشده است.
+      {showSignals ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TriangleAlert className="h-4 w-4 text-amber-500" />
+              هشدار رفتار مشکوک / گیر کرده
+              <Badge variant="warning">{formatPersianNumber(signals.length)}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              سیستم از روی کلیک‌های تکراری روی ذخیره/افزودن/ویرایش/بستن/ثبت جدید، خطاهای پیاپی
+              کاربر و ورودهای ناموفق، گیر کردن در ثبت محتوا را تشخیص می‌دهد.
             </p>
-          ) : (
-            <div className="space-y-3">
-              {signals.map((signal) => (
-                <div key={signal.id} className="rounded-lg border p-3 space-y-2">
-                  <div className="flex flex-wrap items-center gap-2 justify-between">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={SEVERITY_BADGE[signal.severity]}>
-                        شدت {SEVERITY_LABEL[signal.severity]}
-                      </Badge>
-                      <Badge variant="outline">{STUCK_SIGNAL_KIND_LABELS[signal.kind]}</Badge>
-                      <span className="font-medium">
-                        {resolveName(signal.actorName, signal.actorEmail)}
-                      </span>
-                      {signal.actorRole && (
-                        <Badge variant="outline">{getAuditRoleLabel(signal.actorRole)}</Badge>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatPersianNumber(signal.count)} بار ·{" "}
-                      {formatPersianDateTime(signal.lastSeenAt)}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium">{signal.title}</p>
-                  <p className="text-sm text-muted-foreground">{signal.detail}</p>
-                  {(signal.path || signal.label) && (
-                    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                      {signal.label && <span>کنترل: {signal.label}</span>}
-                      {signal.path && (
-                        <span dir="ltr" className="font-mono">
-                          {signal.path}
+            {signals.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                فعلاً هشدار رفتاری ثبت نشده است.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {signals.map((signal) => (
+                  <div key={signal.id} className="rounded-lg border p-3 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2 justify-between">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={SEVERITY_BADGE[signal.severity]}>
+                          شدت {SEVERITY_LABEL[signal.severity]}
+                        </Badge>
+                        <Badge variant="outline">{STUCK_SIGNAL_KIND_LABELS[signal.kind]}</Badge>
+                        <span className="font-medium">
+                          {resolveName(signal.actorName, signal.actorEmail)}
                         </span>
-                      )}
+                        {signal.actorRole && (
+                          <Badge variant="outline">{getAuditRoleLabel(signal.actorRole)}</Badge>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {formatPersianNumber(signal.count)} بار ·{" "}
+                        {formatPersianDateTime(signal.lastSeenAt)}
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    <p className="text-sm font-medium">{signal.title}</p>
+                    <p className="text-sm text-muted-foreground">{signal.detail}</p>
+                    {signal.recentErrors && signal.recentErrors.length > 0 && (
+                      <div className="rounded-md bg-destructive/5 border border-destructive/20 px-3 py-2 space-y-1">
+                        <p className="text-xs font-medium text-destructive">خطاهای اخیر کاربر:</p>
+                        <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                          {signal.recentErrors.map((errorMessage) => (
+                            <li key={errorMessage}>{errorMessage}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {(signal.path || signal.label) && (
+                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                        {signal.label && <span>کنترل: {signal.label}</span>}
+                        {signal.path && (
+                          <span dir="ltr" className="font-mono">
+                            {signal.path}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader className="pb-2 space-y-3">
@@ -185,8 +200,8 @@ export function AuditProblemsPanel({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="open">بازها</SelectItem>
                 <SelectItem value="all">همه</SelectItem>
+                <SelectItem value="open">بازها</SelectItem>
                 <SelectItem value="pending">در انتظار</SelectItem>
                 <SelectItem value="in_progress">در حال بررسی</SelectItem>
                 <SelectItem value="resolved">حل شده</SelectItem>
@@ -212,6 +227,9 @@ export function AuditProblemsPanel({
                       <Badge variant="outline">
                         {PROBLEM_REPORT_CATEGORY_LABELS[report.category]}
                       </Badge>
+                      {report.adminNote ? (
+                        <Badge variant="success">پاسخ داده‌شده</Badge>
+                      ) : null}
                     </div>
                     <h3 className="font-semibold text-base">{report.title}</h3>
                     <p className="text-sm text-muted-foreground">
