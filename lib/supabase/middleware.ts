@@ -17,20 +17,25 @@ function redirectAuthenticatedFromLogin(request: NextRequest) {
 function handleEnvAdminAuth(request: NextRequest) {
   return verifyAdminSessionToken(request.cookies.get(getAdminSessionCookieName())?.value).then(
     (isAuthenticated) => {
+      const isLoginRoute = request.nextUrl.pathname.startsWith("/admin/login");
       const isAdminRoute =
-        request.nextUrl.pathname.startsWith("/admin") &&
-        !request.nextUrl.pathname.startsWith("/admin/login");
+        request.nextUrl.pathname.startsWith("/admin") && !isLoginRoute;
 
       if (isAdminRoute && !isAuthenticated) {
         const url = request.nextUrl.clone();
         url.pathname = "/admin/login";
+        const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+        if (nextPath.startsWith("/admin") && nextPath !== "/admin/login") {
+          url.searchParams.set("next", nextPath);
+        }
         return NextResponse.redirect(url);
       }
 
-      if (request.nextUrl.pathname === "/admin/login" && isAuthenticated) {
-        return redirectAuthenticatedFromLogin(request);
-      }
-
+      // Intentionally do not redirect authenticated cookies away from /admin/login.
+      // Middleware only verifies signature/expiry; getAuthSession() also checks
+      // sessionVersion. Redirecting revoked sessions back to the panel caused an
+      // infinite loop that looked like admin pages never loading.
+      // The login page performs the full session check and redirects when valid.
       return NextResponse.next({ request });
     }
   );

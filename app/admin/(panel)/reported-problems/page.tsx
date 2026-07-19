@@ -3,11 +3,26 @@ import { TriangleAlert } from "lucide-react";
 import { AuditProblemsPanel } from "@/components/admin/audit-problems-panel";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
+import type { ProblemReport, StuckBehaviorSignal } from "@/lib/audit/problem-types";
 import { pgCountOpenProblemReports, pgListProblemReports } from "@/lib/db/problem-reports-repository";
 import { pgGetStuckBehaviorSignals } from "@/lib/db/stuck-signals-repository";
 import { formatPersianNumber, isPostgresConfigured } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+async function safeTimed<T>(fn: () => Promise<T>, fallback: T, timeoutMs = 8_000): Promise<T> {
+  try {
+    return await Promise.race([
+      fn(),
+      new Promise<T>((_, reject) => {
+        setTimeout(() => reject(new Error(`reported-problems query timed out after ${timeoutMs}ms`)), timeoutMs);
+      }),
+    ]);
+  } catch (error) {
+    console.error("Reported problems partial load failed:", error);
+    return fallback;
+  }
+}
 
 export default async function ReportedProblemsPage() {
   const session = await getAuthSession();
@@ -36,9 +51,10 @@ export default async function ReportedProblemsPage() {
   }
 
   const [reports, openCount, signals] = await Promise.all([
-    pgListProblemReports({ limit: 100 }),
-    pgCountOpenProblemReports(),
-    pgGetStuckBehaviorSignals(),
+    safeTimed<ProblemReport[]>(() => pgListProblemReports({ limit: 100 }), []),
+    safeTimed(() => pgCountOpenProblemReports(), 0),
+    // Stuck-signal scans on user_audit_events can be slow; never block the whole page.
+    safeTimed<StuckBehaviorSignal[]>(() => pgGetStuckBehaviorSignals(), [], 8_000),
   ]);
 
   return (

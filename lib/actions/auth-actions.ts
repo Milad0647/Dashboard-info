@@ -242,3 +242,21 @@ export async function logoutAdminAction() {
   cookieStore.set(getAdminSessionCookieName(), "", cookieOptions);
   cookieStore.set(getLegacyMockCookieName(), "", cookieOptions);
 }
+
+/**
+ * Clears a signed cookie that failed the full session check (e.g. revoked
+ * sessionVersion). Safe to call from the login page on mount.
+ */
+export async function clearStaleAdminSessionAction() {
+  const session = await getAuthSession();
+  if (session) return { cleared: false as const };
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get(getAdminSessionCookieName())?.value;
+  if (!token) return { cleared: false as const };
+
+  const cookieOptions = getAdminSessionCookieOptions(0);
+  cookieStore.set(getAdminSessionCookieName(), "", cookieOptions);
+  cookieStore.set(getLegacyMockCookieName(), "", cookieOptions);
+  return { cleared: true as const };
+}

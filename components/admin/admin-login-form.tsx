@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { loginAdminAction } from "@/lib/actions/auth-actions";
+import { clearStaleAdminSessionAction, loginAdminAction } from "@/lib/actions/auth-actions";
 import { resolveSafeAuthRedirect } from "@/lib/auth/safe-redirect";
 import {
   formatPersianClock,
@@ -76,6 +76,10 @@ export function AdminLoginForm() {
     syncMotionPreference();
     mediaQuery.addEventListener("change", syncMotionPreference);
     return () => mediaQuery.removeEventListener("change", syncMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    void clearStaleAdminSessionAction();
   }, []);
 
   useEffect(() => {
