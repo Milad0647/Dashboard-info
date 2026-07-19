@@ -274,6 +274,13 @@ export function SectionBulkEditBar({
       return;
     }
 
+    if (contentType === "billboard" && patch.category === null) {
+      const confirmed = window.confirm(
+        `دسته ${formatPersianNumber(selectedIds.length)} مورد پاک شود؟ این کار قابل برگشت آسان نیست.`
+      );
+      if (!confirmed) return;
+    }
+
     startTransition(async () => {
       const result = await bulkUpdateContentAction({
         campaignId,
@@ -374,12 +381,14 @@ export function SectionBulkEditBar({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="unchanged">بدون تغییر</SelectItem>
-                      <SelectItem value="clear">پاک کردن دسته</SelectItem>
                       {BILLBOARD_CATEGORIES.map((category) => (
                         <SelectItem key={category} value={category}>
                           {getBillboardCategoryLabel(category)}
                         </SelectItem>
                       ))}
+                      <SelectItem value="clear" className="text-destructive focus:text-destructive">
+                        پاک کردن دسته
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

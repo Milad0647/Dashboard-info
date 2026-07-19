@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "63cd771a436bcb9e4fcda089d0e256ae17e19e30",
+      "committedAt": "2026-07-19T09:38:05+03:30",
+      "title": "تب‌بندی مشکلات ثبت‌شده و ثابت ماندن اسکرول منوی سمت راست",
+      "subject": "Tab reported problems by status and keep sidebar scroll"
+    },
+    {
       "hash": "94c3fc592517eb48ed4e206e407187e5d177112a",
       "committedAt": "2026-07-19T09:01:28+03:30",
       "title": "نمایش همه تیکت‌ها با آمار میانگین پاسخ و تشخیص دقیق‌تر گیر کردن در ثبت محتوا",

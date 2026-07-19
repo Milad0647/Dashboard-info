@@ -34,6 +34,7 @@ import {
   useSectionBulkEdit,
 } from "@/components/admin/section-bulk-edit";
 import { deleteBillboardAction } from "@/lib/actions/admin-actions";
+import { restoreBillboardCategoriesAction } from "@/lib/actions/billboard-category-restore-actions";
 import {
   BILLBOARD_CATEGORIES,
   billboardCategoryLabels,
@@ -96,6 +97,7 @@ export function BillboardsAdmin({
   const [periodOpen, setPeriodOpen] = useState(false);
   const [periodBillboard, setPeriodBillboard] = useState<Billboard | null>(null);
   const [isNormalizing, setIsNormalizing] = useState(false);
+  const [isRestoringCategories, setIsRestoringCategories] = useState(false);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const [categoryFilter, setCategoryFilter] = useState(ADMIN_FILTER_ALL);
   const { viewMode, setViewMode } = useAdminViewMode("billboards");
@@ -210,6 +212,45 @@ export function BillboardsAdmin({
     });
   };
 
+  const handleRestoreCategories = () => {
+    if (!isFullAdmin || isRestoringCategories) return;
+    const confirmed = window.confirm(
+      "دسته‌بندی‌های خالی از بکاپ‌های ذخیره‌شده و برچسب‌های موجود بازیابی شوند؟"
+    );
+    if (!confirmed) return;
+
+    setIsRestoringCategories(true);
+    startTransition(async () => {
+      try {
+        const response = await restoreBillboardCategoriesAction(campaignId);
+        if (!response.success || !response.result) {
+          toast.error(response.error ?? "بازیابی ناموفق بود");
+          return;
+        }
+
+        const { restoredFromBackup, restoredFromTags, stillMissing, backupsUsed } =
+          response.result;
+        const restored = restoredFromBackup + restoredFromTags;
+        if (restored === 0) {
+          toast.message(
+            stillMissing > 0
+              ? `بکاپ قابل‌استفاده‌ای پیدا نشد. هنوز ${stillMissing} مورد بدون دسته است.`
+              : "موردی برای بازیابی پیدا نشد."
+          );
+        } else {
+          toast.success(
+            `${restored} دسته بازیابی شد` +
+              (backupsUsed.length > 0 ? ` (از ${backupsUsed.length} بکاپ)` : "") +
+              (stillMissing > 0 ? ` — ${stillMissing} مورد هنوز خالی است` : "")
+          );
+        }
+        router.refresh();
+      } finally {
+        setIsRestoringCategories(false);
+      }
+    });
+  };
+
   return (
     <div className="space-y-6">
       {tutorialModal}
@@ -217,13 +258,30 @@ export function BillboardsAdmin({
         <div>
           <h1 className="text-2xl font-bold">تبلیغات محیطی</h1>
           <p className="text-sm text-muted-foreground">
-            استرابورد، بنر، بیلبورد، لایت‌باکس، مانیتور و سایر رسانه‌های محیطی
+            بیلبورد، استرابورد، عرشه پل، تلویزیون شهری و سایر رسانه‌های محیطی
             {allApiBillboards.length > 0
               ? ` — ${allApiBillboards.length} مورد قدیمی از Map-Bilboard فقط برای مشاهده است.`
               : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {isFullAdmin && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isRestoringCategories}
+              onClick={handleRestoreCategories}
+            >
+              {isRestoringCategories ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  در حال بازیابی...
+                </>
+              ) : (
+                "بازیابی دسته‌بندی‌ها"
+              )}
+            </Button>
+          )}
           <AdminViewModeToggle value={viewMode} onChange={setViewMode} />
         </div>
       </div>
