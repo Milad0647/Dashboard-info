@@ -31,6 +31,8 @@ import {
 } from "@/lib/edit-suggestions";
 import { withFileAccessTokensDeep } from "@/lib/uploads";
 import { formatPersianNumber, adminHref, isPostgresConfigured } from "@/lib/utils";
+import { buildBillboardCategoryStats } from "@/lib/billboard-categories";
+import { BillboardCategoryChart } from "@/components/charts/billboard-category-chart";
 
 const PERMISSION_TO_CONTENT_TYPE: Partial<
   Record<ContributorPermissionKey, EditSuggestionContentType>
@@ -148,6 +150,13 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
     };
   });
 
+  const showBillboardCategoryChart = canManageAll
+    ? features.billboards
+    : hasContributorPermission(contributorPermissions, "billboards");
+  const billboardCategoryStats = showBillboardCategoryChart
+    ? buildBillboardCategoryStats(billboards)
+    : [];
+
   const pendingSubmissions = data.submissions.filter((s) => s.status === "pending").length;
   const showSubmissionsAlert = canManageAll
     ? features.submissions
@@ -242,6 +251,10 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
               : "هیچ بخشی برای شما در این کمپین فعال نیست. با مدیر تماس بگیرید."}
           </CardContent>
         </Card>
+      )}
+
+      {billboardCategoryStats.length > 0 && (
+        <BillboardCategoryChart data={billboardCategoryStats} />
       )}
 
       {showSubmissionsAlert && pendingSubmissions > 0 && (

@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BillboardCategoryChart } from "@/components/charts/billboard-category-chart";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
@@ -36,7 +37,13 @@ import { groupByOwnerPreservingOrder, shouldRenderChronologically } from "@/lib/
 import { hasBillboardCoordinates } from "@/lib/billboards";
 import type { Billboard } from "@/lib/types";
 import { formatPersianNumber, getStatusLabel } from "@/lib/utils";
-import { resolveBillboardCategoryDisplay } from "@/lib/billboard-categories";
+import {
+  buildBillboardCategoryStats,
+  resolveBillboardCategoryDisplay,
+  resolveBillboardCategoryLabel,
+} from "@/lib/billboard-categories";
+
+type BillboardSort = PublicMediaSort | "category";
 
 function getBillboardUploadDate(billboard: Billboard): string {
   return billboard.updatedAt || billboard.createdAt;
@@ -63,7 +70,7 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
   const [cityFilter, setCityFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sort, setSort] = useState<PublicMediaSort>("newest");
+  const [sort, setSort] = useState<BillboardSort>("newest");
   const [search, setSearch] = useState("");
   const [selectedBillboard, setSelectedBillboard] = useState<Billboard | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -81,9 +88,11 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
     return [...new Set(labels)].sort((a, b) => a.localeCompare(b, "fa"));
   }, [locationFilteredBillboards]);
 
-  const effectiveSort = resolvePublicMediaSort(filter.sortOrder, sort);
+  const sortForResolve: PublicMediaSort = sort === "category" ? "newest" : sort;
+  const effectiveSort = resolvePublicMediaSort(filter.sortOrder, sortForResolve);
   // Billboard default display order is newest-first.
   const displaySort = effectiveSort === "default" ? "newest" : effectiveSort;
+  const sortByCategory = filter.sortOrder === "default" && sort === "category";
 
   const filtered = useMemo(() => {
     const items = locationFilteredBillboards.filter((billboard) => {
@@ -94,8 +103,26 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
       if (search && !billboard.title.includes(search) && !billboard.city.includes(search)) return false;
       return true;
     });
+    if (sortByCategory) {
+      return [...items].sort((a, b) =>
+        resolveBillboardCategoryLabel(a).localeCompare(resolveBillboardCategoryLabel(b), "fa")
+      );
+    }
     return sortByPublicMediaOrder(items, displaySort, getBillboardUploadDate);
-  }, [locationFilteredBillboards, cityFilter, categoryFilter, statusFilter, search, displaySort]);
+  }, [
+    locationFilteredBillboards,
+    cityFilter,
+    categoryFilter,
+    statusFilter,
+    search,
+    displaySort,
+    sortByCategory,
+  ]);
+
+  const categoryStats = useMemo(() => {
+    const visible = locationFilteredBillboards.filter(billboardHasDisplayContent);
+    return buildBillboardCategoryStats(visible);
+  }, [locationFilteredBillboards]);
 
   const sectionVisible = useCampaignSectionVisibility(billboards.length, filtered.length);
 
@@ -161,7 +188,7 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
         </Select>
       )}
       {filter.sortOrder === "default" && (
-        <Select value={sort} onValueChange={(value) => setSort(value as PublicMediaSort)}>
+        <Select value={sort} onValueChange={(value) => setSort(value as BillboardSort)}>
           <SelectTrigger className="w-44">
             <div className="flex items-center gap-2">
               <ArrowUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -172,6 +199,7 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
             <SelectItem value="newest">جدیدترین</SelectItem>
             <SelectItem value="oldest">قدیمی‌ترین</SelectItem>
             <SelectItem value="title">عنوان</SelectItem>
+            <SelectItem value="category">دسته‌بندی</SelectItem>
             <SelectItem value="default">ترتیب پیش‌فرض</SelectItem>
           </SelectContent>
         </Select>
@@ -197,6 +225,11 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
         controls={controls}
       >
         <SectionTopCompaniesBox groups={rankingGroups} />
+        {categoryStats.length > 0 && (
+          <div className="mb-4" data-export-section data-export-label="تفکیک دسته تبلیغات محیطی">
+            <BillboardCategoryChart data={categoryStats} />
+          </div>
+        )}
         <div className="mb-6 space-y-3">
           <div className="flex justify-end">
             <BillboardMapExpandButton

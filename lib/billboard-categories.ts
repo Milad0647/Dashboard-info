@@ -163,3 +163,48 @@ export function resolveBillboardCategoryLabel(billboard: {
 }): string {
   return resolveBillboardCategoryDisplay(billboard) ?? "نامشخص";
 }
+
+export interface BillboardCategoryStat {
+  label: string;
+  count: number;
+}
+
+/**
+ * Aggregate billboard counts by structure category.
+ * Known taxonomy keys keep fixed display order; unknown labels follow alphabetically.
+ */
+export function buildBillboardCategoryStats(
+  billboards: Array<{
+    category?: string | null;
+    billboardTypeLabel?: string | null;
+    tags?: string[];
+  }>
+): BillboardCategoryStat[] {
+  const counts = new Map<string, number>();
+
+  for (const billboard of billboards) {
+    const label = resolveBillboardCategoryLabel(billboard);
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+
+  if (counts.size === 0) return [];
+
+  const knownOrder = BILLBOARD_CATEGORIES.map((key) => billboardCategoryLabels[key]);
+  const knownSet = new Set<string>(knownOrder);
+  const result: BillboardCategoryStat[] = [];
+
+  for (const label of knownOrder) {
+    const count = counts.get(label);
+    if (count) result.push({ label, count });
+  }
+
+  const extras = [...counts.entries()]
+    .filter(([label]) => !knownSet.has(label))
+    .sort((a, b) => a[0].localeCompare(b[0], "fa"));
+
+  for (const [label, count] of extras) {
+    result.push({ label, count });
+  }
+
+  return result;
+}
