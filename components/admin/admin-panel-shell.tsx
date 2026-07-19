@@ -25,6 +25,12 @@ function NavigationPendingOverlay() {
   }, [pathname, search]);
 
   useEffect(() => {
+    if (!pending) return;
+    const timer = window.setTimeout(() => setPending(false), 12_000);
+    return () => window.clearTimeout(timer);
+  }, [pending]);
+
+  useEffect(() => {
     const onClick = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -101,7 +107,8 @@ function AdminPanelShellInner({
 }) {
   const searchParams = useSearchParams();
   const defaultId = campaigns[0]?.id ?? "";
-  const campaignId = searchParams.get("campaign") ?? defaultId;
+  const campaignFromQuery = searchParams.get("campaign")?.trim() ?? "";
+  const campaignId = campaignFromQuery || defaultId;
 
   return (
     <AdminCampaignProvider campaigns={campaigns} campaignId={campaignId}>

@@ -1,28 +1,38 @@
-import { readFile } from "fs/promises";
+import { createWriteStream } from "fs";
+import { readFile, stat } from "fs/promises";
 import { basename } from "path";
+import { pipeline } from "stream/promises";
 import JSZip from "jszip";
 import { pgGetCampaignBackupData } from "@/lib/db/repository-extended";
 import { getSql } from "@/lib/db/client";
 import { getUploadsDir, getUploadPublicUrl } from "@/lib/uploads";
 import { generateId } from "@/lib/utils";
 
+/** Keep embedded media bounded so backup creation cannot OOM the Node process. */
+const DEFAULT_MAX_UPLOAD_BYTES = 400 * 1024 * 1024;
+const DEFAULT_MAX_SINGLE_FILE_BYTES = 80 * 1024 * 1024;
+
+export interface CreateCampaignBackupOptions {
+  includeUploads?: boolean;
+  maxUploadBytes?: number;
+  maxSingleFileBytes?: number;
+}
+
+export interface CampaignBackupWriteResult {
+  includedFiles: number;
+  skippedFiles: string[];
+  sizeBytes: number;
+}
+
 function extractFilenameFromUrl(url: string): string | null {
   const match = url.match(/\/api\/files\/([^/?#]+)/);
   return match?.[1] ?? null;
 }
 
-export async function createCampaignBackupZip(campaignId: string): Promise<Buffer> {
-  const backup = await pgGetCampaignBackupData(campaignId);
-  if (!backup) {
-    throw new Error("Campaign not found");
-  }
-
-  const zip = new JSZip();
-  zip.file("manifest.json", JSON.stringify(backup, null, 2));
-
-  const uploadsDir = getUploadsDir();
+function collectUploadFilenames(backup: NonNullable<
+  Awaited<ReturnType<typeof pgGetCampaignBackupData>>
+>): Set<string> {
   const fileUrls = new Set<string>();
-
   const collectUrl = (url?: string | null) => {
     if (!url) return;
     const filename = extractFilenameFromUrl(url);
@@ -52,17 +62,145 @@ export async function createCampaignBackupZip(campaignId: string): Promise<Buffe
     collectUrl(row.pdf_url);
   }
 
+  return fileUrls;
+}
+
+async function buildCampaignBackupZip(
+  campaignId: string,
+  options: CreateCampaignBackupOptions = {}
+): Promise<{ zip: JSZip; includedFiles: number; skippedFiles: string[] }> {
+  const includeUploads = options.includeUploads !== false;
+  const maxUploadBytes = options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES;
+  const maxSingleFileBytes =
+    options.maxSingleFileBytes ?? DEFAULT_MAX_SINGLE_FILE_BYTES;
+
+  const backup = await pgGetCampaignBackupData(campaignId);
+  if (!backup) {
+    throw new Error("Campaign not found");
+  }
+
+  const skippedFiles: string[] = [];
+  let includedFiles = 0;
+  let usedUploadBytes = 0;
+
+  const zip = new JSZip();
+  zip.file(
+    "manifest.json",
+    JSON.stringify(
+      {
+        ...backup,
+        backupMeta: {
+          includeUploads,
+          maxUploadBytes,
+          maxSingleFileBytes,
+        },
+      },
+      null,
+      2
+    )
+  );
+
+  if (!includeUploads) {
+    zip.file(
+      "uploads-skipped.json",
+      JSON.stringify(
+        {
+          reason: "Uploads omitted; media remains on the server uploads volume.",
+          filenames: [...collectUploadFilenames(backup)],
+        },
+        null,
+        2
+      )
+    );
+    return { zip, includedFiles, skippedFiles };
+  }
+
+  const uploadsDir = getUploadsDir();
+  const fileUrls = collectUploadFilenames(backup);
   const filesFolder = zip.folder("uploads");
+
   for (const filename of fileUrls) {
+    const filePath = `${uploadsDir}/${filename}`;
     try {
-      const content = await readFile(`${uploadsDir}/${filename}`);
+      const info = await stat(filePath);
+      if (!info.isFile()) {
+        skippedFiles.push(filename);
+        continue;
+      }
+      if (info.size > maxSingleFileBytes) {
+        skippedFiles.push(filename);
+        continue;
+      }
+      if (usedUploadBytes + info.size > maxUploadBytes) {
+        skippedFiles.push(filename);
+        continue;
+      }
+
+      const content = await readFile(filePath);
       filesFolder?.file(filename, content);
+      usedUploadBytes += content.byteLength;
+      includedFiles += 1;
     } catch {
-      // Skip missing files
+      skippedFiles.push(filename);
     }
   }
 
-  return Buffer.from(await zip.generateAsync({ type: "nodebuffer" }));
+  if (skippedFiles.length > 0) {
+    zip.file(
+      "uploads-skipped.json",
+      JSON.stringify(
+        {
+          reason:
+            "Some media files were skipped to keep backup memory/size within safe limits.",
+          maxUploadBytes,
+          maxSingleFileBytes,
+          filenames: skippedFiles,
+        },
+        null,
+        2
+      )
+    );
+  }
+
+  return { zip, includedFiles, skippedFiles };
+}
+
+/** Build a campaign backup ZIP in memory (for immediate download). */
+export async function createCampaignBackupZip(
+  campaignId: string,
+  options?: CreateCampaignBackupOptions
+): Promise<Buffer> {
+  const { zip } = await buildCampaignBackupZip(campaignId, options);
+  return Buffer.from(
+    await zip.generateAsync({ type: "nodebuffer", streamFiles: true })
+  );
+}
+
+/** Build a campaign backup ZIP and stream it directly to disk (for stored backups). */
+export async function writeCampaignBackupZipToFile(
+  campaignId: string,
+  outputPath: string,
+  options?: CreateCampaignBackupOptions
+): Promise<CampaignBackupWriteResult> {
+  const { zip, includedFiles, skippedFiles } = await buildCampaignBackupZip(
+    campaignId,
+    options
+  );
+
+  const nodeStream = zip.generateNodeStream({
+    type: "nodebuffer",
+    streamFiles: true,
+    compression: "DEFLATE",
+  });
+
+  await pipeline(nodeStream, createWriteStream(outputPath));
+
+  const info = await stat(outputPath);
+  return {
+    includedFiles,
+    skippedFiles,
+    sizeBytes: info.size,
+  };
 }
 
 export async function importCampaignBackupZip(buffer: Buffer, targetCampaignId?: string) {

@@ -48,21 +48,42 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
   };
 
   const createStoredBackup = () => {
+    if (!campaignId) {
+      toast.error("کمپینی انتخاب نشده است");
+      return;
+    }
+
     startTransition(async () => {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 4 * 60 * 1000);
       try {
+        toast.message("در حال گرفتن پشتیبان…", {
+          description: "ممکن است چند دقیقه طول بکشد.",
+        });
         const response = await fetch("/api/backups", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ campaignId }),
+          signal: controller.signal,
         });
-        const result = (await response.json()) as { error?: string };
+        const result = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          warning?: string;
+        };
         if (!response.ok) {
           toast.error(result.error ?? "گرفتن پشتیبان ناموفق بود");
           return;
         }
+        if (result.warning) toast.warning(result.warning);
         toast.success("پشتیبان روی سرور ذخیره شد — از صفحه پشتیبان‌گیری دانلود کنید");
-      } catch {
-        toast.error("گرفتن پشتیبان ناموفق بود");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          toast.error("زمان بکاپ تمام شد؛ دوباره تلاش کنید");
+        } else {
+          toast.error("گرفتن پشتیبان ناموفق بود");
+        }
+      } finally {
+        window.clearTimeout(timeoutId);
       }
     });
   };

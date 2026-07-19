@@ -1,21 +1,17 @@
-import { cookies } from "next/headers";
+import { createReadStream, existsSync } from "fs";
+import { stat } from "fs/promises";
 import { NextResponse } from "next/server";
-import { getAdminSessionCookieName } from "@/lib/auth/admin-session";
-import { isFullAdmin } from "@/lib/auth/get-session";
-import { parseSessionTokenSync } from "@/lib/auth/session-node";
-import { isSafeBackupFilename } from "@/lib/backups";
-import {
-  deleteStoredBackup,
-  openStoredBackupStream,
-} from "@/lib/services/stored-backup";
+import { Readable } from "stream";
+import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
+import { isSafeBackupFilename, resolveBackupFilePath } from "@/lib/backups";
+import { deleteStoredBackup } from "@/lib/services/stored-backup";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 async function requireFullAdmin() {
-  const cookieStore = await cookies();
-  const session = parseSessionTokenSync(
-    cookieStore.get(getAdminSessionCookieName())?.value
-  );
+  const session = await getAuthSession();
   if (!session || !isFullAdmin(session)) return null;
   return session;
 }
@@ -34,18 +30,28 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const opened = openStoredBackupStream(filename);
-  if (!opened) {
+  const filePath = resolveBackupFilePath(filename);
+  if (!filePath || !existsSync(filePath)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return new NextResponse(opened.stream, {
-    headers: {
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": "no-store",
-    },
-  });
+  try {
+    const info = await stat(filePath);
+    const nodeStream = createReadStream(filePath);
+    const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
+
+    return new NextResponse(webStream, {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Length": String(info.size),
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (error) {
+    console.error("[backups] download failed", error);
+    return NextResponse.json({ error: "Download failed" }, { status: 500 });
+  }
 }
 
 export async function DELETE(

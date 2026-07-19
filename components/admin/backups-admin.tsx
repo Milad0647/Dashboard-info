@@ -16,6 +16,22 @@ interface StoredBackupItem {
   createdAt: string;
 }
 
+const BACKUP_FETCH_TIMEOUT_MS = 4 * 60 * 1000;
+
+async function readApiError(response: Response, fallback: string): Promise<string> {
+  try {
+    const result = (await response.json()) as { error?: string };
+    if (result.error?.trim()) return result.error;
+  } catch {
+    // Non-JSON body (proxy timeout / HTML error page)
+  }
+  if (response.status === 401) return "نشست شما منقضی شده؛ دوباره وارد شوید";
+  if (response.status === 504 || response.status === 502) {
+    return "سرور پاسخ نداد؛ حجم بکاپ زیاد است یا سرور مشغول است";
+  }
+  return fallback;
+}
+
 export function BackupsAdmin() {
   const { campaignId, currentCampaign } = useAdminCampaign();
   const [backups, setBackups] = useState<StoredBackupItem[]>([]);
@@ -25,15 +41,15 @@ export function BackupsAdmin() {
   const loadBackups = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/backups");
+      const response = await fetch("/api/backups", { cache: "no-store" });
+      if (!response.ok) {
+        toast.error(await readApiError(response, "خطا در دریافت لیست پشتیبان‌ها"));
+        return;
+      }
       const result = (await response.json()) as {
         backups?: StoredBackupItem[];
         error?: string;
       };
-      if (!response.ok) {
-        toast.error(result.error ?? "خطا در دریافت لیست پشتیبان‌ها");
-        return;
-      }
       setBackups(result.backups ?? []);
     } catch {
       toast.error("خطا در دریافت لیست پشتیبان‌ها");
@@ -53,24 +69,45 @@ export function BackupsAdmin() {
     }
 
     startTransition(async () => {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), BACKUP_FETCH_TIMEOUT_MS);
+
       try {
+        toast.message("در حال گرفتن پشتیبان…", {
+          description: "بسته به حجم فایل‌ها ممکن است چند دقیقه طول بکشد.",
+        });
+
         const response = await fetch("/api/backups", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ campaignId }),
+          signal: controller.signal,
         });
+
+        if (!response.ok) {
+          toast.error(await readApiError(response, "گرفتن پشتیبان ناموفق بود"));
+          return;
+        }
+
         const result = (await response.json()) as {
           error?: string;
+          warning?: string;
           backup?: StoredBackupItem;
         };
-        if (!response.ok) {
-          toast.error(result.error ?? "گرفتن پشتیبان ناموفق بود");
-          return;
+
+        if (result.warning) {
+          toast.warning(result.warning);
         }
         toast.success("پشتیبان روی سرور ذخیره شد");
         await loadBackups();
-      } catch {
-        toast.error("گرفتن پشتیبان ناموفق بود");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          toast.error("زمان بکاپ تمام شد؛ دوباره تلاش کنید یا حجم رسانه‌ها را کمتر کنید");
+        } else {
+          toast.error("گرفتن پشتیبان ناموفق بود");
+        }
+      } finally {
+        window.clearTimeout(timeoutId);
       }
     });
   };
@@ -81,9 +118,8 @@ export function BackupsAdmin() {
         const response = await fetch(`/api/backups/${encodeURIComponent(filename)}`, {
           method: "DELETE",
         });
-        const result = (await response.json()) as { error?: string };
         if (!response.ok) {
-          toast.error(result.error ?? "حذف پشتیبان ناموفق بود");
+          toast.error(await readApiError(response, "حذف پشتیبان ناموفق بود"));
           return;
         }
         toast.success("پشتیبان حذف شد");

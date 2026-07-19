@@ -1,5 +1,5 @@
 import { createReadStream, existsSync } from "fs";
-import { mkdir, readdir, stat, unlink, writeFile } from "fs/promises";
+import { mkdir, readdir, stat, unlink } from "fs/promises";
 import { Readable } from "stream";
 import {
   BACKUP_RETENTION_PER_CAMPAIGN,
@@ -9,7 +9,7 @@ import {
   resolveBackupFilePath,
 } from "@/lib/backups";
 import { pgGetAllCampaigns, pgGetCampaignById } from "@/lib/db/repository";
-import { createCampaignBackupZip } from "@/lib/services/campaign-backup";
+import { writeCampaignBackupZipToFile } from "@/lib/services/campaign-backup";
 
 export interface StoredBackupInfo {
   filename: string;
@@ -24,6 +24,8 @@ export interface CreateStoredBackupResult {
   campaignId: string;
   campaignSlug: string;
   createdAt: string;
+  includedFiles: number;
+  skippedFiles: number;
 }
 
 function parseBackupMeta(filename: string): {
@@ -76,17 +78,18 @@ export async function createStoredCampaignBackup(
   const dir = await ensureBackupsDir();
   const filePath = `${dir}/${filename}`;
 
-  const zipBuffer = await createCampaignBackupZip(campaignId);
-  await writeFile(filePath, zipBuffer);
+  const written = await writeCampaignBackupZipToFile(campaignId, filePath);
 
   await pruneOldBackupsForSlug(campaign.slug);
 
   return {
     filename,
-    sizeBytes: zipBuffer.byteLength,
+    sizeBytes: written.sizeBytes,
     campaignId: campaign.id,
     campaignSlug: campaign.slug,
     createdAt: createdAt.toISOString(),
+    includedFiles: written.includedFiles,
+    skippedFiles: written.skippedFiles.length,
   };
 }
 

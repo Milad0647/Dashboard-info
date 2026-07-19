@@ -1,21 +1,16 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { getAdminSessionCookieName } from "@/lib/auth/admin-session";
-import { isFullAdmin } from "@/lib/auth/get-session";
-import { parseSessionTokenSync } from "@/lib/auth/session-node";
+import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
 import {
   createStoredCampaignBackup,
   listStoredBackups,
 } from "@/lib/services/stored-backup";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 async function requireFullAdmin() {
-  const cookieStore = await cookies();
-  const session = parseSessionTokenSync(
-    cookieStore.get(getAdminSessionCookieName())?.value
-  );
+  const session = await getAuthSession();
   if (!session || !isFullAdmin(session)) return null;
   return session;
 }
@@ -26,11 +21,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const campaignSlug = searchParams.get("campaignSlug")?.trim() || undefined;
-  const backups = await listStoredBackups(campaignSlug);
-
-  return NextResponse.json({ backups });
+  try {
+    const { searchParams } = new URL(request.url);
+    const campaignSlug = searchParams.get("campaignSlug")?.trim() || undefined;
+    const backups = await listStoredBackups(campaignSlug);
+    return NextResponse.json({ backups });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to list backups";
+    console.error("[backups] list failed", error);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 /** Create a campaign backup ZIP and store it on the server for later download. */
@@ -53,9 +53,17 @@ export async function POST(request: Request) {
 
   try {
     const result = await createStoredCampaignBackup(campaignId);
-    return NextResponse.json({ success: true, backup: result });
+    return NextResponse.json({
+      success: true,
+      backup: result,
+      warning:
+        result.skippedFiles > 0
+          ? `${result.skippedFiles} فایل رسانه‌ای به‌خاطر محدودیت حجم در ZIP قرار نگرفت (در پوشه آپلود سرور باقی می‌ماند).`
+          : undefined,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Backup failed";
+    console.error("[backups] create failed", error);
     const status = message === "Campaign not found" ? 404 : 500;
     return NextResponse.json({ error: message }, { status });
   }
