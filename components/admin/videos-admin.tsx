@@ -13,6 +13,7 @@ import {
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
+  sortAdminContentItems,
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
 import {
@@ -116,10 +117,14 @@ export function VideosAdmin({
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(videos), [videos]);
   const filteredVideos = useMemo(
-    () => videos.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+    () =>
+      sortAdminContentItems(
+        videos.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+        contentFilter.sortOrder
+      ),
     [videos, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${viewMode}`;
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredVideos.length,
     paginationResetKey

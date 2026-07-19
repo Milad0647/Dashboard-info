@@ -12,6 +12,7 @@ import {
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
+  sortAdminContentItems,
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
 import {
@@ -113,10 +114,14 @@ export function PostersAdmin({
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(posters), [posters]);
   const filteredPosters = useMemo(
-    () => posters.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+    () =>
+      sortAdminContentItems(
+        posters.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+        contentFilter.sortOrder
+      ),
     [posters, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${viewMode}`;
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredPosters.length,
     paginationResetKey

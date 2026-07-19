@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, RotateCcw, Sparkles, UserRound, X } from "lucide-react";
+import { ArrowUpDown, Filter, RotateCcw, Sparkles, UserRound, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -10,6 +10,7 @@ import { formatPlanLabelDisplay, matchesAnyPlanLabelFilter } from "@/lib/content
 export const ADMIN_FILTER_ALL = "all";
 
 export type AdminCreativeFilter = "all" | "creative" | "standard";
+export type AdminContentSort = "newest" | "oldest" | "title" | "default" | "category";
 
 export interface AdminContentFilterState {
   userKey: string;
@@ -17,12 +18,14 @@ export interface AdminContentFilterState {
   planLabels: string[];
   /** Only used when the section enables the creative filter (activities). */
   creative: AdminCreativeFilter;
+  sortOrder: AdminContentSort;
 }
 
 export const DEFAULT_ADMIN_CONTENT_FILTER: AdminContentFilterState = {
   userKey: ADMIN_FILTER_ALL,
   planLabels: [],
   creative: ADMIN_FILTER_ALL,
+  sortOrder: "newest",
 };
 
 export interface AdminFilterUserOption {
@@ -41,9 +44,18 @@ interface AdminContentFilterBarProps {
   onCategoryChange?: (value: string) => void;
   /** Show creative / standard filter (activities). */
   showCreativeFilter?: boolean;
+  /** When true, includes sort-by-category in the order dropdown. */
+  showCategorySort?: boolean;
 }
 
 type CreativeFilterable = Ownable & { isCreative?: boolean };
+
+type SortableAdminItem = {
+  title?: string | null;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 export function matchesAdminContentFilter<T extends CreativeFilterable>(
   item: T,
@@ -64,6 +76,36 @@ export function matchesAdminContentFilter<T extends CreativeFilterable>(
   return true;
 }
 
+export function sortAdminContentItems<T extends SortableAdminItem>(
+  items: T[],
+  sort: AdminContentSort,
+  getDate?: (item: T) => string | undefined,
+  getTitle?: (item: T) => string,
+  getCategory?: (item: T) => string
+): T[] {
+  const copy = [...items];
+  const resolveDate = (item: T) => getDate?.(item) ?? item.updatedAt ?? item.createdAt ?? "";
+  const resolveTitle = (item: T) => getTitle?.(item) ?? item.title ?? "";
+
+  if (sort === "title") {
+    return copy.sort((a, b) => resolveTitle(a).localeCompare(resolveTitle(b), "fa"));
+  }
+
+  if (sort === "newest") {
+    return copy.sort((a, b) => resolveDate(b).localeCompare(resolveDate(a)));
+  }
+
+  if (sort === "oldest") {
+    return copy.sort((a, b) => resolveDate(a).localeCompare(resolveDate(b)));
+  }
+
+  if (sort === "category" && getCategory) {
+    return copy.sort((a, b) => getCategory(a).localeCompare(getCategory(b), "fa"));
+  }
+
+  return copy.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+}
+
 export function collectAdminFilterUsers(items: Ownable[]): AdminFilterUserOption[] {
   const map = new Map<string, string>();
 
@@ -79,6 +121,15 @@ export function collectAdminFilterUsers(items: Ownable[]): AdminFilterUserOption
     .sort((a, b) => a.label.localeCompare(b.label, "fa"));
 }
 
+const SORT_OPTIONS = [
+  { value: "newest", label: "جدیدترین" },
+  { value: "oldest", label: "قدیمی‌ترین" },
+  { value: "title", label: "عنوان" },
+  { value: "default", label: "ترتیب پیش‌فرض" },
+];
+
+const CATEGORY_SORT_OPTION = { value: "category", label: "دسته‌بندی" };
+
 export function AdminContentFilterBar({
   filter,
   onChange,
@@ -88,17 +139,22 @@ export function AdminContentFilterBar({
   categoryValue = ADMIN_FILTER_ALL,
   onCategoryChange,
   showCreativeFilter = false,
+  showCategorySort = false,
 }: AdminContentFilterBarProps) {
   const hasCategoryFilter = categoryOptions.length > 0 && Boolean(onCategoryChange);
+  const sortOptions = showCategorySort
+    ? [
+        ...SORT_OPTIONS.slice(0, 3),
+        CATEGORY_SORT_OPTION,
+        SORT_OPTIONS[3],
+      ]
+    : SORT_OPTIONS;
   const active =
     filter.userKey !== ADMIN_FILTER_ALL ||
     filter.planLabels.length > 0 ||
+    filter.sortOrder !== DEFAULT_ADMIN_CONTENT_FILTER.sortOrder ||
     (showCreativeFilter && filter.creative !== ADMIN_FILTER_ALL) ||
     (hasCategoryFilter && categoryValue !== ADMIN_FILTER_ALL);
-
-  if (users.length === 0 && plans.length === 0 && !hasCategoryFilter && !showCreativeFilter) {
-    return null;
-  }
 
   const togglePlan = (plan: string) => {
     const exists = filter.planLabels.includes(plan);
@@ -199,6 +255,18 @@ export function AdminContentFilterBar({
             leadingIcon={<Sparkles className="h-4 w-4 shrink-0 text-amber-500" />}
           />
         )}
+
+        <SearchableSelect
+          value={filter.sortOrder}
+          onValueChange={(sortOrder) =>
+            onChange({ ...filter, sortOrder: sortOrder as AdminContentSort })
+          }
+          options={sortOptions}
+          placeholder="ترتیب نمایش"
+          searchPlaceholder="جستجوی ترتیب..."
+          className="w-full sm:w-56"
+          leadingIcon={<ArrowUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
+        />
 
         {active && (
           <Button

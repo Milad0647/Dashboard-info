@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "91802c68d188e67f12a94eba46715f2991b3c144",
+      "committedAt": "2026-07-19T12:09:37+03:30",
+      "title": "افزودن فیلتر ترتیب نمایش کنار دسته‌بندی تبلیغات محیطی",
+      "subject": "Clarify display-order filter next to billboard categories"
+    },
+    {
       "hash": "a138ce2b3a96a4b3fbda9fb6bcbb944a43e0cd20",
       "committedAt": "2026-07-19T11:51:20+03:30",
       "title": "امکان ویرایش و انتقال مالکیت محتوا برای کارفرما",

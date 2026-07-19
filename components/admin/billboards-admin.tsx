@@ -12,6 +12,7 @@ import {
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
+  sortAdminContentItems,
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
@@ -38,9 +39,11 @@ import { restoreBillboardCategoriesAction } from "@/lib/actions/billboard-catego
 import {
   BILLBOARD_CATEGORIES,
   billboardCategoryLabels,
+  buildBillboardCategoryStats,
   resolveBillboardCategoryDisplay,
   resolveBillboardCategoryLabel,
 } from "@/lib/billboard-categories";
+import { BillboardCategoryChart } from "@/components/charts/billboard-category-chart";
 import { canManageBillboardPeriods, isApiBillboard } from "@/lib/billboards";
 import { getBillboardDisplayImage } from "@/lib/billboard-media";
 import type { ContentTopic } from "@/lib/content-topics";
@@ -126,15 +129,25 @@ export function BillboardsAdmin({
   }, [initialBillboards]);
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(billboards), [billboards]);
-  const filteredBillboards = useMemo(
-    () =>
-      billboards.filter((item) => {
-        if (!matchesAdminContentFilter(item, contentFilter)) return false;
-        if (categoryFilter === ADMIN_FILTER_ALL) return true;
-        return resolveBillboardCategoryDisplay(item) === categoryFilter;
-      }),
-    [billboards, contentFilter, categoryFilter]
-  );
+  const filteredBillboards = useMemo(() => {
+    const filtered = billboards.filter((item) => {
+      if (!matchesAdminContentFilter(item, contentFilter)) return false;
+      if (categoryFilter === ADMIN_FILTER_ALL) return true;
+      return resolveBillboardCategoryDisplay(item) === categoryFilter;
+    });
+    return sortAdminContentItems(
+      filtered,
+      contentFilter.sortOrder,
+      undefined,
+      undefined,
+      resolveBillboardCategoryLabel
+    );
+  }, [billboards, contentFilter, categoryFilter]);
+
+  const categoryStats = useMemo(() => {
+    const base = billboards.filter((item) => matchesAdminContentFilter(item, contentFilter));
+    return buildBillboardCategoryStats(base);
+  }, [billboards, contentFilter]);
 
   const handleNormalizeApiBillboards = () => {
     void (async () => {
@@ -166,7 +179,7 @@ export function BillboardsAdmin({
   );
   const apiBillboards = filteredBillboards.filter((billboard) => isApiBillboard(billboard));
   const allApiBillboards = billboards.filter((billboard) => isApiBillboard(billboard));
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${categoryFilter}:${viewMode}`;
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${categoryFilter}:${viewMode}`;
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     manualBillboards.length,
     paginationResetKey
@@ -296,7 +309,14 @@ export function BillboardsAdmin({
         categoryOptions={billboardCategoryOptions}
         categoryValue={categoryFilter}
         onCategoryChange={setCategoryFilter}
+        showCategorySort
       />
+
+      {categoryStats.length > 0 && (
+        <div className="mb-4">
+          <BillboardCategoryChart data={categoryStats} />
+        </div>
+      )}
 
       <SectionBulkEditBar
         campaignId={campaignId}

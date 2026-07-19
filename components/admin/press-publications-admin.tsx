@@ -16,6 +16,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AdminContentFilterBar,
+  collectAdminFilterUsers,
+  DEFAULT_ADMIN_CONTENT_FILTER,
+  matchesAdminContentFilter,
+  sortAdminContentItems,
+  type AdminContentFilterState,
+} from "@/components/admin/admin-content-filter-bar";
 import { AdminActivityCompactCard } from "@/components/admin/admin-activity-compact-card";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
@@ -94,12 +102,23 @@ export function PressPublicationsAdmin({
   );
   const [previewActivity, setPreviewActivity] = useState<CampaignActivity | null>(null);
   const [isPending, startTransition] = useTransition();
-  const paginationResetKey = "press";
+  const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
+  const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
+  const filteredRows = useMemo(
+    () =>
+      sortAdminContentItems(
+        rows.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+        contentFilter.sortOrder,
+        (item) => item.activityDate || item.updatedAt || item.createdAt
+      ),
+    [rows, contentFilter]
+  );
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}`;
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
-    rows.length,
+    filteredRows.length,
     paginationResetKey
   );
-  const visibleRows = useMemo(() => rows.slice(0, visibleCount), [rows, visibleCount]);
+  const visibleRows = useMemo(() => filteredRows.slice(0, visibleCount), [filteredRows, visibleCount]);
   const visibleIds = useMemo(() => visibleRows.map((item) => item.id), [visibleRows]);
   const bulk = useSectionBulkEdit(visibleIds);
 
@@ -320,6 +339,13 @@ export function PressPublicationsAdmin({
         </div>
       </div>
 
+      <AdminContentFilterBar
+        filter={contentFilter}
+        onChange={setContentFilter}
+        users={canTransferOwnership || isFullAdmin ? filterUsers : []}
+        plans={contentPlans}
+      />
+
       <SectionBulkEditBar
         campaignId={campaignId}
         contentType="press"
@@ -361,7 +387,7 @@ export function PressPublicationsAdmin({
         hasMore={hasMore}
         isLoadingMore={isLoadingMore}
         onLoadMore={loadMore}
-        remaining={rows.length - visibleCount}
+        remaining={filteredRows.length - visibleCount}
       />
 
       <AdminContentPreviewDialog

@@ -9,6 +9,7 @@ import {
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
+  sortAdminContentItems,
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
@@ -115,10 +116,14 @@ export function RawMediaAdmin({
   }, [editingId, items, storage]);
   const filterUsers = useMemo(() => collectAdminFilterUsers(items), [items]);
   const filteredItems = useMemo(
-    () => items.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+    () =>
+      sortAdminContentItems(
+        items.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+        contentFilter.sortOrder
+      ),
     [items, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${viewMode}`;
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${viewMode}`;
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredItems.length,
     paginationResetKey

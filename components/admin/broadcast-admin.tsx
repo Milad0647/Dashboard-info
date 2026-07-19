@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,6 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AdminContentFilterBar,
+  DEFAULT_ADMIN_CONTENT_FILTER,
+  sortAdminContentItems,
+  type AdminContentFilterState,
+} from "@/components/admin/admin-content-filter-bar";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { DocumentUpload } from "@/components/ui/document-upload";
@@ -76,6 +82,12 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rows, setRows] = useState(initialReports);
   const [isPending, startTransition] = useTransition();
+  const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
+  const sortedRows = useMemo(
+    () =>
+      sortAdminContentItems(rows, contentFilter.sortOrder, (item) => item.reportDate || item.updatedAt || item.createdAt),
+    [rows, contentFilter.sortOrder]
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -200,8 +212,15 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
         </Button>
       </div>
 
+      <AdminContentFilterBar
+        filter={contentFilter}
+        onChange={setContentFilter}
+        users={[]}
+        plans={[]}
+      />
+
       <AdminDataTable
-        data={rows}
+        data={sortedRows}
         searchKeys={["title", "fileName"]}
         columns={[
           { key: "title", label: "عنوان" },

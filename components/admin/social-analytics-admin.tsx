@@ -19,6 +19,7 @@ import {
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
+  sortAdminContentItems,
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
@@ -98,7 +99,13 @@ export function SocialAnalyticsAdmin({
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
   const filteredRows = useMemo(
-    () => rows.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+    () =>
+      sortAdminContentItems(
+        rows.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+        contentFilter.sortOrder,
+        undefined,
+        (item) => item.title?.trim() || getSocialPlatformLabel(item.platform)
+      ),
     [rows, contentFilter]
   );
 
