@@ -380,6 +380,13 @@ ALTER TABLE billboards ADD COLUMN IF NOT EXISTS province TEXT;
 ALTER TABLE billboards ADD COLUMN IF NOT EXISTS category TEXT;
 ALTER TABLE billboards ADD COLUMN IF NOT EXISTS area_sqm DOUBLE PRECISION;
 
+-- Remap legacy billboard categories to the current taxonomy (idempotent).
+UPDATE billboards SET category = 'fence_wall_banner' WHERE category IN ('banner', 'narde', 'sakhteman');
+UPDATE billboards SET category = 'other' WHERE category = 'lightbox';
+UPDATE billboards SET category = 'urban_tv' WHERE category = 'monitor';
+UPDATE billboards SET category = 'bus_metro' WHERE category = 'bus_shelter';
+UPDATE billboards SET category = 'scaffolding' WHERE category = 'darbast';
+
 CREATE TABLE IF NOT EXISTS billboard_display_periods (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   billboard_id UUID NOT NULL REFERENCES billboards(id) ON DELETE CASCADE,
@@ -658,9 +665,12 @@ CREATE TABLE IF NOT EXISTS user_problem_reports (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Existing deployments created before admin_note_seen_at existed.
+-- Existing deployments created before admin_note_seen_at / first_replied_at existed.
 ALTER TABLE user_problem_reports
   ADD COLUMN IF NOT EXISTS admin_note_seen_at TIMESTAMPTZ;
+
+ALTER TABLE user_problem_reports
+  ADD COLUMN IF NOT EXISTS first_replied_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_user_problem_reports_status
   ON user_problem_reports(status, created_at DESC);

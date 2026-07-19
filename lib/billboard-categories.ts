@@ -1,36 +1,49 @@
 export const BILLBOARD_CATEGORIES = [
-  "straboard",
-  "banner",
   "billboard",
-  "lightbox",
-  "monitor",
+  "straboard",
   "bridge",
-  "bus_shelter",
-  "darbast",
-  "narde",
-  "sakhteman",
+  "urban_tv",
+  "bus_metro",
+  "lamp_post",
+  "scaffolding",
+  "fence_wall_banner",
+  "stand",
   "other",
 ] as const;
 
 export type BillboardCategory = (typeof BILLBOARD_CATEGORIES)[number];
 
 export const billboardCategoryLabels: Record<BillboardCategory, string> = {
-  straboard: "استرابورد",
-  banner: "بنر",
   billboard: "بیلبورد",
-  lightbox: "لایت‌باکس",
-  monitor: "مانیتور",
-  bridge: "پل عابرپیاده",
-  bus_shelter: "ایستگاه اتوبوس",
-  darbast: "داربست",
-  narde: "نرده",
-  sakhteman: "ساختمان",
+  straboard: "استرابورد",
+  bridge: "عرشه پل",
+  urban_tv: "تلویزیون شهری",
+  bus_metro: "ایستگاه اتوبوس و مترو",
+  lamp_post: "لم پوست",
+  scaffolding: "داربست و اسپیس",
+  fence_wall_banner: "بنر روی نرده و دیوار",
+  stand: "استند",
   other: "سایر",
+};
+
+/**
+ * Legacy DB / import keys remapped to the current taxonomy.
+ * Keep in sync with the UPDATE in database/schema.sql.
+ */
+const legacyBillboardCategoryMap: Record<string, BillboardCategory> = {
+  banner: "fence_wall_banner",
+  lightbox: "other",
+  monitor: "urban_tv",
+  bus_shelter: "bus_metro",
+  darbast: "scaffolding",
+  narde: "fence_wall_banner",
+  sakhteman: "fence_wall_banner",
 };
 
 export function getBillboardCategoryLabel(value: string | null | undefined): string {
   if (!value) return "نامشخص";
-  return billboardCategoryLabels[value as BillboardCategory] ?? value;
+  const matched = matchBillboardCategoryKey(value);
+  return matched ? billboardCategoryLabels[matched] : value;
 }
 
 const billboardCategoryLookup = new Map<string, BillboardCategory>(
@@ -42,6 +55,7 @@ const billboardCategoryLookup = new Map<string, BillboardCategory>(
 
 /** Extra aliases seen in imports / free text (Latin + Persian variants). */
 const billboardCategoryAliases: Record<string, BillboardCategory> = {
+  ...legacyBillboardCategoryMap,
   "estra board": "straboard",
   estraboard: "straboard",
   "estra-board": "straboard",
@@ -49,8 +63,27 @@ const billboardCategoryAliases: Record<string, BillboardCategory> = {
   استرابرد: "straboard",
   "bill board": "billboard",
   "بیلبورد شهری": "billboard",
-  "light box": "lightbox",
-  "لایت باکس": "lightbox",
+  "light box": "other",
+  "لایت باکس": "other",
+  لایت‌باکس: "other",
+  مانیتور: "urban_tv",
+  "تلویزیون شهری": "urban_tv",
+  "پل عابرپیاده": "bridge",
+  "پل عابر پیاده": "bridge",
+  "عرشه پل": "bridge",
+  "ایستگاه اتوبوس": "bus_metro",
+  "ایستگاه مترو": "bus_metro",
+  مترو: "bus_metro",
+  بنر: "fence_wall_banner",
+  نرده: "fence_wall_banner",
+  ساختمان: "fence_wall_banner",
+  داربست: "scaffolding",
+  اسپیس: "scaffolding",
+  "داربست و اسپیس": "scaffolding",
+  لمپوست: "lamp_post",
+  "lamp post": "lamp_post",
+  lampost: "lamp_post",
+  استند: "stand",
 };
 
 export function matchBillboardCategoryKey(
@@ -64,9 +97,19 @@ export function matchBillboardCategoryKey(
     return slug as BillboardCategory;
   }
 
+  if (legacyBillboardCategoryMap[slug]) {
+    return legacyBillboardCategoryMap[slug];
+  }
+
   const aliasKey = normalized.toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ").trim();
   if (billboardCategoryAliases[aliasKey]) {
     return billboardCategoryAliases[aliasKey];
+  }
+  if (billboardCategoryAliases[slug]) {
+    return billboardCategoryAliases[slug];
+  }
+  if (billboardCategoryAliases[normalized]) {
+    return billboardCategoryAliases[normalized];
   }
 
   return (

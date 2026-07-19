@@ -34,6 +34,7 @@ import {
 import {
   BILLBOARD_CATEGORIES,
   billboardCategoryLabels,
+  matchBillboardCategoryKey,
   type BillboardCategory,
 } from "@/lib/billboard-categories";
 import {
@@ -159,7 +160,7 @@ export function BillboardCreateAssignmentDialog({
 
         setProvince(resolvedProvince);
         setCity(resolvedCity);
-        setCategory((editingBillboard.category as BillboardCategory) || "billboard");
+        setCategory(matchBillboardCategoryKey(editingBillboard.category) ?? "billboard");
         setAxis(editingBillboard.title);
         setAreaSqm(parseAreaSqmFromBillboard(editingBillboard));
         setAddress(parseAddressFromBillboard(editingBillboard));

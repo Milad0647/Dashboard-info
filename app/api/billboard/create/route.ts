@@ -7,7 +7,7 @@ import { pgGetCampaignById } from "@/lib/db/repository";
 import { pgGetUserById } from "@/lib/db/repository-extended";
 import type { BillboardDisplayPeriodInput } from "@/lib/services/billboard-assignment-api";
 import { createLocalBillboard } from "@/lib/services/local-billboard-create";
-import type { BillboardCategory } from "@/lib/billboard-categories";
+import { matchBillboardCategoryKey, type BillboardCategory } from "@/lib/billboard-categories";
 
 function parseRequiredPeriods(formData: FormData): BillboardDisplayPeriodInput[] {
   const raw = formData.get("periods");
@@ -68,7 +68,8 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const campaignId = String(formData.get("campaignId") ?? "").trim();
   const billboardId = String(formData.get("billboardId") ?? "").trim() || undefined;
-  const category = String(formData.get("category") ?? "").trim() || null;
+  const categoryRaw = String(formData.get("category") ?? "").trim() || null;
+  const category = categoryRaw ? matchBillboardCategoryKey(categoryRaw) : null;
   const axis = String(formData.get("axis") ?? "").trim();
   const latitude = Number(formData.get("latitude"));
   const longitude = Number(formData.get("longitude"));

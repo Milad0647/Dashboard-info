@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "9a9bf725535a6ed60ac44f6f85380c19829001d8",
+      "committedAt": "2026-07-19T08:47:37+03:30",
+      "title": "رفع مشکل لود نشدن صفحات ادمین و بخش مشکلات ثبت‌شده",
+      "subject": "Fix admin session bounce and reported-problems hang"
+    },
+    {
       "hash": "d6a7e548d52e5c73e120cfeb6785a8de162cc0e7",
       "committedAt": "2026-07-19T08:46:48+03:30",
       "title": "رفع مشکل باز نشدن صفحه و خطای پشتیبان‌گیری دستی",
