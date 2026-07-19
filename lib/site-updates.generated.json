@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "5519032ea1d1a20e2348bf809a877e6195f79e0d",
+      "committedAt": "2026-07-19T11:45:29+03:30",
+      "title": "رفع خطای ارسال پیام هنگام زدن حل شد در مشکلات ثبت‌شده",
+      "subject": "Fix resolve+reply on reported problems"
+    },
+    {
       "hash": "c35aed045af66e2eac154d1784d6734086093a7d",
       "committedAt": "2026-07-19T11:40:28+03:30",
       "title": "نمایش تعداد راش‌های ارسالی در داشبورد",

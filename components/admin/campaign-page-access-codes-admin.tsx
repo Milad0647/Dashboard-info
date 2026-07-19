@@ -59,14 +59,18 @@ export function CampaignPageAccessCodesAdmin({ campaignId }: CampaignPageAccessC
 
   const loadCodes = useCallback(async () => {
     setLoading(true);
-    const result = await listCampaignPageAccessCodesAction(campaignId);
-    if (!result.success) {
-      toast.error(result.error || "بارگذاری کدها ناموفق بود");
+    try {
+      const result = await listCampaignPageAccessCodesAction(campaignId);
+      if (!result.success) {
+        toast.error(result.error || "بارگذاری کدها ناموفق بود");
+        return;
+      }
+      setCodes(result.codes);
+    } catch {
+      toast.error("بارگذاری کدها ناموفق بود");
+    } finally {
       setLoading(false);
-      return;
     }
-    setCodes(result.codes);
-    setLoading(false);
   }, [campaignId]);
 
   useEffect(() => {
@@ -75,43 +79,51 @@ export function CampaignPageAccessCodesAdmin({ campaignId }: CampaignPageAccessC
 
   const onGenerate = form.handleSubmit((data) => {
     startTransition(async () => {
-      const count = Number(data.count);
-      const maxRaw = data.maxUnlocks.trim();
-      const result = await generateCampaignPageAccessCodesAction(campaignId, {
-        titleBase: data.titleBase,
-        count,
-        expiresAt: expiresAt || null,
-        maxUnlocks: maxRaw ? Number(maxRaw) : null,
-      });
+      try {
+        const count = Number(data.count);
+        const maxRaw = (data.maxUnlocks ?? "").toString().trim();
+        const result = await generateCampaignPageAccessCodesAction(campaignId, {
+          titleBase: data.titleBase,
+          count,
+          expiresAt: expiresAt || null,
+          maxUnlocks: maxRaw ? Number(maxRaw) : null,
+        });
 
-      if (!result.success) {
-        toast.error(result.error || "تولید کد ناموفق بود");
-        return;
+        if (!result.success) {
+          toast.error(result.error || "تولید کد ناموفق بود");
+          return;
+        }
+
+        setGenerated(
+          result.codes.map((item) => ({
+            id: item.id,
+            title: item.title,
+            password: item.password,
+          }))
+        );
+        form.reset({ titleBase: data.titleBase, count: "1", expiresAt: "", maxUnlocks: "" });
+        setExpiresAt("");
+        toast.success(`${formatPersianNumber(result.codes.length)} کد ساخته شد`);
+        await loadCodes();
+      } catch {
+        toast.error("تولید کد ناموفق بود");
       }
-
-      setGenerated(
-        result.codes.map((item) => ({
-          id: item.id,
-          title: item.title,
-          password: item.password,
-        }))
-      );
-      form.reset({ titleBase: data.titleBase, count: "1", expiresAt: "", maxUnlocks: "" });
-      setExpiresAt("");
-      toast.success(`${formatPersianNumber(result.codes.length)} کد ساخته شد`);
-      await loadCodes();
     });
   });
 
   const revokeCode = (codeId: string) => {
     startTransition(async () => {
-      const result = await revokeCampaignPageAccessCodeAction(campaignId, codeId);
-      if (!result.success) {
-        toast.error(result.error || "لغو کد ناموفق بود");
-        return;
+      try {
+        const result = await revokeCampaignPageAccessCodeAction(campaignId, codeId);
+        if (!result.success) {
+          toast.error(result.error || "لغو کد ناموفق بود");
+          return;
+        }
+        toast.success("کد لغو شد");
+        await loadCodes();
+      } catch {
+        toast.error("لغو کد ناموفق بود");
       }
-      toast.success("کد لغو شد");
-      await loadCodes();
     });
   };
 
@@ -267,7 +279,7 @@ export function CampaignPageAccessCodesAdmin({ campaignId }: CampaignPageAccessC
                       <div>
                         انقضا:{" "}
                         {code.expiresAt
-                          ? formatPersianDate(code.expiresAt.slice(0, 10))
+                          ? formatPersianDate(String(code.expiresAt).slice(0, 10))
                           : "بدون محدودیت"}
                       </div>
                       <div>

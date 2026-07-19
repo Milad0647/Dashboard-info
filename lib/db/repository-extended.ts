@@ -1015,6 +1015,13 @@ export type CampaignPageLockGateRow = {
   activeCodes: Array<{ id: string; passwordHash: string; expiresAt: string | null }>;
 };
 
+function toIsoOrNull(value: unknown): string | null {
+  if (value == null) return null;
+  if (value instanceof Date) return value.toISOString();
+  const text = String(value).trim();
+  return text.length > 0 ? text : null;
+}
+
 function accessCodeStatus(row: {
   revoked_at: string | null;
   expires_at: string | null;
@@ -1028,8 +1035,8 @@ function accessCodeStatus(row: {
 }
 
 function mapAccessCodeRow(row: Record<string, unknown>): import("@/lib/types").CampaignPageAccessCode {
-  const revokedAt = (row.revoked_at as string | null) ?? null;
-  const expiresAt = (row.expires_at as string | null) ?? null;
+  const revokedAt = toIsoOrNull(row.revoked_at);
+  const expiresAt = toIsoOrNull(row.expires_at);
   const maxUnlocks = row.max_unlocks == null ? null : Number(row.max_unlocks);
   const unlockCount = Number(row.unlock_count ?? 0);
   return {
@@ -1037,9 +1044,9 @@ function mapAccessCodeRow(row: Record<string, unknown>): import("@/lib/types").C
     campaignId: String(row.campaign_id),
     title: String(row.title ?? ""),
     expiresAt,
-    maxUnlocks,
-    unlockCount,
-    createdAt: String(row.created_at ?? ""),
+    maxUnlocks: Number.isFinite(maxUnlocks as number) ? maxUnlocks : null,
+    unlockCount: Number.isFinite(unlockCount) ? unlockCount : 0,
+    createdAt: toIsoOrNull(row.created_at) ?? "",
     revokedAt,
     status: accessCodeStatus({
       revoked_at: revokedAt,
@@ -1048,6 +1055,43 @@ function mapAccessCodeRow(row: Record<string, unknown>): import("@/lib/types").C
       unlock_count: unlockCount,
     }),
   };
+}
+
+let accessCodesTableReady: Promise<void> | null = null;
+
+/** Ensure table exists on older deployments that have not run db:migrate yet. */
+export async function ensureCampaignPageAccessCodesTable(): Promise<void> {
+  if (!accessCodesTableReady) {
+    accessCodesTableReady = (async () => {
+      const sql = getSql();
+      await sql`
+        CREATE TABLE IF NOT EXISTS campaign_page_access_codes (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          campaign_id UUID NOT NULL REFERENCES campaign_settings(id) ON DELETE CASCADE,
+          title TEXT NOT NULL,
+          password_hash TEXT NOT NULL,
+          expires_at TIMESTAMPTZ NULL,
+          max_unlocks INTEGER NULL,
+          unlock_count INTEGER NOT NULL DEFAULT 0,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          revoked_at TIMESTAMPTZ NULL,
+          CONSTRAINT campaign_page_access_codes_max_unlocks_positive
+            CHECK (max_unlocks IS NULL OR max_unlocks > 0),
+          CONSTRAINT campaign_page_access_codes_unlock_count_nonneg
+            CHECK (unlock_count >= 0)
+        )
+      `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS idx_campaign_page_access_codes_campaign
+          ON campaign_page_access_codes(campaign_id)
+          WHERE revoked_at IS NULL
+      `;
+    })().catch((error) => {
+      accessCodesTableReady = null;
+      throw error;
+    });
+  }
+  await accessCodesTableReady;
 }
 
 /** Shared password and currently usable access codes for page lock checks. */
@@ -1065,20 +1109,27 @@ export async function pgGetCampaignPageLockGate(slug: string): Promise<CampaignP
   const sharedHash = (rows[0].page_view_password_hash as string | null) ?? null;
   const title = String(rows[0].title ?? "");
 
-  const codeRows = await sql`
-    SELECT id, password_hash, expires_at, max_unlocks, unlock_count
-    FROM campaign_page_access_codes
-    WHERE campaign_id = ${campaignId}
-      AND revoked_at IS NULL
-      AND (expires_at IS NULL OR expires_at > NOW())
-      AND (max_unlocks IS NULL OR unlock_count < max_unlocks)
-  `;
+  let activeCodes: Array<{ id: string; passwordHash: string; expiresAt: string | null }> = [];
+  try {
+    await ensureCampaignPageAccessCodesTable();
+    const codeRows = await sql`
+      SELECT id, password_hash, expires_at, max_unlocks, unlock_count
+      FROM campaign_page_access_codes
+      WHERE campaign_id = ${campaignId}
+        AND revoked_at IS NULL
+        AND (expires_at IS NULL OR expires_at > NOW())
+        AND (max_unlocks IS NULL OR unlock_count < max_unlocks)
+    `;
 
-  const activeCodes = codeRows.map((row) => ({
-    id: String(row.id),
-    passwordHash: String(row.password_hash),
-    expiresAt: (row.expires_at as string | null) ?? null,
-  }));
+    activeCodes = codeRows.map((row) => ({
+      id: String(row.id),
+      passwordHash: String(row.password_hash),
+      expiresAt: toIsoOrNull(row.expires_at),
+    }));
+  } catch {
+    // Table may be unavailable; fall back to shared-password-only gate.
+    activeCodes = [];
+  }
 
   return {
     title,
@@ -1117,12 +1168,18 @@ export async function pgVerifyCampaignPagePassword(
     }
   }
 
-  const codeRows = await sql`
-    SELECT id, password_hash, expires_at, max_unlocks, unlock_count, revoked_at
-    FROM campaign_page_access_codes
-    WHERE campaign_id = ${campaignId}
-      AND revoked_at IS NULL
-  `;
+  let codeRows: Array<Record<string, unknown>> = [];
+  try {
+    await ensureCampaignPageAccessCodesTable();
+    codeRows = (await sql`
+      SELECT id, password_hash, expires_at, max_unlocks, unlock_count, revoked_at
+      FROM campaign_page_access_codes
+      WHERE campaign_id = ${campaignId}
+        AND revoked_at IS NULL
+    `) as unknown as Array<Record<string, unknown>>;
+  } catch {
+    codeRows = [];
+  }
 
   let matchedExpired = false;
   let matchedExhausted = false;
@@ -1132,7 +1189,7 @@ export async function pgVerifyCampaignPagePassword(
     const valid = await verifyPassword(password, hash);
     if (!valid) continue;
 
-    const expiresAt = (row.expires_at as string | null) ?? null;
+    const expiresAt = toIsoOrNull(row.expires_at);
     if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
       matchedExpired = true;
       continue;
@@ -1184,6 +1241,7 @@ export async function pgVerifyCampaignPagePassword(
 }
 
 export async function pgListCampaignPageAccessCodes(campaignId: string) {
+  await ensureCampaignPageAccessCodesTable();
   const sql = getSql();
   const rows = await sql`
     SELECT id, campaign_id, title, expires_at, max_unlocks, unlock_count, created_at, revoked_at
@@ -1203,6 +1261,7 @@ export async function pgCreateCampaignPageAccessCodes(
     maxUnlocks: number | null;
   }>
 ) {
+  await ensureCampaignPageAccessCodesTable();
   const sql = getSql();
   const created: Array<{ id: string; title: string }> = [];
 
@@ -1229,6 +1288,7 @@ export async function pgCreateCampaignPageAccessCodes(
 }
 
 export async function pgRevokeCampaignPageAccessCode(campaignId: string, codeId: string) {
+  await ensureCampaignPageAccessCodesTable();
   const sql = getSql();
   const rows = await sql`
     UPDATE campaign_page_access_codes
@@ -1240,6 +1300,7 @@ export async function pgRevokeCampaignPageAccessCode(campaignId: string, codeId:
 }
 
 export async function pgHasActiveCampaignPageAccessCodes(campaignId: string): Promise<boolean> {
+  await ensureCampaignPageAccessCodesTable();
   const sql = getSql();
   const rows = await sql`
     SELECT 1
