@@ -5,6 +5,7 @@ import {
   FileStack,
   FileText,
   Globe,
+  HardDrive,
   ImageIcon,
   Images,
   LayoutGrid,
@@ -25,6 +26,7 @@ import type {
   CampaignMeeting,
   CampaignSubmission,
   Poster,
+  RawMediaUpload,
   SocialMediaPost,
   SocialPlatformStat,
   Video as CampaignVideo,
@@ -34,6 +36,7 @@ export interface AdminDashboardData {
   posters: Poster[];
   videos: CampaignVideo[];
   files?: CampaignFile[];
+  rawMedia?: RawMediaUpload[];
   submissions: CampaignSubmission[];
   analytics: AnalyticsMetric[];
   socialPosts?: SocialMediaPost[];
@@ -84,6 +87,14 @@ export const DASHBOARD_STAT_DEFINITIONS: DashboardStatDefinition[] = [
     href: "/admin/files",
     icon: FileStack,
     getCount: (data) => (data.files ?? []).length,
+  },
+  {
+    permissionKey: "rawMedia",
+    featureKey: "rawMedia",
+    label: "راش‌های ارسالی",
+    href: "/admin/raw-media",
+    icon: HardDrive,
+    getCount: (data) => (data.rawMedia ?? []).length,
   },
   {
     permissionKey: "submissions",
