@@ -6,7 +6,7 @@ import {
   assertCanMutateOwnedContent,
   assertCanMutateOwnedContentIfExists,
 } from "@/lib/auth/assert-content-ownership";
-import { canScoreContent, isClientUser } from "@/lib/auth/access";
+import { canManageAllContent, canScoreContent, isClientUser } from "@/lib/auth/access";
 import {
   assertTutorialForPossibleCreate,
 } from "@/lib/auth/require-tutorial-completion";
@@ -266,7 +266,7 @@ export async function saveSocialPlatformStatAction(data: Partial<SocialPlatformS
     return { success: false, error: "Database required" };
   }
 
-  if (data.id && !isFullAdmin(session)) {
+  if (data.id && !canManageAllContent(session)) {
     const existing = await pgExt.pgGetSocialPlatformStatById(data.id);
     if (!existing) {
       return { success: false, error: "رکورد یافت نشد" };
@@ -302,7 +302,7 @@ export async function deleteSocialPlatformStatAction(id: string) {
   if (!session) return { success: false, error: "Unauthorized" };
   if (!isPostgresConfigured()) return { success: false, error: "Database required" };
 
-  if (!isFullAdmin(session)) {
+  if (!canManageAllContent(session)) {
     const existing = await pgExt.pgGetSocialPlatformStatById(id);
     if (!existing) {
       return { success: false, error: "رکورد یافت نشد" };
@@ -676,7 +676,7 @@ export async function deleteMeetingAction(id: string) {
   const meeting = await pgExt.pgGetMeetingById(id);
   if (!meeting) return { success: false, error: "جلسه یافت نشد" };
 
-  if (!isFullAdmin(session)) {
+  if (!canManageAllContent(session)) {
     if (!session.userId || meeting.ownerUserId !== session.userId) {
       return { success: false, error: "دسترسی ندارید" };
     }
@@ -696,7 +696,7 @@ export async function toggleMeetingTaskAction(taskId: string, completed: boolean
   const meeting = await pgExt.pgGetMeetingTaskOwner(taskId);
   if (!meeting) return { success: false, error: "وظیفه یافت نشد" };
 
-  if (!isFullAdmin(session)) {
+  if (!canManageAllContent(session)) {
     if (meeting.ownerUserId !== session.userId) {
       return { success: false, error: "دسترسی ندارید" };
     }
