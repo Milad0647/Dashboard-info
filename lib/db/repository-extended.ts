@@ -994,17 +994,107 @@ export async function pgUpdatePageViewPassword(campaignId: string, passwordHash:
   return { success: true };
 }
 
+export type CampaignPageUnlockVerifyResult =
+  | { status: "not_found" }
+  | { status: "wrong_password" }
+  | { status: "exhausted" }
+  | { status: "expired" }
+  | {
+      status: "ok";
+      title: string;
+      source:
+        | { kind: "shared"; passwordHash: string }
+        | { kind: "code"; codeId: string; passwordHash: string }
+        | { kind: "none" };
+    };
+
+export type CampaignPageLockGateRow = {
+  title: string;
+  sharedHash: string | null;
+  requiresLock: boolean;
+  activeCodes: Array<{ id: string; passwordHash: string; expiresAt: string | null }>;
+};
+
+function accessCodeStatus(row: {
+  revoked_at: string | null;
+  expires_at: string | null;
+  max_unlocks: number | null;
+  unlock_count: number;
+}): import("@/lib/types").CampaignPageAccessCodeStatus {
+  if (row.revoked_at) return "revoked";
+  if (row.expires_at && new Date(row.expires_at).getTime() <= Date.now()) return "expired";
+  if (row.max_unlocks != null && row.unlock_count >= row.max_unlocks) return "exhausted";
+  return "active";
+}
+
+function mapAccessCodeRow(row: Record<string, unknown>): import("@/lib/types").CampaignPageAccessCode {
+  const revokedAt = (row.revoked_at as string | null) ?? null;
+  const expiresAt = (row.expires_at as string | null) ?? null;
+  const maxUnlocks = row.max_unlocks == null ? null : Number(row.max_unlocks);
+  const unlockCount = Number(row.unlock_count ?? 0);
+  return {
+    id: String(row.id),
+    campaignId: String(row.campaign_id),
+    title: String(row.title ?? ""),
+    expiresAt,
+    maxUnlocks,
+    unlockCount,
+    createdAt: String(row.created_at ?? ""),
+    revokedAt,
+    status: accessCodeStatus({
+      revoked_at: revokedAt,
+      expires_at: expiresAt,
+      max_unlocks: maxUnlocks,
+      unlock_count: unlockCount,
+    }),
+  };
+}
+
+/** Shared password and currently usable access codes for page lock checks. */
+export async function pgGetCampaignPageLockGate(slug: string): Promise<CampaignPageLockGateRow | null> {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT id, title, page_view_password_hash
+    FROM campaign_settings
+    WHERE slug = ${slug} AND published = true
+    LIMIT 1
+  `;
+  if (!rows[0]) return null;
+
+  const campaignId = String(rows[0].id);
+  const sharedHash = (rows[0].page_view_password_hash as string | null) ?? null;
+  const title = String(rows[0].title ?? "");
+
+  const codeRows = await sql`
+    SELECT id, password_hash, expires_at, max_unlocks, unlock_count
+    FROM campaign_page_access_codes
+    WHERE campaign_id = ${campaignId}
+      AND revoked_at IS NULL
+      AND (expires_at IS NULL OR expires_at > NOW())
+      AND (max_unlocks IS NULL OR unlock_count < max_unlocks)
+  `;
+
+  const activeCodes = codeRows.map((row) => ({
+    id: String(row.id),
+    passwordHash: String(row.password_hash),
+    expiresAt: (row.expires_at as string | null) ?? null,
+  }));
+
+  return {
+    title,
+    sharedHash,
+    requiresLock: Boolean(sharedHash) || activeCodes.length > 0,
+    activeCodes,
+  };
+}
+
 export async function pgVerifyCampaignPagePassword(
   slug: string,
   password: string
-): Promise<
-  | { status: "not_found" }
-  | { status: "wrong_password" }
-  | { status: "ok"; passwordHash: string | null; title: string }
-> {
+): Promise<CampaignPageUnlockVerifyResult> {
   const sql = getSql();
   const rows = await sql`
-    SELECT title, page_view_password_hash
+    SELECT id, title, page_view_password_hash
     FROM campaign_settings
     WHERE slug = ${slug} AND published = true
     LIMIT 1
@@ -1012,17 +1102,155 @@ export async function pgVerifyCampaignPagePassword(
 
   if (!rows[0]) return { status: "not_found" };
 
-  const hash = (rows[0].page_view_password_hash as string | null) ?? null;
-  if (hash) {
-    const valid = await verifyPassword(password, hash);
-    if (!valid) return { status: "wrong_password" };
+  const campaignId = String(rows[0].id);
+  const title = String(rows[0].title ?? "");
+  const sharedHash = (rows[0].page_view_password_hash as string | null) ?? null;
+
+  if (sharedHash) {
+    const validShared = await verifyPassword(password, sharedHash);
+    if (validShared) {
+      return {
+        status: "ok",
+        title,
+        source: { kind: "shared", passwordHash: sharedHash },
+      };
+    }
   }
 
-  return {
-    status: "ok",
-    passwordHash: hash,
-    title: String(rows[0].title ?? ""),
-  };
+  const codeRows = await sql`
+    SELECT id, password_hash, expires_at, max_unlocks, unlock_count, revoked_at
+    FROM campaign_page_access_codes
+    WHERE campaign_id = ${campaignId}
+      AND revoked_at IS NULL
+  `;
+
+  let matchedExpired = false;
+  let matchedExhausted = false;
+
+  for (const row of codeRows) {
+    const hash = String(row.password_hash);
+    const valid = await verifyPassword(password, hash);
+    if (!valid) continue;
+
+    const expiresAt = (row.expires_at as string | null) ?? null;
+    if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
+      matchedExpired = true;
+      continue;
+    }
+
+    const maxUnlocks = row.max_unlocks == null ? null : Number(row.max_unlocks);
+    const unlockCount = Number(row.unlock_count ?? 0);
+    if (maxUnlocks != null && unlockCount >= maxUnlocks) {
+      matchedExhausted = true;
+      continue;
+    }
+
+    const codeId = String(row.id);
+    const updated = await sql`
+      UPDATE campaign_page_access_codes
+      SET unlock_count = unlock_count + 1
+      WHERE id = ${codeId}
+        AND revoked_at IS NULL
+        AND (expires_at IS NULL OR expires_at > NOW())
+        AND (max_unlocks IS NULL OR unlock_count < max_unlocks)
+      RETURNING id, password_hash
+    `;
+
+    if (!updated[0]) {
+      matchedExhausted = true;
+      continue;
+    }
+
+    return {
+      status: "ok",
+      title,
+      source: {
+        kind: "code",
+        codeId,
+        passwordHash: String(updated[0].password_hash),
+      },
+    };
+  }
+
+  if (matchedExpired) return { status: "expired" };
+  if (matchedExhausted) return { status: "exhausted" };
+
+  // No shared password and no codes: treat empty password as open (legacy behavior)
+  if (!sharedHash && codeRows.length === 0) {
+    return { status: "ok", title, source: { kind: "none" } };
+  }
+
+  return { status: "wrong_password" };
+}
+
+export async function pgListCampaignPageAccessCodes(campaignId: string) {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT id, campaign_id, title, expires_at, max_unlocks, unlock_count, created_at, revoked_at
+    FROM campaign_page_access_codes
+    WHERE campaign_id = ${campaignId}
+    ORDER BY created_at DESC
+  `;
+  return rows.map((row) => mapAccessCodeRow(row as Record<string, unknown>));
+}
+
+export async function pgCreateCampaignPageAccessCodes(
+  campaignId: string,
+  items: Array<{
+    title: string;
+    passwordHash: string;
+    expiresAt: string | null;
+    maxUnlocks: number | null;
+  }>
+) {
+  const sql = getSql();
+  const created: Array<{ id: string; title: string }> = [];
+
+  for (const item of items) {
+    const id = generateId();
+    await sql`
+      INSERT INTO campaign_page_access_codes (
+        id, campaign_id, title, password_hash, expires_at, max_unlocks, unlock_count, created_at
+      ) VALUES (
+        ${id},
+        ${campaignId},
+        ${item.title},
+        ${item.passwordHash},
+        ${item.expiresAt},
+        ${item.maxUnlocks},
+        0,
+        NOW()
+      )
+    `;
+    created.push({ id, title: item.title });
+  }
+
+  return created;
+}
+
+export async function pgRevokeCampaignPageAccessCode(campaignId: string, codeId: string) {
+  const sql = getSql();
+  const rows = await sql`
+    UPDATE campaign_page_access_codes
+    SET revoked_at = NOW()
+    WHERE id = ${codeId} AND campaign_id = ${campaignId} AND revoked_at IS NULL
+    RETURNING id
+  `;
+  return Boolean(rows[0]);
+}
+
+export async function pgHasActiveCampaignPageAccessCodes(campaignId: string): Promise<boolean> {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT 1
+    FROM campaign_page_access_codes
+    WHERE campaign_id = ${campaignId}
+      AND revoked_at IS NULL
+      AND (expires_at IS NULL OR expires_at > NOW())
+      AND (max_unlocks IS NULL OR unlock_count < max_unlocks)
+    LIMIT 1
+  `;
+  return Boolean(rows[0]);
 }
 
 export async function pgUnlockMeetingDetail(

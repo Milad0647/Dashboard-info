@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getPublicCampaignData } from "@/lib/data-access/campaign";
 import { canScoreContent } from "@/lib/auth/access";
 import { getAuthSession } from "@/lib/auth/get-session";
-import { isCampaignPageUnlocked } from "@/lib/campaign-page-unlock";
-import { pgGetPublishedCampaignBySlug } from "@/lib/db/repository";
+import { isCampaignPageUnlockedWithGate } from "@/lib/campaign-page-unlock";
+import { pgGetCampaignPageLockGate } from "@/lib/db/repository-extended";
 import { isPostgresConfigured } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -18,17 +18,21 @@ export async function GET(request: Request) {
 
   try {
     if (isPostgresConfigured()) {
-      const settings = await pgGetPublishedCampaignBySlug(slug);
-      if (!settings) {
+      const lockGate = await pgGetCampaignPageLockGate(slug);
+      if (!lockGate) {
         return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
       }
 
-      const pagePasswordHash = settings.pageViewPasswordHash ?? null;
-      if (pagePasswordHash) {
+      if (lockGate.requiresLock) {
         const session = await getAuthSession();
         const canBypass = Boolean(session && canScoreContent(session));
         const unlocked =
-          canBypass || (await isCampaignPageUnlocked(slug, pagePasswordHash));
+          canBypass ||
+          (await isCampaignPageUnlockedWithGate(slug, {
+            requiresLock: lockGate.requiresLock,
+            sharedHash: lockGate.sharedHash,
+            activeCodes: lockGate.activeCodes,
+          }));
         if (!unlocked) {
           return NextResponse.json(
             { error: "Password required", locked: true },

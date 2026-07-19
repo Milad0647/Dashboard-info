@@ -123,6 +123,21 @@ export interface CampaignSettings {
   updatedAt: string;
 }
 
+/** Access code for the public campaign page (admin list; no password hash). */
+export type CampaignPageAccessCodeStatus = "active" | "expired" | "exhausted" | "revoked";
+
+export interface CampaignPageAccessCode {
+  id: string;
+  campaignId: string;
+  title: string;
+  expiresAt: string | null;
+  maxUnlocks: number | null;
+  unlockCount: number;
+  createdAt: string;
+  revokedAt: string | null;
+  status: CampaignPageAccessCodeStatus;
+}
+
 export interface CampaignListItem {
   id: string;
   slug: string;

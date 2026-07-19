@@ -822,3 +822,24 @@ CREATE INDEX IF NOT EXISTS idx_directive_recipients_user
 CREATE INDEX IF NOT EXISTS idx_directive_recipients_directive
   ON directive_recipients(directive_id, confirmed);
 
+-- Timed / limited access codes for the public campaign page (alongside page_view_password_hash)
+CREATE TABLE IF NOT EXISTS campaign_page_access_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id UUID NOT NULL REFERENCES campaign_settings(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NULL,
+  max_unlocks INTEGER NULL,
+  unlock_count INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  revoked_at TIMESTAMPTZ NULL,
+  CONSTRAINT campaign_page_access_codes_max_unlocks_positive
+    CHECK (max_unlocks IS NULL OR max_unlocks > 0),
+  CONSTRAINT campaign_page_access_codes_unlock_count_nonneg
+    CHECK (unlock_count >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_campaign_page_access_codes_campaign
+  ON campaign_page_access_codes(campaign_id)
+  WHERE revoked_at IS NULL;
+

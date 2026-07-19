@@ -5,8 +5,8 @@ import { CampaignPageUnlock } from "@/components/public/campaign-page-unlock";
 import { canScoreContent } from "@/lib/auth/access";
 import { getAuthSession } from "@/lib/auth/get-session";
 import { resolveCampaignHeaderUser } from "@/lib/campaign-header-user";
-import { isCampaignPageUnlocked } from "@/lib/campaign-page-unlock";
-import { pgGetPublishedCampaignBySlug } from "@/lib/db/repository";
+import { isCampaignPageUnlockedWithGate } from "@/lib/campaign-page-unlock";
+import { pgGetCampaignPageLockGate } from "@/lib/db/repository-extended";
 import { isPostgresConfigured } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -18,25 +18,31 @@ interface CityLeaderboardPageProps {
 export default async function CityLeaderboardPage({ params }: CityLeaderboardPageProps) {
   const { slug } = await params;
 
-  let pagePasswordHash: string | null = null;
   let lockedTitle = slug;
+  let lockGate: Awaited<ReturnType<typeof pgGetCampaignPageLockGate>> = null;
 
   if (isPostgresConfigured()) {
-    const settings = await pgGetPublishedCampaignBySlug(slug);
-    if (!settings) notFound();
-    pagePasswordHash = settings.pageViewPasswordHash ?? null;
-    lockedTitle = settings.title;
+    lockGate = await pgGetCampaignPageLockGate(slug);
+    if (!lockGate) notFound();
+    lockedTitle = lockGate.title;
   }
 
   const session = await getAuthSession();
   const headerUser = resolveCampaignHeaderUser(session);
   const canBypassPassword = Boolean(session && canScoreContent(session));
+  const requiresLock = Boolean(lockGate?.requiresLock);
   const unlocked =
-    !pagePasswordHash ||
+    !requiresLock ||
     canBypassPassword ||
-    (await isCampaignPageUnlocked(slug, pagePasswordHash));
+    (lockGate
+      ? await isCampaignPageUnlockedWithGate(slug, {
+          requiresLock: lockGate.requiresLock,
+          sharedHash: lockGate.sharedHash,
+          activeCodes: lockGate.activeCodes,
+        })
+      : true);
 
-  if (pagePasswordHash && !unlocked) {
+  if (requiresLock && !unlocked) {
     return <CampaignPageUnlock slug={slug} title={lockedTitle} headerUser={headerUser} />;
   }
 

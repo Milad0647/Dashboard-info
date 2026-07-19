@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "66394401c1f18829604e58c79ba6af70895b8d63",
+      "committedAt": "2026-07-19T11:03:16+03:30",
+      "title": "امکان بازیابی دسته‌بندی تبلیغات محیطی پاک‌شده از بکاپ",
+      "subject": "Add billboard category restore from backups and harden bulk clear"
+    },
+    {
       "hash": "63cd771a436bcb9e4fcda089d0e256ae17e19e30",
       "committedAt": "2026-07-19T09:38:05+03:30",
       "title": "تب‌بندی مشکلات ثبت‌شده و ثابت ماندن اسکرول منوی سمت راست",

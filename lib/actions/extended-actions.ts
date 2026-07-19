@@ -16,6 +16,7 @@ import {
   type ContributorPermissions,
 } from "@/lib/contributor-permissions";
 import { hashPassword } from "@/lib/auth/password";
+import { generateAccessCodePassword } from "@/lib/auth/generate-access-code";
 import * as pgExt from "@/lib/db/repository-extended";
 import type { MeetingDecisionPayload, MeetingTaskPayload } from "@/lib/db/repository-extended";
 import type { BroadcastReport, CampaignActivity, CampaignMeeting, SocialMediaPost, SocialPlatformStat } from "@/lib/types";
@@ -529,6 +530,130 @@ export async function saveCampaignPagePasswordAction(
   await revalidateExtended();
   revalidatePath("/campaign");
   return { success: true };
+}
+
+function endOfDayIso(isoDate: string): string {
+  // Store expiry as end of the selected calendar day (UTC).
+  return `${isoDate}T23:59:59.999Z`;
+}
+
+export async function listCampaignPageAccessCodesAction(campaignId: string) {
+  const session = await getAuthSession();
+  if (!session || !canScoreContent(session)) {
+    return { success: false as const, error: "Unauthorized" };
+  }
+  if (!isPostgresConfigured()) {
+    return { success: false as const, error: "Database required" };
+  }
+
+  const codes = await pgExt.pgListCampaignPageAccessCodes(campaignId);
+  return { success: true as const, codes };
+}
+
+export async function generateCampaignPageAccessCodesAction(
+  campaignId: string,
+  options: {
+    titleBase: string;
+    count: number;
+    expiresAt?: string | null;
+    maxUnlocks?: number | null;
+  }
+) {
+  const session = await getAuthSession();
+  if (!session || !canScoreContent(session)) {
+    return { success: false as const, error: "Unauthorized" };
+  }
+  if (!isPostgresConfigured()) {
+    return { success: false as const, error: "Database required" };
+  }
+
+  const titleBase = options.titleBase?.trim();
+  if (!titleBase) {
+    return { success: false as const, error: "عنوان الزامی است" };
+  }
+  if (titleBase.length > 120) {
+    return { success: false as const, error: "عنوان خیلی بلند است" };
+  }
+
+  const count = Math.floor(Number(options.count));
+  if (!Number.isFinite(count) || count < 1 || count > 20) {
+    return { success: false as const, error: "تعداد باید بین ۱ تا ۲۰ باشد" };
+  }
+
+  let expiresAt: string | null = null;
+  const expiresRaw = options.expiresAt?.trim();
+  if (expiresRaw) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(expiresRaw)) {
+      return { success: false as const, error: "تاریخ انقضا نامعتبر است" };
+    }
+    expiresAt = endOfDayIso(expiresRaw);
+  }
+
+  let maxUnlocks: number | null = null;
+  if (options.maxUnlocks != null && options.maxUnlocks !== undefined) {
+    const raw = Number(options.maxUnlocks);
+    if (!Number.isFinite(raw) || !Number.isInteger(raw) || raw < 1) {
+      return { success: false as const, error: "سقف ورود باید عدد صحیح مثبت باشد" };
+    }
+    if (raw > 10000) {
+      return { success: false as const, error: "سقف ورود خیلی بزرگ است" };
+    }
+    maxUnlocks = raw;
+  }
+
+  const plaintexts: string[] = [];
+  const items: Array<{
+    title: string;
+    passwordHash: string;
+    expiresAt: string | null;
+    maxUnlocks: number | null;
+  }> = [];
+
+  for (let i = 0; i < count; i += 1) {
+    const title = count === 1 ? titleBase : `${titleBase} ${i + 1}`;
+    const plaintext = generateAccessCodePassword(10);
+    plaintexts.push(plaintext);
+    items.push({
+      title,
+      passwordHash: await hashPassword(plaintext),
+      expiresAt,
+      maxUnlocks,
+    });
+  }
+
+  const created = await pgExt.pgCreateCampaignPageAccessCodes(campaignId, items);
+  await revalidateExtended();
+  revalidatePath("/campaign");
+
+  return {
+    success: true as const,
+    codes: created.map((row, index) => ({
+      id: row.id,
+      title: row.title,
+      password: plaintexts[index]!,
+      expiresAt,
+      maxUnlocks,
+    })),
+  };
+}
+
+export async function revokeCampaignPageAccessCodeAction(campaignId: string, codeId: string) {
+  const session = await getAuthSession();
+  if (!session || !canScoreContent(session)) {
+    return { success: false as const, error: "Unauthorized" };
+  }
+  if (!isPostgresConfigured()) {
+    return { success: false as const, error: "Database required" };
+  }
+
+  const revoked = await pgExt.pgRevokeCampaignPageAccessCode(campaignId, codeId);
+  if (!revoked) {
+    return { success: false as const, error: "کد یافت نشد یا قبلاً لغو شده" };
+  }
+
+  await revalidateExtended();
+  revalidatePath("/campaign");
+  return { success: true as const };
 }
 
 export async function deleteMeetingAction(id: string) {

@@ -46,8 +46,19 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "رمز اشتباه است" }, { status: 401 });
   }
 
-  if (result.passwordHash) {
-    const token = await createCampaignPageUnlockToken(slug, result.passwordHash);
+  if (result.status === "expired") {
+    return NextResponse.json({ error: "این کد منقضی شده است" }, { status: 401 });
+  }
+
+  if (result.status === "exhausted") {
+    return NextResponse.json(
+      { error: "سقف تعداد ورود این کد تمام شده است" },
+      { status: 401 }
+    );
+  }
+
+  if (result.source.kind === "shared" || result.source.kind === "code") {
+    const token = await createCampaignPageUnlockToken(slug, result.source);
     const cookieStore = await cookies();
     cookieStore.set(
       getCampaignPageUnlockCookieName(slug),
