@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "c35aed045af66e2eac154d1784d6734086093a7d",
+      "committedAt": "2026-07-19T11:40:28+03:30",
+      "title": "نمایش تعداد راش‌های ارسالی در داشبورد",
+      "subject": "Show sent raw media count on admin dashboard"
+    },
+    {
       "hash": "0d5b3d5b80169b867891aa688979f1a0bce671ef",
       "committedAt": "2026-07-19T11:32:02+03:30",
       "title": "امکان ساخت چند کد دسترسی زمان‌دار برای صفحه کمپین",

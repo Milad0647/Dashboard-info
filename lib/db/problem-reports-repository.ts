@@ -318,28 +318,31 @@ export async function pgUpdateProblemReportStatus(input: {
   const resolvedAt = isClosed ? new Date().toISOString() : null;
 
   try {
+    // Ensure column exists on older deployments (same pattern as schema.sql).
+    await sql`
+      ALTER TABLE user_problem_reports
+        ADD COLUMN IF NOT EXISTS first_replied_at TIMESTAMPTZ
+    `;
+
     if (input.adminNote !== undefined) {
       const adminNote = input.adminNote?.trim() || null;
-      // Ensure column exists on older deployments.
-      await sql`
-        ALTER TABLE user_problem_reports
-          ADD COLUMN IF NOT EXISTS first_replied_at TIMESTAMPTZ
-      `;
+      // Cast params to text so Postgres can type-check CASE expressions.
+      // Untyped params in `IS DISTINCT FROM` previously caused 500s when a reply was included.
       const rows = await sql`
         UPDATE user_problem_reports
         SET
           status = ${input.status},
-          admin_note = ${adminNote},
           -- New/changed reply becomes unread until the reporter opens it.
           admin_note_seen_at = CASE
-            WHEN ${adminNote} IS DISTINCT FROM admin_note THEN NULL
-            ELSE admin_note_seen_at
+            WHEN admin_note IS NOT DISTINCT FROM ${adminNote}::text THEN admin_note_seen_at
+            ELSE NULL
           END,
           -- Stamp first reply time once; keep it stable afterwards.
           first_replied_at = CASE
-            WHEN ${adminNote} IS NOT NULL AND first_replied_at IS NULL THEN now()
+            WHEN ${adminNote}::text IS NOT NULL AND first_replied_at IS NULL THEN now()
             ELSE first_replied_at
           END,
+          admin_note = ${adminNote},
           resolved_by_user_id = ${resolvedByUserId},
           resolved_at = ${resolvedAt},
           updated_at = now()
