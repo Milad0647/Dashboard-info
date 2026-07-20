@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "28606c10d636be18828839e2b7d597439a9e8781",
+      "committedAt": "2026-07-20T18:53:02+03:30",
+      "title": "افزودن گزینه امروز به فیلتر بازه زمانی صفحه اصلی",
+      "subject": "Add today option to campaign date filter"
+    },
+    {
+      "hash": "f975f2aa93d94418d988abfa895bf9c3f32f9241",
+      "committedAt": "2026-07-20T18:46:58+03:30",
+      "title": "نمایش تعداد هر دسته تبلیغات محیطی به صورت کارت",
+      "subject": "Show billboard category counts as cards"
+    },
+    {
       "hash": "e1111a1e64b40aec8611e3e7dd7156577520ff87",
       "committedAt": "2026-07-20T14:50:44+03:30",
       "title": "نمایش وضعیت ورود و آنلاین بودن همه کاربران در یک بخش رصد",
