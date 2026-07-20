@@ -21,7 +21,6 @@ import { saveCampaignPagePasswordAction } from "@/lib/actions/extended-actions";
 import { fetchExternalCampaignsAction } from "@/lib/actions/billboard-import-actions";
 import { SmsSettingsCard } from "@/components/admin/sms-settings-card";
 import { CampaignPageAccessCodesAdmin } from "@/components/admin/campaign-page-access-codes-admin";
-import { ScoringRulesAdmin } from "@/components/admin/scoring-rules-admin";
 import {
   contentPlansFromTopics,
   normalizeContentTopics,
@@ -414,8 +413,6 @@ export function SettingsAdmin({
       </Card>
 
       <CampaignPageAccessCodesAdmin campaignId={initialSettings.id} />
-
-      <ScoringRulesAdmin initialSettings={initialSettings} />
 
       {canEditFullSettings && <SmsSettingsCard />}
 

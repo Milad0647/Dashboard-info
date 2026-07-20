@@ -121,6 +121,7 @@ export async function saveScoringRulesAction(input: {
   });
 
   revalidatePath(`/admin`);
+  revalidatePath(`/admin/scoring`);
   revalidatePath(`/campaign`);
   return { success: true, updated };
 }
