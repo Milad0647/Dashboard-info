@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "1b22b0e58bd151e144938ef76ebc7b5ca8be97ad",
+      "committedAt": "2026-07-20T13:59:28+03:30",
+      "title": "رفع مشکل باز شدن تصاویر در بخش مشارکت کاربران",
+      "subject": "Fix submission images open with ImageZoom lightbox"
+    },
+    {
       "hash": "28594ec3a98a2327154d6a9a193975044fba6471",
       "committedAt": "2026-07-20T13:52:20+03:30",
       "title": "افزودن دسته لایت باکس به تبلیغات محیطی",

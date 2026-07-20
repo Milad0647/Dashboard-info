@@ -111,6 +111,8 @@ export interface CampaignSettings {
   features: CampaignFeatures;
   analyticsConfig: AnalyticsConfig;
   billboardConfig: BillboardConfig;
+  /** Field-based auto scoring rules per content type. */
+  scoringRules?: CampaignScoringRules;
   /** Campaign content plan names configured by admin (e.g. مهتاب، سامان). Legacy flat list. */
   contentPlans?: string[];
   /** Hierarchical topics with optional subtopics (موضوع / زیرموضوع). */
@@ -159,8 +161,12 @@ export interface Ownable {
   planLabel?: string | null;
   /** Multiple topic/subtopic tokens (e.g. "مهتاب" or "مهتاب|هفته اول"). */
   planLabels?: string[];
-  /** Numeric score set by admin/client. */
+  /** Final score = autoScore + manualScore (public / sort / leaderboard). */
   score?: number | null;
+  /** Score computed from campaign scoring rules. */
+  autoScore?: number | null;
+  /** Manual bonus set by admin/client. */
+  manualScore?: number | null;
 }
 
 export type ScoreableContentType =
@@ -174,6 +180,31 @@ export type ScoreableContentType =
   | "activity"
   | "broadcast"
   | "meeting";
+
+export type ScoringRuleKind = "filled" | "equals" | "range";
+
+export interface ScoringRule {
+  id: string;
+  field: string;
+  kind: ScoringRuleKind;
+  points: number;
+  /** Target value for `equals` rules. */
+  value?: string;
+  /** Inclusive lower bound for `range` (number or ISO date string). */
+  min?: number | string;
+  /** Inclusive upper bound for `range` (number or ISO date string). */
+  max?: number | string;
+}
+
+/** Per content-type scoring rules stored on the campaign. */
+export type CampaignScoringRules = Partial<Record<ScoreableContentType, ScoringRule[]>>;
+
+export interface ScoreBreakdownEntry {
+  ruleId: string;
+  field: string;
+  points: number;
+  matched: boolean;
+}
 
 export interface BillboardDisplayPeriod {
   id: string;
@@ -628,13 +659,9 @@ export interface MeetingDecision {
   updatedAt: string;
 }
 
-export interface CampaignMeeting {
+export interface CampaignMeeting extends Ownable {
   id: string;
   campaignId: string;
-  ownerUserId?: string | null;
-  ownerName?: string | null;
-  ownerProvince?: string | null;
-  ownerCity?: string | null;
   title: string;
   meetingDate: string;
   location: string;
@@ -645,7 +672,6 @@ export interface CampaignMeeting {
   viewPasswordHash?: string | null;
   published: boolean;
   sortOrder: number;
-  planLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }

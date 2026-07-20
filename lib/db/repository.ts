@@ -17,6 +17,7 @@ import {
   mapVideoFromDb,
   mapVideoVersionFromDb,
 } from "@/lib/db/mappers";
+import { recalculateScoreAfterSave } from "@/lib/scoring/persist-content-score";
 import type {
   AnalyticsMetric,
   Billboard,
@@ -488,6 +489,12 @@ export async function pgSaveBillboard(data: Partial<Billboard> & { id?: string }
       updated_at = EXCLUDED.updated_at
   `;
 
+  await recalculateScoreAfterSave({
+    campaignId: data.campaignId ?? "",
+    contentType: "billboard",
+    contentId: id,
+  });
+
   return { success: true };
 }
 
@@ -660,6 +667,12 @@ export async function pgSavePoster(data: Partial<Poster> & { id?: string }) {
       updated_at = EXCLUDED.updated_at
   `;
 
+  await recalculateScoreAfterSave({
+    campaignId: data.campaignId ?? "",
+    contentType: "poster",
+    contentId: id,
+  });
+
   return { success: true };
 }
 
@@ -765,6 +778,12 @@ export async function pgSaveVideo(data: Partial<Video> & { id?: string }) {
       score = COALESCE(EXCLUDED.score, videos.score),
       updated_at = EXCLUDED.updated_at
   `;
+
+  await recalculateScoreAfterSave({
+    campaignId: data.campaignId ?? "",
+    contentType: "video",
+    contentId: id,
+  });
 
   return { success: true };
 }
@@ -1189,6 +1208,12 @@ export async function pgSaveCampaignFile(data: Partial<CampaignFile> & { id?: st
       updated_at = EXCLUDED.updated_at
   `;
 
+  await recalculateScoreAfterSave({
+    campaignId: data.campaignId ?? "",
+    contentType: "file",
+    contentId: id,
+  });
+
   return { success: true, id };
 }
 
@@ -1243,6 +1268,12 @@ export async function pgSaveRawMediaUpload(data: Partial<RawMediaUpload> & { id?
       score = COALESCE(EXCLUDED.score, raw_media_uploads.score),
       updated_at = EXCLUDED.updated_at
   `;
+
+  await recalculateScoreAfterSave({
+    campaignId: data.campaignId ?? "",
+    contentType: "raw_media",
+    contentId: id,
+  });
 
   return { success: true, id };
 }

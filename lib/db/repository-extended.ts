@@ -11,6 +11,10 @@ import {
   mapSocialPostFromDb,
   mapUserFromDb,
 } from "@/lib/db/mappers";
+import {
+  recalculateScoreAfterSave,
+  socialPostScoreableType,
+} from "@/lib/scoring/persist-content-score";
 import type {
   AdminUser,
   BroadcastReport,
@@ -505,6 +509,12 @@ export async function pgSaveSocialPost(data: Partial<SocialMediaPost> & { id?: s
       updated_at = EXCLUDED.updated_at
   `;
 
+  await recalculateScoreAfterSave({
+    campaignId: data.campaignId ?? "",
+    contentType: socialPostScoreableType(data.platform),
+    contentId: id,
+  });
+
   return { success: true, id };
 }
 
@@ -690,6 +700,12 @@ export async function pgSaveBroadcastReport(data: Partial<BroadcastReport> & { i
       updated_at = EXCLUDED.updated_at
   `;
 
+  await recalculateScoreAfterSave({
+    campaignId: data.campaignId ?? "",
+    contentType: "broadcast",
+    contentId: id,
+  });
+
   return { success: true, id };
 }
 
@@ -782,6 +798,12 @@ export async function pgSaveCampaignActivity(data: Partial<CampaignActivity> & {
       plan_labels = EXCLUDED.plan_labels,
       updated_at = EXCLUDED.updated_at
   `;
+
+  await recalculateScoreAfterSave({
+    campaignId: data.campaignId ?? "",
+    contentType: "activity",
+    contentId: id,
+  });
 
   return { success: true, id };
 }
@@ -1554,6 +1576,12 @@ export async function pgSaveMeetingWithTasks(
       AND id NOT IN ${sql(keptDecisionIds)}
     `;
   }
+
+  await recalculateScoreAfterSave({
+    campaignId: data.campaignId ?? "",
+    contentType: "meeting",
+    contentId: id,
+  });
 
   return { success: true, id };
 }

@@ -277,6 +277,8 @@ export function AdminPosterEditor({
                 contentType="poster"
                 contentId={poster.id}
                 score={editScore}
+                autoScore={poster.autoScore}
+                manualScore={poster.manualScore}
                 canScore={canScore}
                 onScoreSaved={setEditScore}
               />

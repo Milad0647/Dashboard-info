@@ -432,6 +432,8 @@ export function FilesAdmin({
                           contentType="file"
                           contentId={file.id}
                           score={file.score}
+                          autoScore={file.autoScore}
+                          manualScore={file.manualScore}
                           canScore={canScore}
                           compact
                           onScoreSaved={(score) =>

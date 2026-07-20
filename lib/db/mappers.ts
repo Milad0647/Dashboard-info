@@ -25,6 +25,7 @@ import type {
 } from "@/lib/types";
 import type { ContributorPermissions } from "@/lib/contributor-permissions";
 import { normalizeAnalyticsConfig } from "@/lib/analytics-config";
+import { normalizeScoringRules } from "@/lib/scoring/normalize-scoring-rules";
 import {
   contentPlansFromTopics,
   normalizeContentTopics,
@@ -57,13 +58,14 @@ function mapOwnerFromDb(row: any): Ownable {
     parsePlanLabelsColumn(row.plan_labels),
     row.plan_label ?? null
   );
-  const scoreRaw = row.score;
-  const score =
-    scoreRaw == null || scoreRaw === ""
-      ? null
-      : Number.isFinite(Number(scoreRaw))
-        ? Number(scoreRaw)
-        : null;
+  const parseScore = (raw: unknown): number | null => {
+    if (raw == null || raw === "") return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
+  const score = parseScore(row.score);
+  const autoScore = parseScore(row.auto_score);
+  const manualScore = parseScore(row.manual_score);
 
   return {
     ownerUserId: row.owner_user_id ?? null,
@@ -73,6 +75,8 @@ function mapOwnerFromDb(row: any): Ownable {
     planLabel: planLabels[0] ?? row.plan_label ?? null,
     planLabels,
     score,
+    autoScore,
+    manualScore,
   };
 }
 
@@ -133,6 +137,11 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
       typeof row.billboard_config === "string"
         ? JSON.parse(row.billboard_config)
         : (row.billboard_config ?? {}),
+    scoringRules: normalizeScoringRules(
+      typeof row.scoring_rules === "string"
+        ? JSON.parse(row.scoring_rules)
+        : row.scoring_rules
+    ),
     adminOwnerLabel: row.admin_owner_label ?? "توانیر",
     contentTopics: normalizeContentTopics(row.content_plans),
     contentPlans: contentPlansFromTopics(normalizeContentTopics(row.content_plans)),

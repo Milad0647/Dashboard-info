@@ -51,6 +51,7 @@ export const mockCampaigns: CampaignSettings[] = [
     features: fullFeatures,
     analyticsConfig: defaultAnalyticsConfig,
     billboardConfig: {},
+    scoringRules: {},
     updatedAt: now,
   },
   {
@@ -81,6 +82,7 @@ export const mockCampaigns: CampaignSettings[] = [
     },
     analyticsConfig: defaultAnalyticsConfig,
     billboardConfig: {},
+    scoringRules: {},
     updatedAt: now,
   },
   {
@@ -111,6 +113,7 @@ export const mockCampaigns: CampaignSettings[] = [
     },
     analyticsConfig: defaultAnalyticsConfig,
     billboardConfig: {},
+    scoringRules: {},
     updatedAt: now,
   },
 ];

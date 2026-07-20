@@ -30,6 +30,8 @@ export interface NotificationFeedItem {
   published: boolean;
   adminPath: string;
   score?: number | null;
+  autoScore?: number | null;
+  manualScore?: number | null;
 }
 
 function eventTimestamp(createdAt: string, updatedAt?: string): string {
@@ -114,6 +116,8 @@ export function buildNotificationFeed(input: {
       published: poster.published,
       adminPath: buildAdminEditPath("/admin/posters", campaignId, poster.id),
       score: poster.score,
+      autoScore: poster.autoScore,
+      manualScore: poster.manualScore,
     });
   }
 
@@ -136,6 +140,8 @@ export function buildNotificationFeed(input: {
       published: video.published,
       adminPath: buildAdminEditPath("/admin/videos", campaignId, video.id),
       score: video.score,
+      autoScore: video.autoScore,
+      manualScore: video.manualScore,
     });
   }
 
@@ -158,6 +164,8 @@ export function buildNotificationFeed(input: {
       published: billboard.published,
       adminPath: buildAdminEditPath("/admin/billboards", campaignId, billboard.id),
       score: billboard.score,
+      autoScore: billboard.autoScore,
+      manualScore: billboard.manualScore,
     });
   }
 
@@ -180,6 +188,8 @@ export function buildNotificationFeed(input: {
       published: activity.published,
       adminPath: buildAdminEditPath("/admin/activities", campaignId, activity.id),
       score: activity.score,
+      autoScore: activity.autoScore,
+      manualScore: activity.manualScore,
     });
   }
 
@@ -207,6 +217,8 @@ export function buildNotificationFeed(input: {
         post.id
       ),
       score: post.score,
+      autoScore: post.autoScore,
+      manualScore: post.manualScore,
     });
   }
 

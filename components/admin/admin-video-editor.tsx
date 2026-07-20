@@ -381,6 +381,8 @@ export function AdminVideoEditor({
                 contentType="video"
                 contentId={video.id}
                 score={editScore}
+                autoScore={video.autoScore}
+                manualScore={video.manualScore}
                 canScore={canScore}
                 onScoreSaved={setEditScore}
               />

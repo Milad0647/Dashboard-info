@@ -484,6 +484,29 @@ ALTER TABLE campaign_meetings ADD COLUMN IF NOT EXISTS score DOUBLE PRECISION;
 ALTER TABLE campaign_files ADD COLUMN IF NOT EXISTS score DOUBLE PRECISION;
 ALTER TABLE raw_media_uploads ADD COLUMN IF NOT EXISTS score DOUBLE PRECISION;
 
+-- Auto + manual scoring (final score = auto_score + manual_score)
+ALTER TABLE campaign_settings
+  ADD COLUMN IF NOT EXISTS scoring_rules JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+ALTER TABLE billboards ADD COLUMN IF NOT EXISTS auto_score DOUBLE PRECISION;
+ALTER TABLE billboards ADD COLUMN IF NOT EXISTS manual_score DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE posters ADD COLUMN IF NOT EXISTS auto_score DOUBLE PRECISION;
+ALTER TABLE posters ADD COLUMN IF NOT EXISTS manual_score DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS auto_score DOUBLE PRECISION;
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS manual_score DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE social_media_posts ADD COLUMN IF NOT EXISTS auto_score DOUBLE PRECISION;
+ALTER TABLE social_media_posts ADD COLUMN IF NOT EXISTS manual_score DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE campaign_activities ADD COLUMN IF NOT EXISTS auto_score DOUBLE PRECISION;
+ALTER TABLE campaign_activities ADD COLUMN IF NOT EXISTS manual_score DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE broadcast_reports ADD COLUMN IF NOT EXISTS auto_score DOUBLE PRECISION;
+ALTER TABLE broadcast_reports ADD COLUMN IF NOT EXISTS manual_score DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE campaign_meetings ADD COLUMN IF NOT EXISTS auto_score DOUBLE PRECISION;
+ALTER TABLE campaign_meetings ADD COLUMN IF NOT EXISTS manual_score DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE campaign_files ADD COLUMN IF NOT EXISTS auto_score DOUBLE PRECISION;
+ALTER TABLE campaign_files ADD COLUMN IF NOT EXISTS manual_score DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE raw_media_uploads ADD COLUMN IF NOT EXISTS auto_score DOUBLE PRECISION;
+ALTER TABLE raw_media_uploads ADD COLUMN IF NOT EXISTS manual_score DOUBLE PRECISION DEFAULT 0;
+
 ALTER TABLE social_media_posts DROP CONSTRAINT IF EXISTS social_media_posts_content_type_check;
 ALTER TABLE social_media_posts ADD CONSTRAINT social_media_posts_content_type_check
   CHECK (content_type IN ('image', 'text', 'video', 'carousel', 'story', 'reel', 'audio'));

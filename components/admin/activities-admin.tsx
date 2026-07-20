@@ -719,6 +719,8 @@ export function ActivitiesAdmin({
                 contentType="activity"
                 contentId={editingId}
                 score={rows.find((row) => row.id === editingId)?.score}
+                autoScore={rows.find((row) => row.id === editingId)?.autoScore}
+                manualScore={rows.find((row) => row.id === editingId)?.manualScore}
                 canScore={canScore}
                 onScoreSaved={(score) =>
                   setRows((prev) =>

@@ -82,6 +82,8 @@ export function AdminBillboardCompactCard({
             contentType="billboard"
             contentId={billboard.id}
             score={billboard.score}
+            autoScore={billboard.autoScore}
+            manualScore={billboard.manualScore}
             canScore={canScore}
             compact
             onScoreSaved={(score) => onScoreSaved?.(billboard, score)}

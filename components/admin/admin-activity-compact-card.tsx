@@ -87,6 +87,8 @@ export function AdminActivityCompactCard({
             contentType="activity"
             contentId={activity.id}
             score={activity.score}
+            autoScore={activity.autoScore}
+            manualScore={activity.manualScore}
             canScore={canScore}
             compact
             onScoreSaved={onScoreSaved}

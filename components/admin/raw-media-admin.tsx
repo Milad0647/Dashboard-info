@@ -561,6 +561,8 @@ export function RawMediaAdmin({
                       contentType="raw_media"
                       contentId={item.id}
                       score={item.score}
+                      autoScore={item.autoScore}
+                      manualScore={item.manualScore}
                       canScore={canScore}
                       compact
                       onScoreSaved={(score) =>

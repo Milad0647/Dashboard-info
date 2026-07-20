@@ -428,6 +428,8 @@ export function BillboardCreateAssignmentDialog({
               contentType="billboard"
               contentId={editingBillboard.id}
               score={editScore}
+              autoScore={editingBillboard.autoScore}
+              manualScore={editingBillboard.manualScore}
               canScore={canScore}
               onScoreSaved={setEditScore}
             />

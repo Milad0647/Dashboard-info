@@ -75,6 +75,8 @@ export function AdminPosterCompactCard({
             contentType="poster"
             contentId={poster.id}
             score={poster.score}
+            autoScore={poster.autoScore}
+            manualScore={poster.manualScore}
             canScore={canScore}
             compact
             onScoreSaved={onScoreSaved}
