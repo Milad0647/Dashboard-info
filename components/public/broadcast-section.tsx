@@ -196,7 +196,7 @@ export function BroadcastSection({ reports, groups }: BroadcastSectionProps) {
       title="گزارش پخش صدا و سیما"
       description="گزارش‌های PDF و ویدیوی روزانه"
     >
-      <SectionTopCompaniesBox groups={filteredGroups} />
+      <SectionTopCompaniesBox groups={filteredGroups} contentKind="broadcast" />
       {filteredReports.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
           گزارشی با فیلتر انتخاب‌شده یافت نشد.

@@ -176,7 +176,7 @@ export function SitePublicationsSection({ publications, groups }: SitePublicatio
       title="انتشار در سایت"
       description="مطالب منتشرشده در سایت کمپین — عنوان هر مورد لینک مستقیم به صفحه است"
     >
-      <SectionTopCompaniesBox groups={filteredGroups} />
+      <SectionTopCompaniesBox groups={filteredGroups} contentKind="site_publication" />
       {filteredPublications.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
           مطلبی با فیلتر انتخاب‌شده یافت نشد.

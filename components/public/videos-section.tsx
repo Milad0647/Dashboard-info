@@ -143,7 +143,7 @@ export function VideosSection({ categories: _categories, videos, groups }: Video
       description={`${formatPersianNumber(videos.length)} ویدیو`}
       controls={controls}
     >
-      <SectionTopCompaniesBox groups={filteredGroups} />
+      <SectionTopCompaniesBox groups={filteredGroups} contentKind="video" />
       {filteredVideos.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
           ویدیویی یافت نشد.

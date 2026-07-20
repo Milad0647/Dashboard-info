@@ -231,7 +231,7 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
         description={`${formatPersianNumber(filtered.length)} مورد — نمایش روی نقشه و کارت‌ها`}
         controls={controls}
       >
-        <SectionTopCompaniesBox groups={rankingGroups} />
+        <SectionTopCompaniesBox groups={rankingGroups} contentKind="billboard" />
         {categoryStats.length > 0 && (
           <div className="mb-4" data-export-section data-export-label="تفکیک دسته تبلیغات محیطی">
             <BillboardCategoryChart data={categoryStats} />

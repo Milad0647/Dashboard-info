@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "a39c7b02cd19b4f17c37470ab38f833c8279c2cf",
+      "committedAt": "2026-07-20T13:01:48+03:30",
+      "title": "باز شدن همه آیتم‌های رتبه‌بندی در مودال به‌جای رفتن به صفحه کمپین",
+      "subject": "Open all leaderboard metric badges in modals"
+    },
+    {
       "hash": "e37b95fb8ca96821e85bce4fee3633e4eb0d50c5",
       "committedAt": "2026-07-20T12:59:17+03:30",
       "title": "کلیک روی فعالیت‌های اخیر در صفحه کمپین برای رفتن به همان محتوا",

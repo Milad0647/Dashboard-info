@@ -145,7 +145,7 @@ export function CampaignFilesSection({ files, groups }: CampaignFilesSectionProp
       title="فایل‌های کمپین"
       description="دانلود PDF، Word، Excel و سایر فایل‌های مرتبط با کمپین"
     >
-      <SectionTopCompaniesBox groups={filteredGroups} />
+      <SectionTopCompaniesBox groups={filteredGroups} contentKind="file" />
       {filteredFiles.length === 0 ? (
         <div className="rounded-xl border bg-card py-12 text-center text-muted-foreground">
           فایلی با فیلتر انتخاب‌شده یافت نشد.

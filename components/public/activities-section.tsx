@@ -281,7 +281,7 @@ export function ActivitiesSection({
       title={title}
       description={description}
     >
-      <SectionTopCompaniesBox groups={filteredGroups} />
+      <SectionTopCompaniesBox groups={filteredGroups} contentKind="activity" />
       <>
           <OwnerGroupedSection
             groups={visibleGroups}

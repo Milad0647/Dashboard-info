@@ -141,7 +141,7 @@ export function PostersSection({ categories: _categories, posters, groups }: Pos
       description="گالری پوسترهای کمپین"
       controls={controls}
     >
-      <SectionTopCompaniesBox groups={filteredGroups} />
+      <SectionTopCompaniesBox groups={filteredGroups} contentKind="poster" />
       <div className="space-y-4">
           <OwnerGroupedSection
             groups={visibleGroups}

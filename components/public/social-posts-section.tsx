@@ -240,7 +240,7 @@ export function SocialPostsSection({ posts, groups }: SocialPostsSectionProps) {
       title="شبکه‌های اجتماعی"
       description={`${formatPersianNumber(filteredPosts.length)} پست — اینستاگرام، تلگرام و سایر شبکه‌ها`}
     >
-      <SectionTopCompaniesBox groups={filteredGroups} />
+      <SectionTopCompaniesBox groups={filteredGroups} contentKind="social_post" />
       <div className="space-y-4">
         <OwnerGroupedSection
           groups={visibleGroups}
