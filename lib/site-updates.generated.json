@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "bd8b5e7842058d460c559035a8a6e94e0646b56c",
+      "committedAt": "2026-07-20T14:16:28+03:30",
+      "title": "افزودن سیستم امتیازدهی خودکار بر اساس فیلدهای محتوا در تنظیمات کمپین",
+      "subject": "Add automatic field-based content scoring system"
+    },
+    {
       "hash": "1b22b0e58bd151e144938ef76ebc7b5ca8be97ad",
       "committedAt": "2026-07-20T13:59:28+03:30",
       "title": "رفع مشکل باز شدن تصاویر در بخش مشارکت کاربران",

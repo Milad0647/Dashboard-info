@@ -75,25 +75,32 @@ export function AdminSocialPostCompactCard({
         </div>
       </button>
 
-      {(canScore || post.score != null) && (
-        <div className="px-2 pb-2">
-          <ContentScoreControl
-            campaignId={post.campaignId}
-            contentType="social_post"
-            contentId={post.id}
-            score={post.score}
-            autoScore={post.autoScore}
-            manualScore={post.manualScore}
-            canScore={canScore}
-            compact
-            onScoreSaved={onScoreSaved}
-          />
-        </div>
-      )}
-
-      {(onView || onEdit || onDelete) && (
-        <div className="absolute bottom-2 left-2 z-10">
-          <AdminItemActions compact onView={onView} onEdit={onEdit} onDelete={onDelete} />
+      {(canScore || post.score != null || onView || onEdit || onDelete) && (
+        <div className="flex items-end gap-2 px-2 pb-2">
+          {(onView || onEdit || onDelete) && (
+            <AdminItemActions
+              compact
+              className="shrink-0"
+              onView={onView}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          )}
+          {(canScore || post.score != null) && (
+            <div className="min-w-0 flex-1">
+              <ContentScoreControl
+                campaignId={post.campaignId}
+                contentType="social_post"
+                contentId={post.id}
+                score={post.score}
+                autoScore={post.autoScore}
+                manualScore={post.manualScore}
+                canScore={canScore}
+                compact
+                onScoreSaved={onScoreSaved}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

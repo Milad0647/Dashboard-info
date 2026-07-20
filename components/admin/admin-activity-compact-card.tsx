@@ -80,25 +80,32 @@ export function AdminActivityCompactCard({
         </div>
       </button>
 
-      {(canScore || activity.score != null) && (
-        <div className="px-2 pb-2">
-          <ContentScoreControl
-            campaignId={activity.campaignId}
-            contentType="activity"
-            contentId={activity.id}
-            score={activity.score}
-            autoScore={activity.autoScore}
-            manualScore={activity.manualScore}
-            canScore={canScore}
-            compact
-            onScoreSaved={onScoreSaved}
-          />
-        </div>
-      )}
-
-      {(onView || onEdit || onDelete) && (
-        <div className="absolute bottom-2 left-2 z-10">
-          <AdminItemActions compact onView={onView} onEdit={onEdit} onDelete={onDelete} />
+      {(canScore || activity.score != null || onView || onEdit || onDelete) && (
+        <div className="flex items-end gap-2 px-2 pb-2">
+          {(onView || onEdit || onDelete) && (
+            <AdminItemActions
+              compact
+              className="shrink-0"
+              onView={onView}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          )}
+          {(canScore || activity.score != null) && (
+            <div className="min-w-0 flex-1">
+              <ContentScoreControl
+                campaignId={activity.campaignId}
+                contentType="activity"
+                contentId={activity.id}
+                score={activity.score}
+                autoScore={activity.autoScore}
+                manualScore={activity.manualScore}
+                canScore={canScore}
+                compact
+                onScoreSaved={onScoreSaved}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

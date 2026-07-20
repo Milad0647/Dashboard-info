@@ -75,29 +75,29 @@ export function AdminBillboardCompactCard({
         </div>
       </button>
 
-      {(canScore || billboard.score != null) && (
-        <div className="px-2 pb-2">
-          <ContentScoreControl
-            campaignId={billboard.campaignId}
-            contentType="billboard"
-            contentId={billboard.id}
-            score={billboard.score}
-            autoScore={billboard.autoScore}
-            manualScore={billboard.manualScore}
-            canScore={canScore}
-            compact
-            onScoreSaved={(score) => onScoreSaved?.(billboard, score)}
-          />
-        </div>
-      )}
-
-      <div className="absolute bottom-2 left-2 z-10">
+      <div className="flex items-end gap-2 px-2 pb-2">
         <AdminItemActions
           compact
+          className="shrink-0"
           onView={onView}
           onEdit={onEdit}
           onDelete={onDelete ? () => onDelete(billboard) : undefined}
         />
+        {(canScore || billboard.score != null) && (
+          <div className="min-w-0 flex-1">
+            <ContentScoreControl
+              campaignId={billboard.campaignId}
+              contentType="billboard"
+              contentId={billboard.id}
+              score={billboard.score}
+              autoScore={billboard.autoScore}
+              manualScore={billboard.manualScore}
+              canScore={canScore}
+              compact
+              onScoreSaved={(score) => onScoreSaved?.(billboard, score)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

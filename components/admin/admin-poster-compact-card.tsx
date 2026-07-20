@@ -68,30 +68,32 @@ export function AdminPosterCompactCard({
         </div>
       </button>
 
-      {(canScore || poster.score != null) && (
-        <div className="px-2 pb-2">
-          <ContentScoreControl
-            campaignId={poster.campaignId}
-            contentType="poster"
-            contentId={poster.id}
-            score={poster.score}
-            autoScore={poster.autoScore}
-            manualScore={poster.manualScore}
-            canScore={canScore}
-            compact
-            onScoreSaved={onScoreSaved}
-          />
-        </div>
-      )}
-
-      {(onView || onEdit || onDelete) && (
-        <div className="absolute bottom-2 left-2 z-10">
-          <AdminItemActions
-            compact
-            onView={onView}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
+      {(canScore || poster.score != null || onView || onEdit || onDelete) && (
+        <div className="flex items-end gap-2 px-2 pb-2">
+          {(onView || onEdit || onDelete) && (
+            <AdminItemActions
+              compact
+              className="shrink-0"
+              onView={onView}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          )}
+          {(canScore || poster.score != null) && (
+            <div className="min-w-0 flex-1">
+              <ContentScoreControl
+                campaignId={poster.campaignId}
+                contentType="poster"
+                contentId={poster.id}
+                score={poster.score}
+                autoScore={poster.autoScore}
+                manualScore={poster.manualScore}
+                canScore={canScore}
+                compact
+                onScoreSaved={onScoreSaved}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

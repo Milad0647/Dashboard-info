@@ -155,18 +155,23 @@ export function ContentScoreControl({
   if (compact) {
     return (
       <div
-        className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px]"
+        className="flex min-w-0 flex-col gap-0.5 text-[10px]"
         onClick={(e) => e.stopPropagation()}
         title={`خودکار: ${displayAuto} + دستی: ${value || 0} = ${displayTotal}`}
       >
-        <Star className="h-3.5 w-3.5 text-warning shrink-0" />
-        <span className="text-muted-foreground">جمع:</span>
-        <span className="font-medium text-warning">{formatPersianNumber(displayTotal)}</span>
-        <span className="text-muted-foreground">| خودکار:</span>
-        <span>{formatPersianNumber(displayAuto)}</span>
-        <span className="text-muted-foreground">| دستی:</span>
-        {input}
-        {isPending && <span className="text-muted-foreground">...</span>}
+        <div className="flex min-w-0 items-center gap-1">
+          <Star className="h-3.5 w-3.5 shrink-0 text-warning" />
+          <span className="text-muted-foreground">جمع:</span>
+          <span className="font-medium text-warning">{formatPersianNumber(displayTotal)}</span>
+          <span className="truncate text-muted-foreground">
+            (خودکار {formatPersianNumber(displayAuto)})
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-muted-foreground">دستی:</span>
+          {input}
+          {isPending && <span className="text-muted-foreground">...</span>}
+        </div>
       </div>
     );
   }
