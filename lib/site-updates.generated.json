@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "876e59ecc20d27dec8288d38f5857a369273a9f6",
+      "committedAt": "2026-07-20T13:19:34+03:30",
+      "title": "نمایش تاریخ ثبت محتوا در صفحات ویرایش و گزارش‌گیری",
+      "subject": "Show content creation date across admin and reporting views"
+    },
+    {
       "hash": "0f08d5e57ed5657f9be76e30b8b6e8dd69c09fd6",
       "committedAt": "2026-07-20T13:18:12+03:30",
       "title": "امکان ارسال اسکرین‌شات و ویدیو در ثبت گزارش مشکل",

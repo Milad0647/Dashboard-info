@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Lightbulb, Pencil } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -13,26 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  editSuggestionContentTypeLabels,
-  editSuggestionFieldLabels,
-  hasOnlyRecommendedMissingFields,
-  type EditSuggestionItem,
-} from "@/lib/edit-suggestions";
-import { cn, formatPersianNumber } from "@/lib/utils";
+import { EditSuggestionList } from "@/components/admin/edit-suggestion-list";
+import type { EditSuggestionItem } from "@/lib/edit-suggestions";
+import { formatPersianNumber } from "@/lib/utils";
 
 interface EditSuggestionsPanelProps {
   suggestions: EditSuggestionItem[];
   storageKey: string;
 }
 
-const PREVIEW_LIMIT = 8;
-
 export function EditSuggestionsPanel({ suggestions, storageKey }: EditSuggestionsPanelProps) {
   const [open, setOpen] = useState(false);
   const hasSuggestions = suggestions.length > 0;
-  const visibleSuggestions = useMemo(() => suggestions.slice(0, PREVIEW_LIMIT), [suggestions]);
-  const remainingCount = Math.max(suggestions.length - visibleSuggestions.length, 0);
 
   useEffect(() => {
     if (!hasSuggestions) return;
@@ -67,7 +57,7 @@ export function EditSuggestionsPanel({ suggestions, storageKey }: EditSuggestion
               </div>
             </div>
             <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
-              مشاهده پیشنهادها
+              مشاهده همه پیشنهادها
             </Button>
           </div>
         </CardContent>
@@ -81,67 +71,13 @@ export function EditSuggestionsPanel({ suggestions, storageKey }: EditSuggestion
               پیشنهاد ویرایش
             </DialogTitle>
             <DialogDescription>
-              کارت‌های ناقص شما به‌همراه فیلدهای جاافتاده. روی ویرایش بزنید تا همان کارت باز شود.
+              همه کارت‌های ناقص شما به‌همراه فیلدهای جاافتاده. با زدن ویرایش همان کارت باز می‌شود و
+              فیلدهای ناقص قرمز مشخص می‌شوند.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="max-h-[60vh] space-y-3 overflow-y-auto px-6 py-4">
-            {visibleSuggestions.map((suggestion) => {
-              const isSoftOnly = hasOnlyRecommendedMissingFields(suggestion.missingFields);
-              return (
-              <div
-                key={`${suggestion.contentType}:${suggestion.id}`}
-                className={cn(
-                  "rounded-xl border p-4",
-                  isSoftOnly
-                    ? "border-warning/30 bg-warning/10"
-                    : "border-destructive/20 bg-destructive/5"
-                )}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline">
-                        {editSuggestionContentTypeLabels[suggestion.contentType]}
-                      </Badge>
-                      <p className="truncate font-medium">{suggestion.title}</p>
-                    </div>
-                    <p
-                      className={cn(
-                        "text-sm",
-                        isSoftOnly ? "text-amber-800 dark:text-amber-200" : "text-destructive"
-                      )}
-                    >
-                      {isSoftOnly ? "بهتر است تکمیل شود: " : "ناقص است: "}
-                      {suggestion.missingFields
-                        .map((field) => editSuggestionFieldLabels[field])
-                        .join("، ")}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {suggestion.missingFields.map((field) => (
-                        <Badge key={field} variant="warning">
-                          {editSuggestionFieldLabels[field]}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Button asChild size="sm" className="shrink-0">
-                    <Link href={suggestion.editHref}>
-                      <Pencil className="h-3.5 w-3.5" />
-                      ویرایش
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-              );
-            })}
-
-            {remainingCount > 0 && (
-              <div className="rounded-xl border border-dashed px-4 py-3 text-center text-sm text-muted-foreground">
-                و {formatPersianNumber(remainingCount)} مورد دیگر نیاز به تکمیل دارد.
-              </div>
-            )}
+          <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
+            <EditSuggestionList suggestions={suggestions} />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t px-6 py-4">
