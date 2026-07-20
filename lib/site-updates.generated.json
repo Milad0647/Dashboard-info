@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "733df6d93272f7c59ab2a4ac6b45ab87fa634a0f",
+      "committedAt": "2026-07-20T21:44:11+03:30",
+      "title": "بکاپ کامل بر اساس هر کاربر با فولدر بخش‌ها و بازیابی یک‌کلیکه",
+      "subject": "Rewrite campaign backup as full per-user ZIP with wipe restore"
+    },
+    {
       "hash": "fdcbe949250edbb269ed457e5295e65cfa108c66",
       "committedAt": "2026-07-20T19:56:38+03:30",
       "title": "امکان امتیازدهی جداگانه به هر گزینه فیلدهایی مثل دسته‌بندی",

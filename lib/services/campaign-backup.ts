@@ -1,7 +1,6 @@
 import { createWriteStream } from "fs";
-import { mkdir, readFile, stat, writeFile } from "fs/promises";
+import { mkdir, writeFile, stat } from "fs/promises";
 import { basename } from "path";
-import { pipeline } from "stream/promises";
 import JSZip from "jszip";
 import {
   type CampaignBackupFullData,
@@ -13,6 +12,13 @@ import {
   pgRestoreUserCampaignData,
 } from "@/lib/db/campaign-backup-repository";
 import { getUploadsDir } from "@/lib/uploads";
+
+// CommonJS package — loaded via require for Next/webpack compatibility.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const archiver = require("archiver") as (
+  format: "zip",
+  options?: { zlib?: { level?: number } }
+) => import("archiver").Archiver;
 
 /** Prefer including all media; skip only missing/unreadable files. */
 const DEFAULT_MAX_SINGLE_FILE_BYTES = 2 * 1024 * 1024 * 1024;
@@ -252,10 +258,18 @@ function jsonFile(value: unknown): string {
   return JSON.stringify(value, null, 2);
 }
 
-async function buildCampaignBackupZip(
+type ZipTextEntry = { path: string; content: string };
+type ZipDiskEntry = { path: string; diskPath: string };
+
+async function prepareBackupEntries(
   campaignId: string,
   options: CreateCampaignBackupOptions = {}
-): Promise<{ zip: JSZip; includedFiles: number; skippedFiles: string[] }> {
+): Promise<{
+  textEntries: ZipTextEntry[];
+  diskEntries: ZipDiskEntry[];
+  includedFiles: number;
+  skippedFiles: string[];
+}> {
   const includeUploads = options.includeUploads !== false;
   const maxSingleFileBytes =
     options.maxSingleFileBytes ?? DEFAULT_MAX_SINGLE_FILE_BYTES;
@@ -268,19 +282,20 @@ async function buildCampaignBackupZip(
       ? filterDataForUser(full, options.userId.trim())
       : full;
 
-  const zip = new JSZip();
   const userFolders = buildUserFolders(data);
   const usersById = new Map(data.users.map((u) => [String(u.id), u]));
+  const textEntries: ZipTextEntry[] = [];
 
-  zip.file(
-    "manifest.json",
-    jsonFile({
+  textEntries.push({
+    path: "manifest.json",
+    content: jsonFile({
       version: 2,
       format: "per-user-v2",
       exportedAt: data.exportedAt,
       campaignId: data.campaignId,
       mode: options.userId ? "user" : "full",
       filterUserId: options.userId ?? null,
+      includeUploads,
       userFolderCount: userFolders.size,
       counts: {
         users: data.users.length,
@@ -294,25 +309,32 @@ async function buildCampaignBackupZip(
         rawMedia: data.rawMedia.length,
         broadcasts: data.broadcasts.length,
       },
-    })
-  );
+    }),
+  });
 
-  zip.file("campaign/settings.json", jsonFile(data.settings));
-  zip.file("campaign/users.json", jsonFile(data.users));
-  zip.file("campaign/access.json", jsonFile(data.access));
-  zip.file("campaign/categories.json", jsonFile(data.categories));
-  zip.file(
-    "campaign/directives.json",
-    jsonFile({
+  textEntries.push({ path: "campaign/settings.json", content: jsonFile(data.settings) });
+  textEntries.push({ path: "campaign/users.json", content: jsonFile(data.users) });
+  textEntries.push({ path: "campaign/access.json", content: jsonFile(data.access) });
+  textEntries.push({
+    path: "campaign/categories.json",
+    content: jsonFile(data.categories),
+  });
+  textEntries.push({
+    path: "campaign/directives.json",
+    content: jsonFile({
       directives: data.directives,
       attachments: data.directiveAttachments,
       recipients: data.directiveRecipients,
-    })
-  );
-  zip.file("campaign/page_access_codes.json", jsonFile(data.pageAccessCodes));
-
-  // Flat restore snapshot (same data, easy for importer).
-  zip.file("campaign/full-data.json", jsonFile(data));
+    }),
+  });
+  textEntries.push({
+    path: "campaign/page_access_codes.json",
+    content: jsonFile(data.pageAccessCodes),
+  });
+  textEntries.push({
+    path: "campaign/full-data.json",
+    content: jsonFile(data),
+  });
 
   for (const [folderKey, sections] of userFolders) {
     const base = `users/${folderKey}`;
@@ -325,9 +347,12 @@ async function buildCampaignBackupZip(
           }
         : usersById.get(folderKey) ?? { id: folderKey };
 
-    zip.file(`${base}/profile.json`, jsonFile(profile));
+    textEntries.push({ path: `${base}/profile.json`, content: jsonFile(profile) });
     for (const [section, rows] of Object.entries(sections)) {
-      zip.file(`${base}/${section}.json`, jsonFile(rows));
+      textEntries.push({
+        path: `${base}/${section}.json`,
+        content: jsonFile(rows),
+      });
     }
   }
 
@@ -337,27 +362,31 @@ async function buildCampaignBackupZip(
     filename,
     usedBy: [{ path: "campaign/full-data.json" }],
   }));
-  zip.file("files/file-map.json", jsonFile(fileMap));
+  textEntries.push({
+    path: "files/file-map.json",
+    content: jsonFile(fileMap),
+  });
 
   const skippedFiles: string[] = [];
+  const diskEntries: ZipDiskEntry[] = [];
   let includedFiles = 0;
 
   if (!includeUploads) {
-    zip.file(
-      "skipped.json",
-      jsonFile({
+    textEntries.push({
+      path: "skipped.json",
+      content: jsonFile({
         reason: "Uploads omitted; media remains on the server uploads volume.",
         filenames: [...filenames],
-      })
-    );
-    return { zip, includedFiles, skippedFiles };
+      }),
+    });
+    return { textEntries, diskEntries, includedFiles, skippedFiles };
   }
 
   const uploadsDir = getUploadsDir();
   for (const filename of filenames) {
-    const filePath = `${uploadsDir}/${filename}`;
+    const diskPath = `${uploadsDir}/${filename}`;
     try {
-      const info = await stat(filePath);
+      const info = await stat(diskPath);
       if (!info.isFile()) {
         skippedFiles.push(filename);
         continue;
@@ -366,8 +395,7 @@ async function buildCampaignBackupZip(
         skippedFiles.push(filename);
         continue;
       }
-      const content = await readFile(filePath);
-      zip.file(`files/by-id/${filename}`, content);
+      diskEntries.push({ path: `files/by-id/${filename}`, diskPath });
       includedFiles += 1;
     } catch {
       skippedFiles.push(filename);
@@ -375,17 +403,18 @@ async function buildCampaignBackupZip(
   }
 
   if (skippedFiles.length > 0) {
-    zip.file(
-      "skipped.json",
-      jsonFile({
-        reason: "Some media files were missing, unreadable, or over the single-file limit.",
+    textEntries.push({
+      path: "skipped.json",
+      content: jsonFile({
+        reason:
+          "Some media files were missing, unreadable, or over the single-file limit.",
         maxSingleFileBytes,
         filenames: skippedFiles,
-      })
-    );
+      }),
+    });
   }
 
-  return { zip, includedFiles, skippedFiles };
+  return { textEntries, diskEntries, includedFiles, skippedFiles };
 }
 
 /** Build a campaign backup ZIP in memory (for immediate download). */
@@ -393,10 +422,31 @@ export async function createCampaignBackupZip(
   campaignId: string,
   options?: CreateCampaignBackupOptions
 ): Promise<Buffer> {
-  const { zip } = await buildCampaignBackupZip(campaignId, options);
-  return Buffer.from(
-    await zip.generateAsync({ type: "nodebuffer", streamFiles: true })
-  );
+  // Prefer streaming to a temp buffer via archiver for lower peak memory than JSZip.
+  const { PassThrough } = await import("stream");
+  const chunks: Buffer[] = [];
+  const pass = new PassThrough();
+  pass.on("data", (chunk: Buffer) => chunks.push(chunk));
+
+  const archive = archiver("zip", { zlib: { level: 5 } });
+  archive.pipe(pass);
+
+  const prepared = await prepareBackupEntries(campaignId, options);
+  for (const entry of prepared.textEntries) {
+    archive.append(entry.content, { name: entry.path });
+  }
+  for (const entry of prepared.diskEntries) {
+    archive.file(entry.diskPath, { name: entry.path });
+  }
+
+  await archive.finalize();
+  await new Promise<void>((resolve, reject) => {
+    pass.on("end", () => resolve());
+    pass.on("error", reject);
+    archive.on("error", reject);
+  });
+
+  return Buffer.concat(chunks);
 }
 
 /** Build a campaign backup ZIP and stream it directly to disk (for stored backups). */
@@ -405,23 +455,32 @@ export async function writeCampaignBackupZipToFile(
   outputPath: string,
   options?: CreateCampaignBackupOptions
 ): Promise<CampaignBackupWriteResult> {
-  const { zip, includedFiles, skippedFiles } = await buildCampaignBackupZip(
-    campaignId,
-    options
-  );
+  const prepared = await prepareBackupEntries(campaignId, options);
+  const output = createWriteStream(outputPath);
+  const archive = archiver("zip", { zlib: { level: 5 } });
 
-  const nodeStream = zip.generateNodeStream({
-    type: "nodebuffer",
-    streamFiles: true,
-    compression: "DEFLATE",
+  const done = new Promise<void>((resolve, reject) => {
+    output.on("close", () => resolve());
+    output.on("error", reject);
+    archive.on("error", reject);
   });
 
-  await pipeline(nodeStream, createWriteStream(outputPath));
+  archive.pipe(output);
+
+  for (const entry of prepared.textEntries) {
+    archive.append(entry.content, { name: entry.path });
+  }
+  for (const entry of prepared.diskEntries) {
+    archive.file(entry.diskPath, { name: entry.path });
+  }
+
+  await archive.finalize();
+  await done;
 
   const info = await stat(outputPath);
   return {
-    includedFiles,
-    skippedFiles,
+    includedFiles: prepared.includedFiles,
+    skippedFiles: prepared.skippedFiles,
     sizeBytes: info.size,
   };
 }

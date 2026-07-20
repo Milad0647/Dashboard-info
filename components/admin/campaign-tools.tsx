@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminCampaign } from "@/components/admin/admin-campaign-provider";
+import { startAndWaitForBackup } from "@/lib/client/backup-job";
 import { adminHref } from "@/lib/utils";
 
 interface CampaignToolsProps {
@@ -64,36 +65,18 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
     }
 
     startTransition(async () => {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 4 * 60 * 1000);
       try {
-        toast.message("در حال گرفتن پشتیبان…", {
-          description: "ممکن است چند دقیقه طول بکشد.",
+        toast.message("بکاپ در پس‌زمینه شروع شد…", {
+          description: "برای حجم زیاد ممکن است چند دقیقه طول بکشد.",
         });
-        const response = await fetch("/api/backups", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ campaignId }),
-          signal: controller.signal,
+        const job = await startAndWaitForBackup({
+          campaignId,
+          includeUploads: true,
         });
-        const result = (await response.json().catch(() => ({}))) as {
-          error?: string;
-          warning?: string;
-        };
-        if (!response.ok) {
-          toast.error(result.error ?? "گرفتن پشتیبان ناموفق بود");
-          return;
-        }
-        if (result.warning) toast.warning(result.warning);
+        if (job.warning) toast.warning(job.warning);
         toast.success("پشتیبان روی سرور ذخیره شد — از صفحه پشتیبان‌گیری دانلود کنید");
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          toast.error("زمان بکاپ تمام شد؛ دوباره تلاش کنید");
-        } else {
-          toast.error("گرفتن پشتیبان ناموفق بود");
-        }
-      } finally {
-        window.clearTimeout(timeoutId);
+        toast.error(error instanceof Error ? error.message : "گرفتن پشتیبان ناموفق بود");
       }
     });
   };

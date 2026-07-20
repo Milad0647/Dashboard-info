@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatStorageBytes } from "@/lib/raw-media-storage";
+import { startAndWaitForBackup } from "@/lib/client/backup-job";
 import { formatPersianDateTime } from "@/lib/utils";
 
 interface StoredBackupItem {
@@ -25,8 +26,6 @@ interface StoredBackupItem {
   sizeBytes: number;
   createdAt: string;
 }
-
-const BACKUP_FETCH_TIMEOUT_MS = 10 * 60 * 1000;
 
 async function readApiError(response: Response, fallback: string): Promise<string> {
   try {
@@ -49,6 +48,7 @@ export function BackupsAdmin() {
   const [tehranDay, setTehranDay] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [jobStatus, setJobStatus] = useState<string | null>(null);
   const [restoreUserId, setRestoreUserId] = useState("");
   const fullRestoreRef = useRef<HTMLInputElement>(null);
   const userRestoreRef = useRef<HTMLInputElement>(null);
@@ -80,49 +80,40 @@ export function BackupsAdmin() {
     void loadBackups();
   }, [loadBackups]);
 
-  const createBackup = () => {
+  const createBackup = (includeUploads: boolean) => {
     if (!campaignId) {
       toast.error("کمپینی انتخاب نشده است");
       return;
     }
 
     startTransition(async () => {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), BACKUP_FETCH_TIMEOUT_MS);
-
       try {
-        toast.message("در حال گرفتن پشتیبان کامل…", {
-          description:
-            "همه کاربران، ویدیوها، پوسترها، فایل‌ها و رسانه‌ها داخل پوشه‌بندی ZIP ذخیره می‌شوند.",
+        setJobStatus("queued");
+        toast.message(
+          includeUploads ? "بکاپ کامل در پس‌زمینه شروع شد…" : "بکاپ سریع (بدون رسانه) شروع شد…",
+          {
+            description:
+              includeUploads
+                ? "ممکن است برای حجم زیاد چند دقیقه طول بکشد؛ صفحه را باز نگه دارید."
+                : "فقط JSON و ساختار کاربران؛ فایل‌های رسانه روی volume سرور می‌مانند.",
+          }
+        );
+
+        const job = await startAndWaitForBackup({
+          campaignId,
+          includeUploads,
+          onProgress: (status) => setJobStatus(status),
         });
 
-        const response = await fetch("/api/backups", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ campaignId }),
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          toast.error(await readApiError(response, "گرفتن پشتیبان ناموفق بود"));
-          return;
-        }
-
-        const result = (await response.json()) as {
-          warning?: string;
-        };
-
-        if (result.warning) toast.warning(result.warning);
-        toast.success("پشتیبان کامل روی سرور ذخیره شد");
+        if (job.warning) toast.warning(job.warning);
+        toast.success(
+          includeUploads ? "پشتیبان کامل آماده شد" : "پشتیبان سریع (بدون رسانه) آماده شد"
+        );
+        setJobStatus(null);
         await loadBackups();
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          toast.error("زمان بکاپ تمام شد؛ دوباره تلاش کنید");
-        } else {
-          toast.error("گرفتن پشتیبان ناموفق بود");
-        }
-      } finally {
-        window.clearTimeout(timeoutId);
+        setJobStatus(null);
+        toast.error(error instanceof Error ? error.message : "گرفتن پشتیبان ناموفق بود");
       }
     });
   };
@@ -201,11 +192,16 @@ export function BackupsAdmin() {
             پشتیبان‌گیری
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            بکاپ کامل شامل همه کاربران، همه بخش‌ها (ویدیو، پوستر، بیلبورد، …)، JSONها و فایل‌های
-            رسانه است — داخل ZIP به صورت{" "}
-            <span dir="ltr">users/کاربر/بخش.json</span>. هر روز ساعت ۱۲ شب به‌وقت تهران خودکار
-            گرفته می‌شود. پشتیبان‌ها فقط با حذف دستی ادمین پاک می‌شوند.
+            بکاپ کامل شامل همه کاربران و بخش‌هاست. اگر حجم رسانه خیلی زیاد است از «بکاپ سریع
+            (بدون رسانه)» استفاده کنید؛ داده و ساختار کاربران ذخیره می‌شود و فایل‌ها روی volume
+            آپلود سرور می‌مانند. بکاپ در پس‌زمینه اجرا می‌شود تا خطای timeout ندهد. خودکار: هر روز
+            ۱۲ شب تهران.
           </p>
+          {jobStatus ? (
+            <p className="mt-2 text-xs font-medium text-primary">
+              وضعیت کار بکاپ: {jobStatus === "running" ? "در حال ساخت ZIP…" : jobStatus}
+            </p>
+          ) : null}
           {!isLoading && (
             <p className="mt-2 text-xs text-muted-foreground">
               وضعیت بکاپ خودکار امروز:{" "}
@@ -232,13 +228,22 @@ export function BackupsAdmin() {
             <RefreshCw className="h-4 w-4" />
             بروزرسانی لیست
           </Button>
-          <Button size="sm" disabled={isPending || !campaignId} onClick={createBackup}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isPending || !campaignId}
+            onClick={() => createBackup(false)}
+          >
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
+            بکاپ سریع (بدون رسانه)
+          </Button>
+          <Button size="sm" disabled={isPending || !campaignId} onClick={() => createBackup(true)}>
             {isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Archive className="h-4 w-4" />
             )}
-            گرفتن پشتیبان کامل
+            بکاپ کامل با رسانه
             {currentCampaign ? ` (${currentCampaign.title})` : ""}
           </Button>
         </div>

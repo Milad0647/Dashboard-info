@@ -56,7 +56,7 @@ async function ensureBackupsDir(): Promise<string> {
 
 export async function createStoredCampaignBackup(
   campaignId: string,
-  options?: { userId?: string }
+  options?: { userId?: string; includeUploads?: boolean }
 ): Promise<CreateStoredBackupResult> {
   const campaign = await pgGetCampaignById(campaignId);
   if (!campaign) {
@@ -70,6 +70,7 @@ export async function createStoredCampaignBackup(
 
   const written = await writeCampaignBackupZipToFile(campaignId, filePath, {
     userId: options?.userId,
+    includeUploads: options?.includeUploads,
   });
 
   // Backups are kept until an admin deletes them manually — no auto-prune.
