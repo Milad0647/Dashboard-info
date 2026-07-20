@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "ac939d9efdd3efbf94b801cb6d6048694ea96b7b",
+      "committedAt": "2026-07-20T13:10:34+03:30",
+      "title": "مشاهده محتواهای هر شرکت با کلیک روی ۵ شرکت برتر هر بخش",
+      "subject": "Open company content modal from section top-5 ranking"
+    },
+    {
       "hash": "a39c7b02cd19b4f17c37470ab38f833c8279c2cf",
       "committedAt": "2026-07-20T13:01:48+03:30",
       "title": "باز شدن همه آیتم‌های رتبه‌بندی در مودال به‌جای رفتن به صفحه کمپین",

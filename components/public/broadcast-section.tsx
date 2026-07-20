@@ -36,13 +36,13 @@ interface BroadcastSectionProps {
 }
 
 function toBroadcastVideoVersion(report: BroadcastReport): VideoVersion {
-  const cover = report.summaryData.coverImageUrl?.trim();
+  const cover = report.summaryData.coverImageUrl?.trim() || "";
   return {
     id: report.id,
     videoId: report.id,
     versionNumber: 1,
     videoUrl: report.pdfUrl,
-    thumbnailUrl: cover || report.pdfUrl,
+    thumbnailUrl: cover,
     status: "final",
     isFinal: true,
     date: report.reportDate,
