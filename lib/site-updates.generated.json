@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "0f08d5e57ed5657f9be76e30b8b6e8dd69c09fd6",
+      "committedAt": "2026-07-20T13:18:12+03:30",
+      "title": "امکان ارسال اسکرین‌شات و ویدیو در ثبت گزارش مشکل",
+      "subject": "Allow screenshot and video attachments on problem reports"
+    },
+    {
+      "hash": "ffbb95df94a3061632a88b764bb22ebc11fee888",
+      "committedAt": "2026-07-20T13:12:20+03:30",
+      "title": "نمایش گزارش‌های صداوسیما با کاور و پخش روی تصویر",
+      "subject": "Show broadcast reports as video-style cover cards"
+    },
+    {
       "hash": "ac939d9efdd3efbf94b801cb6d6048694ea96b7b",
       "committedAt": "2026-07-20T13:10:34+03:30",
       "title": "مشاهده محتواهای هر شرکت با کلیک روی ۵ شرکت برتر هر بخش",
