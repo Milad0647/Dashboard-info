@@ -113,6 +113,7 @@ export async function pgListAuditEvents(filters: AuditEventFilters = {}): Promis
       AND (${filters.campaignId ?? null}::uuid IS NULL OR campaign_id = ${filters.campaignId ?? null})
       AND (${filters.from ?? null}::timestamptz IS NULL OR created_at >= ${filters.from ?? null}::timestamptz)
       AND (${filters.to ?? null}::timestamptz IS NULL OR created_at <= ${filters.to ?? null}::timestamptz)
+      AND (${filters.excludeHeartbeat ? true : null}::boolean IS NULL OR action <> 'presence.heartbeat')
       AND (
         ${search}::text IS NULL
         OR actor_name ILIKE ${search ? `%${search}%` : null}

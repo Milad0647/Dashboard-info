@@ -52,6 +52,8 @@ export interface AuditEventFilters {
   to?: string;
   limit?: number;
   offset?: number;
+  /** When true, omit presence.heartbeat rows from the result. */
+  excludeHeartbeat?: boolean;
 }
 
 export interface AuditDailyPoint {
