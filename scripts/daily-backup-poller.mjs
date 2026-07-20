@@ -3,15 +3,17 @@
  * by calling the local Next.js cron endpoint. Started from docker-entrypoint.sh.
  *
  * Shares BACKUP_DIR/.last-daily-backup with the in-app scheduler so only one run happens per day.
+ * Localhost calls are authorized even without CRON_SECRET (see /api/cron/daily-backup).
  */
-import { readFile, writeFile, mkdir } from "fs/promises";
+import { readFile } from "fs/promises";
 import path from "path";
 
 const PORT = Number(process.env.PORT || 3030);
 const CHECK_MS = 60_000;
 const STATE_FILENAME = ".last-daily-backup";
+const SERVER_WAIT_ATTEMPTS = 90;
+const SERVER_WAIT_MS = 2_000;
 
-let lastCompleted = "";
 let running = false;
 
 function backupsDir() {
@@ -52,30 +54,40 @@ async function loadLastCompleted() {
   }
 }
 
-async function saveLastCompleted(dateIso) {
-  try {
-    await mkdir(backupsDir(), { recursive: true });
-    await writeFile(stateFilePath(), `${dateIso}\n`, "utf8");
-  } catch (error) {
-    console.warn("[daily-backup-poller] Could not persist last-run date:", error);
+async function waitForServer() {
+  for (let attempt = 1; attempt <= SERVER_WAIT_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${PORT}/`, {
+        method: "GET",
+        redirect: "manual",
+      });
+      // Any HTTP response means the Next server is accepting connections.
+      if (response.status > 0) {
+        console.info(
+          `[daily-backup-poller] Server ready after ${attempt} attempt(s) (HTTP ${response.status})`
+        );
+        return true;
+      }
+    } catch {
+      // Not ready yet
+    }
+    await new Promise((resolve) => setTimeout(resolve, SERVER_WAIT_MS));
   }
+  console.error("[daily-backup-poller] Server did not become ready in time");
+  return false;
 }
 
 async function triggerBackup() {
   const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) {
-    console.warn(
-      "[daily-backup-poller] CRON_SECRET is not set; cannot call /api/cron/daily-backup"
-    );
-    return false;
+  const headers = {};
+  if (secret) {
+    headers.Authorization = `Bearer ${secret}`;
+    headers["x-cron-secret"] = secret;
   }
 
   const response = await fetch(`http://127.0.0.1:${PORT}/api/cron/daily-backup`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${secret}`,
-      "x-cron-secret": secret,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -83,7 +95,8 @@ async function triggerBackup() {
     throw new Error(`HTTP ${response.status}: ${body.slice(0, 200)}`);
   }
 
-  return true;
+  const result = await response.json().catch(() => null);
+  return result;
 }
 
 async function tick() {
@@ -93,18 +106,18 @@ async function tick() {
   const { dateIso, hour } = tehranClock();
   if (hour < 12) return;
 
-  lastCompleted = await loadLastCompleted();
+  const lastCompleted = await loadLastCompleted();
   if (lastCompleted === dateIso) return;
 
   running = true;
   try {
     console.info(`[daily-backup-poller] Triggering backup for ${dateIso}`);
-    const ok = await triggerBackup();
-    if (ok) {
-      lastCompleted = dateIso;
-      await saveLastCompleted(dateIso);
-      console.info(`[daily-backup-poller] Completed for ${dateIso}`);
-    }
+    const result = await triggerBackup();
+    const created = result?.createdCount ?? "?";
+    const failed = result?.failedCount ?? "?";
+    console.info(
+      `[daily-backup-poller] Completed for ${dateIso} (created=${created} failed=${failed})`
+    );
   } catch (error) {
     console.error("[daily-backup-poller] Failed:", error);
   } finally {
@@ -113,9 +126,12 @@ async function tick() {
 }
 
 console.info("[daily-backup-poller] Started (Tehran noon via localhost cron)");
-setInterval(() => {
-  void tick();
-}, CHECK_MS);
-setTimeout(() => {
-  void tick();
-}, 15_000);
+
+void (async () => {
+  const ready = await waitForServer();
+  if (!ready) return;
+  await tick();
+  setInterval(() => {
+    void tick();
+  }, CHECK_MS);
+})();

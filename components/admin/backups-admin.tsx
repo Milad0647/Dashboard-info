@@ -35,6 +35,8 @@ async function readApiError(response: Response, fallback: string): Promise<strin
 export function BackupsAdmin() {
   const { campaignId, currentCampaign } = useAdminCampaign();
   const [backups, setBackups] = useState<StoredBackupItem[]>([]);
+  const [lastDailyBackupDay, setLastDailyBackupDay] = useState<string | null>(null);
+  const [tehranDay, setTehranDay] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
 
@@ -48,9 +50,13 @@ export function BackupsAdmin() {
       }
       const result = (await response.json()) as {
         backups?: StoredBackupItem[];
+        lastDailyBackupDay?: string | null;
+        tehranDay?: string;
         error?: string;
       };
       setBackups(result.backups ?? []);
+      setLastDailyBackupDay(result.lastDailyBackupDay ?? null);
+      setTehranDay(result.tehranDay ?? null);
     } catch {
       toast.error("خطا در دریافت لیست پشتیبان‌ها");
     } finally {
@@ -140,9 +146,24 @@ export function BackupsAdmin() {
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             فایل ZIP پشتیبان روی خود سرور ذخیره می‌شود. هر روز ساعت ۱۲ ظهر به‌وقت تهران به‌صورت
-            خودکار گرفته می‌شود. پشتیبان‌ها تا وقتی خودتان حذف نکنید روی سرور می‌مانند؛ از همین صفحه
-            دانلود یا حذف کنید.
+            خودکار گرفته می‌شود. پشتیبان‌ها هرگز خودکار پاک نمی‌شوند؛ فقط ادمین از همین صفحه حذف
+            می‌کند.
           </p>
+          {!isLoading && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              وضعیت بکاپ خودکار امروز:{" "}
+              {lastDailyBackupDay && tehranDay && lastDailyBackupDay === tehranDay ? (
+                <span className="font-medium text-emerald-600">انجام شده</span>
+              ) : (
+                <span className="font-medium text-amber-600">هنوز گرفته نشده</span>
+              )}
+              {lastDailyBackupDay ? (
+                <span dir="ltr" className="ms-1 opacity-80">
+                  (آخرین: {lastDailyBackupDay})
+                </span>
+              ) : null}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button

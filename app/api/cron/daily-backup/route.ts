@@ -1,35 +1,41 @@
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
-import { getBackupsDir } from "@/lib/backups";
 import { getTehranCalendarDateIso } from "@/lib/safe-dates";
+import {
+  markDailyBackupCompleted,
+  shouldMarkDailyBackupComplete,
+} from "@/lib/services/daily-backup-state";
 import { createDailyBackupsForAllCampaigns } from "@/lib/services/stored-backup";
 import { isPostgresConfigured } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-function authorizeCron(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) return false;
-
-  const authorization = request.headers.get("authorization");
-  const bearer =
-    authorization?.toLowerCase().startsWith("bearer ")
-      ? authorization.slice(7).trim()
-      : null;
-  const headerSecret = request.headers.get("x-cron-secret")?.trim() ?? null;
-
-  return bearer === secret || headerSecret === secret;
+function isLocalhostRequest(request: Request): boolean {
+  try {
+    const { hostname } = new URL(request.url);
+    return (
+      hostname === "127.0.0.1" ||
+      hostname === "localhost" ||
+      hostname === "::1"
+    );
+  } catch {
+    return false;
+  }
 }
 
-async function markDailyBackupCompleted(dateIso: string): Promise<void> {
-  try {
-    const dir = getBackupsDir();
-    await mkdir(dir, { recursive: true });
-    await writeFile(path.join(dir, ".last-daily-backup"), `${dateIso}\n`, "utf8");
-  } catch {
-    // Non-fatal — schedulers may retry the same day
+function authorizeCron(request: Request): boolean {
+  const secret = process.env.CRON_SECRET?.trim();
+  if (secret) {
+    const authorization = request.headers.get("authorization");
+    const bearer =
+      authorization?.toLowerCase().startsWith("bearer ")
+        ? authorization.slice(7).trim()
+        : null;
+    const headerSecret = request.headers.get("x-cron-secret")?.trim() ?? null;
+    if (bearer === secret || headerSecret === secret) return true;
   }
+
+  // Docker sidecar poller calls 127.0.0.1 — allow even when CRON_SECRET is unset.
+  return isLocalhostRequest(request);
 }
 
 async function handleCron(request: Request) {
@@ -38,7 +44,7 @@ async function handleCron(request: Request) {
       {
         success: false,
         error:
-          "Unauthorized. Set CRON_SECRET and send Authorization: Bearer <secret>.",
+          "Unauthorized. Set CRON_SECRET and send Authorization: Bearer <secret>, or call from localhost.",
       },
       { status: 401 }
     );
@@ -53,8 +59,14 @@ async function handleCron(request: Request) {
 
   const summary = await createDailyBackupsForAllCampaigns();
   const tehranDay = getTehranCalendarDateIso();
-  if (summary.created.length > 0 || summary.failed.length === 0) {
-    await markDailyBackupCompleted(tehranDay);
+  let markedComplete = false;
+  if (shouldMarkDailyBackupComplete(summary)) {
+    try {
+      await markDailyBackupCompleted(tehranDay);
+      markedComplete = true;
+    } catch (error) {
+      console.warn("[daily-backup] Could not persist last-run date:", error);
+    }
   }
 
   return Response.json({
@@ -62,6 +74,7 @@ async function handleCron(request: Request) {
     createdCount: summary.created.length,
     failedCount: summary.failed.length,
     tehranDay,
+    markedComplete,
     summary,
   });
 }

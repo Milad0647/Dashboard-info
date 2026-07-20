@@ -97,12 +97,12 @@ What it updates:
 
 Stored campaign backups (ZIP on disk, downloadable from **Admin → پشتیبان‌گیری**) are created:
 
-1. **Automatically inside the app** every day at **12:00 Asia/Tehran** (in-process scheduler via `instrumentation.ts`). No Coolify cron required for backups.
-2. Optionally still via Coolify: `GET|POST /api/cron/daily-backup` with `Authorization: Bearer $CRON_SECRET` (useful as a backup trigger).
+1. **Automatically every day at 12:00 Asia/Tehran** via an in-process scheduler (`instrumentation.ts`) and, in Docker, a localhost poller (`scripts/daily-backup-poller.mjs`). No Coolify cron required.
+2. Optionally via Coolify: `GET|POST /api/cron/daily-backup` with `Authorization: Bearer $CRON_SECRET`. The Docker poller calls `127.0.0.1` and works even if `CRON_SECRET` is unset.
 
-Persist backups with a volume mounted at `BACKUP_DIR` (default `/app/data/backups`). Backups are **never auto-deleted** — only an admin can remove them from the UI. You can also create a backup manually from the admin panel.
+Persist backups with a volume mounted at `BACKUP_DIR` (default `/app/data/backups`). Backups are **never auto-deleted** — only an admin can remove them from the UI. Manual backups from the admin panel stay until you delete them.
 
-Set `DISABLE_DAILY_BACKUP_SCHEDULER=1` to turn off the in-app noon scheduler.
+Set `DISABLE_DAILY_BACKUP_SCHEDULER=1` to turn off both the in-app noon scheduler and the Docker poller.
 
 ### 6. Local Docker test
 

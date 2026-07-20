@@ -1,7 +1,9 @@
-import { readFile, writeFile } from "fs/promises";
-import path from "path";
-import { getBackupsDir } from "@/lib/backups";
 import { getTehranCalendarDateIso } from "@/lib/safe-dates";
+import {
+  getLastDailyBackupDay,
+  markDailyBackupCompleted,
+  shouldMarkDailyBackupComplete,
+} from "@/lib/services/daily-backup-state";
 import { createDailyBackupsForAllCampaigns } from "@/lib/services/stored-backup";
 import { isPostgresConfigured } from "@/lib/utils";
 
@@ -9,7 +11,6 @@ const TEHRAN_TIME_ZONE = "Asia/Tehran";
 /** Daily backup hour in Asia/Tehran (noon). */
 const BACKUP_HOUR_TEHRAN = 12;
 const CHECK_INTERVAL_MS = 60_000;
-const STATE_FILENAME = ".last-daily-backup";
 
 const tehranPartsFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: TEHRAN_TIME_ZONE,
@@ -22,7 +23,6 @@ const tehranPartsFormatter = new Intl.DateTimeFormat("en-GB", {
 });
 
 let schedulerStarted = false;
-let lastCompletedTehranDate = "";
 let isRunning = false;
 
 function getTehranClock(date: Date = new Date()): {
@@ -49,41 +49,32 @@ function getTehranClock(date: Date = new Date()): {
   };
 }
 
-function stateFilePath(): string {
-  return path.join(getBackupsDir(), STATE_FILENAME);
-}
-
-async function loadLastCompletedDate(): Promise<string> {
-  try {
-    const raw = (await readFile(stateFilePath(), "utf8")).trim();
-    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
-  } catch {
-    return "";
-  }
-}
-
-async function saveLastCompletedDate(dateIso: string): Promise<void> {
-  try {
-    await writeFile(stateFilePath(), `${dateIso}\n`, "utf8");
-  } catch (error) {
-    console.warn("[daily-backup] Could not persist last-run date:", error);
-  }
-}
-
 async function runDailyBackupIfDue(): Promise<void> {
   if (isRunning) return;
   if (!isPostgresConfigured()) return;
 
   const { dateIso, hour } = getTehranClock();
   if (hour < BACKUP_HOUR_TEHRAN) return;
-  if (lastCompletedTehranDate === dateIso) return;
+
+  // Always re-read disk so Docker poller / HTTP cron can dedupe with this process.
+  const lastCompleted = (await getLastDailyBackupDay()) ?? "";
+  if (lastCompleted === dateIso) return;
 
   isRunning = true;
   try {
     console.info(`[daily-backup] Starting scheduled backup for Tehran day ${dateIso}`);
     const summary = await createDailyBackupsForAllCampaigns();
-    lastCompletedTehranDate = dateIso;
-    await saveLastCompletedDate(dateIso);
+    if (shouldMarkDailyBackupComplete(summary)) {
+      try {
+        await markDailyBackupCompleted(dateIso);
+      } catch (error) {
+        console.warn("[daily-backup] Could not persist last-run date:", error);
+      }
+    } else {
+      console.warn(
+        "[daily-backup] All campaigns failed; will retry later the same day"
+      );
+    }
     console.info(
       `[daily-backup] Done: created=${summary.created.length} failed=${summary.failed.length}`
     );
@@ -113,9 +104,9 @@ export function startDailyBackupScheduler(): void {
   schedulerStarted = true;
 
   void (async () => {
-    lastCompletedTehranDate = await loadLastCompletedDate();
+    const lastCompleted = (await getLastDailyBackupDay()) ?? "none";
     console.info(
-      `[daily-backup] Scheduler started (Tehran noon). Today=${getTehranCalendarDateIso()}, lastCompleted=${lastCompletedTehranDate || "none"}`
+      `[daily-backup] Scheduler started (Tehran noon). Today=${getTehranCalendarDateIso()}, lastCompleted=${lastCompleted}`
     );
     await runDailyBackupIfDue();
     setInterval(() => {

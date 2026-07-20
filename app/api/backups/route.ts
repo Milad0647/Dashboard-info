@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
+import { getLastDailyBackupDay } from "@/lib/services/daily-backup-state";
+import { getTehranCalendarDateIso } from "@/lib/safe-dates";
 import {
   createStoredCampaignBackup,
   listStoredBackups,
@@ -24,8 +26,15 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const campaignSlug = searchParams.get("campaignSlug")?.trim() || undefined;
-    const backups = await listStoredBackups(campaignSlug);
-    return NextResponse.json({ backups });
+    const [backups, lastDailyBackupDay] = await Promise.all([
+      listStoredBackups(campaignSlug),
+      getLastDailyBackupDay(),
+    ]);
+    return NextResponse.json({
+      backups,
+      lastDailyBackupDay,
+      tehranDay: getTehranCalendarDateIso(),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to list backups";
     console.error("[backups] list failed", error);
