@@ -98,7 +98,7 @@ export async function pgListAuditEvents(filters: AuditEventFilters = {}): Promis
   if (!isPostgresConfigured()) return [];
 
   const sql = getSql();
-  const limit = Math.min(Math.max(filters.limit ?? 100, 1), 500);
+  const limit = Math.min(Math.max(filters.limit ?? 100, 1), 2000);
   const offset = Math.max(filters.offset ?? 0, 0);
   const search = filters.search?.trim() || null;
 
@@ -442,7 +442,7 @@ export async function pgGetOnlineUsers(withinMinutes = 5): Promise<
   });
 }
 
-/** All DB users with today-login and online (5-minute) presence flags. */
+/** All DB users with today-login, last activity, and online (5-minute) presence flags. */
 export async function pgGetAllUsersPresence(
   withinMinutes = 5
 ): Promise<import("@/lib/audit/types").AuditUserPresence[]> {
@@ -465,13 +465,24 @@ export async function pgGetAllUsersPresence(
     ),
     online AS (
       SELECT DISTINCT ON (e.actor_user_id)
-        e.actor_user_id,
-        e.created_at AS last_seen_at,
-        e.path
+        e.actor_user_id
       FROM user_audit_events e
       WHERE e.created_at >= now() - (${minutes} * interval '1 minute')
         AND e.action <> 'auth.login_failed'
         AND e.actor_user_id IS NOT NULL
+      ORDER BY e.actor_user_id, e.created_at DESC
+    ),
+    last_activity AS (
+      SELECT DISTINCT ON (e.actor_user_id)
+        e.actor_user_id,
+        e.created_at AS last_seen_at,
+        e.action AS last_action,
+        e.label AS last_label,
+        e.path
+      FROM user_audit_events e
+      WHERE e.actor_user_id IS NOT NULL
+        AND e.action <> 'auth.login_failed'
+        AND e.action <> 'presence.heartbeat'
       ORDER BY e.actor_user_id, e.created_at DESC
     )
     SELECT
@@ -483,13 +494,17 @@ export async function pgGetAllUsersPresence(
       COALESCE(tl.login_count, 0) AS login_count_today,
       tl.last_login_at,
       (o.actor_user_id IS NOT NULL) AS is_online,
-      o.last_seen_at,
-      o.path
+      la.last_seen_at,
+      la.last_action,
+      la.last_label,
+      la.path
     FROM users u
     LEFT JOIN today_logins tl ON tl.actor_user_id = u.id
     LEFT JOIN online o ON o.actor_user_id = u.id
+    LEFT JOIN last_activity la ON la.actor_user_id = u.id
     ORDER BY
       (o.actor_user_id IS NOT NULL) DESC,
+      la.last_seen_at DESC NULLS LAST,
       (tl.actor_user_id IS NOT NULL) DESC,
       u.name ASC NULLS LAST,
       u.email ASC
@@ -509,6 +524,8 @@ export async function pgGetAllUsersPresence(
     lastSeenAt: row.last_seen_at
       ? new Date(String(row.last_seen_at)).toISOString()
       : null,
+    lastAction: row.last_action ? String(row.last_action) : null,
+    lastLabel: row.last_label ? String(row.last_label).trim() || null : null,
     path: row.path ? String(row.path) : null,
   }));
 }
@@ -665,5 +682,54 @@ export async function pgGetUserContentContributions(): Promise<UserContentContri
     analytics: Number(row.analytics ?? 0),
     submissions: Number(row.submissions ?? 0),
     total: Number(row.total ?? 0),
+  }));
+}
+
+/** Per-user daily activity series in Asia/Tehran calendar days (excludes heartbeats). */
+export async function pgGetUserAuditDailySeries(
+  userId: string,
+  days = 14
+): Promise<AuditDailyPoint[]> {
+  if (!isPostgresConfigured()) return [];
+
+  const sql = getSql();
+  const safeDays = Math.min(Math.max(days, 1), 90);
+  const rows = await sql`
+    WITH bounds AS (
+      SELECT
+        date_trunc('day', now() AT TIME ZONE 'Asia/Tehran')
+          - ((${safeDays} - 1) * interval '1 day') AS start_local,
+        date_trunc('day', now() AT TIME ZONE 'Asia/Tehran') AS end_local
+    ),
+    days AS (
+      SELECT generate_series(
+        (SELECT start_local FROM bounds),
+        (SELECT end_local FROM bounds),
+        interval '1 day'
+      )::date AS day
+    )
+    SELECT
+      days.day::text AS date,
+      COALESCE(COUNT(e.id), 0)::int AS total,
+      COALESCE(COUNT(e.id) FILTER (WHERE e.action = 'auth.login'), 0)::int AS logins,
+      COALESCE(COUNT(e.id) FILTER (WHERE e.category = 'content'), 0)::int AS content,
+      COALESCE(COUNT(e.id) FILTER (WHERE e.action = 'navigation.page_view'), 0)::int AS navigation,
+      COALESCE(COUNT(e.id) FILTER (WHERE e.action = 'ui.click'), 0)::int AS clicks
+    FROM days
+    LEFT JOIN user_audit_events e
+      ON e.actor_user_id = ${userId}::uuid
+      AND (e.created_at AT TIME ZONE 'Asia/Tehran')::date = days.day
+      AND e.action <> 'presence.heartbeat'
+    GROUP BY days.day
+    ORDER BY days.day ASC
+  `;
+
+  return rows.map((row) => ({
+    date: String(row.date).slice(0, 10),
+    total: Number(row.total ?? 0),
+    logins: Number(row.logins ?? 0),
+    content: Number(row.content ?? 0),
+    navigation: Number(row.navigation ?? 0),
+    clicks: Number(row.clicks ?? 0),
   }));
 }

@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
   AlertTriangle,
   Check,
   ChevronLeft,
   FileStack,
-  Loader2,
   LogIn,
   MousePointerClick,
   Navigation,
@@ -34,17 +33,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuditDayCalendar } from "@/components/admin/audit-day-calendar";
 import { AuditProblemsPanel } from "@/components/admin/audit-problems-panel";
-import { getUserAuditEventsAction } from "@/lib/actions/audit-actions";
+import {
+  AuditUserProfileDialog,
+  type AuditProfileUser,
+} from "@/components/admin/audit-user-profile-dialog";
 import { useChartTheme } from "@/lib/hooks/use-chart-theme";
 import {
   formatPersianDateShort,
@@ -66,14 +61,7 @@ import type {
   UserContentContribution,
 } from "@/lib/audit/types";
 
-type SelectedAuditUser = {
-  userId: string;
-  name?: string | null;
-  email?: string | null;
-  role?: string | null;
-  isOnline?: boolean;
-  lastSeenAt?: string | null;
-};
+type SelectedAuditUser = AuditProfileUser;
 
 const CATEGORY_BADGE_VARIANT: Record<
   AuditCategory,
@@ -144,6 +132,21 @@ function UserCell({
   );
 }
 
+function formatLastActivitySummary(user: AuditUserPresence) {
+  if (!user.lastSeenAt) return null;
+
+  const actionLabel = user.lastAction
+    ? getAuditActionLabel(user.lastAction)
+    : null;
+  const detail = user.lastLabel?.trim() || user.path?.trim() || null;
+
+  return {
+    when: formatPersianDateTime(user.lastSeenAt),
+    actionLabel,
+    detail,
+  };
+}
+
 function UserPresenceCard({
   user,
   onSelect,
@@ -152,6 +155,7 @@ function UserPresenceCard({
   onSelect: (user: SelectedAuditUser) => void;
 }) {
   const { displayName, showEmail, email } = resolveUserDisplay(user.name, user.email);
+  const lastActivity = formatLastActivitySummary(user);
 
   return (
     <button
@@ -224,10 +228,24 @@ function UserPresenceCard({
             ) : (
               <span>آفلاین</span>
             )}
-            {user.lastSeenAt && (
-              <> · آخرین فعالیت: {formatPersianDateTime(user.lastSeenAt)}</>
-            )}
           </p>
+          {lastActivity ? (
+            <p className="rounded-md bg-primary/5 px-2 py-1.5 text-foreground/90">
+              <span className="font-medium text-primary">آخرین فعالیت</span>
+              {lastActivity.actionLabel ? (
+                <> · {lastActivity.actionLabel}</>
+              ) : null}
+              {" · "}
+              {lastActivity.when}
+              {lastActivity.detail ? (
+                <span className="mt-0.5 block truncate text-muted-foreground" title={lastActivity.detail}>
+                  {lastActivity.detail}
+                </span>
+              ) : null}
+            </p>
+          ) : (
+            <p className="rounded-md bg-muted/50 px-2 py-1.5">هنوز فعالیتی ثبت نشده</p>
+          )}
           {user.loggedInToday ? (
             <p>
               ورود امروز
@@ -239,143 +257,10 @@ function UserPresenceCard({
           ) : (
             <p className="font-medium text-muted-foreground/80">امروز وارد نشده</p>
           )}
-          {user.path && (
-            <p className="truncate" dir="ltr" title={user.path}>
-              {user.path}
-            </p>
-          )}
-          <p className="pt-0.5 text-primary/80">برای مشاهده فعالیت اخیر کلیک کنید</p>
+          <p className="pt-0.5 text-primary/80">برای مشاهده گزارش کامل کلیک کنید</p>
         </div>
       </div>
     </button>
-  );
-}
-
-function UserActivityDialog({
-  user,
-  open,
-  onOpenChange,
-}: {
-  user: SelectedAuditUser | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const [events, setEvents] = useState<AuditEvent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const { displayName, showEmail, email } = resolveUserDisplay(user?.name, user?.email);
-
-  useEffect(() => {
-    if (!open || !user?.userId) {
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setEvents([]);
-
-    void getUserAuditEventsAction(user.userId, 50).then((result) => {
-      if (cancelled) return;
-      if (!result.ok) {
-        setError(result.error);
-        setEvents([]);
-      } else {
-        setEvents(result.events);
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, user?.userId]);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-hidden flex flex-col gap-0 p-0">
-        <DialogHeader className="px-6 pt-6 pb-3 border-b shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            {user?.isOnline !== undefined && (
-              <span
-                className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                  user.isOnline ? "bg-emerald-500" : "bg-muted-foreground/30"
-                }`}
-                title={user.isOnline ? "آنلاین" : "آفلاین"}
-              />
-            )}
-            فعالیت اخیر — {displayName}
-          </DialogTitle>
-          <DialogDescription className="space-y-0.5">
-            {showEmail && email && (
-              <span className="block" dir="ltr">
-                {email}
-              </span>
-            )}
-            {user?.role && (
-              <span className="block">نقش: {getAuditRoleLabel(user.role)}</span>
-            )}
-            {user?.lastSeenAt && (
-              <span className="block">
-                آخرین فعالیت: {formatPersianDateTime(user.lastSeenAt)}
-              </span>
-            )}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto px-2 py-2 min-h-[240px] max-h-[65vh]">
-          {loading ? (
-            <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              در حال بارگذاری…
-            </div>
-          ) : error ? (
-            <p className="px-4 py-12 text-center text-sm text-destructive">{error}</p>
-          ) : events.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-muted-foreground">
-              هنوز فعالیتی برای این کاربر ثبت نشده است.
-            </p>
-          ) : (
-            <ul className="divide-y">
-              {events.map((event) => (
-                <li key={event.id} className="px-4 py-3 flex items-start gap-3">
-                  <Badge
-                    variant={CATEGORY_BADGE_VARIANT[event.category]}
-                    className="shrink-0 mt-0.5"
-                  >
-                    {AUDIT_CATEGORY_LABELS[event.category]}
-                  </Badge>
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="text-sm font-medium">
-                      {getAuditActionLabel(event.action)}
-                      {event.entityType ? (
-                        <span className="text-muted-foreground font-normal">
-                          {" "}
-                          · {getAuditEntityLabel(event.entityType)}
-                        </span>
-                      ) : null}
-                    </p>
-                    {(event.label?.trim() || event.path) && (
-                      <p
-                        className="text-xs text-muted-foreground line-clamp-2 break-words"
-                        dir={event.path && !event.label?.trim() ? "ltr" : undefined}
-                        title={event.label?.trim() || event.path || undefined}
-                      >
-                        {event.label?.trim() || event.path}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {formatPersianDateTime(event.createdAt)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -699,9 +584,11 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
   const [categoryFilter, setCategoryFilter] = useState<AuditCategory | "all">("all");
   const [selectedUser, setSelectedUser] = useState<SelectedAuditUser | null>(null);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [profileDate, setProfileDate] = useState<string | undefined>(undefined);
 
-  function openUserActivity(user: SelectedAuditUser) {
+  function openUserActivity(user: SelectedAuditUser, dateIso?: string) {
     setSelectedUser(user);
+    setProfileDate(dateIso);
     setActivityOpen(true);
   }
 
@@ -859,7 +746,7 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
                 {formatPersianNumber(presenceStats.total)}
               </Badge>
               <span className="text-xs font-normal text-muted-foreground">
-                روی هر کاربر کلیک کنید تا فعالیت اخیرش را ببینید
+                روی هر کاربر کلیک کنید تا گزارش کامل، نمودار و خط‌زمانی حضورش را ببینید
               </span>
               <span className="flex flex-wrap items-center gap-2 text-xs font-normal text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
@@ -1203,7 +1090,7 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
-          <AuditDayCalendar />
+          <AuditDayCalendar onOpenUser={openUserActivity} />
         </TabsContent>
 
         <TabsContent value="logins">
@@ -1295,12 +1182,16 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
         </TabsContent>
       </Tabs>
 
-      <UserActivityDialog
+      <AuditUserProfileDialog
         user={selectedUser}
         open={activityOpen}
+        initialDate={profileDate}
         onOpenChange={(open) => {
           setActivityOpen(open);
-          if (!open) setSelectedUser(null);
+          if (!open) {
+            setSelectedUser(null);
+            setProfileDate(undefined);
+          }
         }}
       />
     </div>

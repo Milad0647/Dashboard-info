@@ -102,7 +102,10 @@ export interface AuditUserPresence {
   loginCountToday: number;
   lastLoginAt: string | null;
   isOnline: boolean;
+  /** Most recent meaningful activity (excludes heartbeat / login_failed). */
   lastSeenAt: string | null;
+  lastAction: string | null;
+  lastLabel: string | null;
   path: string | null;
 }
 

@@ -16,6 +16,7 @@ const ACTION_LABELS: Record<string, string> = {
   "navigation.page_view": "بازدید صفحه",
   "ui.click": "کلیک روی دکمه",
   "ui.error": "خطای کاربر",
+  "presence.heartbeat": "حضور آنلاین",
   "content.create": "ایجاد محتوا",
   "content.update": "ویرایش محتوا",
   "content.delete": "حذف محتوا",

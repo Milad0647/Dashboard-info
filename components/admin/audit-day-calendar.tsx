@@ -125,7 +125,19 @@ function aggregateDayActors(events: AuditEvent[]): DayActor[] {
   });
 }
 
-export function AuditDayCalendar() {
+export function AuditDayCalendar({
+  onOpenUser,
+}: {
+  onOpenUser?: (
+    user: {
+      userId: string;
+      name?: string | null;
+      email?: string | null;
+      role?: string | null;
+    },
+    dateIso: string
+  ) => void;
+}) {
   const [selectedDate, setSelectedDate] = useState(() => getTehranCalendarDateIso());
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -349,6 +361,27 @@ export function AuditDayCalendar() {
                                   · از {formatPersianDateTime(actor.firstSeenAt)} تا{" "}
                                   {formatPersianDateTime(actor.lastSeenAt)}
                                 </p>
+                                {actor.actorUserId && onOpenUser && (
+                                  <button
+                                    type="button"
+                                    className="mt-1.5 text-xs text-primary hover:underline"
+                                    data-audit-label={`گزارش کامل کاربر روز: ${displayName}`}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      onOpenUser(
+                                        {
+                                          userId: actor.actorUserId!,
+                                          name: actor.actorName,
+                                          email: actor.actorEmail,
+                                          role: actor.actorRole,
+                                        },
+                                        selectedDate
+                                      );
+                                    }}
+                                  >
+                                    مشاهده گزارش کامل
+                                  </button>
+                                )}
                               </div>
                               <div className="shrink-0 text-left space-y-1">
                                 <Badge variant={isSelected ? "default" : "outline"}>

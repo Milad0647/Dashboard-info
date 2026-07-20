@@ -1,6 +1,36 @@
 {
   "entries": [
     {
+      "hash": "858691edf103d1f5ea7042bd1ed1d84f9468eb8a",
+      "committedAt": "2026-07-20T19:28:02+03:30",
+      "title": "پشتیبان‌گیری خودکار روزانه ساعت ۱۲ ظهر به‌وقت تهران داخل خود برنامه",
+      "subject": "Add in-app Tehran noon daily backup scheduler"
+    },
+    {
+      "hash": "457b7d4912688b5abc21a485a4c61ee883fa7004",
+      "committedAt": "2026-07-20T19:25:56+03:30",
+      "title": "بهبود فیلتر رویدادهای رصد کاربران بدون نمایش heartbeat",
+      "subject": "Fix AuditEventFilters excludeHeartbeat type for Docker build"
+    },
+    {
+      "hash": "ab3232142b046bdc2db37e55562e289f67582a9f",
+      "committedAt": "2026-07-20T19:13:04+03:30",
+      "title": "امکان مشاهده لیست آپلودهای امروز از نمودار فعالیت",
+      "subject": "Fix missing collectTodaysUploads export breaking Docker build"
+    },
+    {
+      "hash": "85bb20e667126e95b302ecd4b96d1f940a2f81a9",
+      "committedAt": "2026-07-20T18:55:02+03:30",
+      "title": "افزودن تقویم روزانه به رصد کاربران برای دیدن فعالیت هر روز",
+      "subject": "Add daily calendar view to user audit (Rasad)"
+    },
+    {
+      "hash": "143ca6f20109011ab1a427501d88f918c48ad511",
+      "committedAt": "2026-07-20T18:55:01+03:30",
+      "title": "باز شدن جزئیات محتوا با کلیک روی فعالیت‌های اخیر",
+      "subject": "Open recent activity items in content detail modal"
+    },
+    {
       "hash": "28606c10d636be18828839e2b7d597439a9e8781",
       "committedAt": "2026-07-20T18:53:02+03:30",
       "title": "افزودن گزینه امروز به فیلتر بازه زمانی صفحه اصلی",
