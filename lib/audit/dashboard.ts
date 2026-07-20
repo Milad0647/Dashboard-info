@@ -18,6 +18,7 @@ import {
 import { pgGetStuckBehaviorSignals } from "@/lib/db/stuck-signals-repository";
 import type { AuditDashboardData } from "@/lib/audit/types";
 import type { ProblemReport, StuckBehaviorSignal } from "@/lib/audit/problem-types";
+import { withFileAccessTokensDeep } from "@/lib/uploads";
 
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -82,7 +83,7 @@ export async function getAuditDashboardData(): Promise<AuditDashboardData> {
     recentEvents: recentEvents.filter((event) => event.action !== "presence.heartbeat"),
     contentByUser,
     logins,
-    problemReports,
+    problemReports: withFileAccessTokensDeep(problemReports),
     stuckSignals,
   };
 }

@@ -14,6 +14,17 @@ export type StuckSignalKind =
   | "error_burst"
   | "failed_login_burst";
 
+export type ProblemReportAttachmentKind = "image" | "video";
+
+/** Screenshot or screen recording attached to a problem report. */
+export interface ProblemReportAttachment {
+  url: string;
+  kind: ProblemReportAttachmentKind;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+}
+
 export interface ProblemReport {
   id: string;
   reporterUserId: string | null;
@@ -55,6 +66,38 @@ export interface CreateProblemReportInput {
   description: string;
   path?: string | null;
   campaignId?: string | null;
+  /** Optional screenshots / screen recordings (stored in metadata). */
+  attachments?: ProblemReportAttachment[];
+}
+
+export const PROBLEM_REPORT_MAX_ATTACHMENTS = 5;
+
+export function parseProblemReportAttachments(
+  metadata: Record<string, unknown> | null | undefined
+): ProblemReportAttachment[] {
+  if (!metadata || typeof metadata !== "object") return [];
+  const raw = metadata.attachments;
+  if (!Array.isArray(raw)) return [];
+
+  const attachments: ProblemReportAttachment[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+    const url = typeof record.url === "string" ? record.url.trim() : "";
+    const kind = record.kind === "image" || record.kind === "video" ? record.kind : null;
+    const fileName = typeof record.fileName === "string" ? record.fileName.trim() : "";
+    const mimeType = typeof record.mimeType === "string" ? record.mimeType.trim() : "";
+    const fileSize = typeof record.fileSize === "number" ? record.fileSize : Number(record.fileSize);
+    if (!url || !kind) continue;
+    attachments.push({
+      url,
+      kind,
+      fileName: fileName || (kind === "video" ? "ویدیو" : "تصویر"),
+      fileSize: Number.isFinite(fileSize) && fileSize >= 0 ? fileSize : 0,
+      mimeType: mimeType || (kind === "video" ? "video/mp4" : "image/jpeg"),
+    });
+  }
+  return attachments;
 }
 
 export interface StuckBehaviorSignal {

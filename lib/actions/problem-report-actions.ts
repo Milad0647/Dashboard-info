@@ -5,10 +5,16 @@ import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
 import { logAuditForSession } from "@/lib/audit/log-event";
 import type {
   CreateProblemReportInput,
+  ProblemReportAttachment,
   ProblemReportCategory,
   ProblemReportStatus,
 } from "@/lib/audit/problem-types";
-import { PROBLEM_REPORT_CATEGORY_LABELS, PROBLEM_REPORT_STATUS_LABELS } from "@/lib/audit/problem-types";
+import {
+  parseProblemReportAttachments,
+  PROBLEM_REPORT_CATEGORY_LABELS,
+  PROBLEM_REPORT_MAX_ATTACHMENTS,
+  PROBLEM_REPORT_STATUS_LABELS,
+} from "@/lib/audit/problem-types";
 import { pgGetUserById } from "@/lib/db/repository-extended";
 import {
   pgInsertProblemReport,
@@ -18,6 +24,7 @@ import {
   pgUpdateProblemReportStatus,
 } from "@/lib/db/problem-reports-repository";
 import type { ProblemReport } from "@/lib/audit/problem-types";
+import { stripFileAccessToken, withFileAccessToken } from "@/lib/uploads";
 import { isPostgresConfigured } from "@/lib/utils";
 
 /** Fields safe to show the reporter (their own history + admin reply). */
@@ -35,8 +42,16 @@ export type MyProblemReport = Pick<
   | "updatedAt"
   | "resolvedAt"
 > & {
+  attachments: ProblemReportAttachment[];
   hasUnreadReply: boolean;
 };
+
+function withAttachmentTokens(attachments: ProblemReportAttachment[]): ProblemReportAttachment[] {
+  return attachments.map((item) => ({
+    ...item,
+    url: withFileAccessToken(item.url),
+  }));
+}
 
 function toMyProblemReport(report: ProblemReport): MyProblemReport {
   const hasUnreadReply = Boolean(report.adminNote) && !report.adminNoteSeenAt;
@@ -52,8 +67,46 @@ function toMyProblemReport(report: ProblemReport): MyProblemReport {
     createdAt: report.createdAt,
     updatedAt: report.updatedAt,
     resolvedAt: report.resolvedAt,
+    attachments: withAttachmentTokens(parseProblemReportAttachments(report.metadata)),
     hasUnreadReply,
   };
+}
+
+function normalizeAttachments(
+  input: CreateProblemReportInput["attachments"]
+): { ok: true; attachments: ProblemReportAttachment[] } | { ok: false; error: string } {
+  if (!input || input.length === 0) {
+    return { ok: true, attachments: [] };
+  }
+  if (input.length > PROBLEM_REPORT_MAX_ATTACHMENTS) {
+    return {
+      ok: false,
+      error: `حداکثر ${PROBLEM_REPORT_MAX_ATTACHMENTS} فایل پیوست مجاز است`,
+    };
+  }
+
+  const attachments: ProblemReportAttachment[] = [];
+  for (const item of input) {
+    if (!item || typeof item !== "object") {
+      return { ok: false, error: "پیوست نامعتبر است" };
+    }
+    const kind = item.kind === "image" || item.kind === "video" ? item.kind : null;
+    const bareUrl = stripFileAccessToken(String(item.url ?? "").trim());
+    if (!kind || !bareUrl.startsWith("/api/files/")) {
+      return { ok: false, error: "فقط تصویر یا ویدیوی آپلودشده مجاز است" };
+    }
+    const fileName = String(item.fileName ?? "").trim().slice(0, 200);
+    const mimeType = String(item.mimeType ?? "").trim().slice(0, 120);
+    const fileSize = Number(item.fileSize);
+    attachments.push({
+      url: bareUrl,
+      kind,
+      fileName: fileName || (kind === "video" ? "ویدیو" : "تصویر"),
+      fileSize: Number.isFinite(fileSize) && fileSize >= 0 ? fileSize : 0,
+      mimeType: mimeType || (kind === "video" ? "video/mp4" : "image/jpeg"),
+    });
+  }
+  return { ok: true, attachments };
 }
 
 function reporterScope(session: NonNullable<Awaited<ReturnType<typeof getAuthSession>>>) {
@@ -107,6 +160,11 @@ export async function submitProblemReportAction(
     return { success: false, error: "توضیح مشکل را کامل‌تر بنویسید" };
   }
 
+  const normalizedAttachments = normalizeAttachments(input.attachments);
+  if (!normalizedAttachments.ok) {
+    return { success: false, error: normalizedAttachments.error };
+  }
+
   let reporterEmail = session.email ?? null;
   let reporterName = session.name ?? null;
   const reporterType: "env_admin" | "db_user" =
@@ -131,6 +189,10 @@ export async function submitProblemReportAction(
     description: description.slice(0, 4000),
     path: input.path?.trim().slice(0, 500) || null,
     campaignId: input.campaignId?.trim() || null,
+    metadata:
+      normalizedAttachments.attachments.length > 0
+        ? { attachments: normalizedAttachments.attachments }
+        : {},
   });
 
   if (!report) {
@@ -145,7 +207,11 @@ export async function submitProblemReportAction(
     campaignId: report.campaignId,
     path: report.path,
     label: title,
-    metadata: { category, reportId: report.id },
+    metadata: {
+      category,
+      reportId: report.id,
+      attachmentCount: normalizedAttachments.attachments.length,
+    },
   });
 
   revalidatePath("/admin/audit");

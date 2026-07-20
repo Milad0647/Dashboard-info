@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { updateProblemReportStatusAction } from "@/lib/actions/problem-report-actions";
 import {
+  parseProblemReportAttachments,
   PROBLEM_REPORT_CATEGORY_LABELS,
   PROBLEM_REPORT_STATUS_LABELS,
   STUCK_SIGNAL_KIND_LABELS,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/audit/problem-types";
 import { getAuditRoleLabel } from "@/lib/audit/labels";
 import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
+import { ProblemReportAttachmentsView } from "@/components/admin/problem-report-attachments";
 
 const STATUS_BADGE: Record<
   ProblemReportStatus,
@@ -263,6 +265,10 @@ export function AuditProblemsPanel({
                 </div>
 
                 <p className="text-sm whitespace-pre-wrap">{report.description}</p>
+
+                <ProblemReportAttachmentsView
+                  attachments={parseProblemReportAttachments(report.metadata)}
+                />
 
                 {report.path && (
                   <p className="text-xs text-muted-foreground font-mono" dir="ltr">

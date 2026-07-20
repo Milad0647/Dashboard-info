@@ -18,6 +18,7 @@ import {
   formatPersianNumber,
   isPostgresConfigured,
 } from "@/lib/utils";
+import { withFileAccessTokensDeep } from "@/lib/uploads";
 
 export const dynamic = "force-dynamic";
 
@@ -161,7 +162,7 @@ export default async function ReportedProblemsPage() {
         />
       </div>
 
-      <AuditProblemsPanel reports={reports} showSignals={false} />
+      <AuditProblemsPanel reports={withFileAccessTokensDeep(reports)} showSignals={false} />
     </div>
   );
 }

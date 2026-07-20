@@ -18,6 +18,10 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  ProblemReportAttachmentsField,
+  ProblemReportAttachmentsView,
+} from "@/components/admin/problem-report-attachments";
+import {
   listMyProblemReportsAction,
   markMyProblemReportsSeenAction,
   submitProblemReportAction,
@@ -26,6 +30,7 @@ import {
 import {
   PROBLEM_REPORT_CATEGORY_LABELS,
   PROBLEM_REPORT_STATUS_LABELS,
+  type ProblemReportAttachment,
   type ProblemReportCategory,
   type ProblemReportStatus,
 } from "@/lib/audit/problem-types";
@@ -61,6 +66,7 @@ export function ProblemReportsPanel({
   const [category, setCategory] = useState<ProblemReportCategory>("other");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [attachments, setAttachments] = useState<ProblemReportAttachment[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [myReports, setMyReports] = useState<MyProblemReport[]>([]);
@@ -133,6 +139,7 @@ export function ProblemReportsPanel({
     setCategory("other");
     setTitle("");
     setDescription("");
+    setAttachments([]);
   };
 
   const handleSubmit = async () => {
@@ -148,6 +155,7 @@ export function ProblemReportsPanel({
         description,
         path,
         campaignId,
+        attachments,
       });
 
       if (!result.success) {
@@ -252,6 +260,12 @@ export function ProblemReportsPanel({
                 />
               </div>
 
+              <ProblemReportAttachmentsField
+                value={attachments}
+                onChange={setAttachments}
+                disabled={submitting}
+              />
+
               <p className="text-xs text-muted-foreground" dir="ltr">
                 صفحه فعلی: {pathname}
                 {searchParams.toString() ? `?${searchParams.toString()}` : ""}
@@ -325,6 +339,7 @@ export function ProblemReportsPanel({
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                         {report.description}
                       </p>
+                      <ProblemReportAttachmentsView attachments={report.attachments} />
                       {report.adminNote ? (
                         <div className="rounded-md bg-primary/5 border border-primary/15 px-3 py-2 text-sm space-y-1">
                           <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
