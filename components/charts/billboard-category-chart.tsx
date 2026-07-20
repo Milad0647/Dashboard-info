@@ -1,7 +1,8 @@
 "use client";
 
-import { BarChartCard } from "@/components/charts/bar-chart-card";
+import { Card, CardContent } from "@/components/ui/card";
 import type { BillboardCategoryStat } from "@/lib/billboard-categories";
+import { formatPersianNumber } from "@/lib/utils";
 
 interface BillboardCategoryChartProps {
   data: BillboardCategoryStat[];
@@ -11,14 +12,27 @@ interface BillboardCategoryChartProps {
 
 export function BillboardCategoryChart({
   data,
-  title = "تفکیک دسته تبلیغات محیطی",
-  color = "#0ea5e9",
 }: BillboardCategoryChartProps) {
+  if (data.length === 0) {
+    return (
+      <div className="rounded-xl border bg-card py-8 text-center text-sm text-muted-foreground">
+        داده‌ای برای نمایش وجود ندارد.
+      </div>
+    );
+  }
+
   return (
-    <BarChartCard
-      title={title}
-      color={color}
-      data={data.map((item) => ({ label: item.label, value: item.count }))}
-    />
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      {data.map((item) => (
+        <Card key={item.label}>
+          <CardContent className="flex flex-col items-center justify-center gap-1 p-4 text-center">
+            <p className="text-sm text-muted-foreground leading-snug">{item.label}</p>
+            <p className="text-2xl font-bold tabular-nums">
+              {formatPersianNumber(item.count)}
+            </p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }
