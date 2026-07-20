@@ -21,6 +21,7 @@ import {
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { adminCreatedAtDetail } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { AdminSocialPostCompactCard } from "@/components/admin/admin-social-post-compact-card";
@@ -557,6 +558,7 @@ export function SocialPostsAdmin({
           previewPost
             ? [
                 { label: "تاریخ انتشار", value: formatPersianDate(previewPost.publishedDate) },
+                adminCreatedAtDetail(previewPost.createdAt),
                 { label: "نوع محتوا", value: getStatusLabel(previewPost.contentType) },
                 {
                   label: "برچسب‌ها",

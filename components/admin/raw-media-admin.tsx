@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { FileArchive, Film, HardDrive, ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import {
   AdminContentFilterBar,
   collectAdminFilterUsers,
@@ -66,7 +67,7 @@ import {
   RAW_MEDIA_MAX_FILE_BYTES,
 } from "@/lib/raw-media-storage";
 import type { AdminUser, RawMediaKind, RawMediaUpload } from "@/lib/types";
-import { cn, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
+import { cn, formatPersianNumber } from "@/lib/utils";
 
 interface RawMediaAdminProps {
   campaignId: string;
@@ -478,6 +479,7 @@ export function RawMediaAdmin({
                   <p className="text-xs text-muted-foreground">
                     {item.fileName} — {formatStorageBytes(item.fileSize)}
                   </p>
+                  <AdminCreatedAtText createdAt={item.createdAt} className="text-xs" />
                   <AdminPlanLabelsBadges
                     planLabels={item.planLabels}
                     planLabel={item.planLabel}
@@ -552,9 +554,7 @@ export function RawMediaAdmin({
                     <p className="text-xs text-muted-foreground">
                       {item.fileName} — {formatStorageBytes(item.fileSize)}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatPersianDateTime(item.createdAt)}
-                    </p>
+                    <AdminCreatedAtText createdAt={item.createdAt} className="text-xs" />
                     <AdminOwnerBadge ownerUserId={item.ownerUserId} ownerName={item.ownerName} />
                     <ContentScoreControl
                       campaignId={campaignId}

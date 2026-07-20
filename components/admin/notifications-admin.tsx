@@ -552,6 +552,7 @@ export function NotificationsAdmin({
           description={previewDescription}
           topics={previewItem.planLabel ? [previewItem.planLabel] : []}
           ownerName={previewItem.ownerName}
+          createdAt={previewItem.createdAt}
         />
       ) : (
         <AdminContentPreviewDialog
@@ -597,6 +598,7 @@ export function NotificationsAdmin({
                   { label: "موضوع", value: previewItem.planLabel ?? "—" },
                   { label: "تاریخ رویداد", value: formatPersianDateTime(previewItem.eventAt) },
                   { label: "تاریخ روز", value: formatPersianDate(previewItem.date) },
+                  { label: "تاریخ ثبت", value: formatPersianDateTime(previewItem.createdAt) },
                 ]
               : []
           }

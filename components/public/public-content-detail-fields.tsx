@@ -8,6 +8,7 @@ interface PublicContentDetailFieldsProps {
   category?: string | null;
   topics?: (string | null | undefined)[];
   date?: string | null;
+  createdAt?: string | null;
   ownerName?: string | null;
   description?: string | null;
   extras?: ReactNode;
@@ -17,6 +18,7 @@ export function PublicContentDetailFields({
   category,
   topics = [],
   date,
+  createdAt,
   ownerName,
   description,
   extras,
@@ -40,12 +42,18 @@ export function PublicContentDetailFields({
         ))}
       </div>
 
-      {(date || ownerName) && (
+      {(date || createdAt || ownerName) && (
         <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
           {date && (
             <span className="inline-flex items-center gap-1.5">
               <CalendarDays className="h-3.5 w-3.5 shrink-0" />
               {date}
+            </span>
+          )}
+          {createdAt && (
+            <span className="inline-flex items-center gap-1.5" title="تاریخ ثبت توسط کاربر">
+              <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+              ثبت: {createdAt}
             </span>
           )}
           {ownerName && (

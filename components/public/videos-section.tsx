@@ -169,6 +169,7 @@ export function VideosSection({ categories: _categories, videos, groups }: Video
                     ownerName={video.ownerName}
                     category={video.category?.title}
                     topics={video.planLabels ?? (video.planLabel ? [video.planLabel] : [])}
+                    createdAt={video.createdAt}
                   />
                 ))}
               </div>

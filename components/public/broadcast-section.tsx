@@ -141,6 +141,7 @@ function BroadcastReportCard({ report }: { report: BroadcastReport }) {
           category="ویدیو پخش"
           topics={report.planLabels ?? (report.planLabel ? [report.planLabel] : [])}
           ownerName={report.ownerName}
+          createdAt={report.createdAt}
         />
       )}
     </>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
@@ -69,6 +70,7 @@ export function AdminBillboardCompactCard({
           <p className="truncate text-xs font-medium">{billboard.title}</p>
           <AdminPlanLabelsBadges planLabels={billboard.planLabels} planLabel={billboard.planLabel} />
           <p className="truncate text-[10px] text-muted-foreground">{cityLine}</p>
+          <AdminCreatedAtText createdAt={billboard.createdAt} />
           <AdminOwnerBadge ownerUserId={billboard.ownerUserId} ownerName={billboard.ownerName} />
         </div>
       </button>

@@ -23,6 +23,7 @@ interface VideoCardProps {
   ownerName?: string | null;
   category?: string | null;
   topics?: string[];
+  createdAt?: string | null;
 }
 
 export function VideoCard({
@@ -36,6 +37,7 @@ export function VideoCard({
   ownerName,
   category,
   topics,
+  createdAt,
 }: VideoCardProps) {
   const { canScore, campaignId: scoreCampaignId } = useContentScoreAccess();
   const [modalOpen, setModalOpen] = useState(false);
@@ -119,6 +121,7 @@ export function VideoCard({
           category={category}
           topics={topics}
           ownerName={ownerName}
+          createdAt={createdAt}
         />
       )}
     </>

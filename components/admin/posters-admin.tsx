@@ -39,7 +39,7 @@ import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { resolveDisplayVersion } from "@/lib/media-utils";
-import { cn, formatPersianDate } from "@/lib/utils";
+import { cn, formatPersianDate, formatPersianDateTime } from "@/lib/utils";
 import type { AdminUser, MediaCategory, Poster, PosterVersion } from "@/lib/types";
 
 interface PostersAdminProps {
@@ -417,6 +417,14 @@ export function PostersAdmin({
                       <div>
                         <p className="text-xs text-muted-foreground">تاریخ</p>
                         <p>{displayVersion?.date ? formatPersianDate(displayVersion.date) : "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">تاریخ ثبت</p>
+                        <p>
+                          {previewPoster.createdAt
+                            ? formatPersianDateTime(previewPoster.createdAt)
+                            : "—"}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">مالک</p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Globe } from "lucide-react";
+import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
@@ -54,6 +55,7 @@ export function AdminSitePublicationCompactCard({
           <p className="truncate text-[10px] text-muted-foreground">
             {formatPersianDate(post.publishedDate)}
           </p>
+          <AdminCreatedAtText createdAt={post.createdAt} />
           <AdminOwnerBadge ownerUserId={post.ownerUserId} ownerName={post.ownerName} />
         </div>
       </button>

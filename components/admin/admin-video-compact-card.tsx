@@ -2,6 +2,7 @@
 
 import { Play } from "lucide-react";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
@@ -61,6 +62,7 @@ export function AdminVideoCompactCard({
         <div className="space-y-1 p-2">
           <p className="truncate text-xs font-medium">{video.title}</p>
           <AdminPlanLabelsBadges planLabels={video.planLabels} planLabel={video.planLabel} />
+          <AdminCreatedAtText createdAt={video.createdAt} />
           <AdminOwnerBadge ownerUserId={video.ownerUserId} ownerName={video.ownerName} />
           {!displayVersion && (
             <p className="text-[10px] text-muted-foreground">بدون ویدیو</p>

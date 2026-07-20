@@ -23,6 +23,7 @@ interface PosterCardProps {
   ownerName?: string | null;
   category?: string | null;
   topics?: string[];
+  createdAt?: string | null;
 }
 
 export function PosterCard({
@@ -36,6 +37,7 @@ export function PosterCard({
   ownerName,
   category,
   topics,
+  createdAt,
 }: PosterCardProps) {
   const { canScore, campaignId: scoreCampaignId } = useContentScoreAccess();
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -110,6 +112,7 @@ export function PosterCard({
           category={category}
           topics={topics}
           ownerName={ownerName}
+          createdAt={createdAt}
         />
       )}
     </>

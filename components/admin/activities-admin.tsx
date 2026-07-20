@@ -28,6 +28,7 @@ import {
 } from "@/components/admin/admin-content-filter-bar";
 import { AdminActivityCompactCard } from "@/components/admin/admin-activity-compact-card";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { adminCreatedAtDetail } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
@@ -601,6 +602,7 @@ export function ActivitiesAdmin({
           previewActivity
             ? [
                 { label: "تاریخ", value: formatPersianDate(previewActivity.activityDate) },
+                adminCreatedAtDetail(previewActivity.createdAt),
                 { label: "مکان", value: previewActivity.location || "—" },
                 {
                   label: "رسانه‌ها",

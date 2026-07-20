@@ -23,6 +23,7 @@ import {
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { adminCreatedAtDetail } from "@/components/admin/admin-created-at";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { AdminSitePublicationCompactCard } from "@/components/admin/admin-site-publication-compact-card";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
@@ -406,6 +407,7 @@ export function SitePublicationsAdmin({
         details={
           previewPost
             ? [
+                adminCreatedAtDetail(previewPost.createdAt),
                 {
                   label: "برچسب‌ها",
                   value: previewPost.planLabels?.length ? previewPost.planLabels.join("، ") : "—",

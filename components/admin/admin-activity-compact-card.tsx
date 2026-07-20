@@ -2,6 +2,7 @@
 
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
@@ -74,6 +75,7 @@ export function AdminActivityCompactCard({
             {formatPersianDate(activity.activityDate)}
             {activity.location ? ` — ${activity.location}` : ""}
           </p>
+          <AdminCreatedAtText createdAt={activity.createdAt} />
           <AdminOwnerBadge ownerUserId={activity.ownerUserId} ownerName={activity.ownerName} />
         </div>
       </button>

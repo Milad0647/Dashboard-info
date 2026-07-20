@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
+import { adminCreatedAtTableColumn } from "@/components/admin/admin-created-at";
 import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
@@ -446,7 +447,8 @@ export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword
         columns={[
           { key: "title", label: "عنوان" },
           adminOwnerTableColumn<MeetingWithTasks>(),
-          { key: "meetingDate", label: "تاریخ", render: (item) => formatPersianDate(item.meetingDate) },
+          { key: "meetingDate", label: "تاریخ جلسه", render: (item) => formatPersianDate(item.meetingDate) },
+          adminCreatedAtTableColumn<MeetingWithTasks>(),
           { key: "location", label: "مکان" },
           {
             key: "tasks",

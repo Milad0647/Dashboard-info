@@ -160,7 +160,7 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
           },
           {
             key: "createdAt",
-            label: "تاریخ",
+            label: "تاریخ ثبت",
             render: (i) => formatPersianDate(i.createdAt),
           },
         ]}

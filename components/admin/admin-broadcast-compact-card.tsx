@@ -2,6 +2,7 @@
 
 import { FileText, Play } from "lucide-react";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
@@ -62,6 +63,7 @@ export function AdminBroadcastCompactCard({
             {formatPersianDate(report.reportDate)}
             {report.fileName ? ` · ${report.fileName}` : ""}
           </p>
+          <AdminCreatedAtText createdAt={report.createdAt} />
           <AdminOwnerBadge ownerUserId={report.ownerUserId} ownerName={report.ownerName} />
         </div>
       </button>

@@ -28,6 +28,7 @@ import { BillboardAddPeriodDialog } from "@/components/admin/billboard-add-perio
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
+import { adminCreatedAtDetail } from "@/components/admin/admin-created-at";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import {
   BulkItemShell,
@@ -565,6 +566,7 @@ export function BillboardsAdmin({
           previewBillboard
             ? [
                 { label: "تاریخ", value: formatPersianDate(previewBillboard.date) },
+                adminCreatedAtDetail(previewBillboard.createdAt),
                 { label: "وضعیت", value: getStatusLabel(previewBillboard.status) },
                 { label: "کد", value: previewBillboard.code || "—" },
                 { label: "مالک", value: previewBillboard.ownerName ?? "—" },

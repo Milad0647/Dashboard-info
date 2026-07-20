@@ -162,6 +162,7 @@ export function PostersSection({ categories: _categories, posters, groups }: Pos
                     ownerName={poster.ownerName}
                     category={poster.category?.title}
                     topics={poster.planLabels ?? (poster.planLabel ? [poster.planLabel] : [])}
+                    createdAt={poster.createdAt}
                   />
                 ))}
               </div>

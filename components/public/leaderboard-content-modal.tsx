@@ -20,6 +20,7 @@ import {
   type LeaderboardMetricLabel,
 } from "@/lib/city-leaderboard";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
+import { formatPersianDateTime } from "@/lib/utils";
 
 interface LeaderboardContentModalProps {
   open: boolean;
@@ -143,6 +144,11 @@ export function LeaderboardContentModal({
                         <Badge variant="outline" className="text-[10px]">
                           {metricLabel}
                         </Badge>
+                        {item.item.createdAt ? (
+                          <p className="text-[10px] text-muted-foreground">
+                            ثبت: {formatPersianDateTime(item.item.createdAt)}
+                          </p>
+                        ) : null}
                       </div>
                     </button>
                   </li>
@@ -165,6 +171,7 @@ export function LeaderboardContentModal({
           description={selected.item.item.description}
           category={selected.item.item.category?.title ?? null}
           ownerName={selected.item.item.ownerName}
+          createdAt={selected.item.item.createdAt}
         />
       )}
 
@@ -180,6 +187,7 @@ export function LeaderboardContentModal({
           description={selected.item.item.description}
           category={selected.item.item.category?.title ?? null}
           ownerName={selected.item.item.ownerName}
+          createdAt={selected.item.item.createdAt}
         />
       )}
 

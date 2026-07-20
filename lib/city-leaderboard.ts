@@ -316,6 +316,7 @@ export interface UserContentScoreItem {
   contentType: string;
   thumbnailUrl?: string | null;
   score: number | null;
+  createdAt?: string | null;
 }
 
 function resolveUserKeyMatch(item: Ownable, userKey: string): boolean {
@@ -331,7 +332,7 @@ export function collectUserContentItems(
 ): UserContentScoreItem[] {
   const items: UserContentScoreItem[] = [];
 
-  const push = <T extends Ownable & { id: string; title: string }>(
+  const push = <T extends Ownable & { id: string; title: string; createdAt?: string | null }>(
     list: T[],
     typeLabel: string,
     contentType: string,
@@ -346,6 +347,7 @@ export function collectUserContentItems(
         contentType,
         thumbnailUrl: getThumb?.(item) ?? null,
         score: typeof item.score === "number" ? item.score : null,
+        createdAt: item.createdAt ?? null,
       });
     }
   };

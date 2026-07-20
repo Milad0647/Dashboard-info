@@ -16,6 +16,7 @@ import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { resolveBroadcastMediaType } from "@/lib/broadcast-media";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
 import type { BroadcastReport, RawMediaUpload, VideoVersion } from "@/lib/types";
+import { formatPersianDateTime } from "@/lib/utils";
 
 type DownloadableItem =
   | { kind: "raw_media"; item: RawMediaUpload }
@@ -176,6 +177,11 @@ export function SectionDownloadableContentModal({
                         <Badge variant="outline" className="text-[10px]">
                           {getItemBadge(entry)}
                         </Badge>
+                        {entry.item.createdAt ? (
+                          <p className="text-[10px] text-muted-foreground">
+                            ثبت: {formatPersianDateTime(entry.item.createdAt)}
+                          </p>
+                        ) : null}
                       </div>
                       <Eye className="h-4 w-4 shrink-0 text-muted-foreground" />
                     </button>
@@ -200,6 +206,11 @@ export function SectionDownloadableContentModal({
                 className="w-full rounded-lg bg-muted"
                 imgClassName="max-h-[70vh] w-full object-contain"
               />
+              {selectedRawImage.createdAt ? (
+                <p className="text-xs text-muted-foreground">
+                  ثبت: {formatPersianDateTime(selectedRawImage.createdAt)}
+                </p>
+              ) : null}
               <Button
                 type="button"
                 className="w-full"
@@ -228,6 +239,7 @@ export function SectionDownloadableContentModal({
           versions={[toBroadcastVideoVersion(selectedBroadcastVideo)]}
           initialVersionId={selectedBroadcastVideo.id}
           ownerName={selectedBroadcastVideo.ownerName}
+          createdAt={selectedBroadcastVideo.createdAt}
         />
       )}
     </>

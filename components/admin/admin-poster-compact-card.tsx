@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
@@ -59,6 +60,7 @@ export function AdminPosterCompactCard({
         <div className="space-y-1 p-2">
           <p className="truncate text-xs font-medium">{poster.title}</p>
           <AdminPlanLabelsBadges planLabels={poster.planLabels} planLabel={poster.planLabel} />
+          <AdminCreatedAtText createdAt={poster.createdAt} />
           <AdminOwnerBadge ownerUserId={poster.ownerUserId} ownerName={poster.ownerName} />
           {!displayVersion && (
             <p className="text-[10px] text-muted-foreground">بدون تصویر</p>

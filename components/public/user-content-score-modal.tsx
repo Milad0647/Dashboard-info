@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import type { UserContentScoreItem } from "@/lib/city-leaderboard";
-import { formatPersianNumber } from "@/lib/utils";
+import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
 interface UserContentScoreModalProps {
   open: boolean;
@@ -77,6 +77,11 @@ export function UserContentScoreModal({
                       <Badge variant="outline" className="text-[10px]">
                         {item.typeLabel}
                       </Badge>
+                      {item.createdAt ? (
+                        <p className="text-[10px] text-muted-foreground">
+                          ثبت: {formatPersianDateTime(item.createdAt)}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="inline-flex shrink-0 items-center gap-1 text-sm text-warning">
                       <Star className="h-3.5 w-3.5 fill-current" />
@@ -115,6 +120,11 @@ export function UserContentScoreModal({
                   <Star className="h-3.5 w-3.5 fill-current" />
                   {selectedItem.score != null ? formatPersianNumber(selectedItem.score) : "—"}
                 </span>
+                {selectedItem.createdAt ? (
+                  <span className="text-xs text-muted-foreground">
+                    ثبت: {formatPersianDateTime(selectedItem.createdAt)}
+                  </span>
+                ) : null}
               </div>
             </div>
           )}

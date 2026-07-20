@@ -26,6 +26,7 @@ import {
 } from "@/components/admin/admin-content-filter-bar";
 import { AdminActivityCompactCard } from "@/components/admin/admin-activity-compact-card";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { adminCreatedAtDetail } from "@/components/admin/admin-created-at";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
 import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
@@ -412,6 +413,7 @@ export function PressPublicationsAdmin({
           previewActivity
             ? [
                 { label: "تاریخ", value: formatPersianDate(previewActivity.activityDate) },
+                adminCreatedAtDetail(previewActivity.createdAt),
                 {
                   label: "رسانه‌ها",
                   value: previewActivity.mediaItems?.length

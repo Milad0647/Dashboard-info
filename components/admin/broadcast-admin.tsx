@@ -19,6 +19,7 @@ import {
   AdminBroadcastAddCard,
   AdminBroadcastCompactCard,
 } from "@/components/admin/admin-broadcast-compact-card";
+import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import {
   AdminContentFilterBar,
   DEFAULT_ADMIN_CONTENT_FILTER,
@@ -322,6 +323,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                       {formatPersianDate(report.reportDate)}
                       {report.fileName ? ` · ${report.fileName}` : ""}
                     </p>
+                    <AdminCreatedAtText createdAt={report.createdAt} className="text-xs" />
                   </div>
                 </div>
                 <AdminItemActions
@@ -511,6 +513,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
           initialVersionId={previewVersion.id}
           description={previewReport.summaryData.notes}
           category="ویدیو پخش"
+          createdAt={previewReport.createdAt}
         />
       )}
     </div>

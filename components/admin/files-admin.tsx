@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
+import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
@@ -366,6 +367,7 @@ export function FilesAdmin({
                 <div className="min-w-0">
                   <p className="truncate font-medium">{file.title}</p>
                   <p className="text-xs text-muted-foreground">{file.fileName}</p>
+                  <AdminCreatedAtText createdAt={file.createdAt} className="text-xs" />
                   <AdminPlanLabelsBadges
                     planLabels={file.planLabels}
                     planLabel={file.planLabel}
@@ -412,6 +414,7 @@ export function FilesAdmin({
                         <AdminOwnerBadge ownerUserId={file.ownerUserId} ownerName={file.ownerName} />
                       </div>
                       <p className="text-xs text-muted-foreground">{file.fileName}</p>
+                      <AdminCreatedAtText createdAt={file.createdAt} className="text-xs" />
                       <AdminPlanLabelsBadges
                         planLabels={file.planLabels}
                         planLabel={file.planLabel}

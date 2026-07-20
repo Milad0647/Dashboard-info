@@ -9,7 +9,7 @@ import { MediaPlaceholder } from "@/components/ui/media-placeholder";
 import { PublicContentDetailFields } from "@/components/public/public-content-detail-fields";
 import { downloadMedia, getFilenameFromUrl, resolveDisplayVersion } from "@/lib/media-utils";
 import type { PosterVersion } from "@/lib/types";
-import { formatPersianDate } from "@/lib/utils";
+import { formatPersianDate, formatPersianDateTime } from "@/lib/utils";
 
 interface LightboxModalProps {
   open: boolean;
@@ -21,6 +21,7 @@ interface LightboxModalProps {
   category?: string | null;
   topics?: string[];
   ownerName?: string | null;
+  createdAt?: string | null;
 }
 
 export function LightboxModal({
@@ -32,6 +33,7 @@ export function LightboxModal({
   category,
   topics,
   ownerName,
+  createdAt,
 }: LightboxModalProps) {
   const activeVersion = useMemo(() => {
     return resolveDisplayVersion(versions) ?? versions[0];
@@ -76,6 +78,7 @@ export function LightboxModal({
             category={category}
             topics={topics}
             date={activeVersion.date ? formatPersianDate(activeVersion.date) : null}
+            createdAt={createdAt ? formatPersianDateTime(createdAt) : null}
             ownerName={ownerName}
             description={description}
             extras={

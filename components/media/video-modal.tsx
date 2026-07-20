@@ -18,7 +18,7 @@ import {
   resolveVideoThumbnail,
 } from "@/lib/media-utils";
 import type { VideoVersion } from "@/lib/types";
-import { formatPersianDate } from "@/lib/utils";
+import { formatPersianDate, formatPersianDateTime } from "@/lib/utils";
 
 interface VideoModalProps {
   open: boolean;
@@ -30,6 +30,7 @@ interface VideoModalProps {
   category?: string | null;
   topics?: string[];
   ownerName?: string | null;
+  createdAt?: string | null;
 }
 
 export function VideoModal({
@@ -41,6 +42,7 @@ export function VideoModal({
   category,
   topics,
   ownerName,
+  createdAt,
 }: VideoModalProps) {
   const activeVersion = useMemo(() => {
     return resolveDisplayVersion(versions) ?? versions[0];
@@ -112,6 +114,7 @@ export function VideoModal({
             category={category}
             topics={topics}
             date={activeVersion.date ? formatPersianDate(activeVersion.date) : null}
+            createdAt={createdAt ? formatPersianDateTime(createdAt) : null}
             ownerName={ownerName}
             description={description}
             extras={
