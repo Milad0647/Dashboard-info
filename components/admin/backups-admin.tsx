@@ -1,11 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
-import { Archive, Download, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import {
+  Archive,
+  Download,
+  Loader2,
+  RefreshCw,
+  RotateCcw,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAdminCampaign } from "@/components/admin/admin-campaign-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { formatStorageBytes } from "@/lib/raw-media-storage";
 import { formatPersianDateTime } from "@/lib/utils";
 
@@ -16,14 +26,14 @@ interface StoredBackupItem {
   createdAt: string;
 }
 
-const BACKUP_FETCH_TIMEOUT_MS = 4 * 60 * 1000;
+const BACKUP_FETCH_TIMEOUT_MS = 10 * 60 * 1000;
 
 async function readApiError(response: Response, fallback: string): Promise<string> {
   try {
     const result = (await response.json()) as { error?: string };
     if (result.error?.trim()) return result.error;
   } catch {
-    // Non-JSON body (proxy timeout / HTML error page)
+    // Non-JSON body
   }
   if (response.status === 401) return "نشست شما منقضی شده؛ دوباره وارد شوید";
   if (response.status === 504 || response.status === 502) {
@@ -39,6 +49,9 @@ export function BackupsAdmin() {
   const [tehranDay, setTehranDay] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [restoreUserId, setRestoreUserId] = useState("");
+  const fullRestoreRef = useRef<HTMLInputElement>(null);
+  const userRestoreRef = useRef<HTMLInputElement>(null);
 
   const loadBackups = useCallback(async () => {
     setIsLoading(true);
@@ -52,7 +65,6 @@ export function BackupsAdmin() {
         backups?: StoredBackupItem[];
         lastDailyBackupDay?: string | null;
         tehranDay?: string;
-        error?: string;
       };
       setBackups(result.backups ?? []);
       setLastDailyBackupDay(result.lastDailyBackupDay ?? null);
@@ -79,8 +91,9 @@ export function BackupsAdmin() {
       const timeoutId = window.setTimeout(() => controller.abort(), BACKUP_FETCH_TIMEOUT_MS);
 
       try {
-        toast.message("در حال گرفتن پشتیبان…", {
-          description: "بسته به حجم فایل‌ها ممکن است چند دقیقه طول بکشد.",
+        toast.message("در حال گرفتن پشتیبان کامل…", {
+          description:
+            "همه کاربران، ویدیوها، پوسترها، فایل‌ها و رسانه‌ها داخل پوشه‌بندی ZIP ذخیره می‌شوند.",
         });
 
         const response = await fetch("/api/backups", {
@@ -96,19 +109,15 @@ export function BackupsAdmin() {
         }
 
         const result = (await response.json()) as {
-          error?: string;
           warning?: string;
-          backup?: StoredBackupItem;
         };
 
-        if (result.warning) {
-          toast.warning(result.warning);
-        }
-        toast.success("پشتیبان روی سرور ذخیره شد");
+        if (result.warning) toast.warning(result.warning);
+        toast.success("پشتیبان کامل روی سرور ذخیره شد");
         await loadBackups();
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
-          toast.error("زمان بکاپ تمام شد؛ دوباره تلاش کنید یا حجم رسانه‌ها را کمتر کنید");
+          toast.error("زمان بکاپ تمام شد؛ دوباره تلاش کنید");
         } else {
           toast.error("گرفتن پشتیبان ناموفق بود");
         }
@@ -136,6 +145,53 @@ export function BackupsAdmin() {
     });
   };
 
+  const restoreFromFile = (file: File, mode: "full" | "user") => {
+    if (!campaignId) {
+      toast.error("کمپینی انتخاب نشده است");
+      return;
+    }
+    if (mode === "user" && !restoreUserId.trim()) {
+      toast.error("شناسه کاربر (userId) را وارد کنید");
+      return;
+    }
+
+    if (mode === "full") {
+      const ok = window.confirm(
+        "هشدار: همه داده‌های فعلی این کمپین پاک می‌شود و کامل با بکاپ جایگزین می‌گردد. ادامه می‌دهید؟"
+      );
+      if (!ok) return;
+    } else {
+      const ok = window.confirm(
+        "هشدار: محتوای فعلی همین کاربر در کمپین پاک و با بکاپ جایگزین می‌شود. ادامه می‌دهید؟"
+      );
+      if (!ok) return;
+    }
+
+    startTransition(async () => {
+      try {
+        toast.message(mode === "full" ? "در حال بازیابی کامل…" : "در حال ایمپورت کاربر…");
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("campaignId", campaignId);
+        formData.append("mode", mode);
+        if (mode === "user") formData.append("userId", restoreUserId.trim());
+
+        const response = await fetch("/api/backups/restore", {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          toast.error(await readApiError(response, "بازیابی ناموفق بود"));
+          return;
+        }
+        toast.success(mode === "full" ? "بازیابی کامل انجام شد" : "کاربر بازیابی شد");
+        window.location.reload();
+      } catch {
+        toast.error("بازیابی ناموفق بود");
+      }
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -145,9 +201,10 @@ export function BackupsAdmin() {
             پشتیبان‌گیری
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            فایل ZIP پشتیبان روی خود سرور ذخیره می‌شود. هر روز ساعت ۱۲ ظهر به‌وقت تهران به‌صورت
-            خودکار گرفته می‌شود. پشتیبان‌ها هرگز خودکار پاک نمی‌شوند؛ فقط ادمین از همین صفحه حذف
-            می‌کند.
+            بکاپ کامل شامل همه کاربران، همه بخش‌ها (ویدیو، پوستر، بیلبورد، …)، JSONها و فایل‌های
+            رسانه است — داخل ZIP به صورت{" "}
+            <span dir="ltr">users/کاربر/بخش.json</span>. هر روز ساعت ۱۲ شب به‌وقت تهران خودکار
+            گرفته می‌شود. پشتیبان‌ها فقط با حذف دستی ادمین پاک می‌شوند.
           </p>
           {!isLoading && (
             <p className="mt-2 text-xs text-muted-foreground">
@@ -181,11 +238,79 @@ export function BackupsAdmin() {
             ) : (
               <Archive className="h-4 w-4" />
             )}
-            گرفتن پشتیبان الان
+            گرفتن پشتیبان کامل
             {currentCampaign ? ` (${currentCampaign.title})` : ""}
           </Button>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">بازیابی از ZIP</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={isPending || !campaignId}
+              onClick={() => fullRestoreRef.current?.click()}
+            >
+              <RotateCcw className="h-4 w-4" />
+              بازیابی کامل کمپین
+            </Button>
+            <input
+              ref={fullRestoreRef}
+              type="file"
+              accept=".zip,application/zip"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) restoreFromFile(file, "full");
+                event.target.value = "";
+              }}
+            />
+          </div>
+
+          <div className="space-y-2 rounded-xl border p-3">
+            <Label htmlFor="restore-user-id">ایمپورت فقط یک کاربر</Label>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="min-w-[220px] flex-1 space-y-1">
+                <Input
+                  id="restore-user-id"
+                  dir="ltr"
+                  placeholder="user UUID"
+                  value={restoreUserId}
+                  onChange={(event) => setRestoreUserId(event.target.value)}
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isPending || !campaignId}
+                onClick={() => userRestoreRef.current?.click()}
+              >
+                <UserRound className="h-4 w-4" />
+                انتخاب ZIP کاربر
+              </Button>
+              <input
+                ref={userRestoreRef}
+                type="file"
+                accept=".zip,application/zip"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) restoreFromFile(file, "user");
+                  event.target.value = "";
+                }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              محتوای فعلی همان کاربر پاک و با داده‌های بکاپ جایگزین می‌شود.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -199,8 +324,7 @@ export function BackupsAdmin() {
             </div>
           ) : backups.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              هنوز پشتیبانی ذخیره نشده است. دکمه «گرفتن پشتیبان الان» را بزنید یا منتظر بکاپ خودکار
-              روزانه بمانید.
+              هنوز پشتیبانی ذخیره نشده است. دکمه «گرفتن پشتیبان کامل» را بزنید.
             </p>
           ) : (
             <ul className="divide-y rounded-xl border">

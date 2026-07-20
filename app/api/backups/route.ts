@@ -49,9 +49,11 @@ export async function POST(request: Request) {
   }
 
   let campaignId = "";
+  let userId: string | undefined;
   try {
-    const body = (await request.json()) as { campaignId?: string };
+    const body = (await request.json()) as { campaignId?: string; userId?: string };
     campaignId = body.campaignId?.trim() ?? "";
+    userId = body.userId?.trim() || undefined;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -61,13 +63,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await createStoredCampaignBackup(campaignId);
+    const result = await createStoredCampaignBackup(campaignId, { userId });
     return NextResponse.json({
       success: true,
       backup: result,
       warning:
         result.skippedFiles > 0
-          ? `${result.skippedFiles} فایل رسانه‌ای به‌خاطر محدودیت حجم در ZIP قرار نگرفت (در پوشه آپلود سرور باقی می‌ماند).`
+          ? `${result.skippedFiles} فایل رسانه‌ای روی دیسک پیدا نشد یا خوانده نشد (در skipped.json ثبت شد).`
           : undefined,
     });
   } catch (error) {

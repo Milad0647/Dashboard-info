@@ -8,8 +8,8 @@ import { createDailyBackupsForAllCampaigns } from "@/lib/services/stored-backup"
 import { isPostgresConfigured } from "@/lib/utils";
 
 const TEHRAN_TIME_ZONE = "Asia/Tehran";
-/** Daily backup hour in Asia/Tehran (noon). */
-const BACKUP_HOUR_TEHRAN = 12;
+/** Daily backup hour in Asia/Tehran (midnight). */
+const BACKUP_HOUR_TEHRAN = 0;
 const CHECK_INTERVAL_MS = 60_000;
 
 const tehranPartsFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -106,7 +106,7 @@ export function startDailyBackupScheduler(): void {
   void (async () => {
     const lastCompleted = (await getLastDailyBackupDay()) ?? "none";
     console.info(
-      `[daily-backup] Scheduler started (Tehran noon). Today=${getTehranCalendarDateIso()}, lastCompleted=${lastCompleted}`
+      `[daily-backup] Scheduler started (Tehran midnight). Today=${getTehranCalendarDateIso()}, lastCompleted=${lastCompleted}`
     );
     await runDailyBackupIfDue();
     setInterval(() => {

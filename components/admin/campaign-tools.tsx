@@ -26,23 +26,33 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
   };
 
   const handleImport = (file: File) => {
+    if (!campaignId) {
+      toast.error("کمپینی انتخاب نشده است");
+      return;
+    }
+    const ok = window.confirm(
+      "هشدار: همه داده‌های فعلی این کمپین پاک می‌شود و کامل با بکاپ جایگزین می‌گردد. ادامه می‌دهید؟"
+    );
+    if (!ok) return;
+
     startTransition(async () => {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("campaignId", campaignId);
+      formData.append("mode", "full");
 
-      const response = await fetch("/api/campaign/import", {
+      const response = await fetch("/api/backups/restore", {
         method: "POST",
         body: formData,
       });
 
       const result = await response.json();
       if (!response.ok) {
-        toast.error(result.error ?? "خطا در import");
+        toast.error(result.error ?? "خطا در بازیابی");
         return;
       }
 
-      toast.success("کمپین با موفقیت import شد");
+      toast.success("بازیابی کامل انجام شد");
       window.location.reload();
     });
   };
@@ -140,7 +150,7 @@ export function CampaignTools({ isFullAdmin }: CampaignToolsProps) {
           onClick={() => importRef.current?.click()}
         >
           <Upload className="h-4 w-4" />
-          Import از ZIP
+          بازیابی کامل از ZIP
         </Button>
 
         <Button variant="outline" size="sm" asChild>

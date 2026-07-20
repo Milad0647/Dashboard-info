@@ -1,21 +1,27 @@
 import { createWriteStream } from "fs";
-import { readFile, stat } from "fs/promises";
+import { mkdir, readFile, stat, writeFile } from "fs/promises";
 import { basename } from "path";
 import { pipeline } from "stream/promises";
 import JSZip from "jszip";
-import { pgGetCampaignBackupData } from "@/lib/db/repository-extended";
-import { getSql } from "@/lib/db/client";
-import { getUploadsDir, getUploadPublicUrl } from "@/lib/uploads";
-import { generateId } from "@/lib/utils";
+import {
+  type CampaignBackupFullData,
+  type DbRow,
+  UNASSIGNED_OWNER_KEY,
+  ownerKey,
+  pgGetFullCampaignBackupData,
+  pgRestoreFullCampaignData,
+  pgRestoreUserCampaignData,
+} from "@/lib/db/campaign-backup-repository";
+import { getUploadsDir } from "@/lib/uploads";
 
-/** Keep embedded media bounded so backup creation cannot OOM the Node process. */
-const DEFAULT_MAX_UPLOAD_BYTES = 400 * 1024 * 1024;
-const DEFAULT_MAX_SINGLE_FILE_BYTES = 80 * 1024 * 1024;
+/** Prefer including all media; skip only missing/unreadable files. */
+const DEFAULT_MAX_SINGLE_FILE_BYTES = 2 * 1024 * 1024 * 1024;
 
 export interface CreateCampaignBackupOptions {
   includeUploads?: boolean;
-  maxUploadBytes?: number;
   maxSingleFileBytes?: number;
+  /** When set, ZIP only includes this user's content folders (+ shared campaign JSON). */
+  userId?: string;
 }
 
 export interface CampaignBackupWriteResult {
@@ -24,45 +30,226 @@ export interface CampaignBackupWriteResult {
   sizeBytes: number;
 }
 
-function extractFilenameFromUrl(url: string): string | null {
-  const match = url.match(/\/api\/files\/([^/?#]+)/);
-  return match?.[1] ?? null;
+export interface FileMapEntry {
+  filename: string;
+  usedBy: Array<{ path: string }>;
 }
 
-function collectUploadFilenames(backup: NonNullable<
-  Awaited<ReturnType<typeof pgGetCampaignBackupData>>
->): Set<string> {
-  const fileUrls = new Set<string>();
-  const collectUrl = (url?: string | null) => {
-    if (!url) return;
-    const filename = extractFilenameFromUrl(url);
-    if (filename) fileUrls.add(filename);
+function extractFilenameFromUrl(url: string): string | null {
+  const match = url.match(/\/api\/files\/([^/?#]+)/);
+  if (!match?.[1]) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+function collectFilenamesFromValue(
+  value: unknown,
+  out: Set<string>,
+  path = "root"
+): void {
+  if (typeof value === "string") {
+    const filename = extractFilenameFromUrl(value);
+    if (filename) out.add(filename);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      collectFilenamesFromValue(item, out, `${path}[${index}]`)
+    );
+    return;
+  }
+  if (value && typeof value === "object") {
+    for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+      collectFilenamesFromValue(child, out, `${path}.${key}`);
+    }
+  }
+}
+
+function filterDataForUser(
+  data: CampaignBackupFullData,
+  userId: string
+): CampaignBackupFullData {
+  const owned = <T extends DbRow>(rows: T[]) =>
+    rows.filter((row) => String(row.owner_user_id ?? "") === userId);
+
+  const billboards = owned(data.billboards);
+  const billboardIds = new Set(billboards.map((b) => String(b.id)));
+  const posters = owned(data.posters);
+  const posterIds = new Set(posters.map((p) => String(p.id)));
+  const videos = owned(data.videos);
+  const videoIds = new Set(videos.map((v) => String(v.id)));
+  const meetings = owned(data.meetings);
+  const meetingIds = new Set(meetings.map((m) => String(m.id)));
+
+  return {
+    ...data,
+    users: data.users.filter((u) => String(u.id) === userId),
+    access: data.access.filter((a) => String(a.user_id) === userId),
+    billboards,
+    billboardPeriods: data.billboardPeriods.filter((p) =>
+      billboardIds.has(String(p.billboard_id))
+    ),
+    posters,
+    posterVersions: data.posterVersions.filter((v) =>
+      posterIds.has(String(v.poster_id))
+    ),
+    videos,
+    videoVersions: data.videoVersions.filter((v) =>
+      videoIds.has(String(v.video_id))
+    ),
+    analytics: owned(data.analytics),
+    submissions: owned(data.submissions),
+    files: owned(data.files),
+    socialPosts: owned(data.socialPosts),
+    platformStats: owned(data.platformStats),
+    activities: owned(data.activities),
+    broadcasts: owned(data.broadcasts),
+    meetings,
+    meetingTasks: data.meetingTasks.filter((t) =>
+      meetingIds.has(String(t.meeting_id))
+    ),
+    meetingDecisions: data.meetingDecisions.filter((d) =>
+      meetingIds.has(String(d.meeting_id))
+    ),
+    rawMedia: owned(data.rawMedia),
+    // Campaign-level shared metadata still included so a user ZIP is restorable.
+    directives: [],
+    directiveAttachments: [],
+    directiveRecipients: [],
+    pageAccessCodes: [],
+  };
+}
+
+function nestVersions(
+  parents: DbRow[],
+  versions: DbRow[],
+  parentKey: string
+): DbRow[] {
+  const byParent = new Map<string, DbRow[]>();
+  for (const version of versions) {
+    const id = String(version[parentKey] ?? "");
+    if (!id) continue;
+    const list = byParent.get(id) ?? [];
+    list.push(version);
+    byParent.set(id, list);
+  }
+  return parents.map((parent) => ({
+    ...parent,
+    versions: byParent.get(String(parent.id)) ?? [],
+  }));
+}
+
+function nestMeetingChildren(
+  meetings: DbRow[],
+  tasks: DbRow[],
+  decisions: DbRow[]
+): DbRow[] {
+  const tasksBy = new Map<string, DbRow[]>();
+  const decisionsBy = new Map<string, DbRow[]>();
+  for (const task of tasks) {
+    const id = String(task.meeting_id ?? "");
+    const list = tasksBy.get(id) ?? [];
+    list.push(task);
+    tasksBy.set(id, list);
+  }
+  for (const decision of decisions) {
+    const id = String(decision.meeting_id ?? "");
+    const list = decisionsBy.get(id) ?? [];
+    list.push(decision);
+    decisionsBy.set(id, list);
+  }
+  return meetings.map((meeting) => ({
+    ...meeting,
+    tasks: tasksBy.get(String(meeting.id)) ?? [],
+    decisions: decisionsBy.get(String(meeting.id)) ?? [],
+  }));
+}
+
+function groupBillboardPeriods(
+  billboards: DbRow[],
+  periods: DbRow[]
+): { billboards: DbRow[]; periodsByOwner: Map<string, DbRow[]> } {
+  const billboardOwner = new Map<string, string>();
+  for (const billboard of billboards) {
+    billboardOwner.set(String(billboard.id), ownerKey(billboard));
+  }
+  const periodsByOwner = new Map<string, DbRow[]>();
+  for (const period of periods) {
+    const owner = billboardOwner.get(String(period.billboard_id)) ?? UNASSIGNED_OWNER_KEY;
+    const list = periodsByOwner.get(owner) ?? [];
+    list.push(period);
+    periodsByOwner.set(owner, list);
+  }
+  return { billboards, periodsByOwner };
+}
+
+function buildUserFolders(data: CampaignBackupFullData): Map<string, Record<string, DbRow[]>> {
+  const folders = new Map<string, Record<string, DbRow[]>>();
+
+  const ensure = (key: string) => {
+    let folder = folders.get(key);
+    if (!folder) {
+      folder = {
+        billboards: [],
+        billboard_periods: [],
+        posters: [],
+        videos: [],
+        social_posts: [],
+        platform_stats: [],
+        activities: [],
+        broadcasts: [],
+        meetings: [],
+        files: [],
+        raw_media: [],
+        analytics: [],
+        submissions: [],
+      };
+      folders.set(key, folder);
+    }
+    return folder;
   };
 
-  for (const row of backup.billboards) {
-    collectUrl(row.thumbnail_url);
-    collectUrl(row.image_url);
+  const postersNested = nestVersions(data.posters, data.posterVersions, "poster_id");
+  const videosNested = nestVersions(data.videos, data.videoVersions, "video_id");
+  const meetingsNested = nestMeetingChildren(
+    data.meetings,
+    data.meetingTasks,
+    data.meetingDecisions
+  );
+  const { periodsByOwner } = groupBillboardPeriods(data.billboards, data.billboardPeriods);
+
+  for (const row of data.billboards) ensure(ownerKey(row)).billboards.push(row);
+  for (const [owner, periods] of periodsByOwner) {
+    ensure(owner).billboard_periods.push(...periods);
   }
-  for (const row of backup.posterVersions) {
-    collectUrl(row.image_url);
-    collectUrl(row.thumbnail_url);
+  for (const row of postersNested) ensure(ownerKey(row)).posters.push(row);
+  for (const row of videosNested) ensure(ownerKey(row)).videos.push(row);
+  for (const row of data.socialPosts) ensure(ownerKey(row)).social_posts.push(row);
+  for (const row of data.platformStats) ensure(ownerKey(row)).platform_stats.push(row);
+  for (const row of data.activities) ensure(ownerKey(row)).activities.push(row);
+  for (const row of data.broadcasts) ensure(ownerKey(row)).broadcasts.push(row);
+  for (const row of meetingsNested) ensure(ownerKey(row)).meetings.push(row);
+  for (const row of data.files) ensure(ownerKey(row)).files.push(row);
+  for (const row of data.rawMedia) ensure(ownerKey(row)).raw_media.push(row);
+  for (const row of data.analytics) ensure(ownerKey(row)).analytics.push(row);
+  for (const row of data.submissions) ensure(ownerKey(row)).submissions.push(row);
+
+  // Always create a folder for each known user profile, even with empty sections.
+  for (const user of data.users) {
+    ensure(String(user.id));
   }
-  for (const row of backup.videoVersions) {
-    collectUrl(row.video_url);
-    collectUrl(row.thumbnail_url);
-  }
-  for (const row of backup.files) {
-    collectUrl(row.file_url);
-  }
-  for (const row of backup.socialPosts) {
-    collectUrl(row.cover_image_url);
-    collectUrl(row.media_url);
-  }
-  for (const row of backup.broadcastReports) {
-    collectUrl(row.pdf_url);
+  if (folders.size === 0) {
+    ensure(UNASSIGNED_OWNER_KEY);
   }
 
-  return fileUrls;
+  return folders;
+}
+
+function jsonFile(value: unknown): string {
+  return JSON.stringify(value, null, 2);
 }
 
 async function buildCampaignBackupZip(
@@ -70,56 +257,104 @@ async function buildCampaignBackupZip(
   options: CreateCampaignBackupOptions = {}
 ): Promise<{ zip: JSZip; includedFiles: number; skippedFiles: string[] }> {
   const includeUploads = options.includeUploads !== false;
-  const maxUploadBytes = options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES;
   const maxSingleFileBytes =
     options.maxSingleFileBytes ?? DEFAULT_MAX_SINGLE_FILE_BYTES;
 
-  const backup = await pgGetCampaignBackupData(campaignId);
-  if (!backup) {
-    throw new Error("Campaign not found");
+  const full = await pgGetFullCampaignBackupData(campaignId);
+  if (!full) throw new Error("Campaign not found");
+
+  const data =
+    options.userId?.trim()
+      ? filterDataForUser(full, options.userId.trim())
+      : full;
+
+  const zip = new JSZip();
+  const userFolders = buildUserFolders(data);
+  const usersById = new Map(data.users.map((u) => [String(u.id), u]));
+
+  zip.file(
+    "manifest.json",
+    jsonFile({
+      version: 2,
+      format: "per-user-v2",
+      exportedAt: data.exportedAt,
+      campaignId: data.campaignId,
+      mode: options.userId ? "user" : "full",
+      filterUserId: options.userId ?? null,
+      userFolderCount: userFolders.size,
+      counts: {
+        users: data.users.length,
+        billboards: data.billboards.length,
+        posters: data.posters.length,
+        videos: data.videos.length,
+        socialPosts: data.socialPosts.length,
+        activities: data.activities.length,
+        meetings: data.meetings.length,
+        files: data.files.length,
+        rawMedia: data.rawMedia.length,
+        broadcasts: data.broadcasts.length,
+      },
+    })
+  );
+
+  zip.file("campaign/settings.json", jsonFile(data.settings));
+  zip.file("campaign/users.json", jsonFile(data.users));
+  zip.file("campaign/access.json", jsonFile(data.access));
+  zip.file("campaign/categories.json", jsonFile(data.categories));
+  zip.file(
+    "campaign/directives.json",
+    jsonFile({
+      directives: data.directives,
+      attachments: data.directiveAttachments,
+      recipients: data.directiveRecipients,
+    })
+  );
+  zip.file("campaign/page_access_codes.json", jsonFile(data.pageAccessCodes));
+
+  // Flat restore snapshot (same data, easy for importer).
+  zip.file("campaign/full-data.json", jsonFile(data));
+
+  for (const [folderKey, sections] of userFolders) {
+    const base = `users/${folderKey}`;
+    const profile =
+      folderKey === UNASSIGNED_OWNER_KEY
+        ? {
+            id: null,
+            name: "unassigned",
+            note: "Content without owner_user_id",
+          }
+        : usersById.get(folderKey) ?? { id: folderKey };
+
+    zip.file(`${base}/profile.json`, jsonFile(profile));
+    for (const [section, rows] of Object.entries(sections)) {
+      zip.file(`${base}/${section}.json`, jsonFile(rows));
+    }
   }
+
+  const filenames = new Set<string>();
+  collectFilenamesFromValue(data, filenames);
+  const fileMap: FileMapEntry[] = [...filenames].map((filename) => ({
+    filename,
+    usedBy: [{ path: "campaign/full-data.json" }],
+  }));
+  zip.file("files/file-map.json", jsonFile(fileMap));
 
   const skippedFiles: string[] = [];
   let includedFiles = 0;
-  let usedUploadBytes = 0;
-
-  const zip = new JSZip();
-  zip.file(
-    "manifest.json",
-    JSON.stringify(
-      {
-        ...backup,
-        backupMeta: {
-          includeUploads,
-          maxUploadBytes,
-          maxSingleFileBytes,
-        },
-      },
-      null,
-      2
-    )
-  );
 
   if (!includeUploads) {
     zip.file(
-      "uploads-skipped.json",
-      JSON.stringify(
-        {
-          reason: "Uploads omitted; media remains on the server uploads volume.",
-          filenames: [...collectUploadFilenames(backup)],
-        },
-        null,
-        2
-      )
+      "skipped.json",
+      jsonFile({
+        reason: "Uploads omitted; media remains on the server uploads volume.",
+        filenames: [...filenames],
+      })
     );
     return { zip, includedFiles, skippedFiles };
   }
 
   const uploadsDir = getUploadsDir();
-  const fileUrls = collectUploadFilenames(backup);
-  const filesFolder = zip.folder("uploads");
-
-  for (const filename of fileUrls) {
+  for (const filename of filenames) {
     const filePath = `${uploadsDir}/${filename}`;
     try {
       const info = await stat(filePath);
@@ -131,14 +366,8 @@ async function buildCampaignBackupZip(
         skippedFiles.push(filename);
         continue;
       }
-      if (usedUploadBytes + info.size > maxUploadBytes) {
-        skippedFiles.push(filename);
-        continue;
-      }
-
       const content = await readFile(filePath);
-      filesFolder?.file(filename, content);
-      usedUploadBytes += content.byteLength;
+      zip.file(`files/by-id/${filename}`, content);
       includedFiles += 1;
     } catch {
       skippedFiles.push(filename);
@@ -147,18 +376,12 @@ async function buildCampaignBackupZip(
 
   if (skippedFiles.length > 0) {
     zip.file(
-      "uploads-skipped.json",
-      JSON.stringify(
-        {
-          reason:
-            "Some media files were skipped to keep backup memory/size within safe limits.",
-          maxUploadBytes,
-          maxSingleFileBytes,
-          filenames: skippedFiles,
-        },
-        null,
-        2
-      )
+      "skipped.json",
+      jsonFile({
+        reason: "Some media files were missing, unreadable, or over the single-file limit.",
+        maxSingleFileBytes,
+        filenames: skippedFiles,
+      })
     );
   }
 
@@ -203,130 +426,116 @@ export async function writeCampaignBackupZipToFile(
   };
 }
 
-export async function importCampaignBackupZip(buffer: Buffer, targetCampaignId?: string) {
+async function parseBackupZip(buffer: Buffer): Promise<{
+  data: CampaignBackupFullData;
+  zip: JSZip;
+}> {
   const zip = await JSZip.loadAsync(buffer);
+  const fullDataFile = zip.file("campaign/full-data.json");
   const manifestFile = zip.file("manifest.json");
-  if (!manifestFile) {
-    throw new Error("manifest.json not found in backup");
+
+  if (fullDataFile) {
+    const data = JSON.parse(await fullDataFile.async("string")) as CampaignBackupFullData;
+    if (data.version !== 2) {
+      throw new Error("فرمت بکاپ قدیمی است؛ یک پشتیبان جدید بگیرید");
+    }
+    return { data, zip };
   }
 
-  const manifest = JSON.parse(await manifestFile.async("string"));
-  const sql = getSql();
-  const uploadsDir = getUploadsDir();
-  const urlMap = new Map<string, string>();
-
-  const uploadEntries = Object.keys(zip.files).filter((name) => name.startsWith("uploads/"));
-  for (const entryName of uploadEntries) {
-    const entry = zip.files[entryName];
-    if (!entry.dir) {
-      const originalName = basename(entryName);
-      const newName = `${generateId()}${originalName.includes(".") ? originalName.slice(originalName.lastIndexOf(".")) : ""}`;
-      const content = await entry.async("nodebuffer");
-      const { writeFile, mkdir } = await import("fs/promises");
-      await mkdir(uploadsDir, { recursive: true });
-      await writeFile(`${uploadsDir}/${newName}`, content);
-      urlMap.set(originalName, getUploadPublicUrl(newName));
+  // Legacy v1 rejection with clear message
+  if (manifestFile) {
+    const manifest = JSON.parse(await manifestFile.async("string")) as {
+      version?: number;
+      format?: string;
+    };
+    if (manifest.version !== 2 && manifest.format !== "per-user-v2") {
+      throw new Error(
+        "فرمت بکاپ قدیمی پشتیبانی نمی‌شود. لطفاً دوباره از صفحه پشتیبان‌گیری، بکاپ جدید بگیرید."
+      );
     }
   }
 
-  const remapUrl = (url?: string | null): string => {
-    if (!url) return "";
-    const filename = extractFilenameFromUrl(url);
-    if (!filename) return url;
-    return urlMap.get(filename) ?? url;
-  };
+  throw new Error("campaign/full-data.json در بکاپ پیدا نشد");
+}
 
-  const campaignRow = manifest.campaign;
-  const campaignId = targetCampaignId ?? generateId();
+async function restoreUploadFiles(zip: JSZip): Promise<number> {
+  const uploadsDir = getUploadsDir();
+  await mkdir(uploadsDir, { recursive: true });
+  let restored = 0;
 
-  await sql`
-    INSERT INTO campaign_settings (
-      id, slug, title, description, status, start_date, end_date,
-      cover_image_url, published, features, analytics_config, billboard_config, updated_at
-    ) VALUES (
-      ${campaignId},
-      ${targetCampaignId ? campaignRow.slug + "-imported" : campaignRow.slug},
-      ${campaignRow.title},
-      ${campaignRow.description ?? ""},
-      ${campaignRow.status ?? "draft"},
-      ${campaignRow.start_date},
-      ${campaignRow.end_date},
-      ${remapUrl(campaignRow.cover_image_url) || null},
-      ${campaignRow.published ?? false},
-      ${sql.json(campaignRow.features ?? {})},
-      ${sql.json(campaignRow.analytics_config ?? {})},
-      ${sql.json(campaignRow.billboard_config ?? {})},
-      ${new Date().toISOString()}
-    )
-    ON CONFLICT (id) DO UPDATE SET
-      title = EXCLUDED.title,
-      description = EXCLUDED.description,
-      updated_at = EXCLUDED.updated_at
-  `;
+  const byIdEntries = Object.keys(zip.files).filter(
+    (name) => name.startsWith("files/by-id/") && !zip.files[name].dir
+  );
+  const legacyEntries = Object.keys(zip.files).filter(
+    (name) => name.startsWith("uploads/") && !zip.files[name].dir
+  );
 
-  const idMap = new Map<string, string>();
-  const remapId = (oldId: string) => {
-    if (!idMap.has(oldId)) idMap.set(oldId, generateId());
-    return idMap.get(oldId)!;
-  };
+  const entries = byIdEntries.length > 0 ? byIdEntries : legacyEntries;
 
-  for (const row of manifest.posterCategories ?? []) {
-    const newId = remapId(row.id);
-    await sql`
-      INSERT INTO media_categories (id, campaign_id, type, title, description, sort_order, published, created_at)
-      VALUES (${newId}, ${campaignId}, 'poster', ${row.title}, ${row.description}, ${row.sort_order ?? 0}, ${row.published ?? false}, ${row.created_at ?? new Date().toISOString()})
-      ON CONFLICT (id) DO NOTHING
-    `;
+  for (const entryName of entries) {
+    const entry = zip.files[entryName];
+    const originalName = basename(entryName);
+    if (!originalName || originalName === "." || originalName === "..") continue;
+    const content = await entry.async("nodebuffer");
+    await writeFile(`${uploadsDir}/${originalName}`, content);
+    restored += 1;
   }
 
-  for (const row of manifest.videoCategories ?? []) {
-    const newId = remapId(row.id);
-    await sql`
-      INSERT INTO media_categories (id, campaign_id, type, title, description, sort_order, published, created_at)
-      VALUES (${newId}, ${campaignId}, 'video', ${row.title}, ${row.description}, ${row.sort_order ?? 0}, ${row.published ?? false}, ${row.created_at ?? new Date().toISOString()})
-      ON CONFLICT (id) DO NOTHING
-    `;
-  }
+  return restored;
+}
 
-  for (const row of manifest.billboards ?? []) {
-    await sql`
-      INSERT INTO billboards (
-        id, campaign_id, title, description, city, location, date,
-        thumbnail_url, image_url, external_url, published, sort_order, created_at, updated_at
-      ) VALUES (
-        ${generateId()}, ${campaignId}, ${row.title}, ${row.description}, ${row.city}, ${row.location}, ${row.date},
-        ${remapUrl(row.thumbnail_url)}, ${remapUrl(row.image_url)}, ${row.external_url ?? ""},
-        ${row.published ?? false}, ${row.sort_order ?? 0}, ${row.created_at ?? new Date().toISOString()}, ${new Date().toISOString()}
-      )
-    `;
-  }
+export async function restoreFullCampaignFromZip(
+  buffer: Buffer,
+  campaignId: string
+): Promise<{ success: true; campaignId: string; restoredFiles: number }> {
+  const { data, zip } = await parseBackupZip(buffer);
+  const restoredFiles = await restoreUploadFiles(zip);
+  await pgRestoreFullCampaignData(campaignId, data);
+  return { success: true, campaignId, restoredFiles };
+}
 
-  for (const row of manifest.socialPosts ?? []) {
-    await sql`
-      INSERT INTO social_media_posts (
-        id, campaign_id, platform, title, cover_image_url, views, likes, comments, shares,
-        link, content_type, media_url, description, published_date, published, sort_order, created_at, updated_at
-      ) VALUES (
-        ${generateId()}, ${campaignId}, ${row.platform}, ${row.title}, ${remapUrl(row.cover_image_url)},
-        ${row.views ?? 0}, ${row.likes ?? 0}, ${row.comments ?? 0}, ${row.shares ?? 0},
-        ${row.link ?? ""}, ${row.content_type ?? "image"}, ${remapUrl(row.media_url)}, ${row.description},
-        ${row.published_date ?? new Date().toISOString().split("T")[0]}, ${row.published ?? false},
-        ${row.sort_order ?? 0}, ${new Date().toISOString()}, ${new Date().toISOString()}
-      )
-    `;
+export async function restoreUserFromZip(
+  buffer: Buffer,
+  campaignId: string,
+  userId: string
+): Promise<{ success: true; campaignId: string; userId: string; restoredFiles: number }> {
+  const { data, zip } = await parseBackupZip(buffer);
+  const filtered = filterDataForUser(data, userId);
+  if (filtered.users.length === 0 && filtered.billboards.length === 0) {
+    // Still allow if content exists under owner without profile
+    const hasOwned =
+      filtered.posters.length +
+        filtered.videos.length +
+        filtered.files.length +
+        filtered.socialPosts.length +
+        filtered.activities.length +
+        filtered.meetings.length +
+        filtered.rawMedia.length +
+        filtered.broadcasts.length +
+        filtered.submissions.length +
+        filtered.analytics.length >
+      0;
+    if (!hasOwned) {
+      throw new Error("در این بکاپ داده‌ای برای این کاربر پیدا نشد");
+    }
   }
+  const restoredFiles = await restoreUploadFiles(zip);
+  await pgRestoreUserCampaignData(campaignId, userId, filtered);
+  return { success: true, campaignId, userId, restoredFiles };
+}
 
-  for (const row of manifest.broadcastReports ?? []) {
-    await sql`
-      INSERT INTO broadcast_reports (
-        id, campaign_id, title, report_date, pdf_url, file_name, summary_data, published, sort_order, created_at, updated_at
-      ) VALUES (
-        ${generateId()}, ${campaignId}, ${row.title}, ${row.report_date},
-        ${remapUrl(row.pdf_url)}, ${row.file_name}, ${sql.json(row.summary_data ?? {})},
-        ${row.published ?? false}, ${row.sort_order ?? 0}, ${new Date().toISOString()}, ${new Date().toISOString()}
-      )
-    `;
+/**
+ * Legacy import entry used by /api/campaign/import.
+ * Always performs full wipe+replace against the target campaign.
+ */
+export async function importCampaignBackupZip(
+  buffer: Buffer,
+  targetCampaignId?: string
+): Promise<{ success: true; campaignId: string; restoredFiles: number }> {
+  if (!targetCampaignId?.trim()) {
+    throw new Error(
+      "برای بازیابی کامل باید campaignId کمپین مقصد مشخص باشد (داده‌های همان کمپین پاک و جایگزین می‌شود)."
+    );
   }
-
-  return { success: true, campaignId };
+  return restoreFullCampaignFromZip(buffer, targetCampaignId.trim());
 }

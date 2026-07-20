@@ -1637,61 +1637,9 @@ export async function pgToggleMeetingTask(taskId: string, completed: boolean) {
 }
 
 export async function pgGetCampaignBackupData(campaignId: string) {
-  const sql = getSql();
-  const settings = await sql`SELECT * FROM campaign_settings WHERE id = ${campaignId} LIMIT 1`;
-  if (!settings[0]) return null;
-
-  const [
-    billboards,
-    posterCategories,
-    posters,
-    posterVersions,
-    videoCategories,
-    videos,
-    videoVersions,
-    analytics,
-    submissions,
-    files,
-    socialPosts,
-    broadcastReports,
-  ] = await Promise.all([
-    sql`SELECT * FROM billboards WHERE campaign_id = ${campaignId}`,
-    sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'poster'`,
-    sql`SELECT * FROM posters WHERE campaign_id = ${campaignId}`,
-    sql`
-      SELECT pv.* FROM poster_versions pv
-      INNER JOIN posters p ON p.id = pv.poster_id
-      WHERE p.campaign_id = ${campaignId}
-    `,
-    sql`SELECT * FROM media_categories WHERE campaign_id = ${campaignId} AND type = 'video'`,
-    sql`SELECT * FROM videos WHERE campaign_id = ${campaignId}`,
-    sql`
-      SELECT vv.* FROM video_versions vv
-      INNER JOIN videos v ON v.id = vv.video_id
-      WHERE v.campaign_id = ${campaignId}
-    `,
-    sql`SELECT * FROM analytics_metrics WHERE campaign_id = ${campaignId}`,
-    sql`SELECT * FROM campaign_submissions WHERE campaign_id = ${campaignId}`,
-    sql`SELECT * FROM campaign_files WHERE campaign_id = ${campaignId}`,
-    sql`SELECT * FROM social_media_posts WHERE campaign_id = ${campaignId}`,
-    sql`SELECT * FROM broadcast_reports WHERE campaign_id = ${campaignId}`,
-  ]);
-
-  return {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    campaign: settings[0],
-    billboards,
-    posterCategories,
-    posters,
-    posterVersions,
-    videoCategories,
-    videos,
-    videoVersions,
-    analytics,
-    submissions,
-    files,
-    socialPosts,
-    broadcastReports,
-  };
+  // Legacy name kept for callers; full v2 export lives in campaign-backup-repository.
+  const { pgGetFullCampaignBackupData } = await import(
+    "@/lib/db/campaign-backup-repository"
+  );
+  return pgGetFullCampaignBackupData(campaignId);
 }

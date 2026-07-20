@@ -104,7 +104,7 @@ async function tick() {
   if (process.env.DISABLE_DAILY_BACKUP_SCHEDULER === "1") return;
 
   const { dateIso, hour } = tehranClock();
-  if (hour < 12) return;
+  if (hour < 0) return;
 
   const lastCompleted = await loadLastCompleted();
   if (lastCompleted === dateIso) return;
@@ -125,7 +125,7 @@ async function tick() {
   }
 }
 
-console.info("[daily-backup-poller] Started (Tehran noon via localhost cron)");
+console.info("[daily-backup-poller] Started (Tehran midnight via localhost cron)");
 
 void (async () => {
   const ready = await waitForServer();

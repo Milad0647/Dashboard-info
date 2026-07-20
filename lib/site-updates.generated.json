@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "fdcbe949250edbb269ed457e5295e65cfa108c66",
+      "committedAt": "2026-07-20T19:56:38+03:30",
+      "title": "امکان امتیازدهی جداگانه به هر گزینه فیلدهایی مثل دسته‌بندی",
+      "subject": "Improve scoring rules UI for per-option field points"
+    },
+    {
       "hash": "53d76408fda29d13e25176d340920323cef6a729",
       "committedAt": "2026-07-20T19:49:26+03:30",
       "title": "رفع پشتیبان‌گیری خودکار روزانه ساعت ۱۲ ظهر روی سرور",
