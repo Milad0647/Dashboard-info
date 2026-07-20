@@ -1,3 +1,7 @@
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
+import { getBackupsDir } from "@/lib/backups";
+import { getTehranCalendarDateIso } from "@/lib/safe-dates";
 import { createDailyBackupsForAllCampaigns } from "@/lib/services/stored-backup";
 import { isPostgresConfigured } from "@/lib/utils";
 
@@ -16,6 +20,16 @@ function authorizeCron(request: Request): boolean {
   const headerSecret = request.headers.get("x-cron-secret")?.trim() ?? null;
 
   return bearer === secret || headerSecret === secret;
+}
+
+async function markDailyBackupCompleted(dateIso: string): Promise<void> {
+  try {
+    const dir = getBackupsDir();
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, ".last-daily-backup"), `${dateIso}\n`, "utf8");
+  } catch {
+    // Non-fatal — schedulers may retry the same day
+  }
 }
 
 async function handleCron(request: Request) {
@@ -38,11 +52,16 @@ async function handleCron(request: Request) {
   }
 
   const summary = await createDailyBackupsForAllCampaigns();
+  const tehranDay = getTehranCalendarDateIso();
+  if (summary.created.length > 0 || summary.failed.length === 0) {
+    await markDailyBackupCompleted(tehranDay);
+  }
 
   return Response.json({
     success: true,
     createdCount: summary.created.length,
     failedCount: summary.failed.length,
+    tehranDay,
     summary,
   });
 }

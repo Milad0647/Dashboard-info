@@ -1,9 +1,6 @@
 import path from "path";
 import { getUploadsDir } from "@/lib/uploads";
 
-/** How many stored backup files to keep per campaign (oldest pruned after create). */
-export const BACKUP_RETENTION_PER_CAMPAIGN = 14;
-
 const BACKUP_FILENAME_RE =
   /^backup-[a-zA-Z0-9_-]+-\d{4}-\d{2}-\d{2}(?:-\d{6})?\.zip$/;
 

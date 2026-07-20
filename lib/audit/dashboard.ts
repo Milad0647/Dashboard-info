@@ -59,7 +59,7 @@ export async function getAuditDashboardData(): Promise<AuditDashboardData> {
     pgGetAuditTopActions(12),
     pgGetAuditTopPaths(12),
     pgGetAuditTopClicks(15),
-    pgListAuditEvents({ limit: 200 }),
+    pgListAuditEvents({ limit: 200, excludeHeartbeat: true }),
     pgGetUserContentContributions(),
     pgListAuditEvents({ action: "auth.login", limit: 50 }),
     safe<ProblemReport[]>(() => pgListProblemReports({ limit: 100 }), []),
@@ -83,8 +83,7 @@ export async function getAuditDashboardData(): Promise<AuditDashboardData> {
     topActions,
     topPaths,
     topClicks,
-    // Heartbeats are presence-only noise for the event log.
-    recentEvents: recentEvents.filter((event) => event.action !== "presence.heartbeat"),
+    recentEvents,
     contentByUser,
     logins,
     problemReports: withFileAccessTokensDeep(problemReports),

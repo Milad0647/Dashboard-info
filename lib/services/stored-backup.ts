@@ -2,7 +2,6 @@ import { createReadStream, existsSync } from "fs";
 import { mkdir, readdir, stat, unlink } from "fs/promises";
 import { Readable } from "stream";
 import {
-  BACKUP_RETENTION_PER_CAMPAIGN,
   buildBackupFilename,
   getBackupsDir,
   isSafeBackupFilename,
@@ -55,16 +54,6 @@ async function ensureBackupsDir(): Promise<string> {
   return dir;
 }
 
-async function pruneOldBackupsForSlug(campaignSlug: string): Promise<void> {
-  const backups = (await listStoredBackups()).filter(
-    (item) => item.campaignSlug === campaignSlug
-  );
-  const overflow = backups.slice(BACKUP_RETENTION_PER_CAMPAIGN);
-  for (const item of overflow) {
-    await deleteStoredBackup(item.filename);
-  }
-}
-
 export async function createStoredCampaignBackup(
   campaignId: string
 ): Promise<CreateStoredBackupResult> {
@@ -80,8 +69,7 @@ export async function createStoredCampaignBackup(
 
   const written = await writeCampaignBackupZipToFile(campaignId, filePath);
 
-  await pruneOldBackupsForSlug(campaign.slug);
-
+  // Backups are kept until an admin deletes them manually — no auto-prune.
   return {
     filename,
     sizeBytes: written.sizeBytes,

@@ -93,22 +93,16 @@ What it updates:
 - **Aparat videos**: views, likes, comments (and empty title/description/cover)
 - **Site publications** + **magazine/newspaper** with a link: Open Graph title/description/cover when empty
 
-### 5b. Daily campaign ZIP backup (Coolify Scheduled Job)
+### 5b. Daily campaign ZIP backup
 
-Stored campaign backups (ZIP on disk, downloadable from **Admin → پشتیبان‌گیری**) are created via:
+Stored campaign backups (ZIP on disk, downloadable from **Admin → پشتیبان‌گیری**) are created:
 
-`GET|POST /api/cron/daily-backup`
+1. **Automatically inside the app** every day at **12:00 Asia/Tehran** (in-process scheduler via `instrumentation.ts`). No Coolify cron required for backups.
+2. Optionally still via Coolify: `GET|POST /api/cron/daily-backup` with `Authorization: Bearer $CRON_SECRET` (useful as a backup trigger).
 
-1. In Coolify, open the app → **Scheduled Tasks**.
-2. Schedule: `0 12 * * *` (12:00 server time every day).
-3. Command:
+Persist backups with a volume mounted at `BACKUP_DIR` (default `/app/data/backups`). Backups are **never auto-deleted** — only an admin can remove them from the UI. You can also create a backup manually from the admin panel.
 
-```bash
-curl -fsS -X POST "$APP_URL/api/cron/daily-backup" \
-  -H "Authorization: Bearer $CRON_SECRET"
-```
-
-Persist backups with a volume mounted at `BACKUP_DIR` (default `/app/data/backups`). The panel keeps the latest 14 backups per campaign. You can also create a backup manually from the admin UI.
+Set `DISABLE_DAILY_BACKUP_SCHEDULER=1` to turn off the in-app noon scheduler.
 
 ### 6. Local Docker test
 

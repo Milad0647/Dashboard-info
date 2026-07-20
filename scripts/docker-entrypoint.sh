@@ -28,4 +28,10 @@ fi
 mkdir -p "$UPLOAD_DIR" "$BACKUP_DIR"
 chown -R nextjs:nodejs "$UPLOAD_DIR" "$BACKUP_DIR" 2>/dev/null || true
 
+# In-container noon backup trigger (Asia/Tehran) — complements in-app instrumentation scheduler.
+if [ "${DISABLE_DAILY_BACKUP_SCHEDULER:-}" != "1" ]; then
+  echo "Starting daily backup poller (Tehran 12:00)..."
+  su-exec nextjs:nodejs node ./scripts/daily-backup-poller.mjs &
+fi
+
 exec su-exec nextjs:nodejs node server.js
