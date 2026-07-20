@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "70b934e047aa7bf7f79243b83ed4dc4c1da8b742",
+      "committedAt": "2026-07-20T12:49:50+03:30",
+      "title": "حذف انیمیشن فشرده شدن کارت‌ها هنگام کلیک",
+      "subject": "Remove card press-in click animation"
+    },
+    {
       "hash": "46cdc12f1e265f87b5d4006a6dbcd18e105c5864",
       "committedAt": "2026-07-19T12:14:55+03:30",
       "title": "افزودن نمودار دسته‌بندی و مرتب‌سازی بر اساس دسته در تبلیغات محیطی",

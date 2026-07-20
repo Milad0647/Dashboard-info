@@ -192,6 +192,14 @@ function isAllowedRawVideo(file: File): boolean {
   return RAW_VIDEO_EXTENSIONS.has(ext);
 }
 
+function isAllowedVideo(file: File): boolean {
+  if (VIDEO_TYPES.has(file.type)) return true;
+  // Some browsers send an empty MIME for .mp4/.mov — fall back to extension.
+  if (file.type && !file.type.startsWith("video/")) return false;
+  const ext = extensionFromFileName(file.name);
+  return ext === ".mp4" || ext === ".webm" || ext === ".mov" || ext === ".m4v";
+}
+
 export async function POST(request: Request) {
   const session = await getAuthSession();
   if (!session) {
@@ -228,7 +236,7 @@ export async function POST(request: Request) {
       : kind === "raw-image"
         ? isAllowedRawImage(file)
         : kind === "video" || kind === "activity-video"
-          ? VIDEO_TYPES.has(file.type)
+          ? isAllowedVideo(file)
           : kind === "audio"
             ? AUDIO_TYPES.has(file.type)
             : kind === "document"
@@ -249,9 +257,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: magic.error }, { status: 400 });
   }
 
-  const extension = isRawKind ? resolveUploadExtension(file) : extensionForMime(file.type);
+  const extension = isRawKind
+    ? resolveUploadExtension(file)
+    : extensionForMime(file.type) || extensionFromFileName(file.name);
   if (extension === ".svg") {
     return NextResponse.json({ error: "آپلود فایل SVG مجاز نیست" }, { status: 400 });
+  }
+  if (!extension) {
+    return NextResponse.json({ error: "پسوند فایل قابل تشخیص نیست" }, { status: 400 });
   }
   const filename = `${randomUUID()}${extension}`;
   const uploadsDir = getUploadsDir();

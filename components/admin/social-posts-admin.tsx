@@ -743,7 +743,8 @@ export function SocialPostsAdmin({
                   value={form.watch("mediaUrl") ?? ""}
                   onChange={(value) => form.setValue("mediaUrl", value)}
                   kind="video"
-                  accept="video/*"
+                  accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+                  maxFileSizeBytes={100 * 1024 * 1024}
                   coverImageUrl={form.watch("coverImageUrl")}
                   onAutoCoverGenerated={(coverUrl) => {
                     const currentCover = form.getValues("coverImageUrl")?.trim() ?? "";
@@ -758,6 +759,26 @@ export function SocialPostsAdmin({
                   value={form.watch("mediaUrl") ?? ""}
                   onChange={(value) => form.setValue("mediaUrl", value)}
                   kind="image"
+                  accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+                  maxFileSizeBytes={100 * 1024 * 1024}
+                  coverImageUrl={form.watch("coverImageUrl")}
+                  onAutoCoverGenerated={(coverUrl) => {
+                    const currentCover = form.getValues("coverImageUrl")?.trim() ?? "";
+                    if (!currentCover) {
+                      form.setValue("coverImageUrl", coverUrl);
+                    }
+                  }}
+                  onUploadedFile={(file) => {
+                    if (
+                      file.type.startsWith("video/") ||
+                      /\.(mp4|webm|mov|m4v)$/i.test(file.name)
+                    ) {
+                      const currentType = form.getValues("contentType");
+                      if (currentType === "image" || currentType === "text") {
+                        form.setValue("contentType", "video");
+                      }
+                    }
+                  }}
                 />
               )}
               {highlightMedia && (

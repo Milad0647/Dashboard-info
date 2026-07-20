@@ -80,7 +80,8 @@ export function MediaUpload({
   const [generatingCover, setGeneratingCover] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [showLinkEditor, setShowLinkEditor] = useState(false);
-  const shouldAutoVideoCover = autoVideoCover ?? kind === "video";
+  const shouldAutoVideoCover =
+    autoVideoCover ?? (kind === "video" || (accept ?? "").toLowerCase().includes("video"));
 
   const applyGeneratedCover = (coverUrl: string) => {
     if (!coverImageUrl?.trim()) {
@@ -91,8 +92,10 @@ export function MediaUpload({
   };
 
   const tryGenerateCoverFromFile = async (file: File, videoUrl: string) => {
-    if (!shouldAutoVideoCover || kind !== "video") return;
-    if (!file.type.startsWith("video/")) return;
+    if (!shouldAutoVideoCover) return;
+    const looksLikeVideo =
+      file.type.startsWith("video/") || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+    if (!looksLikeVideo) return;
     if (!onAutoCoverGenerated && !onCoverImageUrlChange) return;
     if (coverImageUrl?.trim()) return;
 
@@ -110,7 +113,7 @@ export function MediaUpload({
   };
 
   useEffect(() => {
-    if (!shouldAutoVideoCover || kind !== "video") return;
+    if (!shouldAutoVideoCover) return;
     if (!onAutoCoverGenerated && !onCoverImageUrlChange) return;
 
     const trimmed = value.trim();
@@ -148,6 +151,26 @@ export function MediaUpload({
     onCoverImageUrlChange,
   ]);
 
+  const resolveUploadKind = (file: File): "image" | "video" | "audio" | "activity-video" | "raw-image" | "raw-video" => {
+    if (uploadKind) return uploadKind;
+
+    const acceptLower = (accept ?? "").toLowerCase();
+    const acceptAllowsVideo = acceptLower.includes("video") || kind === "video";
+    const acceptAllowsAudio = acceptLower.includes("audio") || kind === "audio";
+    const acceptAllowsImage = acceptLower.includes("image") || kind === "image" || !accept;
+
+    if (file.type.startsWith("video/") && acceptAllowsVideo) return "video";
+    if (file.type.startsWith("audio/") && acceptAllowsAudio) return "audio";
+    if (file.type.startsWith("image/") && acceptAllowsImage) return "image";
+
+    // Extension fallback when browser leaves MIME empty (common for some .mov/.mp4 files)
+    if (acceptAllowsVideo && /\.(mp4|webm|mov|m4v)$/i.test(file.name)) return "video";
+    if (acceptAllowsAudio && /\.(mp3|wav|ogg|m4a|aac|webm)$/i.test(file.name)) return "audio";
+    if (acceptAllowsImage && /\.(jpe?g|png|webp|gif)$/i.test(file.name)) return "image";
+
+    return kind;
+  };
+
   const handleUpload = async (file: File) => {
     if (maxFileSizeBytes && file.size > maxFileSizeBytes) {
       const maxMb = Math.round(maxFileSizeBytes / (1024 * 1024));
@@ -162,9 +185,10 @@ export function MediaUpload({
 
     setUploading(true);
     try {
+      const resolvedKind = resolveUploadKind(file);
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("kind", uploadKind ?? kind);
+      formData.append("kind", resolvedKind);
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -196,7 +220,7 @@ export function MediaUpload({
       setShowLinkEditor(false);
       toast.success("فایل با موفقیت آپلود شد");
 
-      if (kind === "video" && file.type.startsWith("video/")) {
+      if (resolvedKind === "video" && (file.type.startsWith("video/") || /\.(mp4|webm|mov|m4v)$/i.test(file.name))) {
         await tryGenerateCoverFromFile(file, data.url);
       }
     } catch (error) {
@@ -214,6 +238,11 @@ export function MediaUpload({
     if (file) void handleUpload(file);
   };
 
+  const acceptAllowsVideo =
+    (accept ?? "").toLowerCase().includes("video") || kind === "video";
+  const valueIsDirectVideo = Boolean(value) && isDirectVideoUrl(value);
+  const treatAsVideo = kind === "video" || (acceptAllowsVideo && valueIsDirectVideo);
+
   const placeholder =
     kind === "video"
       ? fileOnly
@@ -221,17 +250,21 @@ export function MediaUpload({
         : "کد embed آپارات را اینجا paste کنید، یا لینک/فایل ویدیو"
       : kind === "audio"
         ? "فایل صوتی را آپلود کنید یا لینک مستقیم وارد کنید"
-        : "تصویر را بکشید و رها کنید یا لینک وارد کنید";
+        : acceptAllowsVideo
+          ? "تصویر یا ویدیو را بکشید و رها کنید یا لینک وارد کنید"
+          : "تصویر را بکشید و رها کنید یا لینک وارد کنید";
 
-  const isDirectVideo = kind === "video" && Boolean(value) && isDirectVideoUrl(value);
-  const isAparat = kind === "video" && Boolean(value) && isAparatVideoInput(value);
-  const videoPreviewUrl = kind === "video" ? resolveVideoThumbnail(value) : null;
+  const isDirectVideo = treatAsVideo && valueIsDirectVideo;
+  const isAparat = treatAsVideo && Boolean(value) && isAparatVideoInput(value);
+  const videoPreviewUrl = treatAsVideo ? resolveVideoThumbnail(value) : null;
   const aparatEmbedUrl = isAparat ? resolveVideoEmbedUrl(value) : "";
   // Hide raw /api/files URL once a playable uploaded video is set.
   const hideVideoLinkField = isDirectVideo && !showLinkEditor && !fileOnly;
   const isLocalUploadedImage =
-    kind === "image" && Boolean(value) && isLocalUploadedFileUrl(value);
+    !treatAsVideo && kind === "image" && Boolean(value) && isLocalUploadedFileUrl(value);
   const hideImageLinkField = isLocalUploadedImage && !showLinkEditor;
+  const hideMixedVideoLinkField =
+    kind === "image" && acceptAllowsVideo && isDirectVideo && !showLinkEditor;
   const showInlineInput = showLinkInput && !dropzoneContent;
   const isCardDropzone = Boolean(dropzoneContent);
 
@@ -305,7 +338,7 @@ export function MediaUpload({
               className="min-h-24 font-mono text-xs"
             />
           )
-        ) : !isCardDropzone && showInlineInput && hideImageLinkField ? null : !isCardDropzone && showInlineInput ? (
+        ) : !isCardDropzone && showInlineInput && (hideImageLinkField || hideMixedVideoLinkField) ? null : !isCardDropzone && showInlineInput ? (
           <div className="flex flex-col gap-2 sm:flex-row">
             {!(kind === "video" && isDirectVideo && fileOnly) && (
               <Input
@@ -377,18 +410,27 @@ export function MediaUpload({
           </div>
         )}
 
-        {!isCardDropzone && kind === "image" && (isLocalUploadedImage || !showInlineInput) && (
-          <div className={cn("flex flex-wrap items-center gap-2", hideImageLinkField ? "mt-0" : "mt-2")}>
+        {!isCardDropzone && kind === "image" && (isLocalUploadedImage || hideMixedVideoLinkField || !showInlineInput) && (
+          <div className={cn("flex flex-wrap items-center gap-2", hideImageLinkField || hideMixedVideoLinkField ? "mt-0" : "mt-2")}>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled={uploading}
+              disabled={uploading || generatingCover}
               onClick={() => inputRef.current?.click()}
             >
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {value ? "تعویض تصویر" : "انتخاب تصویر"}
+              {uploading || generatingCover ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {acceptAllowsVideo
+                ? value
+                  ? "تعویض فایل"
+                  : "انتخاب فایل"
+                : value
+                  ? "تعویض تصویر"
+                  : "انتخاب تصویر"}
             </Button>
+            {generatingCover && (
+              <span className="text-xs text-muted-foreground">در حال ساخت کاور از ثانیه ۳…</span>
+            )}
             {showLinkInput && value ? (
               <Button
                 type="button"
@@ -411,7 +453,7 @@ export function MediaUpload({
                 }}
               >
                 <Trash2 className="h-4 w-4" />
-                حذف تصویر
+                {acceptAllowsVideo ? "حذف فایل" : "حذف تصویر"}
               </Button>
             ) : null}
           </div>
@@ -487,7 +529,7 @@ export function MediaUpload({
         }}
       />
 
-      {showPreview && kind === "image" && (
+      {showPreview && kind === "image" && !treatAsVideo && (
         <div className="relative h-24 w-full overflow-hidden rounded-lg border bg-muted">
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -498,7 +540,7 @@ export function MediaUpload({
         </div>
       )}
 
-      {showPreview && kind === "video" && (
+      {showPreview && treatAsVideo && (
         <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-black">
           {isDirectVideo ? (
             <video
