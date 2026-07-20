@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "e1111a1e64b40aec8611e3e7dd7156577520ff87",
+      "committedAt": "2026-07-20T14:50:44+03:30",
+      "title": "نمایش وضعیت ورود و آنلاین بودن همه کاربران در یک بخش رصد",
+      "subject": "Unify audit presence into all-users roster"
+    },
+    {
       "hash": "16f3285f2117fb2263df087d8f507e77b4c29ba2",
       "committedAt": "2026-07-20T14:35:55+03:30",
       "title": "جدا کردن قوانین امتیازدهی خودکار از تنظیمات کمپین",
