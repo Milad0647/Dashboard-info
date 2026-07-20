@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import Image from "next/image";
 import { KPICard } from "@/components/public/kpi-card";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
@@ -14,7 +13,10 @@ import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PublicContentCard } from "@/components/public/public-content-card";
+import { VideoThumbnail } from "@/components/media/video-thumbnail";
+import { ImageZoom } from "@/components/ui/image-zoom";
 import { PUBLIC_MEDIA_GRID_CLASS } from "@/lib/public-media-section";
+import { isDirectVideoUrl } from "@/lib/media-utils";
 import type { CampaignSubmission, DataOwnerGroup, SubmissionSummary } from "@/lib/types";
 import { formatPersianDate, getStatusLabel } from "@/lib/utils";
 import { CheckCircle, Clock, Download, Eye, FileText, Users, XCircle } from "lucide-react";
@@ -25,6 +27,42 @@ interface SubmissionsSectionProps {
   submissions: CampaignSubmission[];
   groups: DataOwnerGroup<CampaignSubmission>[];
   summary: SubmissionSummary;
+}
+
+function SubmissionMedia({ submission }: { submission: CampaignSubmission }) {
+  const mediaUrl = submission.mediaUrl?.trim();
+  if (!mediaUrl) {
+    return (
+      <div className="flex h-full items-center justify-center bg-muted">
+        <Badge status={submission.status}>{getStatusLabel(submission.status)}</Badge>
+      </div>
+    );
+  }
+
+  const isVideo =
+    submission.submissionType === "ویدیو" ||
+    submission.submissionType.toLowerCase() === "video" ||
+    isDirectVideoUrl(mediaUrl);
+
+  if (isVideo) {
+    return (
+      <VideoThumbnail
+        videoUrl={mediaUrl}
+        alt={submission.title}
+        className="object-cover"
+      />
+    );
+  }
+
+  return (
+    <ImageZoom
+      src={mediaUrl}
+      alt={submission.title}
+      className="absolute inset-0 h-full w-full"
+      imgClassName="object-cover"
+      sizes="(max-width: 1024px) 50vw, 25vw"
+    />
+  );
 }
 
 function SubmissionCards({ submissions }: { submissions: CampaignSubmission[] }) {
@@ -39,21 +77,7 @@ function SubmissionCards({ submissions }: { submissions: CampaignSubmission[] })
           topics={sub.planLabels ?? (sub.planLabel ? [sub.planLabel] : [])}
           ownerUserId={sub.ownerUserId}
           ownerName={sub.ownerName}
-          media={
-            sub.mediaUrl ? (
-              <Image
-                src={sub.mediaUrl}
-                alt={sub.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 50vw, 25vw"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center bg-muted">
-                <Badge status={sub.status}>{getStatusLabel(sub.status)}</Badge>
-              </div>
-            )
-          }
+          media={<SubmissionMedia submission={sub} />}
           actions={
             sub.mediaUrl ? (
               <>
