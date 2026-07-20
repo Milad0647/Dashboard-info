@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronLeft, Clock, TrendingUp } from "lucide-react";
 import { ContentMixChart } from "@/components/charts/content-mix-chart";
+import { RecentActivityDetailModal } from "@/components/public/recent-activity-detail-modal";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type {
@@ -10,7 +11,7 @@ import type {
   ContentMixItem,
   RecentActivityItem,
 } from "@/lib/campaign-overview-insights";
-import { useCampaignScroll } from "@/lib/context/campaign-scroll-context";
+import type { PublicCampaignData } from "@/lib/types";
 import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
 const RECENT_ACTIVITY_INITIAL_LIMIT = 5;
@@ -66,110 +67,123 @@ export function ContentMixOverviewChart({ data }: { data: ContentMixItem[] }) {
 interface ContentMixAndActivitySectionProps {
   contentMix: ContentMixItem[];
   items: RecentActivityItem[];
+  data: PublicCampaignData;
 }
 
 export function ContentMixAndActivitySection({
   contentMix,
   items,
+  data,
 }: ContentMixAndActivitySectionProps) {
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       <ContentMixOverviewChart data={contentMix} />
-      <RecentActivityFeed items={items} />
+      <RecentActivityFeed items={items} data={data} />
     </div>
   );
 }
 
 interface RecentActivityFeedProps {
   items: RecentActivityItem[];
+  data: PublicCampaignData;
   initialLimit?: number;
   expandedLimit?: number;
 }
 
-function sectionIdFromHref(href?: string): string | null {
-  if (!href?.startsWith("#")) return null;
-  const id = href.slice(1).trim();
-  return id || null;
-}
-
 export function RecentActivityFeed({
   items,
+  data,
   initialLimit = RECENT_ACTIVITY_INITIAL_LIMIT,
   expandedLimit = RECENT_ACTIVITY_EXPANDED_LIMIT,
 }: RecentActivityFeedProps) {
   const [expanded, setExpanded] = useState(false);
-  const { scrollToSection } = useCampaignScroll();
+  const [selectedItem, setSelectedItem] = useState<RecentActivityItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const visibleLimit = expanded ? expandedLimit : initialLimit;
   const visibleItems = items.slice(0, visibleLimit);
   const remaining = Math.max(0, Math.min(items.length, expandedLimit) - visibleItems.length);
 
-  return (
-    <Card className="flex h-full flex-col">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between gap-2 text-base">
-          <span className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-primary" />
-            فعالیت اخیر
-          </span>
-          {visibleItems.length > 0 && (
-            <span className="text-xs font-normal text-muted-foreground">
-              {formatPersianNumber(visibleItems.length)} مورد اخیر
-            </span>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col">
-        {visibleItems.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            هنوز فعالیتی ثبت نشده است.
-          </p>
-        ) : (
-          <>
-            <ul className="divide-y">
-              {visibleItems.map((item) => {
-                const sectionId = sectionIdFromHref(item.href);
-                const isClickable = Boolean(sectionId);
-                const content = (
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <p className="text-sm font-semibold">{item.ownerName}</p>
-                    {item.title ? (
-                      <p className="line-clamp-2 text-sm text-foreground/90">{item.title}</p>
-                    ) : null}
-                    <p className="text-sm text-muted-foreground">{item.typeLabel}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatPersianDateTime(item.timestamp)}
-                    </p>
-                  </div>
-                );
+  const openItem = (item: RecentActivityItem) => {
+    if (!item.contentType || !item.contentId) return;
+    setSelectedItem(item);
+    setDetailOpen(true);
+  };
 
-                return (
-                  <li key={item.id} className="py-3 first:pt-0 last:pb-0">
-                    {isClickable ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          scrollToSection(sectionId!, item.contentId)
-                        }
-                        className="apple-press group flex w-full cursor-pointer items-start justify-between gap-3 rounded-lg px-2 py-1 text-right transition-colors hover:bg-muted/60"
-                      >
-                        {content}
-                        <ChevronLeft className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-0.5 group-hover:text-primary" />
-                      </button>
-                    ) : (
-                      <div className="flex items-start justify-between gap-3 px-2 py-1">{content}</div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-            {!expanded && remaining > 0 && (
-              <div className="mt-4">
-                <ShowMoreButton remaining={remaining} onClick={() => setExpanded(true)} />
-              </div>
+  return (
+    <>
+      <Card className="flex h-full flex-col">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between gap-2 text-base">
+            <span className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" />
+              فعالیت اخیر
+            </span>
+            {visibleItems.length > 0 && (
+              <span className="text-xs font-normal text-muted-foreground">
+                {formatPersianNumber(visibleItems.length)} مورد اخیر
+              </span>
             )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-1 flex-col">
+          {visibleItems.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              هنوز فعالیتی ثبت نشده است.
+            </p>
+          ) : (
+            <>
+              <ul className="divide-y">
+                {visibleItems.map((item) => {
+                  const isClickable = Boolean(item.contentType && item.contentId);
+                  const content = (
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="text-sm font-semibold">{item.ownerName}</p>
+                      {item.title ? (
+                        <p className="line-clamp-2 text-sm text-foreground/90">{item.title}</p>
+                      ) : null}
+                      <p className="text-sm text-muted-foreground">{item.typeLabel}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatPersianDateTime(item.timestamp)}
+                      </p>
+                    </div>
+                  );
+
+                  return (
+                    <li key={item.id} className="py-3 first:pt-0 last:pb-0">
+                      {isClickable ? (
+                        <button
+                          type="button"
+                          onClick={() => openItem(item)}
+                          className="apple-press group flex w-full cursor-pointer items-start justify-between gap-3 rounded-lg px-2 py-1 text-right transition-colors hover:bg-muted/60"
+                        >
+                          {content}
+                          <ChevronLeft className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-0.5 group-hover:text-primary" />
+                        </button>
+                      ) : (
+                        <div className="flex items-start justify-between gap-3 px-2 py-1">
+                          {content}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {!expanded && remaining > 0 && (
+                <div className="mt-4">
+                  <ShowMoreButton remaining={remaining} onClick={() => setExpanded(true)} />
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <RecentActivityDetailModal
+        item={selectedItem}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        data={data}
+      />
+    </>
   );
 }

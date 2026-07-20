@@ -36,7 +36,7 @@ import {
 } from "@/lib/filtered-campaign-kpis";
 import { isCampaignContentFilterActive } from "@/lib/campaign-content-filter";
 import { computeKpiTodayDeltas } from "@/lib/kpi-today-deltas";
-import { buildUploadActivityStats } from "@/lib/upload-activity-stats";
+import { buildUploadActivityStats, collectTodaysUploads } from "@/lib/upload-activity-stats";
 import type { PublicCampaignData } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 
@@ -57,6 +57,7 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
   );
 
   const uploadStats = useMemo(() => buildUploadActivityStats(data), [data]);
+  const todayUploads = useMemo(() => collectTodaysUploads(data), [data]);
   const todayDeltas = useMemo(() => computeKpiTodayDeltas(data, filter), [data, filter]);
   const campaignProgress = useMemo(
     () => computeCampaignProgress(settings.startDate, settings.endDate),
@@ -145,11 +146,15 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
 
       <div className="mt-6 space-y-4">
         <CampaignProgressWidget progress={campaignProgress} />
-        <ContentMixAndActivitySection contentMix={contentMix} items={recentActivity} />
+        <ContentMixAndActivitySection
+          contentMix={contentMix}
+          items={recentActivity}
+          data={data}
+        />
       </div>
 
       <div className="mt-6">
-        <UploadActivityChart stats={uploadStats} />
+        <UploadActivityChart stats={uploadStats} todayItems={todayUploads} />
       </div>
     </section>
   );
