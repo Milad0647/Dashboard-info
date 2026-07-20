@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -9,17 +10,26 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { TodayUploadsModal } from "@/components/public/today-uploads-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartTheme } from "@/lib/hooks/use-chart-theme";
-import type { UploadActivitySummary } from "@/lib/upload-activity-stats";
+import type {
+  TodayUploadListItem,
+  UploadActivitySummary,
+} from "@/lib/upload-activity-stats";
 import { formatPersianDateShort, formatPersianNumber } from "@/lib/utils";
 
 interface UploadActivityChartProps {
   stats: UploadActivitySummary;
+  todayItems?: TodayUploadListItem[];
 }
 
-export function UploadActivityChart({ stats }: UploadActivityChartProps) {
+export function UploadActivityChart({
+  stats,
+  todayItems = [],
+}: UploadActivityChartProps) {
   const chartTheme = useChartTheme();
+  const [todayOpen, setTodayOpen] = useState(false);
   const chartData = stats.series.map((point) => ({
     ...point,
     label: formatPersianDateShort(point.date),
@@ -28,12 +38,20 @@ export function UploadActivityChart({ stats }: UploadActivityChartProps) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
-        <Card className="py-3">
-          <CardContent className="px-4 py-0">
-            <p className="text-xs text-muted-foreground">امروز</p>
-            <p className="text-2xl font-bold">{formatPersianNumber(stats.today)}</p>
-          </CardContent>
-        </Card>
+        <button
+          type="button"
+          className="apple-press rounded-xl text-right outline-none ring-offset-background transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => setTodayOpen(true)}
+          aria-label="مشاهده آپلودهای امروز"
+        >
+          <Card className="h-full cursor-pointer border-primary/30 py-3 hover:border-primary/60 hover:bg-muted/30">
+            <CardContent className="px-4 py-0">
+              <p className="text-xs text-muted-foreground">امروز</p>
+              <p className="text-2xl font-bold">{formatPersianNumber(stats.today)}</p>
+              <p className="mt-1 text-[10px] text-primary">برای مشاهده کلیک کنید</p>
+            </CardContent>
+          </Card>
+        </button>
         <Card className="py-3">
           <CardContent className="px-4 py-0">
             <p className="text-xs text-muted-foreground">دیروز</p>
@@ -88,6 +106,8 @@ export function UploadActivityChart({ stats }: UploadActivityChartProps) {
           </div>
         </CardContent>
       </Card>
+
+      <TodayUploadsModal open={todayOpen} onOpenChange={setTodayOpen} items={todayItems} />
     </div>
   );
 }
