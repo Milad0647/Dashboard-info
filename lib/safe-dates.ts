@@ -45,6 +45,25 @@ export function getTehranOffsetDateIso(daysFromToday: number): string {
   return getTehranCalendarDateIso(base);
 }
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Inclusive start/end of a Tehran calendar day as ISO timestamptz strings.
+ * Iran has no DST; offset is fixed at +03:30.
+ */
+export function getTehranDayBoundsIso(
+  dateIso: string
+): { from: string; to: string } | null {
+  const trimmed = dateIso.trim();
+  if (!ISO_DATE_RE.test(trimmed)) return null;
+
+  const from = new Date(`${trimmed}T00:00:00+03:30`);
+  const to = new Date(`${trimmed}T23:59:59.999+03:30`);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return null;
+
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
 /**
  * Upload time for "new today" badges / charts: prefer createdAt so edits
  * that bump updatedAt do not re-count old content as today's uploads.
