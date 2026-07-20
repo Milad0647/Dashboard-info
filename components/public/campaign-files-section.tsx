@@ -12,6 +12,7 @@ import { flattenOwnerGroupsInSortOrder, shouldRenderChronologically } from "@/li
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
+import { useCampaignContentReveal } from "@/lib/hooks/use-campaign-content-reveal";
 import { PublicContentCard } from "@/components/public/public-content-card";
 import {
   fileHasDisplayContent,
@@ -40,6 +41,7 @@ function FileList({ files }: { files: CampaignFile[] }) {
         return (
           <PublicContentCard
             key={file.id}
+            scrollId={file.id}
             title={file.title}
             date={formatPersianDate(file.createdAt)}
             category={file.mimeType.split("/")[1]?.toUpperCase() || "فایل"}
@@ -107,11 +109,17 @@ export function CampaignFilesSection({ files, groups }: CampaignFilesSectionProp
   );
   const sectionVisible = useCampaignSectionVisibility(files.length, filteredFiles.length);
 
-  const { effectiveCount, hasMore, loadMore } = useSectionPagination(
+  const { effectiveCount, hasMore, loadMore, revealContentId } = useSectionPagination(
     filteredFiles.length,
     FILES_ITEMS_PER_ROW,
     3,
     `files:${filteredFiles.length}`
+  );
+
+  const fileIds = useMemo(() => filteredFiles.map((file) => file.id), [filteredFiles]);
+
+  useCampaignContentReveal("files", fileIds, (contentId) =>
+    revealContentId(contentId, fileIds)
   );
 
   const chronological = shouldRenderChronologically(filter.sortOrder);

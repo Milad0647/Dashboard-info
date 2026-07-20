@@ -54,6 +54,7 @@ export function PosterCard({
   return (
     <>
       <PublicContentCard
+        scrollId={id}
         title={title}
         date={displayVersion.date ? formatPersianDate(displayVersion.date) : null}
         category={category}

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { PublicOwnerTag } from "@/components/public/public-owner-tag";
 import { cn } from "@/lib/utils";
+import { campaignContentElementId } from "@/lib/campaign-content-scroll";
 
 interface PublicContentCardProps {
   title: string;
@@ -18,6 +19,7 @@ interface PublicContentCardProps {
   score?: ReactNode;
   actions?: ReactNode;
   className?: string;
+  scrollId?: string;
   onClick?: () => void;
 }
 
@@ -32,12 +34,14 @@ export function PublicContentCard({
   score,
   actions,
   className,
+  scrollId,
   onClick,
 }: PublicContentCardProps) {
   const normalizedTopics = [...new Set(topics.map((topic) => topic?.trim()).filter(Boolean))] as string[];
 
   return (
     <Card
+      id={scrollId ? campaignContentElementId(scrollId) : undefined}
       className={cn(
         "flex h-full min-w-0 flex-col gap-0 overflow-hidden py-0",
         onClick && "cursor-pointer",

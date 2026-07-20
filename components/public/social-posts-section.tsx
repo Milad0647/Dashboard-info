@@ -21,6 +21,7 @@ import {
   socialPostHasDisplayContent,
 } from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
+import { useCampaignContentReveal } from "@/lib/hooks/use-campaign-content-reveal";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { flattenOwnerGroupsInSortOrder, shouldRenderChronologically } from "@/lib/owner-groups";
@@ -111,6 +112,7 @@ function SocialPostCard({ post }: { post: SocialMediaPost }) {
   return (
     <>
       <PublicContentCard
+        scrollId={post.id}
         title={post.title}
         date={date}
         category={category}
@@ -204,9 +206,15 @@ export function SocialPostsSection({ posts, groups }: SocialPostsSectionProps) {
   );
   const sectionVisible = useCampaignSectionVisibility(posts.length, filteredPosts.length);
 
-  const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
+  const { visibleCount, hasMore, loadMore, revealContentId } = usePublicMediaPagination(
     filteredPosts.length,
     `social-posts:${filteredPosts.length}`
+  );
+
+  const postIds = useMemo(() => filteredPosts.map((post) => post.id), [filteredPosts]);
+
+  useCampaignContentReveal("social-posts", postIds, (contentId) =>
+    revealContentId(contentId, postIds)
   );
 
   const chronological = shouldRenderChronologically(filter.sortOrder);

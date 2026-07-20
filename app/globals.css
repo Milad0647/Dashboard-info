@@ -185,6 +185,21 @@
   transform: scale(0.97);
 }
 
+.campaign-content-highlight {
+  animation: campaign-content-pulse 2.2s var(--ease-apple-soft);
+}
+
+@keyframes campaign-content-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+  }
+  20%,
+  60% {
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.35);
+  }
+}
+
 .apple-media-zoom {
   transition: transform var(--duration-apple-slow) var(--ease-apple);
 }

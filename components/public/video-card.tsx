@@ -54,6 +54,7 @@ export function VideoCard({
   return (
     <>
       <PublicContentCard
+        scrollId={id}
         onClick={() => setModalOpen(true)}
         title={title}
         date={displayVersion.date ? formatPersianDate(displayVersion.date) : null}

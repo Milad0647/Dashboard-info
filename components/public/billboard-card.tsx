@@ -41,6 +41,7 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
 
   return (
     <PublicContentCard
+      scrollId={billboard.id}
       title={billboard.title}
       date={dateLabel || formatPersianDate(billboard.date)}
       category={categoryLabel}

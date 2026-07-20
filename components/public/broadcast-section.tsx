@@ -9,6 +9,7 @@ import { SectionTopCompaniesBox } from "@/components/public/section-top-companie
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
+import { useCampaignContentReveal } from "@/lib/hooks/use-campaign-content-reveal";
 import { flattenOwnerGroupsInSortOrder, shouldRenderChronologically } from "@/lib/owner-groups";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import { ShowMoreButton } from "@/components/public/show-more-button";
@@ -66,6 +67,7 @@ function BroadcastReportCard({ report }: { report: BroadcastReport }) {
   return (
     <>
       <PublicContentCard
+        scrollId={report.id}
         onClick={isVideo ? () => setVideoOpen(true) : undefined}
         title={report.title}
         date={formatPersianDate(report.reportDate)}
@@ -158,11 +160,17 @@ export function BroadcastSection({ reports, groups }: BroadcastSectionProps) {
   );
   const sectionVisible = useCampaignSectionVisibility(reports.length, filteredReports.length);
 
-  const { effectiveCount, hasMore, loadMore } = useSectionPagination(
+  const { effectiveCount, hasMore, loadMore, revealContentId } = useSectionPagination(
     filteredReports.length,
     BROADCAST_ITEMS_PER_ROW,
     3,
     `broadcast:${filteredReports.length}`
+  );
+
+  const reportIds = useMemo(() => filteredReports.map((report) => report.id), [filteredReports]);
+
+  useCampaignContentReveal("broadcast-reports", reportIds, (contentId) =>
+    revealContentId(contentId, reportIds)
   );
 
   const chronological = shouldRenderChronologically(filter.sortOrder);

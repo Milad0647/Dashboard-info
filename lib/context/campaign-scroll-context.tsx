@@ -1,10 +1,14 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  dispatchCampaignRevealContent,
+  scrollCampaignContentIntoView,
+} from "@/lib/campaign-content-scroll";
 
 interface CampaignScrollContextValue {
   forceSectionsMounted: boolean;
-  scrollToSection: (sectionId: string) => void;
+  scrollToSection: (sectionId: string, contentId?: string) => void;
 }
 
 const CampaignScrollContext = createContext<CampaignScrollContextValue>({
@@ -15,18 +19,35 @@ const CampaignScrollContext = createContext<CampaignScrollContextValue>({
 export function CampaignScrollProvider({ children }: { children: React.ReactNode }) {
   const [forceSectionsMounted, setForceSectionsMounted] = useState(false);
 
-  const scrollToSection = useCallback((sectionId: string) => {
+  const scrollToSection = useCallback((sectionId: string, contentId?: string) => {
     if (!sectionId) return;
     setForceSectionsMounted(true);
 
-    const run = () => {
+    const expandSection = () => {
       const target = document.getElementById(sectionId);
-      if (!target) return;
+      if (!target) return false;
       const collapsedToggle = target.querySelector<HTMLButtonElement>(
         'button[aria-expanded="false"]'
       );
       collapsedToggle?.click();
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      return true;
+    };
+
+    const run = () => {
+      expandSection();
+
+      if (contentId && scrollCampaignContentIntoView(contentId)) {
+        return;
+      }
+
+      const target = document.getElementById(sectionId);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      if (contentId) {
+        dispatchCampaignRevealContent(sectionId, contentId);
+      }
     };
 
     // Allow deferred sections to mount before scrolling.
@@ -34,6 +55,10 @@ export function CampaignScrollProvider({ children }: { children: React.ReactNode
       requestAnimationFrame(run);
       window.setTimeout(run, 120);
       window.setTimeout(run, 400);
+      window.setTimeout(run, 900);
+      if (contentId) {
+        window.setTimeout(run, 1600);
+      }
     });
   }, []);
 

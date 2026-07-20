@@ -17,8 +17,14 @@ export function usePublicMediaPagination(totalCount: number, resetKey: string, e
     setVisibleCount((count) => count + pageSize);
   }, [pageSize]);
 
+  const revealContentId = useCallback((contentId: string, orderedIds: string[]) => {
+    const index = orderedIds.indexOf(contentId);
+    if (index === -1) return;
+    setVisibleCount((count) => Math.max(count, index + 1));
+  }, []);
+
   const hasMore = enabled && !exportMode && visibleCount < totalCount;
   const effectiveVisibleCount = !enabled || exportMode ? totalCount : visibleCount;
 
-  return { visibleCount: effectiveVisibleCount, hasMore, loadMore };
+  return { visibleCount: effectiveVisibleCount, hasMore, loadMore, revealContentId };
 }

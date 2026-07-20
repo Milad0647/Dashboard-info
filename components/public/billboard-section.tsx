@@ -30,6 +30,7 @@ import {
   type PublicMediaSort,
 } from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
+import { useCampaignContentReveal } from "@/lib/hooks/use-campaign-content-reveal";
 import { useFilteredOwnableItems } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
@@ -126,9 +127,15 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
 
   const sectionVisible = useCampaignSectionVisibility(billboards.length, filtered.length);
 
-  const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
+  const { visibleCount, hasMore, loadMore, revealContentId } = usePublicMediaPagination(
     filtered.length,
     `${cityFilter}:${categoryFilter}:${statusFilter}:${search}:${sort}`
+  );
+
+  const billboardIds = useMemo(() => filtered.map((billboard) => billboard.id), [filtered]);
+
+  useCampaignContentReveal("billboards", billboardIds, (contentId) =>
+    revealContentId(contentId, billboardIds)
   );
 
   const chronological = shouldRenderChronologically(displaySort);

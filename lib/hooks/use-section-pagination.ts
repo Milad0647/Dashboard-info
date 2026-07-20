@@ -22,8 +22,14 @@ export function useSectionPagination(
     setVisibleCount((count) => count + pageSize);
   }, [pageSize]);
 
+  const revealContentId = useCallback((contentId: string, orderedIds: string[]) => {
+    const index = orderedIds.indexOf(contentId);
+    if (index === -1) return;
+    setVisibleCount((count) => Math.max(count, index + 1));
+  }, []);
+
   const effectiveCount = exportMode ? totalCount : Math.min(visibleCount, totalCount);
   const hasMore = !exportMode && effectiveCount < totalCount;
 
-  return { effectiveCount, hasMore, loadMore, pageSize };
+  return { effectiveCount, hasMore, loadMore, pageSize, revealContentId };
 }

@@ -10,6 +10,7 @@ import { flattenOwnerGroupsInSortOrder, shouldRenderChronologically } from "@/li
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
+import { useCampaignContentReveal } from "@/lib/hooks/use-campaign-content-reveal";
 import type { CampaignActivity, DataOwnerGroup } from "@/lib/types";
 import { formatPersianDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +83,7 @@ function ActivityCard({
 
   return (
     <PublicContentCard
+      scrollId={activity.id}
       title={activity.title}
       date={formatPersianDate(activity.activityDate)}
       category={getActivityTypeLabel(activity.activityType)}
@@ -242,9 +244,18 @@ export function ActivitiesSection({
   );
   const sectionVisible = useCampaignSectionVisibility(activities.length, filteredActivities.length);
 
-  const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
+  const { visibleCount, hasMore, loadMore, revealContentId } = usePublicMediaPagination(
     filteredActivities.length,
     `activities:${filteredActivities.length}`
+  );
+
+  const activityIds = useMemo(
+    () => filteredActivities.map((activity) => activity.id),
+    [filteredActivities]
+  );
+
+  useCampaignContentReveal(sectionId, activityIds, (contentId) =>
+    revealContentId(contentId, activityIds)
   );
 
   const chronological = shouldRenderChronologically(filter.sortOrder);

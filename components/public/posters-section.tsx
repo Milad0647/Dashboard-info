@@ -21,6 +21,7 @@ import {
   type PublicMediaSort,
 } from "@/lib/public-media-section";
 import { usePublicMediaPagination } from "@/lib/hooks/use-public-media-pagination";
+import { useCampaignContentReveal } from "@/lib/hooks/use-campaign-content-reveal";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
@@ -92,9 +93,15 @@ export function PostersSection({ categories: _categories, posters, groups }: Pos
   }, [filteredGroups, effectiveSort]);
   const sectionVisible = useCampaignSectionVisibility(posters.length, filteredPosters.length);
 
-  const { visibleCount, hasMore, loadMore } = usePublicMediaPagination(
+  const { visibleCount, hasMore, loadMore, revealContentId } = usePublicMediaPagination(
     filteredPosters.length,
     `${categoryFilter}:${sort}`
+  );
+
+  const posterIds = useMemo(() => filteredPosters.map((poster) => poster.id), [filteredPosters]);
+
+  useCampaignContentReveal("posters", posterIds, (contentId) =>
+    revealContentId(contentId, posterIds)
   );
 
   const chronological = shouldRenderChronologically(effectiveSort);

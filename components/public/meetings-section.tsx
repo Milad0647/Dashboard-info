@@ -14,6 +14,7 @@ import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
+import { useCampaignContentReveal } from "@/lib/hooks/use-campaign-content-reveal";
 import { useCampaignExportMode } from "@/lib/context/campaign-export-context";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import {
@@ -59,6 +60,7 @@ function MeetingPreviewCard({
 
   return (
     <PublicContentCard
+      scrollId={meeting.id}
       title={meeting.title}
       date={formatPersianDate(meeting.meetingDate)}
       category="جلسه و مصوبه"
@@ -168,11 +170,16 @@ function MeetingsGrid({
   isUnlocked: boolean;
   detailCache: Record<string, MeetingPublicDetail>;
 }) {
-  const { effectiveCount, hasMore, loadMore } = useSectionPagination(
+  const { effectiveCount, hasMore, loadMore, revealContentId } = useSectionPagination(
     meetings.length,
     MEETINGS_ITEMS_PER_ROW,
     3,
     `meetings:${meetings.length}`
+  );
+  const meetingIds = useMemo(() => meetings.map((meeting) => meeting.id), [meetings]);
+
+  useCampaignContentReveal("meetings", meetingIds, (contentId) =>
+    revealContentId(contentId, meetingIds)
   );
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingPublicPreview | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);

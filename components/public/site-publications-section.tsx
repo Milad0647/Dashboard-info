@@ -13,6 +13,7 @@ import { flattenOwnerGroupsInSortOrder, shouldRenderChronologically } from "@/li
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { useSectionPagination } from "@/lib/hooks/use-section-pagination";
+import { useCampaignContentReveal } from "@/lib/hooks/use-campaign-content-reveal";
 import { Button } from "@/components/ui/button";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { PublicContentCard } from "@/components/public/public-content-card";
@@ -56,6 +57,7 @@ function PublicationCard({ item }: { item: SocialMediaPost }) {
   return (
     <>
       <PublicContentCard
+        scrollId={item.id}
         title={item.title}
         date={date}
         category="انتشار در سایت"
@@ -135,11 +137,20 @@ export function SitePublicationsSection({ publications, groups }: SitePublicatio
   );
   const sectionVisible = useCampaignSectionVisibility(publications.length, filteredPublications.length);
 
-  const { effectiveCount, hasMore, loadMore } = useSectionPagination(
+  const { effectiveCount, hasMore, loadMore, revealContentId } = useSectionPagination(
     filteredPublications.length,
     PUBLICATIONS_ITEMS_PER_ROW,
     3,
     `site-publications:${filteredPublications.length}`
+  );
+
+  const publicationIds = useMemo(
+    () => filteredPublications.map((item) => item.id),
+    [filteredPublications]
+  );
+
+  useCampaignContentReveal("site-publications", publicationIds, (contentId) =>
+    revealContentId(contentId, publicationIds)
   );
 
   const chronological = shouldRenderChronologically(filter.sortOrder);

@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "0c4693aea4fcc1da4490de0ac212fb9db00753bb",
+      "committedAt": "2026-07-20T12:53:42+03:30",
+      "title": "امکان آپلود ویدیو در پست‌های شبکه اجتماعی",
+      "subject": "Allow video uploads in social posts media field"
+    },
+    {
       "hash": "70b934e047aa7bf7f79243b83ed4dc4c1da8b742",
       "committedAt": "2026-07-20T12:49:50+03:30",
       "title": "حذف انیمیشن فشرده شدن کارت‌ها هنگام کلیک",

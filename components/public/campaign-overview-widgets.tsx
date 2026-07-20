@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, TrendingUp } from "lucide-react";
+import { ChevronLeft, Clock, TrendingUp } from "lucide-react";
 import { ContentMixChart } from "@/components/charts/content-mix-chart";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -128,9 +128,13 @@ export function RecentActivityFeed({
             <ul className="divide-y">
               {visibleItems.map((item) => {
                 const sectionId = sectionIdFromHref(item.href);
+                const isClickable = Boolean(sectionId);
                 const content = (
-                  <div className="min-w-0 space-y-1">
+                  <div className="min-w-0 flex-1 space-y-1">
                     <p className="text-sm font-semibold">{item.ownerName}</p>
+                    {item.title ? (
+                      <p className="line-clamp-2 text-sm text-foreground/90">{item.title}</p>
+                    ) : null}
                     <p className="text-sm text-muted-foreground">{item.typeLabel}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatPersianDateTime(item.timestamp)}
@@ -140,16 +144,19 @@ export function RecentActivityFeed({
 
                 return (
                   <li key={item.id} className="py-3 first:pt-0 last:pb-0">
-                    {sectionId ? (
+                    {isClickable ? (
                       <button
                         type="button"
-                        onClick={() => scrollToSection(sectionId)}
-                        className="apple-press flex w-full items-start justify-between gap-3 rounded-md text-right hover:bg-muted/50"
+                        onClick={() =>
+                          scrollToSection(sectionId!, item.contentId)
+                        }
+                        className="apple-press group flex w-full cursor-pointer items-start justify-between gap-3 rounded-lg px-2 py-1 text-right transition-colors hover:bg-muted/60"
                       >
                         {content}
+                        <ChevronLeft className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-0.5 group-hover:text-primary" />
                       </button>
                     ) : (
-                      <div className="flex items-start justify-between gap-3">{content}</div>
+                      <div className="flex items-start justify-between gap-3 px-2 py-1">{content}</div>
                     )}
                   </li>
                 );
