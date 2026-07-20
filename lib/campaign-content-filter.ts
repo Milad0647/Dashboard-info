@@ -26,7 +26,11 @@ function rollingDayRange(dayCountInclusive: number): { from: string; to: string 
 export function resolveDateFilterRange(filter: CampaignDateFilter): { from: string; to: string } | null {
   if (filter.datePreset === OWNER_DATE_ALL) return null;
 
-  // this_week / this_month map to rolling last 7 / last 30 days (inclusive).
+  // today / this_week / this_month map to rolling last 1 / 7 / 30 days (inclusive).
+  if (filter.datePreset === "today") {
+    return rollingDayRange(1);
+  }
+
   if (filter.datePreset === "this_week") {
     return rollingDayRange(7);
   }

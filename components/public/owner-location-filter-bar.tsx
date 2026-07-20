@@ -138,6 +138,7 @@ export function OwnerLocationFilterBar() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={OWNER_DATE_ALL}>همه زمان‌ها</SelectItem>
+            <SelectItem value="today">امروز</SelectItem>
             <SelectItem value="this_week">۷ روز اخیر</SelectItem>
             <SelectItem value="this_month">۳۰ روز اخیر</SelectItem>
             <SelectItem value="custom">تاریخ دستی</SelectItem>

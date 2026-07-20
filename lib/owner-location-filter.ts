@@ -10,7 +10,7 @@ export const OWNER_DATE_ALL = "all";
 export const OWNER_PLAN_ALL = "all";
 export const OWNER_TOP_SCORED = "top_scored";
 
-export type CampaignDatePreset = "all" | "this_week" | "this_month" | "custom";
+export type CampaignDatePreset = "all" | "today" | "this_week" | "this_month" | "custom";
 export type CampaignContentSort = "default" | "newest" | "oldest" | "top_scored";
 
 export interface CampaignDateFilter {

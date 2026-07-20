@@ -12,6 +12,7 @@ import { formatPersianDate } from "@/lib/utils";
 import { formatPlanLabelDisplay } from "@/lib/content-topics";
 
 const DATE_PRESET_LABELS: Record<string, string> = {
+  today: "امروز",
   this_week: "۷ روز اخیر",
   this_month: "۳۰ روز اخیر",
   custom: "بازه دستی",
