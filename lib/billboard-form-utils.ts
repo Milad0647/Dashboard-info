@@ -17,8 +17,13 @@ export function parseAreaSqmFromBillboard(billboard: Billboard): string {
   return notesMatch?.[1] ?? "";
 }
 
+/**
+ * Descriptive address / description text for the form.
+ * Do not fall back to `location` — that is often the axis/title when description
+ * was never filled, which hid the completeness highlight for "توضیحات".
+ */
 export function parseAddressFromBillboard(billboard: Billboard): string {
-  return billboard.description?.trim() || billboard.location?.trim() || "";
+  return billboard.description?.trim() || "";
 }
 
 export function periodsToLegacyDraft(

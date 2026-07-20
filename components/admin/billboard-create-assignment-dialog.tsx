@@ -355,45 +355,46 @@ export function BillboardCreateAssignmentDialog({
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>متراژ (متر مربع)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.1"
-                value={areaSqm}
-                onChange={(event) => setAreaSqm(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label
-                className={cn(
-                  highlightLocation && "text-destructive",
-                  !highlightLocation && highlightDescription && "text-amber-700 dark:text-amber-300"
-                )}
-              >
-                آدرس توصیفی
-              </Label>
-              <Input
-                value={address}
-                onChange={(event) => setAddress(event.target.value)}
-                className={cn(
-                  highlightLocation && "border-destructive focus-visible:ring-destructive",
-                  !highlightLocation &&
-                    highlightDescription &&
-                    "border-amber-500 focus-visible:ring-amber-500"
-                )}
-              />
-              {highlightLocation && (
-                <p className="text-xs text-destructive">آدرس/موقعیت خالی است؛ بهتر است تکمیل شود.</p>
+          <div className="space-y-2">
+            <Label>متراژ (متر مربع)</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.1"
+              value={areaSqm}
+              onChange={(event) => setAreaSqm(event.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label
+              className={cn(
+                highlightLocation && "text-destructive",
+                !highlightLocation && highlightDescription && "text-amber-700 dark:text-amber-300"
               )}
-              {highlightDescription && !highlightLocation && (
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  توضیحات خالی است؛ بهتر است تکمیل شود.
-                </p>
+            >
+              توضیحات
+            </Label>
+            <Textarea
+              value={address}
+              onChange={(event) => setAddress(event.target.value)}
+              rows={2}
+              placeholder="توضیحات یا آدرس توصیفی موقعیت (اختیاری)"
+              className={cn(
+                highlightLocation && "border-destructive focus-visible:ring-destructive",
+                !highlightLocation &&
+                  highlightDescription &&
+                  "border-amber-500 focus-visible:ring-amber-500"
               )}
-            </div>
+            />
+            {highlightLocation && (
+              <p className="text-xs text-destructive">آدرس/موقعیت خالی است؛ بهتر است تکمیل شود.</p>
+            )}
+            {highlightDescription && !highlightLocation && (
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                توضیحات خالی است؛ بهتر است تکمیل شود.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
