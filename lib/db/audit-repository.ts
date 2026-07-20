@@ -441,6 +441,77 @@ export async function pgGetOnlineUsers(withinMinutes = 5): Promise<
   });
 }
 
+/** All DB users with today-login and online (5-minute) presence flags. */
+export async function pgGetAllUsersPresence(
+  withinMinutes = 5
+): Promise<import("@/lib/audit/types").AuditUserPresence[]> {
+  if (!isPostgresConfigured()) return [];
+
+  const sql = getSql();
+  const minutes = Math.min(Math.max(withinMinutes, 1), 60);
+  const todayStart = getTehranTodayStart();
+  const rows = await sql`
+    WITH today_logins AS (
+      SELECT
+        e.actor_user_id,
+        MAX(e.created_at) AS last_login_at,
+        COUNT(*)::int AS login_count
+      FROM user_audit_events e
+      WHERE e.action = 'auth.login'
+        AND e.created_at >= ${todayStart}
+        AND e.actor_user_id IS NOT NULL
+      GROUP BY e.actor_user_id
+    ),
+    online AS (
+      SELECT DISTINCT ON (e.actor_user_id)
+        e.actor_user_id,
+        e.created_at AS last_seen_at,
+        e.path
+      FROM user_audit_events e
+      WHERE e.created_at >= now() - (${minutes} * interval '1 minute')
+        AND e.action <> 'auth.login_failed'
+        AND e.actor_user_id IS NOT NULL
+      ORDER BY e.actor_user_id, e.created_at DESC
+    )
+    SELECT
+      u.id,
+      u.name,
+      u.email,
+      u.role,
+      (tl.actor_user_id IS NOT NULL) AS logged_in_today,
+      COALESCE(tl.login_count, 0) AS login_count_today,
+      tl.last_login_at,
+      (o.actor_user_id IS NOT NULL) AS is_online,
+      o.last_seen_at,
+      o.path
+    FROM users u
+    LEFT JOIN today_logins tl ON tl.actor_user_id = u.id
+    LEFT JOIN online o ON o.actor_user_id = u.id
+    ORDER BY
+      (o.actor_user_id IS NOT NULL) DESC,
+      (tl.actor_user_id IS NOT NULL) DESC,
+      u.name ASC NULLS LAST,
+      u.email ASC
+  `;
+
+  return rows.map((row) => ({
+    userId: String(row.id),
+    name: String(row.name ?? "").trim() || String(row.email ?? "").trim() || "ناشناس",
+    email: String(row.email ?? "").trim(),
+    role: String(row.role ?? "").trim(),
+    loggedInToday: Boolean(row.logged_in_today),
+    loginCountToday: Number(row.login_count_today ?? 0),
+    lastLoginAt: row.last_login_at
+      ? new Date(String(row.last_login_at)).toISOString()
+      : null,
+    isOnline: Boolean(row.is_online),
+    lastSeenAt: row.last_seen_at
+      ? new Date(String(row.last_seen_at)).toISOString()
+      : null,
+    path: row.path ? String(row.path) : null,
+  }));
+}
+
 export async function pgGetAuditTopActions(limit = 12): Promise<AuditActionSummary[]> {
   if (!isPostgresConfigured()) return [];
 

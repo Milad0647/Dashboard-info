@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "16f3285f2117fb2263df087d8f507e77b4c29ba2",
+      "committedAt": "2026-07-20T14:35:55+03:30",
+      "title": "جدا کردن قوانین امتیازدهی خودکار از تنظیمات کمپین",
+      "subject": "Move scoring rules to dedicated admin page"
+    },
+    {
       "hash": "40689945dbfe24fd834c8ef3e252944ed586b285",
       "committedAt": "2026-07-20T14:34:24+03:30",
       "title": "رفع همپوشانی فیلد امتیاز با دکمه‌های کارت محتوا",

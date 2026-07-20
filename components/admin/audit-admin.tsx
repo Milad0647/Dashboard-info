@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
   AlertTriangle,
+  Check,
   FileStack,
   LogIn,
   MousePointerClick,
@@ -11,6 +12,8 @@ import {
   Radio,
   ShieldAlert,
   TriangleAlert,
+  Users,
+  X,
 } from "lucide-react";
 import {
   Area,
@@ -48,6 +51,7 @@ import type {
   AuditCategory,
   AuditDashboardData,
   AuditEvent,
+  AuditUserPresence,
   UserContentContribution,
 } from "@/lib/audit/types";
 
@@ -115,6 +119,93 @@ function UserCell({
             {resolvedEmail}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function UserPresenceCard({ user }: { user: AuditUserPresence }) {
+  const { displayName, showEmail, email } = resolveUserDisplay(user.name, user.email);
+
+  return (
+    <div
+      className={`rounded-lg border px-3 py-3 flex items-start gap-3 ${
+        user.loggedInToday
+          ? "bg-card border-border"
+          : "bg-muted/30 border-dashed border-muted-foreground/25"
+      }`}
+    >
+      {user.isOnline ? (
+        <span className="relative mt-1.5 flex h-2.5 w-2.5 shrink-0" title="آنلاین">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+        </span>
+      ) : (
+        <span
+          className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-muted-foreground/30"
+          title="آفلاین"
+        />
+      )}
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-medium truncate" title={displayName}>
+            {displayName}
+          </p>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {user.loggedInToday ? (
+              <span
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600"
+                title="امروز وارد شده"
+              >
+                <Check className="h-3.5 w-3.5" strokeWidth={3} />
+              </span>
+            ) : (
+              <span
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                title="امروز وارد نشده"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </span>
+            )}
+            <Badge variant="outline">{getAuditRoleLabel(user.role)}</Badge>
+          </div>
+        </div>
+
+        {showEmail && email && (
+          <p className="text-xs text-muted-foreground truncate mt-0.5" dir="ltr" title={email}>
+            {email}
+          </p>
+        )}
+
+        <div className="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
+          <p>
+            {user.isOnline ? (
+              <span className="font-medium text-emerald-600">آنلاین</span>
+            ) : (
+              <span>آفلاین</span>
+            )}
+            {user.lastSeenAt && (
+              <> · آخرین فعالیت: {formatPersianDateTime(user.lastSeenAt)}</>
+            )}
+          </p>
+          {user.loggedInToday ? (
+            <p>
+              ورود امروز
+              {user.lastLoginAt ? `: ${formatPersianDateTime(user.lastLoginAt)}` : ""}
+              {user.loginCountToday > 1
+                ? ` · ${formatPersianNumber(user.loginCountToday)} بار`
+                : ""}
+            </p>
+          ) : (
+            <p className="font-medium text-muted-foreground/80">امروز وارد نشده</p>
+          )}
+          {user.path && (
+            <p className="truncate" dir="ltr" title={user.path}>
+              {user.path}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -442,30 +533,15 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
     [data?.topClicks]
   );
 
-  // Group today's logins by user so repeated logins show as one card with a count
-  const groupedLoginsToday = useMemo(() => {
-    const groups = new Map<
-      string,
-      { event: AuditEvent; loginCount: number }
-    >();
-    for (const event of data?.loginsTodayList ?? []) {
-      const key =
-        event.actorEmail?.trim().toLowerCase() ||
-        event.actorName?.trim() ||
-        event.id;
-      const existing = groups.get(key);
-      if (existing) {
-        existing.loginCount += 1;
-        // Keep the most recent login as the card's representative event
-        if (new Date(event.createdAt) > new Date(existing.event.createdAt)) {
-          existing.event = event;
-        }
-      } else {
-        groups.set(key, { event, loginCount: 1 });
-      }
-    }
-    return Array.from(groups.values());
-  }, [data?.loginsTodayList]);
+  const presenceStats = useMemo(() => {
+    const users = data?.allUsersPresence ?? [];
+    return {
+      total: users.length,
+      online: users.filter((user) => user.isOnline).length,
+      loggedInToday: users.filter((user) => user.loggedInToday).length,
+      absentToday: users.filter((user) => !user.loggedInToday).length,
+    };
+  }, [data?.allUsersPresence]);
 
   // Group today's failed logins by the entered identifier + IP so repeated
   // attempts from the same source collapse into a single card with a count.
@@ -575,61 +651,43 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
       <div className="grid grid-cols-1 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <LogIn className="h-4 w-4 text-primary" />
-              چه کسانی امروز وارد شده‌اند
+            <CardTitle className="text-base flex flex-wrap items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              وضعیت همه کاربران
               <Badge variant="outline" className="mr-1">
-                {formatPersianNumber(
-                  groupedLoginsToday.length > 0
-                    ? groupedLoginsToday.length
-                    : summary.loginsToday
-                )}
+                {formatPersianNumber(presenceStats.total)}
               </Badge>
+              <span className="flex flex-wrap items-center gap-2 text-xs font-normal text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  </span>
+                  آنلاین {formatPersianNumber(presenceStats.online)}
+                </span>
+                <span className="text-border">|</span>
+                <span className="inline-flex items-center gap-1">
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  ورود امروز {formatPersianNumber(presenceStats.loggedInToday)}
+                </span>
+                <span className="text-border">|</span>
+                <span className="inline-flex items-center gap-1">
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
+                  نیامده امروز {formatPersianNumber(presenceStats.absentToday)}
+                </span>
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            {data.loginsTodayList.length === 0 ? (
+            {(data.allUsersPresence ?? []).length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                امروز هنوز ورود جدیدی ثبت نشده است.
+                هنوز کاربری در سیستم ثبت نشده است.
               </p>
             ) : (
-              <div className="max-h-[360px] overflow-y-auto">
+              <div className="max-h-[520px] overflow-y-auto">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
-                  {groupedLoginsToday.map(({ event, loginCount }) => (
-                    <div
-                      key={event.id}
-                      className="rounded-lg border bg-card px-3 py-3 flex items-start gap-3"
-                    >
-                      <LogIn className="mt-1 h-4 w-4 shrink-0 text-primary" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-medium truncate">
-                            {resolveUserDisplay(event.actorName, event.actorEmail).displayName}
-                          </p>
-                          <Badge variant="outline" className="shrink-0">
-                            {getAuditRoleLabel(event.actorRole)}
-                          </Badge>
-                        </div>
-                        {event.actorEmail && (
-                          <p className="text-xs text-muted-foreground truncate mt-0.5" dir="ltr">
-                            {event.actorEmail}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1.5">
-                          آخرین ورود: {formatPersianDateTime(event.createdAt)}
-                        </p>
-                        {loginCount > 1 && (
-                          <p className="text-xs font-medium text-primary mt-0.5">
-                            {formatPersianNumber(loginCount)} بار وارد شده
-                          </p>
-                        )}
-                        {event.ipAddress && (
-                          <p className="text-xs text-muted-foreground font-mono mt-0.5" dir="ltr">
-                            {event.ipAddress}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                  {(data.allUsersPresence ?? []).map((user) => (
+                    <UserPresenceCard key={user.userId} user={user} />
                   ))}
                 </div>
               </div>
@@ -696,62 +754,6 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-            </span>
-            کاربران آنلاین الان
-            <Badge variant="success" className="mr-1">
-              {formatPersianNumber(data.onlineUsers.length)}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data.onlineUsers.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-2">
-              در ۵ دقیقه اخیر هیچ کاربری آنلاین نبوده است.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {data.onlineUsers.map((user) => (
-                <div
-                  key={user.actorKey}
-                  className="rounded-lg border bg-card px-3 py-3 flex items-start gap-3"
-                >
-                  <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium truncate">
-                        {resolveUserDisplay(user.actorName, user.actorEmail).displayName}
-                      </p>
-                      <Badge variant="outline" className="shrink-0">
-                        {getAuditRoleLabel(user.actorRole)}
-                      </Badge>
-                    </div>
-                    {user.actorEmail && (
-                      <p className="text-xs text-muted-foreground truncate mt-0.5" dir="ltr">
-                        {user.actorEmail}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1.5">
-                      آخرین فعالیت: {formatPersianDateTime(user.lastSeenAt)}
-                    </p>
-                    {user.path && (
-                      <p className="text-xs text-muted-foreground truncate mt-0.5" dir="ltr">
-                        {user.path}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <Tabs defaultValue="overview">
         <TabsList>

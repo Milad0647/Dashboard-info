@@ -90,6 +90,20 @@ export interface OnlineUser {
   path: string | null;
 }
 
+/** All registered users with today-login + live presence flags for the audit roster. */
+export interface AuditUserPresence {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  loggedInToday: boolean;
+  loginCountToday: number;
+  lastLoginAt: string | null;
+  isOnline: boolean;
+  lastSeenAt: string | null;
+  path: string | null;
+}
+
 export interface AuditActionSummary {
   action: string;
   category: AuditCategory;
@@ -144,6 +158,7 @@ export interface AuditDashboardData {
   loginsTodayList: AuditEvent[];
   failedLoginsTodayList: AuditEvent[];
   onlineUsers: OnlineUser[];
+  allUsersPresence: AuditUserPresence[];
   topActions: AuditActionSummary[];
   topPaths: AuditPathSummary[];
   topClicks: AuditClickSummary[];
