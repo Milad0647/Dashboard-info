@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "53d76408fda29d13e25176d340920323cef6a729",
+      "committedAt": "2026-07-20T19:49:26+03:30",
+      "title": "رفع پشتیبان‌گیری خودکار روزانه ساعت ۱۲ ظهر روی سرور",
+      "subject": "Fix Tehran noon daily backup when CRON_SECRET is missing"
+    },
+    {
+      "hash": "8e43c743431b25a3cb8192484bf146005d09e54b",
+      "committedAt": "2026-07-20T19:48:42+03:30",
+      "title": "افزودن گزارش کامل هر کاربر در رصد با نمودار و خط‌زمانی حضور آنلاین",
+      "subject": "Add full per-user Rasad profile with charts and online timeline"
+    },
+    {
       "hash": "858691edf103d1f5ea7042bd1ed1d84f9468eb8a",
       "committedAt": "2026-07-20T19:28:02+03:30",
       "title": "پشتیبان‌گیری خودکار روزانه ساعت ۱۲ ظهر به‌وقت تهران داخل خود برنامه",

@@ -22,7 +22,7 @@ export default async function ScoringRulesPage({ searchParams }: PageProps) {
   if (!data.settings) redirect("/admin/campaigns");
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-3xl">
       <ScoringRulesAdmin initialSettings={data.settings} />
     </div>
   );
