@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ArrowRight, MapPin, Medal, Star, Trophy, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
 } from "@/components/public/campaign-header-auth";
 import { SectionHeader } from "@/components/public/section-header";
 import { LeaderboardBillboardsModal } from "@/components/public/leaderboard-billboards-modal";
+import { LeaderboardContentModal } from "@/components/public/leaderboard-content-modal";
 import { UserContentScoreModal } from "@/components/public/user-content-score-modal";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ScrollToTopButton } from "@/components/ui/scroll-to-top-button";
@@ -22,8 +23,10 @@ import {
   buildUserLeaderboard,
   buildUserRatingLeaderboard,
   collectLeaderboardBillboards,
+  collectLeaderboardContentByMetric,
   collectUserContentItems,
   getProvinceRankBadge,
+  type LeaderboardMetricLabel,
   type ProvinceLeaderboardEntry,
   type ProvinceLeaderboardMetrics,
   type UserLeaderboardEntry,
@@ -39,31 +42,35 @@ interface CityLeaderboardDashboardProps {
   headerUser?: CampaignHeaderUser | null;
 }
 
-const SECTION_HREF_BY_METRIC_LABEL: Record<string, string> = {
-  پوستر: "posters",
-  ویدیو: "videos",
-  "شبکه اجتماعی": "social-posts",
-  "انتشار سایت": "site-publications",
-  اقدام: "activities",
-  فایل: "files",
-};
-
 const BILLBOARD_METRIC_LABELS = new Set(["تبلیغات محیطی", "متراژ"]);
 
-interface BillboardModalScope {
+const CONTENT_METRIC_LABELS = new Set<LeaderboardMetricLabel>([
+  "پوستر",
+  "ویدیو",
+  "شبکه اجتماعی",
+  "انتشار سایت",
+  "اقدام",
+  "فایل",
+]);
+
+interface ModalScope {
   title: string;
   provinceKey?: string;
   userKey?: string;
 }
 
+interface ContentModalScope extends ModalScope {
+  metricLabel: LeaderboardMetricLabel;
+}
+
 function MetricsBreakdown({
   entry,
-  slug,
   onOpenBillboards,
+  onOpenContent,
 }: {
   entry: ProvinceLeaderboardMetrics;
-  slug: string;
   onOpenBillboards?: () => void;
+  onOpenContent?: (metricLabel: LeaderboardMetricLabel) => void;
 }) {
   const items = [
     { label: "تبلیغات محیطی", value: entry.billboards },
@@ -102,29 +109,34 @@ function MetricsBreakdown({
           );
         }
 
-        const sectionId = SECTION_HREF_BY_METRIC_LABEL[item.label];
-        if (!sectionId) {
+        if (
+          CONTENT_METRIC_LABELS.has(item.label as LeaderboardMetricLabel) &&
+          onOpenContent
+        ) {
           return (
-            <Badge key={item.label} variant="outline" className="text-[11px]">
-              {label}
-            </Badge>
+            <button
+              key={item.label}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenContent(item.label as LeaderboardMetricLabel);
+              }}
+              className="inline-flex"
+            >
+              <Badge
+                variant="outline"
+                className="cursor-pointer text-[11px] hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary hover:shadow-sm"
+              >
+                {label}
+              </Badge>
+            </button>
           );
         }
 
         return (
-          <Link
-            key={item.label}
-            href={`/campaign/${slug}#${sectionId}`}
-            onClick={(event) => event.stopPropagation()}
-            className="inline-flex"
-          >
-            <Badge
-              variant="outline"
-              className="cursor-pointer text-[11px] hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary hover:shadow-sm"
-            >
-              {label}
-            </Badge>
-          </Link>
+          <Badge key={item.label} variant="outline" className="text-[11px]">
+            {label}
+          </Badge>
         );
       })}
     </div>
@@ -223,7 +235,8 @@ export function CityLeaderboardDashboard({
   const { settings } = data;
   const [view, setView] = useState<LeaderboardView>("province");
   const [selectedUser, setSelectedUser] = useState<UserLeaderboardEntry | null>(null);
-  const [billboardScope, setBillboardScope] = useState<BillboardModalScope | null>(null);
+  const [billboardScope, setBillboardScope] = useState<ModalScope | null>(null);
+  const [contentScope, setContentScope] = useState<ContentModalScope | null>(null);
 
   const provinces = useMemo(() => buildProvinceLeaderboard(data), [data]);
   const users = useMemo(() => buildUserLeaderboard(data), [data]);
@@ -248,6 +261,30 @@ export function CityLeaderboardDashboard({
           })
         : [],
     [billboardScope, data]
+  );
+
+  const scopedContentItems = useMemo(
+    () =>
+      contentScope
+        ? collectLeaderboardContentByMetric(data, contentScope.metricLabel, {
+            provinceKey: contentScope.provinceKey,
+            userKey: contentScope.userKey,
+          })
+        : [],
+    [contentScope, data]
+  );
+
+  const openContentModal = useCallback(
+    (
+      metricLabel: LeaderboardMetricLabel,
+      scope: ModalScope
+    ) => {
+      setContentScope({
+        ...scope,
+        metricLabel,
+      });
+    },
+    []
   );
 
   const chartData = useMemo(
@@ -287,13 +324,7 @@ export function CityLeaderboardDashboard({
               <ArrowRight className="h-3 w-3 transition-transform duration-[var(--duration-apple)] ease-[var(--ease-apple)] group-hover:translate-x-0.5" />
               بازگشت به گزارش کمپین
             </Link>
-            <h1 className="text-lg font-bold">
-              {isProvinceView
-                ? "رتبه‌بندی استان‌ها"
-                : view === "rating"
-                  ? "رتبه‌بندی بر اساس امتیاز"
-                  : "رتبه‌بندی کاربران"}
-            </h1>
+            <h1 className="text-lg font-bold">رتبه‌بندی</h1>
             <p className="text-sm text-muted-foreground">{settings.title}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -434,7 +465,6 @@ export function CityLeaderboardDashboard({
                           </div>
                           <MetricsBreakdown
                             entry={entry}
-                            slug={slug}
                             onOpenBillboards={() => {
                               if (isProvinceView) {
                                 const provinceEntry = entry as ProvinceLeaderboardEntry;
@@ -445,6 +475,20 @@ export function CityLeaderboardDashboard({
                                 return;
                               }
                               setBillboardScope({
+                                title: userEntry.userName,
+                                userKey: userEntry.userKey,
+                              });
+                            }}
+                            onOpenContent={(metricLabel) => {
+                              if (isProvinceView) {
+                                const provinceEntry = entry as ProvinceLeaderboardEntry;
+                                openContentModal(metricLabel, {
+                                  title: provinceEntry.province,
+                                  provinceKey: provinceEntry.provinceKey,
+                                });
+                                return;
+                              }
+                              openContentModal(metricLabel, {
                                 title: userEntry.userName,
                                 userKey: userEntry.userKey,
                               });
@@ -514,6 +558,16 @@ export function CityLeaderboardDashboard({
         }}
         title={billboardScope?.title ?? ""}
         billboards={scopedBillboards}
+      />
+
+      <LeaderboardContentModal
+        open={Boolean(contentScope)}
+        onOpenChange={(open) => {
+          if (!open) setContentScope(null);
+        }}
+        metricLabel={contentScope?.metricLabel ?? "پوستر"}
+        title={contentScope?.title ?? ""}
+        items={scopedContentItems}
       />
 
       <ScrollToTopButton />

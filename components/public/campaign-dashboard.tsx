@@ -114,7 +114,7 @@ function CampaignDashboardBody({
             <Button variant="outline" size="sm" asChild data-export-hide>
               <Link href={`/campaign/${slug}/cities`}>
                 <Trophy className="h-4 w-4" />
-                رتبه‌بندی استان‌ها
+                رتبه‌بندی
               </Link>
             </Button>
             <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing} data-export-hide>

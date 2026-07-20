@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "e37b95fb8ca96821e85bce4fee3633e4eb0d50c5",
+      "committedAt": "2026-07-20T12:59:17+03:30",
+      "title": "کلیک روی فعالیت‌های اخیر در صفحه کمپین برای رفتن به همان محتوا",
+      "subject": "Make recent activity feed items clickable on campaign page"
+    },
+    {
       "hash": "0c4693aea4fcc1da4490de0ac212fb9db00753bb",
       "committedAt": "2026-07-20T12:53:42+03:30",
       "title": "امکان آپلود ویدیو در پست‌های شبکه اجتماعی",

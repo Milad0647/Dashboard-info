@@ -5,7 +5,17 @@ import {
   getTehranCalendarDateIso,
   isSameDay,
 } from "@/lib/safe-dates";
-import type { Billboard, Ownable, PublicCampaignData } from "@/lib/types";
+import { resolveDisplayVersion, resolveVideoThumbnail } from "@/lib/media-utils";
+import type {
+  Billboard,
+  CampaignActivity,
+  CampaignFile,
+  Ownable,
+  PosterWithVersions,
+  PublicCampaignData,
+  SocialMediaPost,
+  VideoWithVersions,
+} from "@/lib/types";
 
 export interface ProvinceLeaderboardMetrics {
   billboards: number;
@@ -366,17 +376,122 @@ export function collectUserContentItems(
   return items.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
 }
 
+export interface LeaderboardContentScope {
+  provinceKey?: string;
+  userKey?: string;
+}
+
+export type LeaderboardMetricLabel =
+  | "پوستر"
+  | "ویدیو"
+  | "شبکه اجتماعی"
+  | "انتشار سایت"
+  | "اقدام"
+  | "فایل";
+
+export type LeaderboardContentListItem =
+  | { kind: "poster"; item: PosterWithVersions }
+  | { kind: "video"; item: VideoWithVersions }
+  | { kind: "social_post"; item: SocialMediaPost }
+  | { kind: "site_publication"; item: SocialMediaPost }
+  | { kind: "activity"; item: CampaignActivity }
+  | { kind: "file"; item: CampaignFile };
+
+function matchesLeaderboardScope(
+  item: Ownable & { province?: string | null },
+  filter: LeaderboardContentScope
+): boolean {
+  if (filter.provinceKey && resolveProvince(item) !== filter.provinceKey) return false;
+  if (filter.userKey && !resolveUserKeyMatch(item, filter.userKey)) return false;
+  return true;
+}
+
 export function collectLeaderboardBillboards(
   data: PublicCampaignData,
-  filter: { provinceKey?: string; userKey?: string }
+  filter: LeaderboardContentScope
 ): Billboard[] {
   if (!data.sections.billboards) return [];
 
-  return data.billboards.filter((item) => {
-    if (filter.provinceKey && resolveProvince(item) !== filter.provinceKey) return false;
-    if (filter.userKey && !resolveUserKeyMatch(item, filter.userKey)) return false;
-    return true;
-  });
+  return data.billboards.filter((item) => matchesLeaderboardScope(item, filter));
+}
+
+export function collectLeaderboardContentByMetric(
+  data: PublicCampaignData,
+  metricLabel: LeaderboardMetricLabel,
+  filter: LeaderboardContentScope
+): LeaderboardContentListItem[] {
+  const items: LeaderboardContentListItem[] = [];
+
+  const pushScoped = <T extends Ownable & { province?: string | null }>(
+    list: T[],
+    mapper: (item: T) => LeaderboardContentListItem
+  ) => {
+    for (const item of list) {
+      if (!matchesLeaderboardScope(item, filter)) continue;
+      items.push(mapper(item));
+    }
+  };
+
+  switch (metricLabel) {
+    case "پوستر":
+      if (data.sections.posters) {
+        pushScoped(data.posters, (item) => ({ kind: "poster", item }));
+      }
+      break;
+    case "ویدیو":
+      if (data.sections.videos) {
+        pushScoped(data.videos, (item) => ({ kind: "video", item }));
+      }
+      break;
+    case "شبکه اجتماعی":
+      if (data.sections.socialPosts) {
+        pushScoped(data.socialPosts, (item) => ({ kind: "social_post", item }));
+      }
+      break;
+    case "انتشار سایت":
+      if (data.sections.sitePublications) {
+        pushScoped(data.sitePublications, (item) => ({ kind: "site_publication", item }));
+      }
+      break;
+    case "اقدام":
+      if (data.sections.activities) {
+        pushScoped(data.activities, (item) => ({ kind: "activity", item }));
+        pushScoped(data.pressPublications, (item) => ({ kind: "activity", item }));
+      }
+      break;
+    case "فایل":
+      if (data.sections.files) {
+        pushScoped(data.files, (item) => ({ kind: "file", item }));
+      }
+      break;
+  }
+
+  return items;
+}
+
+export function getLeaderboardContentThumbnail(item: LeaderboardContentListItem): string | null {
+  switch (item.kind) {
+    case "poster": {
+      const version = resolveDisplayVersion(item.item.versions);
+      return version?.thumbnailUrl?.trim() || version?.imageUrl?.trim() || null;
+    }
+    case "video": {
+      const version = resolveDisplayVersion(item.item.versions);
+      if (!version) return null;
+      return resolveVideoThumbnail(version.videoUrl, version.thumbnailUrl);
+    }
+    case "social_post":
+    case "site_publication":
+      return item.item.coverImageUrl?.trim() || item.item.mediaUrl?.trim() || null;
+    case "activity":
+      return item.item.imageUrl?.trim() || item.item.mediaItems[0]?.url?.trim() || null;
+    case "file":
+      return null;
+  }
+}
+
+export function getLeaderboardContentTitle(item: LeaderboardContentListItem): string {
+  return item.item.title;
 }
 
 export function buildProvinceContributorLeaderboard(
