@@ -8,6 +8,7 @@ export const BILLBOARD_CATEGORIES = [
   "scaffolding",
   "fence_wall_banner",
   "stand",
+  "lightbox",
   "other",
 ] as const;
 
@@ -23,6 +24,7 @@ export const billboardCategoryLabels: Record<BillboardCategory, string> = {
   scaffolding: "داربست و اسپیس",
   fence_wall_banner: "بنر روی نرده و دیوار",
   stand: "استند",
+  lightbox: "لایت باکس",
   other: "سایر",
 };
 
@@ -32,7 +34,6 @@ export const billboardCategoryLabels: Record<BillboardCategory, string> = {
  */
 const legacyBillboardCategoryMap: Record<string, BillboardCategory> = {
   banner: "fence_wall_banner",
-  lightbox: "other",
   monitor: "urban_tv",
   bus_shelter: "bus_metro",
   darbast: "scaffolding",
@@ -63,9 +64,9 @@ const billboardCategoryAliases: Record<string, BillboardCategory> = {
   استرابرد: "straboard",
   "bill board": "billboard",
   "بیلبورد شهری": "billboard",
-  "light box": "other",
-  "لایت باکس": "other",
-  لایت‌باکس: "other",
+  "light box": "lightbox",
+  "لایت باکس": "lightbox",
+  لایت‌باکس: "lightbox",
   مانیتور: "urban_tv",
   "تلویزیون شهری": "urban_tv",
   "پل عابرپیاده": "bridge",

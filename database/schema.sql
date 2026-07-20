@@ -382,7 +382,6 @@ ALTER TABLE billboards ADD COLUMN IF NOT EXISTS area_sqm DOUBLE PRECISION;
 
 -- Remap legacy billboard categories to the current taxonomy (idempotent).
 UPDATE billboards SET category = 'fence_wall_banner' WHERE category IN ('banner', 'narde', 'sakhteman');
-UPDATE billboards SET category = 'other' WHERE category = 'lightbox';
 UPDATE billboards SET category = 'urban_tv' WHERE category = 'monitor';
 UPDATE billboards SET category = 'bus_metro' WHERE category = 'bus_shelter';
 UPDATE billboards SET category = 'scaffolding' WHERE category = 'darbast';
