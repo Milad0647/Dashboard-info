@@ -171,15 +171,41 @@ function SocialPostCard({ post }: { post: SocialMediaPost }) {
           </div>
         }
         extras={
-          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-            <span>بازدید: {formatPersianNumber(post.views)}</span>
-            <span>لایک: {formatPersianNumber(post.likes)}</span>
-            <span>کامنت: {formatPersianNumber(post.comments)}</span>
-            <span>اشتراک: {formatPersianNumber(post.shares)}</span>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+              <span>بازدید: {formatPersianNumber(post.views)}</span>
+              <span>لایک: {formatPersianNumber(post.likes)}</span>
+              <span>کامنت: {formatPersianNumber(post.comments)}</span>
+              <span>اشتراک: {formatPersianNumber(post.shares)}</span>
+            </div>
+            {post.linkEntries && post.linkEntries.length > 0 ? (
+              <div className="space-y-1.5 rounded-lg border bg-muted/40 p-3 text-sm">
+                <p className="font-medium text-foreground">
+                  پخش گروهی · {formatPersianNumber(post.linkEntries.length)} لینک
+                </p>
+                <div className="max-h-40 space-y-1 overflow-y-auto" dir="ltr">
+                  {post.linkEntries.map((entry) => (
+                    <div key={entry.id} className="flex items-start justify-between gap-2 text-xs">
+                      <a
+                        href={entry.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="min-w-0 flex-1 break-all text-primary underline"
+                      >
+                        {entry.link}
+                      </a>
+                      <span className="shrink-0 text-muted-foreground" dir="rtl">
+                        {formatPersianNumber(entry.views)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         }
         actions={
-          post.link ? (
+          post.link && !(post.linkEntries && post.linkEntries.length > 1) ? (
             <Button variant="outline" size="sm" asChild>
               <a href={post.link} target="_blank" rel="noreferrer">
                 <ExternalLink className="h-4 w-4" />

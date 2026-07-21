@@ -13,6 +13,7 @@ export const TUTORIAL_SECTION_KEYS = [
   "broadcast",
   "meetings",
   "submissions",
+  "smsReports",
 ] as const;
 
 export type TutorialSectionKey = (typeof TUTORIAL_SECTION_KEYS)[number];
@@ -32,6 +33,7 @@ export const tutorialSectionLabels: Record<TutorialSectionKey, string> = {
   broadcast: "پخش صدا و سیما",
   meetings: "جلسات و مصوبات",
   submissions: "مشارکت‌ها",
+  smsReports: "ارسال پیام",
 };
 
 export interface TutorialStep {

@@ -36,6 +36,8 @@ export interface CampaignFeatures {
   submissions: boolean;
   files: boolean;
   rawMedia: boolean;
+  /** Manual logs of SMS / bulk messages sent to audiences. */
+  smsReports: boolean;
 }
 
 export type AnalyticsSource = "manual" | "metabase" | "hybrid";
@@ -531,6 +533,13 @@ export interface SocialAnalyticsSummary {
   hasData: boolean;
 }
 
+/** One published link + views row inside a group social distribution. */
+export interface SocialPostLinkEntry {
+  id: string;
+  link: string;
+  views: number;
+}
+
 export interface SocialMediaPost extends Ownable {
   id: string;
   campaignId: string;
@@ -542,6 +551,8 @@ export interface SocialMediaPost extends Ownable {
   comments: number;
   shares: number;
   link: string;
+  /** When set (group distribution), each entry is a separate published link; `views` is the sum. */
+  linkEntries?: SocialPostLinkEntry[];
   contentType: SocialContentType;
   mediaUrl?: string | null;
   description?: string | null;
@@ -597,6 +608,24 @@ export interface BroadcastReport extends Ownable {
   pdfUrl: string;
   fileName: string;
   summaryData: BroadcastReportSummary;
+  published: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Manual documentation of an SMS / bulk message send action. */
+export interface SmsSendReport extends Ownable {
+  id: string;
+  campaignId: string;
+  title: string;
+  sendDate: string;
+  recipientCount: number;
+  messageBody: string;
+  evidenceFileUrl?: string | null;
+  evidenceFileName?: string | null;
+  evidenceMimeType?: string | null;
+  evidenceFileSize: number;
   published: boolean;
   sortOrder: number;
   createdAt: string;
@@ -782,6 +811,7 @@ export interface SectionVisibility {
   submissions: boolean;
   files: boolean;
   rawMedia: boolean;
+  smsReports: boolean;
 }
 
 export interface PublicCampaignData {

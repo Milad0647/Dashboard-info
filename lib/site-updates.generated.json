@@ -1,6 +1,24 @@
 {
   "entries": [
     {
+      "hash": "2b1455672aac4d07cc2e25d728fc7acbe858dd07",
+      "committedAt": "2026-07-21T14:24:54+03:30",
+      "title": "امکان ارسال پیام مدیر و کارفرما روی کارت‌های محتوا و مشاهده در بخش پیام‌ها",
+      "subject": "Add content card messaging for admin and client"
+    },
+    {
+      "hash": "dbce8d9002d9c6e32493194602314fd33d5220b0",
+      "committedAt": "2026-07-21T14:23:46+03:30",
+      "title": "فیلتر تبلیغات محیطی با کلیک روی کارت دسته‌ها",
+      "subject": "Filter billboards by clicking category summary cards"
+    },
+    {
+      "hash": "fc6f666b11241ac13ed0abc7016f5af508f31fc1",
+      "committedAt": "2026-07-21T14:23:33+03:30",
+      "title": "با کلیک روی بج امروز در خلاصه کمپین، فیلتر امروز فعال و به همان بخش اسکرول می‌شود",
+      "subject": "Make KPI today-delta badge filter today and scroll to section"
+    },
+    {
       "hash": "2520019a6db4b95ddd5140cfbe7839ffed48406f",
       "committedAt": "2026-07-21T14:16:35+03:30",
       "title": "اصلاح باز شدن موارد نیازمند ویرایش در مجله و روزنامه",

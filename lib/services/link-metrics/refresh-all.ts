@@ -2,6 +2,7 @@ import { detectLinkMetricsPlatform } from "./detect";
 import { fetchSocialLinkMetrics } from "./index";
 import type { LinkMetricsResult } from "./types";
 import * as pgExt from "@/lib/db/repository-extended";
+import { isGroupSocialPost } from "@/lib/social-posts";
 import type { CampaignActivity, SocialMediaPost } from "@/lib/types";
 import { isPostgresConfigured } from "@/lib/utils";
 
@@ -117,7 +118,7 @@ export async function runDailyLinkMetricsRefresh(options?: {
     if (processed >= maxItems) break;
     summary.socialPosts.scanned += 1;
 
-    if (!isLinkAutoRefreshable(post.link, post.platform)) {
+    if (isGroupSocialPost(post) || !isLinkAutoRefreshable(post.link, post.platform)) {
       summary.socialPosts.skipped += 1;
       continue;
     }

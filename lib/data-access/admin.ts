@@ -85,6 +85,9 @@ export async function getAdminData(campaignId: string, sections?: AdminDataSecti
       rawMedia: filterByOwner([...((store as { rawMedia?: RawMediaUpload[] }).rawMedia ?? [])]).sort(
         (a, b) => a.sortOrder - b.sortOrder || b.createdAt.localeCompare(a.createdAt)
       ),
+      smsReports: filterByOwner([...(store.smsReports ?? [])]).sort(
+        (a, b) => a.sortOrder - b.sortOrder || b.sendDate.localeCompare(a.sendDate)
+      ),
     });
   }
 
@@ -126,6 +129,7 @@ export async function getAdminData(campaignId: string, sections?: AdminDataSecti
       meetings: [],
       activities: [],
       rawMedia: [],
+      smsReports: [],
     });
   } catch {
     const mock = getAdminDataMock(campaignId);
@@ -144,6 +148,7 @@ export async function getAdminData(campaignId: string, sections?: AdminDataSecti
       meetings: filterByOwner(mock.meetings ?? []),
       activities: filterByOwner(mock.activities ?? []),
       rawMedia: filterByOwner(mock.rawMedia ?? []),
+      smsReports: filterByOwner(mock.smsReports ?? []),
     });
   }
 }
@@ -172,6 +177,9 @@ function getAdminDataMock(campaignId: string) {
     ),
     rawMedia: [...((store as { rawMedia?: RawMediaUpload[] }).rawMedia ?? [])].sort(
       (a, b) => a.sortOrder - b.sortOrder || b.createdAt.localeCompare(a.createdAt)
+    ),
+    smsReports: [...(store.smsReports ?? [])].sort(
+      (a, b) => a.sortOrder - b.sortOrder || b.sendDate.localeCompare(a.sendDate)
     ),
   };
 }
@@ -215,6 +223,7 @@ export async function saveCampaign(data: Partial<CampaignSettings> & { id?: stri
           submissions: false,
           files: false,
           rawMedia: false,
+          smsReports: false,
         },
         analyticsConfig: data.analyticsConfig ?? {
           site: { source: "manual", metabase: null },

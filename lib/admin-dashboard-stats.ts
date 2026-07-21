@@ -11,6 +11,7 @@ import {
   LayoutGrid,
   Newspaper,
   Radio,
+  Send,
   Share2,
   Sparkles,
   Video,
@@ -30,6 +31,7 @@ import type {
   CampaignSubmission,
   Poster,
   RawMediaUpload,
+  SmsSendReport,
   SocialMediaPost,
   SocialPlatformStat,
   Video as CampaignVideo,
@@ -47,6 +49,7 @@ export interface AdminDashboardData {
   broadcastReports?: BroadcastReport[];
   meetings?: CampaignMeeting[];
   activities?: CampaignActivity[];
+  smsReports?: SmsSendReport[];
 }
 
 export interface DashboardStatDefinition {
@@ -156,6 +159,14 @@ export const DASHBOARD_STAT_DEFINITIONS: DashboardStatDefinition[] = [
     icon: Radio,
     completenessContentType: "broadcast",
     getCount: (data) => (data.broadcastReports ?? []).length,
+  },
+  {
+    permissionKey: "smsReports",
+    featureKey: "smsReports",
+    label: "ارسال پیام",
+    href: "/admin/sms-reports",
+    icon: Send,
+    getCount: (data) => (data.smsReports ?? []).length,
   },
   {
     permissionKey: "meetings",

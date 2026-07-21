@@ -18,6 +18,7 @@ import type {
   PosterVersion,
   RawMediaKind,
   RawMediaUpload,
+  SmsSendReport,
   SocialMediaPost,
   SocialPlatformStat,
   Video,
@@ -32,6 +33,7 @@ import {
   normalizePlanLabels,
 } from "@/lib/content-topics";
 import { truncateMeetingSummary } from "@/lib/meeting-preview";
+import { parseSocialPostLinkEntries } from "@/lib/social-posts";
 
 function toDateString(value: unknown): string {
   if (value instanceof Date) {
@@ -109,6 +111,7 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
             submissions: true,
             files: true,
             rawMedia: true,
+            smsReports: true,
             ...JSON.parse(row.features),
           }
         : {
@@ -126,6 +129,7 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
             submissions: true,
             files: true,
             rawMedia: true,
+            smsReports: true,
             ...(row.features ?? {}),
           },
     analyticsConfig: normalizeAnalyticsConfig(
@@ -368,6 +372,7 @@ export function mapSubmissionFromDb(row: any): CampaignSubmission {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapSocialPostFromDb(row: any): SocialMediaPost {
+  const linkEntries = parseSocialPostLinkEntries(row.link_entries);
   return {
     id: row.id,
     campaignId: row.campaign_id,
@@ -380,6 +385,7 @@ export function mapSocialPostFromDb(row: any): SocialMediaPost {
     comments: Number(row.comments ?? 0),
     shares: Number(row.shares ?? 0),
     link: row.link ?? "",
+    linkEntries: linkEntries.length > 0 ? linkEntries : undefined,
     contentType: row.content_type,
     mediaUrl: row.media_url,
     description: row.description,
@@ -432,6 +438,27 @@ export function mapBroadcastReportFromDb(row: any): BroadcastReport {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mapSmsSendReportFromDb(row: any): SmsSendReport {
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    ...mapOwnerFromDb(row),
+    title: row.title ?? "",
+    sendDate: toDateString(row.send_date),
+    recipientCount: Number(row.recipient_count ?? 0),
+    messageBody: row.message_body ?? "",
+    evidenceFileUrl: row.evidence_file_url ?? null,
+    evidenceFileName: row.evidence_file_name ?? null,
+    evidenceMimeType: row.evidence_mime_type ?? null,
+    evidenceFileSize: Number(row.evidence_file_size ?? 0),
+    published: row.published ?? true,
+    sortOrder: row.sort_order ?? 0,
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapCampaignActivityFromDb(row: any): CampaignActivity {
   const mediaItems = parseActivityMediaItems(row.media_items);
   return {
@@ -466,7 +493,6 @@ export function mapCampaignActivityFromDb(row: any): CampaignActivity {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseAttendees(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.map((item) => String(item).trim()).filter(Boolean);

@@ -1,5 +1,5 @@
 import { getSql } from "@/lib/db/client";
-import { pgGetCampaignActivities, pgGetMeetingsWithTasks, pgGetPublicMeetingPreviews } from "@/lib/db/repository-extended";
+import { pgGetCampaignActivities, pgGetMeetingsWithTasks, pgGetPublicMeetingPreviews, pgGetSmsSendReports } from "@/lib/db/repository-extended";
 import {
   mapAnalyticsFromDb,
   mapBillboardFromDb,
@@ -74,6 +74,7 @@ const defaultFeatures = {
   submissions: true,
   files: true,
   rawMedia: true,
+  smsReports: true,
 };
 
 export async function pgGetAllCampaigns(): Promise<CampaignSettings[]> {
@@ -108,7 +109,8 @@ export type AdminDataSection =
   | "socialPlatformStats"
   | "meetings"
   | "activities"
-  | "rawMedia";
+  | "rawMedia"
+  | "smsReports";
 
 const ALL_ADMIN_DATA_SECTIONS: AdminDataSection[] = [
   "settings",
@@ -129,6 +131,7 @@ const ALL_ADMIN_DATA_SECTIONS: AdminDataSection[] = [
   "meetings",
   "activities",
   "rawMedia",
+  "smsReports",
 ];
 
 export async function pgGetAdminData(
@@ -150,6 +153,7 @@ export async function pgGetAdminData(
   const emptyRows = Promise.resolve([] as Record<string, unknown>[]);
   const emptyMeetings = Promise.resolve([] as Awaited<ReturnType<typeof pgGetMeetingsWithTasks>>);
   const emptyActivities = Promise.resolve([] as Awaited<ReturnType<typeof pgGetCampaignActivities>>);
+  const emptySmsReports = Promise.resolve([] as Awaited<ReturnType<typeof pgGetSmsSendReports>>);
 
   const [
     campaigns,
@@ -170,6 +174,7 @@ export async function pgGetAdminData(
     meetings,
     activities,
     rawMedia,
+    smsReports,
   ] = await Promise.all([
     want.has("campaigns")
       ? sql`SELECT * FROM campaign_settings ORDER BY updated_at DESC`
@@ -322,6 +327,7 @@ export async function pgGetAdminData(
       ORDER BY r.sort_order, r.created_at DESC
     `
       : emptyRows,
+    want.has("smsReports") ? pgGetSmsSendReports(campaignId, ownerUserId) : emptySmsReports,
   ]);
 
   return {
@@ -343,6 +349,7 @@ export async function pgGetAdminData(
     meetings,
     activities,
     rawMedia: rawMedia.map(mapRawMediaUploadFromDb),
+    smsReports,
   };
 }
 

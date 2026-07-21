@@ -13,7 +13,8 @@ export async function pgIdExists(
     | "social_platform_stats"
     | "broadcast_reports"
     | "campaign_activities"
-    | "campaign_meetings",
+    | "campaign_meetings"
+    | "sms_send_reports",
   id: string
 ): Promise<boolean> {
   const sql = getSql();
@@ -61,6 +62,10 @@ export async function pgIdExists(
     }
     case "campaign_meetings": {
       const rows = await sql`SELECT 1 FROM campaign_meetings WHERE id = ${id} LIMIT 1`;
+      return rows.length > 0;
+    }
+    case "sms_send_reports": {
+      const rows = await sql`SELECT 1 FROM sms_send_reports WHERE id = ${id} LIMIT 1`;
       return rows.length > 0;
     }
     default:

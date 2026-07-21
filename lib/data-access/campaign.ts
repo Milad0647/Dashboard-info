@@ -233,6 +233,7 @@ function buildSectionVisibility(
     submissions: unknown[];
     files: unknown[];
     rawMedia: unknown[];
+    smsReports?: unknown[];
   }
 ): SectionVisibility {
   return {
@@ -253,6 +254,7 @@ function buildSectionVisibility(
     submissions: features.submissions && data.submissions.length > 0,
     files: features.files && data.files.length > 0,
     rawMedia: (features.rawMedia ?? true) && data.rawMedia.length > 0,
+    smsReports: (features.smsReports ?? true) && (data.smsReports?.length ?? 0) > 0,
   };
 }
 
@@ -272,6 +274,7 @@ function buildKpiVisibility(features: CampaignSettings["features"]): SectionVisi
     submissions: features.submissions,
     files: features.files,
     rawMedia: features.rawMedia ?? true,
+    smsReports: features.smsReports ?? true,
   };
 }
 
@@ -400,6 +403,10 @@ function assemblePublicData(
     meetingsHasPassword
   );
 
+  const smsReports = (store.smsReports ?? [])
+    .filter((item) => item.published)
+    .sort((a, b) => a.sortOrder - b.sortOrder || b.sendDate.localeCompare(a.sendDate));
+
   const submissionSummary = buildSubmissionSummary(store.submissions);
 
   const sections = buildSectionVisibility(settings.features, {
@@ -417,6 +424,7 @@ function assemblePublicData(
     submissions,
     files,
     rawMedia,
+    smsReports,
   });
 
   const kpis = buildKPIs(settings.features, {
@@ -661,6 +669,7 @@ export async function getPublicCampaignData(slug: string): Promise<PublicCampaig
       meetings: [],
       activities: [],
       socialPlatformStats: [],
+      smsReports: [],
     };
 
     return assemblePublicData(

@@ -49,6 +49,7 @@ const featuresSchema = z.object({
   submissions: z.boolean(),
   files: z.boolean(),
   rawMedia: z.boolean(),
+  smsReports: z.boolean(),
 });
 
 const metabaseSchema = z.object({
@@ -97,6 +98,7 @@ const featureLabels: { key: keyof CampaignFeatures; label: string }[] = [
   { key: "socialPosts", label: "پست‌های شبکه اجتماعی" },
   { key: "sitePublications", label: "انتشار در سایت" },
   { key: "broadcastReports", label: "گزارش پخش صدا و سیما" },
+  { key: "smsReports", label: "ارسال پیام" },
   { key: "meetings", label: "جلسات و مصوبات" },
   { key: "activities", label: "اقدامات" },
   { key: "pressPublications", label: "مجله و روزنامه" },
@@ -257,6 +259,7 @@ export function SettingsAdmin({
       features: {
         ...initialSettings.features,
         rawMedia: initialSettings.features.rawMedia ?? true,
+        smsReports: initialSettings.features.smsReports ?? true,
       },
       externalCampaignId: initialSettings.billboardConfig?.externalCampaignId ?? "",
       externalCampaignSlug: initialSettings.billboardConfig?.externalCampaignSlug ?? "",

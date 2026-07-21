@@ -45,6 +45,7 @@ const ENTITY_LABELS: Record<string, string> = {
   social_post: "پست شبکه اجتماعی",
   social_platform_stat: "آمار شبکه اجتماعی",
   broadcast_report: "گزارش پخش",
+  sms_send_report: "ارسال پیام",
   activity: "اقدام",
   meeting: "جلسه",
   user: "کاربر",

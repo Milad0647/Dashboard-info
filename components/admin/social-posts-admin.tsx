@@ -39,7 +39,7 @@ import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteSocialPostAction, fetchSocialLinkMetricsAction, saveSocialPostAction } from "@/lib/actions/extended-actions";
 import { detectLinkMetricsPlatform } from "@/lib/services/link-metrics/detect";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 import {
   parseEditSuggestionMissingFields,
   type EditSuggestionMissingField,
@@ -50,15 +50,24 @@ import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { todayISO } from "@/lib/jalali";
 import { videoNeedsAutoCover } from "@/lib/client/video-cover";
-import { isSitePublication } from "@/lib/social-posts";
+import {
+  createEmptySocialPostLinkEntry,
+  isGroupSocialPost,
+  isSitePublication,
+  MAX_SOCIAL_POST_LINK_ENTRIES,
+  normalizeSocialPostLinkEntries,
+  sumSocialPostLinkEntryViews,
+} from "@/lib/social-posts";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
-import type { AdminUser, SocialContentType, SocialMediaPost, SocialPlatform } from "@/lib/types";
+import type { AdminUser, SocialContentType, SocialMediaPost, SocialPlatform, SocialPostLinkEntry } from "@/lib/types";
 import { cn, formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
 import { GenerateMissingVideoCoversButton } from "@/components/admin/generate-missing-video-covers-button";
 import {
   CONTENT_TITLE_MAX_LENGTH,
   CONTENT_TITLE_MAX_LENGTH_MESSAGE,
 } from "@/lib/content-constraints";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 const schema = z.object({
   platform: z.enum(["instagram", "x", "telegram", "linkedin", "youtube", "aparat", "rubika", "eitaa", "soroush", "bale", "other"]),
@@ -122,6 +131,10 @@ export function SocialPostsAdmin({
   const [planLabels, setPlanLabels] = useState<string[]>([]);
   const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(null);
   const [highlightFields, setHighlightFields] = useState<EditSuggestionMissingField[]>([]);
+  const [isGroupDistribution, setIsGroupDistribution] = useState(false);
+  const [linkEntries, setLinkEntries] = useState<SocialPostLinkEntry[]>([
+    createEmptySocialPostLinkEntry(),
+  ]);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("social-posts");
   const [rows, setRows] = useState(initialPosts.filter((post) => !isSitePublication(post)));
@@ -220,6 +233,8 @@ export function SocialPostsAdmin({
       setHighlightFields([]);
       setPlanLabels([]);
       setEditOwnerUserId(null);
+      setIsGroupDistribution(false);
+      setLinkEntries([createEmptySocialPostLinkEntry()]);
       form.reset({
         platform: "instagram",
         title: "",
@@ -244,6 +259,20 @@ export function SocialPostsAdmin({
     setHighlightFields(fields);
     setPlanLabels(normalizePlanLabels(post.planLabels, post.planLabel));
     setEditOwnerUserId(post.ownerUserId ?? null);
+    const groupEntries = normalizeSocialPostLinkEntries(post.linkEntries);
+    const groupMode = groupEntries.length > 0;
+    setIsGroupDistribution(groupMode);
+    setLinkEntries(
+      groupMode
+        ? groupEntries
+        : [
+            {
+              id: crypto.randomUUID(),
+              link: post.link ?? "",
+              views: post.views ?? 0,
+            },
+          ]
+    );
     form.reset({
       platform: post.platform as SocialPlatform,
       title: post.title,
@@ -277,12 +306,66 @@ export function SocialPostsAdmin({
   const watchedDescription = form.watch("description");
   const watchedCover = form.watch("coverImageUrl");
   const watchedMedia = form.watch("mediaUrl");
+  const groupViewsTotal = useMemo(
+    () => sumSocialPostLinkEntryViews(linkEntries),
+    [linkEntries]
+  );
+  const filledLinkEntries = useMemo(
+    () => normalizeSocialPostLinkEntries(linkEntries),
+    [linkEntries]
+  );
   const highlightTitle = highlightFields.includes("title") && !watchedTitle?.trim();
-  const highlightLink = highlightFields.includes("link") && !watchedLink?.trim();
+  const highlightLink =
+    highlightFields.includes("link") &&
+    (isGroupDistribution
+      ? filledLinkEntries.length === 0
+      : !watchedLink?.trim());
   const highlightDescription =
     highlightFields.includes("description") && !watchedDescription?.trim();
   const highlightMedia =
     highlightFields.includes("media") && !watchedCover?.trim() && !watchedMedia?.trim();
+
+  const updateLinkEntry = (id: string, patch: Partial<Pick<SocialPostLinkEntry, "link" | "views">>) => {
+    setLinkEntries((prev) =>
+      prev.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry))
+    );
+  };
+
+  const addLinkEntry = () => {
+    if (linkEntries.length >= MAX_SOCIAL_POST_LINK_ENTRIES) {
+      toast.error(`حداکثر ${MAX_SOCIAL_POST_LINK_ENTRIES} لینک مجاز است`);
+      return;
+    }
+    setLinkEntries((prev) => [...prev, createEmptySocialPostLinkEntry()]);
+  };
+
+  const removeLinkEntry = (id: string) => {
+    setLinkEntries((prev) => {
+      if (prev.length <= 1) return [createEmptySocialPostLinkEntry()];
+      return prev.filter((entry) => entry.id !== id);
+    });
+  };
+
+  const toggleGroupDistribution = (enabled: boolean) => {
+    if (enabled) {
+      const currentLink = form.getValues("link")?.trim() ?? "";
+      const currentViews = Number(form.getValues("views")) || 0;
+      setLinkEntries([
+        {
+          id: crypto.randomUUID(),
+          link: currentLink,
+          views: currentViews,
+        },
+      ]);
+      setIsGroupDistribution(true);
+      return;
+    }
+
+    const first = linkEntries[0];
+    form.setValue("link", first?.link ?? "");
+    form.setValue("views", first?.views ?? 0);
+    setIsGroupDistribution(false);
+  };
 
   const handleDelete = (post: SocialMediaPost) => {
     if (!window.confirm(`حذف «${post.title}»؟`)) return;
@@ -368,8 +451,28 @@ export function SocialPostsAdmin({
       const selectedOwner = canTransferOwnership
         ? users.find((user) => user.id === editOwnerUserId)
         : null;
+
+      const normalizedEntries = isGroupDistribution
+        ? normalizeSocialPostLinkEntries(linkEntries)
+        : [];
+
+      if (isGroupDistribution && normalizedEntries.length === 0) {
+        toast.error("حداقل یک لینک برای پخش گروهی وارد کنید");
+        return;
+      }
+
+      const resolvedViews = isGroupDistribution
+        ? sumSocialPostLinkEntryViews(normalizedEntries)
+        : data.views;
+      const resolvedLink = isGroupDistribution
+        ? normalizedEntries[0]?.link ?? ""
+        : data.link ?? "";
+
       const result = await saveSocialPostAction({
         ...data,
+        views: resolvedViews,
+        link: resolvedLink,
+        linkEntries: normalizedEntries,
         campaignId,
         id: editingId ?? undefined,
         published: true,
@@ -399,11 +502,23 @@ export function SocialPostsAdmin({
           }
         : {};
 
+      const savedPatch = {
+        ...data,
+        views: resolvedViews,
+        link: resolvedLink,
+        linkEntries: normalizedEntries.length > 0 ? normalizedEntries : undefined,
+        campaignId,
+        published: true,
+        planLabels,
+        planLabel: planLabels[0] ?? null,
+        ...ownerPatch,
+      };
+
       if (editingId) {
         setRows((prev) =>
           prev.map((row) =>
             row.id === editingId
-              ? { ...row, ...data, campaignId, link: data.link ?? "", published: true, planLabels, planLabel: planLabels[0] ?? null, ...ownerPatch } as SocialMediaPost
+              ? ({ ...row, ...savedPatch } as SocialMediaPost)
               : row
           )
         );
@@ -412,16 +527,10 @@ export function SocialPostsAdmin({
           ...prev,
           {
             id: savedId,
-            campaignId,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             sortOrder: prev.length,
-            ...data,
-            link: data.link ?? "",
-            published: true,
-            planLabels,
-            planLabel: planLabels[0] ?? null,
-            ...ownerPatch,
+            ...savedPatch,
           } as SocialMediaPost,
         ]);
       }
@@ -565,12 +674,41 @@ export function SocialPostsAdmin({
                   value: previewPost.planLabels?.length ? previewPost.planLabels.join("، ") : "—",
                 },
                 { label: "بازدید", value: formatPersianNumber(previewPost.views) },
+                {
+                  label: "پخش گروهی",
+                  value: isGroupSocialPost(previewPost)
+                    ? `${formatPersianNumber(previewPost.linkEntries?.length ?? 0)} لینک`
+                    : "—",
+                },
                 { label: "لایک", value: formatPersianNumber(previewPost.likes) },
                 { label: "کامنت", value: formatPersianNumber(previewPost.comments) },
                 { label: "اشتراک‌گذاری", value: formatPersianNumber(previewPost.shares) },
                 {
                   label: "لینک",
-                  value: previewPost.link ? (
+                  value: isGroupSocialPost(previewPost) ? (
+                    <div className="space-y-1 text-right" dir="ltr">
+                      {(previewPost.linkEntries ?? []).slice(0, 8).map((entry) => (
+                        <div key={entry.id} className="text-xs">
+                          <a
+                            href={entry.link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary underline break-all"
+                          >
+                            {entry.link}
+                          </a>
+                          <span className="ms-2 text-muted-foreground" dir="rtl">
+                            ({formatPersianNumber(entry.views)} بازدید)
+                          </span>
+                        </div>
+                      ))}
+                      {(previewPost.linkEntries?.length ?? 0) > 8 ? (
+                        <p className="text-xs text-muted-foreground" dir="rtl">
+                          و {formatPersianNumber((previewPost.linkEntries?.length ?? 0) - 8)} لینک دیگر…
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : previewPost.link ? (
                     <a href={previewPost.link} target="_blank" rel="noreferrer" className="text-primary underline" dir="ltr">
                       {previewPost.link}
                     </a>
@@ -589,6 +727,18 @@ export function SocialPostsAdmin({
                 openEdit(previewPost);
               }
             : undefined
+        }
+        canSendMessage={canTransferOwnership || isFullAdmin}
+        messageTarget={
+          previewPost
+            ? {
+                campaignId,
+                contentType: "social_post",
+                contentId: previewPost.id,
+                contentTitle: previewPost.title,
+                ownerName: previewPost.ownerName,
+              }
+            : null
         }
       />
 
@@ -684,43 +834,154 @@ export function SocialPostsAdmin({
               />
             )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="space-y-2"><Label>بازدید</Label><Input type="number" {...form.register("views")} /></div>
-              <div className="space-y-2"><Label>لایک</Label><Input type="number" {...form.register("likes")} /></div>
-              <div className="space-y-2"><Label>کامنت</Label><Input type="number" {...form.register("comments")} /></div>
-              <div className="space-y-2"><Label>اشتراک</Label><Input type="number" {...form.register("shares")} /></div>
+            <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <div className="space-y-1 text-right">
+                <Label htmlFor="group-distribution">پخش گروهی</Label>
+                <p className="text-xs text-muted-foreground">
+                  اگر یک محتوا را در چند لینک منتشر کرده‌اید، لینک و بازدید هر کدام را جدا وارد کنید؛ جمع بازدید خودکار محاسبه می‌شود.
+                </p>
+              </div>
+              <Switch
+                id="group-distribution"
+                checked={isGroupDistribution}
+                onCheckedChange={toggleGroupDistribution}
+              />
             </div>
 
-            <div className="space-y-2">
-              <Label className={cn(highlightLink && "text-destructive")}>لینک پست</Label>
-              <div className="flex gap-2">
-                <Input
-                  {...form.register("link")}
-                  dir="ltr"
-                  className={cn(
-                    "min-w-0 flex-1",
-                    highlightLink && "border-destructive focus-visible:ring-destructive"
-                  )}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isPending}
-                  onClick={handleFetchFromLink}
-                  title="خواندن اطلاعات از لینک (ایتا، آپارات یا صفحه وب)"
-                  className="shrink-0 gap-1.5"
-                >
-                  <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
-                  از لینک
-                </Button>
+            {isGroupDistribution ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label className={cn(highlightLink && "text-destructive")}>
+                    لینک‌ها و بازدیدها ({formatPersianNumber(filledLinkEntries.length)} لینک)
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      جمع بازدید: {formatPersianNumber(groupViewsTotal)}
+                    </Badge>
+                    <Button type="button" variant="outline" size="sm" onClick={addLinkEntry}>
+                      + افزودن لینک
+                    </Button>
+                  </div>
+                </div>
+                <div className="max-h-64 space-y-2 overflow-y-auto rounded-lg border p-2">
+                  {linkEntries.map((entry, index) => (
+                    <div
+                      key={entry.id}
+                      className="grid grid-cols-[minmax(0,1fr)_6.5rem_auto] items-end gap-2 rounded-md border bg-muted/30 p-2"
+                    >
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">لینک {index + 1}</Label>
+                        <Input
+                          dir="ltr"
+                          value={entry.link}
+                          placeholder="https://..."
+                          className={cn(
+                            highlightLink &&
+                              !entry.link.trim() &&
+                              "border-destructive focus-visible:ring-destructive"
+                          )}
+                          onChange={(event) =>
+                            updateLinkEntry(entry.id, { link: event.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">بازدید</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={entry.views}
+                          onChange={(event) =>
+                            updateLinkEntry(entry.id, {
+                              views: Math.max(0, Number(event.target.value) || 0),
+                            })
+                          }
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="mb-0.5"
+                        onClick={() => removeLinkEntry(entry.id)}
+                        title="حذف"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                {highlightLink && (
+                  <p className="text-xs text-destructive">حداقل یک لینک وارد کنید.</p>
+                )}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>لایک</Label>
+                    <Input type="number" {...form.register("likes")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>کامنت</Label>
+                    <Input type="number" {...form.register("comments")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>اشتراک</Label>
+                    <Input type="number" {...form.register("shares")} />
+                  </div>
+                </div>
               </div>
-              {highlightLink && (
-                <p className="text-xs text-destructive">لینک پست خالی است؛ لطفاً تکمیل کنید.</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                ایتا و آپارات: بازدید/آمار و محتوا. صفحات وب: عنوان، توضیح و کاور. بله/سروش/روبیکا دستی.
-              </p>
-            </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label>بازدید</Label>
+                    <Input type="number" {...form.register("views")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>لایک</Label>
+                    <Input type="number" {...form.register("likes")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>کامنت</Label>
+                    <Input type="number" {...form.register("comments")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>اشتراک</Label>
+                    <Input type="number" {...form.register("shares")} />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className={cn(highlightLink && "text-destructive")}>لینک پست</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      {...form.register("link")}
+                      dir="ltr"
+                      className={cn(
+                        "min-w-0 flex-1",
+                        highlightLink && "border-destructive focus-visible:ring-destructive"
+                      )}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isPending}
+                      onClick={handleFetchFromLink}
+                      title="خواندن اطلاعات از لینک (ایتا، آپارات یا صفحه وب)"
+                      className="shrink-0 gap-1.5"
+                    >
+                      <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
+                      از لینک
+                    </Button>
+                  </div>
+                  {highlightLink && (
+                    <p className="text-xs text-destructive">لینک پست خالی است؛ لطفاً تکمیل کنید.</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    ایتا و آپارات: بازدید/آمار و محتوا. صفحات وب: عنوان، توضیح و کاور. بله/سروش/روبیکا دستی.
+                  </p>
+                </div>
+              </>
+            )}
 
             <PersianDateField control={form.control} name="publishedDate" label="تاریخ انتشار" />
 

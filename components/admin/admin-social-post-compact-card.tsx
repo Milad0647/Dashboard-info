@@ -69,6 +69,9 @@ export function AdminSocialPostCompactCard({
           <AdminPlanLabelsBadges planLabels={post.planLabels} planLabel={post.planLabel} />
           <p className="truncate text-[10px] text-muted-foreground">
             {formatPersianDate(post.publishedDate)} · {formatPersianNumber(post.views)} بازدید
+            {post.linkEntries && post.linkEntries.length > 0
+              ? ` · پخش گروهی (${formatPersianNumber(post.linkEntries.length)})`
+              : ""}
           </p>
           <AdminCreatedAtText createdAt={post.createdAt} />
           <AdminOwnerBadge ownerUserId={post.ownerUserId} ownerName={post.ownerName} />
