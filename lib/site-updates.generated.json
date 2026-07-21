@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "2520019a6db4b95ddd5140cfbe7839ffed48406f",
+      "committedAt": "2026-07-21T14:16:35+03:30",
+      "title": "اصلاح باز شدن موارد نیازمند ویرایش در مجله و روزنامه",
+      "subject": "Fix press edit suggestions linking to activities page"
+    },
+    {
       "hash": "4bf323a99a575d9eb9aab771855d0647faec5b0f",
       "committedAt": "2026-07-21T14:01:41+03:30",
       "title": "رفع بکاپ هر دقیقه‌ای خالی و تنظیم پشتیبان شبانه برای بازیابی سریع",
