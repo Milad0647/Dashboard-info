@@ -3,6 +3,7 @@ import { DirectivesAdmin } from "@/components/admin/directives-admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
 import { canManageDirectives, canViewDirectives } from "@/lib/auth/access";
 import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
+import { listRejectedSubmissionsForOwner } from "@/lib/data-access/admin";
 import { pgGetUserPermissionsForCampaign } from "@/lib/db/repository-extended";
 import {
   pgListCampaignUsersForDirectives,
@@ -40,19 +41,24 @@ export default async function DirectivesPage({ searchParams }: PageProps) {
         initialDirectives={[]}
         archivedDirectives={[]}
         inboxDirectives={[]}
+        rejectedSubmissions={[]}
         campaignUsers={[]}
       />
     );
   }
 
-  const [manageDirectives, archivedDirectives, inboxDirectives, campaignUsers] = await Promise.all([
-    canManage ? pgListDirectivesForCampaign(campaignId, { scope: "active" }) : Promise.resolve([]),
-    canManage ? pgListDirectivesForCampaign(campaignId, { scope: "archived" }) : Promise.resolve([]),
-    session.userId
-      ? pgListDirectivesForUserInbox(campaignId, session.userId)
-      : Promise.resolve([]),
-    canManage ? pgListCampaignUsersForDirectives(campaignId) : Promise.resolve([]),
-  ]);
+  const [manageDirectives, archivedDirectives, inboxDirectives, rejectedSubmissions, campaignUsers] =
+    await Promise.all([
+      canManage ? pgListDirectivesForCampaign(campaignId, { scope: "active" }) : Promise.resolve([]),
+      canManage ? pgListDirectivesForCampaign(campaignId, { scope: "archived" }) : Promise.resolve([]),
+      session.userId
+        ? pgListDirectivesForUserInbox(campaignId, session.userId)
+        : Promise.resolve([]),
+      session.userId
+        ? listRejectedSubmissionsForOwner(campaignId, session.userId)
+        : Promise.resolve([]),
+      canManage ? pgListCampaignUsersForDirectives(campaignId) : Promise.resolve([]),
+    ]);
 
   const initialDirectives = canManage ? manageDirectives : inboxDirectives;
 
@@ -63,6 +69,7 @@ export default async function DirectivesPage({ searchParams }: PageProps) {
       initialDirectives={withFileAccessTokensDeep(initialDirectives)}
       archivedDirectives={withFileAccessTokensDeep(archivedDirectives)}
       inboxDirectives={withFileAccessTokensDeep(inboxDirectives)}
+      rejectedSubmissions={rejectedSubmissions}
       campaignUsers={campaignUsers}
     />
   );

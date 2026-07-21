@@ -906,19 +906,96 @@ export async function pgDeleteAnalyticsMetric(id: string) {
   return { success: true };
 }
 
+let submissionsRejectionReasonReady = false;
+
+async function ensureSubmissionsRejectionReasonColumn() {
+  if (submissionsRejectionReasonReady) return;
+  const sql = getSql();
+  await sql`
+    ALTER TABLE campaign_submissions
+      ADD COLUMN IF NOT EXISTS rejection_reason TEXT
+  `;
+  submissionsRejectionReasonReady = true;
+}
+
 export async function pgUpdateSubmission(id: string, data: Partial<CampaignSubmission>) {
   const sql = getSql();
   const now = new Date().toISOString();
+  await ensureSubmissionsRejectionReasonColumn();
 
-  await sql`
-    UPDATE campaign_submissions SET
-      status = COALESCE(${data.status ?? null}, status),
-      published = COALESCE(${data.published ?? null}, published),
-      updated_at = ${now}
-    WHERE id = ${id}
-  `;
+  const shouldUpdateReason =
+    data.rejectionReason !== undefined || data.status === "approved";
+  const nextReason =
+    data.status === "approved" ? null : (data.rejectionReason ?? null);
+
+  if (shouldUpdateReason) {
+    await sql`
+      UPDATE campaign_submissions SET
+        status = COALESCE(${data.status ?? null}, status),
+        published = COALESCE(${data.published ?? null}, published),
+        rejection_reason = ${nextReason},
+        updated_at = ${now}
+      WHERE id = ${id}
+    `;
+  } else {
+    await sql`
+      UPDATE campaign_submissions SET
+        status = COALESCE(${data.status ?? null}, status),
+        published = COALESCE(${data.published ?? null}, published),
+        updated_at = ${now}
+      WHERE id = ${id}
+    `;
+  }
 
   return { success: true };
+}
+
+export async function pgResubmitSubmission(
+  id: string,
+  data: { title: string; text: string; mediaUrl?: string | null }
+) {
+  const sql = getSql();
+  const now = new Date().toISOString();
+  await ensureSubmissionsRejectionReasonColumn();
+
+  const result = await sql`
+    UPDATE campaign_submissions SET
+      title = ${data.title},
+      text = ${data.text},
+      media_url = ${data.mediaUrl ?? null},
+      status = 'pending',
+      published = false,
+      updated_at = ${now}
+    WHERE id = ${id}
+      AND status = 'rejected'
+    RETURNING id
+  `;
+
+  if (!result[0]?.id) {
+    return { success: false as const, error: "ارسال ردشده یافت نشد" };
+  }
+
+  return { success: true as const };
+}
+
+export async function pgListRejectedSubmissionsForOwner(
+  campaignId: string,
+  ownerUserId: string
+) {
+  const sql = getSql();
+  await ensureSubmissionsRejectionReasonColumn();
+
+  const rows = await sql`
+    SELECT s.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+    FROM campaign_submissions s
+    LEFT JOIN users u ON u.id = s.owner_user_id
+    WHERE s.campaign_id = ${campaignId}
+      AND s.owner_user_id = ${ownerUserId}
+      AND s.status = 'rejected'
+    ORDER BY s.updated_at DESC
+  `;
+
+  return rows.map(mapSubmissionFromDb);
 }
 
 export async function pgDeleteSubmission(id: string) {

@@ -14,6 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { updateSubmissionAction, deleteSubmissionAction } from "@/lib/actions/admin-actions";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import type { CampaignSubmission } from "@/lib/types";
@@ -30,6 +32,8 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
   const inputRef = useRef<HTMLInputElement>(null);
   const [submissions, setSubmissions] = useState(initialSubmissions);
   const [selected, setSelected] = useState<CampaignSubmission | null>(null);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [uploading, setUploading] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -37,19 +41,69 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
     setSubmissions(initialSubmissions);
   }, [initialSubmissions]);
 
-  const updateStatus = (id: string, status: "pending" | "approved" | "rejected", published?: boolean) => {
+  const applyLocalStatus = (
+    id: string,
+    status: "pending" | "approved" | "rejected",
+    published: boolean,
+    reason?: string | null
+  ) => {
+    setSubmissions((prev) =>
+      prev.map((s) =>
+        s.id === id
+          ? {
+              ...s,
+              status,
+              published,
+              rejectionReason:
+                status === "approved"
+                  ? null
+                  : reason !== undefined
+                    ? reason
+                    : s.rejectionReason,
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      )
+    );
+  };
+
+  const updateStatus = (
+    id: string,
+    status: "pending" | "approved" | "rejected",
+    published?: boolean,
+    reason?: string
+  ) => {
     startTransition(async () => {
-      await updateSubmissionAction(id, { status, published });
-      setSubmissions((prev) =>
-        prev.map((s) =>
-          s.id === id
-            ? { ...s, status, published: published ?? (status === "approved"), updatedAt: new Date().toISOString() }
-            : s
-        )
-      );
+      const result = await updateSubmissionAction(id, {
+        status,
+        published,
+        rejectionReason: reason,
+      });
+      if (!result?.success) {
+        toast.error(
+          result && "error" in result && result.error
+            ? String(result.error)
+            : "بروزرسانی ناموفق بود"
+        );
+        return;
+      }
+      applyLocalStatus(id, status, published ?? status === "approved", reason ?? null);
       toast.success("وضعیت بروزرسانی شد");
       setSelected(null);
+      setRejectOpen(false);
+      setRejectionReason("");
+      router.refresh();
     });
+  };
+
+  const confirmReject = () => {
+    if (!selected) return;
+    const reason = rejectionReason.trim();
+    if (!reason) {
+      toast.error("دلیل رد را بنویسید");
+      return;
+    }
+    updateStatus(selected.id, "rejected", false, reason);
   };
 
   const runExcelUpload = async (file: File) => {
@@ -175,7 +229,15 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
         }}
       />
 
-      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+      <Dialog
+        open={!!selected && !rejectOpen}
+        onOpenChange={(o) => {
+          if (!o) {
+            setSelected(null);
+            setRejectionReason("");
+          }
+        }}
+      >
         <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle>جزئیات ارسال</DialogTitle>
@@ -228,6 +290,14 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
                   </a>
                 </div>
               )}
+              {selected.rejectionReason && (
+                <div className="space-y-1 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                  <p className="text-xs font-medium text-destructive">دلیل رد قبلی</p>
+                  <p className="whitespace-pre-wrap break-words text-sm">
+                    {selected.rejectionReason}
+                  </p>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2 border-t pt-4">
                 <Button
                   size="sm"
@@ -247,7 +317,10 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
                 <Button
                   size="sm"
                   variant="destructive"
-                  onClick={() => updateStatus(selected.id, "rejected", false)}
+                  onClick={() => {
+                    setRejectionReason(selected.rejectionReason ?? "");
+                    setRejectOpen(true);
+                  }}
                   disabled={isPending}
                 >
                   رد
@@ -255,6 +328,59 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={rejectOpen && !!selected}
+        onOpenChange={(o) => {
+          if (!o) {
+            setRejectOpen(false);
+            setRejectionReason("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>رد مشارکت</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              دلیل رد برای مالک محتوا در کارتابل نمایش داده می‌شود تا بتواند ویرایش و ارسال مجدد کند.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="rejection-reason">دلیل رد</Label>
+              <Textarea
+                id="rejection-reason"
+                rows={4}
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="مثلاً تصویر واضح نیست یا متن ناقص است..."
+                disabled={isPending}
+              />
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => {
+                  setRejectOpen(false);
+                  setRejectionReason("");
+                }}
+              >
+                انصراف
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={isPending || !rejectionReason.trim()}
+                onClick={confirmReject}
+              >
+                تأیید رد
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

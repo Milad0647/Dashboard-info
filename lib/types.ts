@@ -345,6 +345,8 @@ export interface CampaignSubmission extends Ownable {
   text: string;
   mediaUrl?: string | null;
   status: SubmissionStatus;
+  /** Set when status is rejected; kept after resubmit until approved. */
+  rejectionReason?: string | null;
   published: boolean;
   createdAt: string;
   updatedAt: string;

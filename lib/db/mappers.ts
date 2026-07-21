@@ -363,6 +363,7 @@ export function mapSubmissionFromDb(row: any): CampaignSubmission {
     text: row.text,
     mediaUrl: row.media_url,
     status: row.status,
+    rejectionReason: row.rejection_reason ? String(row.rejection_reason) : null,
     published: row.published,
     ...mapOwnerFromDb(row),
     createdAt: toIsoString(row.created_at),

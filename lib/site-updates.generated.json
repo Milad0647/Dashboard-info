@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "8b3bdd35e6dedc6eb0cf220075714ece9f3998da",
+      "committedAt": "2026-07-21T14:28:07+03:30",
+      "title": "افزودن پخش گروهی لینک و بازدید در پست‌های شبکه اجتماعی",
+      "subject": "Add group social distribution with multi link views"
+    },
+    {
       "hash": "2b1455672aac4d07cc2e25d728fc7acbe858dd07",
       "committedAt": "2026-07-21T14:24:54+03:30",
       "title": "امکان ارسال پیام مدیر و کارفرما روی کارت‌های محتوا و مشاهده در بخش پیام‌ها",

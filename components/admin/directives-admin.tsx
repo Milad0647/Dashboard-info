@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DirectiveActionButton } from "@/components/admin/directive-action-button";
+import { RejectedSubmissionsInbox } from "@/components/admin/rejected-submissions-inbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -47,6 +48,7 @@ import {
 } from "@/lib/directive-cta";
 import type {
   CampaignDirective,
+  CampaignSubmission,
   DirectiveActionType,
   DirectiveAttachment,
   DirectiveRecipient,
@@ -87,7 +89,7 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-type InboxTab = "new" | "seen" | "all";
+type InboxTab = "new" | "seen" | "all" | "rejected";
 type ManagerView = "manage" | "archive" | "inbox";
 
 type DraftAttachment = {
@@ -117,6 +119,8 @@ interface DirectivesAdminProps {
   archivedDirectives?: CampaignDirective[];
   /** Directives addressed to the current user (kartabl). */
   inboxDirectives: CampaignDirective[];
+  /** Rejected submissions owned by the current user. */
+  rejectedSubmissions?: CampaignSubmission[];
   campaignUsers: CampaignUserOption[];
 }
 
@@ -245,11 +249,13 @@ export function DirectivesAdmin({
   initialDirectives,
   archivedDirectives: initialArchived = [],
   inboxDirectives: initialInbox,
+  rejectedSubmissions: initialRejected = [],
   campaignUsers,
 }: DirectivesAdminProps) {
   const [rows, setRows] = useState(initialDirectives);
   const [archivedRows, setArchivedRows] = useState(initialArchived);
   const [inboxRowsState, setInboxRowsState] = useState(initialInbox);
+  const [rejectedCount, setRejectedCount] = useState(initialRejected.length);
   const [managerView, setManagerView] = useState<ManagerView>("manage");
   const [inboxTab, setInboxTab] = useState<InboxTab>("new");
   const [open, setOpen] = useState(false);
@@ -277,6 +283,10 @@ export function DirectivesAdmin({
   const [recipientFilter, setRecipientFilter] = useState<"all" | "unseen" | "sms_error">("all");
   const [isPending, startTransition] = useTransition();
 
+  useEffect(() => {
+    setRejectedCount(initialRejected.length);
+  }, [initialRejected]);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -300,10 +310,14 @@ export function DirectivesAdmin({
 
   const showingInbox = !canManage || managerView === "inbox";
   const showingArchive = canManage && managerView === "archive";
+  const showingRejected = showingInbox && inboxTab === "rejected";
+  const unreadDirectives = inboxRowsState.filter((row) => !row.confirmed).length;
+  const inboxBadgeCount = unreadDirectives + rejectedCount;
 
   const listRows = useMemo(() => {
     if (showingArchive) return archivedRows;
     if (!showingInbox) return rows;
+    if (inboxTab === "rejected") return [];
     if (inboxTab === "new") return inboxRowsState.filter((row) => !row.confirmed);
     if (inboxTab === "seen") return inboxRowsState.filter((row) => row.confirmed);
     return inboxRowsState;
@@ -558,7 +572,7 @@ export function DirectivesAdmin({
             </TabsTrigger>
             <TabsTrigger value="inbox">
               کارتابل من (
-              {formatPersianNumber(inboxRowsState.filter((row) => !row.confirmed).length)}
+              {formatPersianNumber(inboxBadgeCount)}
               )
             </TabsTrigger>
           </TabsList>
@@ -570,7 +584,7 @@ export function DirectivesAdmin({
           <TabsList>
             <TabsTrigger value="new">
               جدید (
-              {formatPersianNumber(inboxRowsState.filter((row) => !row.confirmed).length)}
+              {formatPersianNumber(unreadDirectives)}
               )
             </TabsTrigger>
             <TabsTrigger value="seen">
@@ -581,10 +595,19 @@ export function DirectivesAdmin({
             <TabsTrigger value="all">
               همه ({formatPersianNumber(inboxRowsState.length)})
             </TabsTrigger>
+            <TabsTrigger value="rejected">
+              ردشده ({formatPersianNumber(rejectedCount)})
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       )}
 
+      {showingRejected ? (
+        <RejectedSubmissionsInbox
+          initialItems={initialRejected}
+          onCountChange={setRejectedCount}
+        />
+      ) : (
       <div className="space-y-3">
         {listRows.length === 0 ? (
           <div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
@@ -684,6 +707,7 @@ export function DirectivesAdmin({
           ))
         )}
       </div>
+      )}
 
       {/* Create / Edit */}
       <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : closeDialog())}>

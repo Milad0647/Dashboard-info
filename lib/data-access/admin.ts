@@ -640,15 +640,77 @@ export async function updateSubmission(
   if (isPostgresConfigured()) return pg.pgUpdateSubmission(id, data);
   const now = new Date().toISOString();
   if (!isSupabaseConfigured()) {
+    const nextReason =
+      data.status === "approved"
+        ? null
+        : data.rejectionReason !== undefined
+          ? data.rejectionReason
+          : undefined;
     updateMockStore((store) => ({
       ...store,
       submissions: store.submissions.map((s) =>
-        s.id === id ? { ...s, ...data, updatedAt: now } as CampaignSubmission : s
+        s.id === id
+          ? ({
+              ...s,
+              ...data,
+              ...(nextReason !== undefined ? { rejectionReason: nextReason } : {}),
+              updatedAt: now,
+            } as CampaignSubmission)
+          : s
       ),
     }));
     return { success: true };
   }
   return { success: true };
+}
+
+export async function resubmitSubmission(
+  id: string,
+  data: { title: string; text: string; mediaUrl?: string | null }
+) {
+  if (isPostgresConfigured()) return pg.pgResubmitSubmission(id, data);
+  const now = new Date().toISOString();
+  if (!isSupabaseConfigured()) {
+    let found = false;
+    updateMockStore((store) => ({
+      ...store,
+      submissions: store.submissions.map((s) => {
+        if (s.id !== id || s.status !== "rejected") return s;
+        found = true;
+        return {
+          ...s,
+          title: data.title,
+          text: data.text,
+          mediaUrl: data.mediaUrl ?? null,
+          status: "pending",
+          published: false,
+          updatedAt: now,
+        };
+      }),
+    }));
+    if (!found) return { success: false as const, error: "ارسال ردشده یافت نشد" };
+    return { success: true as const };
+  }
+  return { success: false as const, error: "Database required" };
+}
+
+export async function listRejectedSubmissionsForOwner(
+  campaignId: string,
+  ownerUserId: string
+) {
+  if (isPostgresConfigured()) {
+    return pg.pgListRejectedSubmissionsForOwner(campaignId, ownerUserId);
+  }
+  if (!isSupabaseConfigured()) {
+    const store = getMockStore();
+    return store.submissions.filter(
+      (s) =>
+        s.campaignId === campaignId &&
+        s.ownerUserId === ownerUserId &&
+        s.status === "rejected"
+    );
+  }
+  return [];
 }
 
 export async function deleteSubmission(id: string) {

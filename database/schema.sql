@@ -141,6 +141,9 @@ CREATE TABLE IF NOT EXISTS campaign_submissions (
 ALTER TABLE campaign_submissions
   ADD COLUMN IF NOT EXISTS external_uuid TEXT;
 
+ALTER TABLE campaign_submissions
+  ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_submissions_campaign_external_uuid
   ON campaign_submissions(campaign_id, external_uuid)
   WHERE external_uuid IS NOT NULL;

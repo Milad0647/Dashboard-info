@@ -31,6 +31,7 @@ import {
   saveVideoVersion,
   updateCampaignSettings,
   updateSubmission,
+  resubmitSubmission,
 } from "@/lib/data-access/admin";
 import type {
   AnalyticsMetric,
@@ -434,12 +435,29 @@ export async function deleteAnalyticsAction(id: string) {
 
 export async function updateSubmissionAction(
   id: string,
-  data: { status?: "pending" | "approved" | "rejected"; published?: boolean }
+  data: {
+    status?: "pending" | "approved" | "rejected";
+    published?: boolean;
+    rejectionReason?: string | null;
+  }
 ) {
   const auth = await requireSession();
   if (isAuthError(auth)) return auth;
   const denied = await assertCanMutateOwnedContent(auth, "campaign_submissions", id);
   if (denied) return denied;
+
+  if (data.status === "rejected") {
+    const reason = data.rejectionReason?.trim() ?? "";
+    if (!reason) {
+      return { success: false as const, error: "دلیل رد الزامی است" };
+    }
+    data = { ...data, rejectionReason: reason, published: false };
+  }
+
+  if (data.status === "approved") {
+    data = { ...data, rejectionReason: null, published: data.published ?? true };
+  }
+
   const result = await updateSubmission(id, data);
   await logAuditFromCurrentSession({
     category: "content",
@@ -448,6 +466,37 @@ export async function updateSubmissionAction(
     entityId: id,
     label: "به‌روزرسانی مشارکت",
     metadata: { ...data },
+  });
+  await revalidateAll();
+  return result;
+}
+
+export async function resubmitSubmissionAction(
+  id: string,
+  data: { title: string; text: string; mediaUrl?: string | null }
+) {
+  const auth = await requireSession();
+  if (isAuthError(auth)) return auth;
+  const denied = await assertCanMutateOwnedContent(auth, "campaign_submissions", id);
+  if (denied) return denied;
+
+  const titleError = getContentTitleValidationError(data.title);
+  if (titleError) return { success: false as const, error: titleError };
+
+  const result = await resubmitSubmission(id, {
+    title: data.title.trim(),
+    text: data.text.trim(),
+    mediaUrl: data.mediaUrl?.trim() || null,
+  });
+  if (!result.success) return result;
+
+  await logAuditFromCurrentSession({
+    category: "content",
+    action: "content.update",
+    entityType: "submission",
+    entityId: id,
+    label: "ارسال مجدد مشارکت برای بررسی",
+    metadata: { status: "pending" },
   });
   await revalidateAll();
   return result;
