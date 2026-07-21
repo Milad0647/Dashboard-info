@@ -46,7 +46,7 @@ interface CampaignOverviewSectionProps {
 
 export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) {
   const { settings } = data;
-  const { filter, users: ownerUsers } = useOwnerLocationFilter();
+  const { filter, users: ownerUsers, setDatePreset } = useOwnerLocationFilter();
   const { scrollToSection } = useCampaignScroll();
   const filterActive = isCampaignContentFilterActive(filter);
   const filterLabel = getOwnerFilterLabel(filter, ownerUsers);
@@ -139,6 +139,14 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
               todayDelta={kpi.todayDelta}
               compactValue={kpi.compactValue}
               onClick={kpi.sectionId ? () => scrollToSection(kpi.sectionId!) : undefined}
+              onTodayDeltaClick={
+                kpi.sectionId
+                  ? () => {
+                      setDatePreset("today");
+                      scrollToSection(kpi.sectionId!);
+                    }
+                  : undefined
+              }
             />
           ))}
         </div>

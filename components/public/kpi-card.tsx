@@ -9,6 +9,8 @@ interface KPICardProps {
   description?: string;
   className?: string;
   onClick?: () => void;
+  /** Click on the "+N امروز" badge (does not fire card onClick). */
+  onTodayDeltaClick?: () => void;
   todayDelta?: number;
   compactValue?: boolean;
 }
@@ -20,6 +22,7 @@ export function KPICard({
   description,
   className,
   onClick,
+  onTodayDeltaClick,
   todayDelta,
   compactValue = false,
 }: KPICardProps) {
@@ -70,12 +73,31 @@ export function KPICard({
         </div>
       </CardContent>
 
-      {showTodayDelta && (
-        <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-lg bg-success/15 px-2.5 py-1 text-success">
-          <span className="text-base font-bold leading-none">+{formatPersianNumber(todayDelta)}</span>
-          <span className="text-[11px] font-medium">امروز</span>
-        </div>
-      )}
+      {showTodayDelta &&
+        (onTodayDeltaClick ? (
+          <button
+            type="button"
+            className="absolute bottom-3 left-3 flex items-center gap-1 rounded-lg bg-success/15 px-2.5 py-1 text-success transition-colors hover:bg-success/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/40"
+            aria-label={`فیلتر امروز و رفتن به ${title}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onTodayDeltaClick();
+            }}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <span className="text-base font-bold leading-none">
+              +{formatPersianNumber(todayDelta)}
+            </span>
+            <span className="text-[11px] font-medium">امروز</span>
+          </button>
+        ) : (
+          <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-lg bg-success/15 px-2.5 py-1 text-success">
+            <span className="text-base font-bold leading-none">
+              +{formatPersianNumber(todayDelta)}
+            </span>
+            <span className="text-[11px] font-medium">امروز</span>
+          </div>
+        ))}
     </Card>
   );
 }
