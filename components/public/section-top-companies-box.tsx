@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { LeaderboardBillboardsModal } from "@/components/public/leaderboard-billboards-modal";
 import { LeaderboardContentModal } from "@/components/public/leaderboard-content-modal";
 import { SectionDownloadableContentModal } from "@/components/public/section-downloadable-content-modal";
+import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
+import { isOwnerUserFilterActive } from "@/lib/owner-location-filter";
 import {
   asBillboardItems,
   asBroadcastItems,
@@ -35,6 +37,7 @@ export function SectionTopCompaniesBox({
   contentKind,
   title = "۵ شرکت برتر این بخش",
 }: SectionTopCompaniesBoxProps) {
+  const { filter } = useOwnerLocationFilter();
   const [sort, setSort] = useState<SectionTopSort>("count");
   const [selectedCompany, setSelectedCompany] = useState<SectionTopCompany | null>(null);
 
@@ -53,6 +56,8 @@ export function SectionTopCompaniesBox({
 
   const sectionLabel = SECTION_CONTENT_KIND_LABEL[contentKind];
 
+  // Ranking across companies is meaningless when a single company is selected.
+  if (isOwnerUserFilterActive(filter)) return null;
   if (companies.length === 0) return null;
 
   return (
