@@ -57,7 +57,7 @@ function matchesBillboardStatusFilter(billboard: Billboard, statusFilter: string
 
 function matchesBillboardCategoryFilter(billboard: Billboard, categoryFilter: string): boolean {
   if (categoryFilter === "all") return true;
-  return resolveBillboardCategoryDisplay(billboard) === categoryFilter;
+  return resolveBillboardCategoryLabel(billboard) === categoryFilter;
 }
 
 interface BillboardSectionProps {
@@ -234,7 +234,13 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
         <SectionTopCompaniesBox groups={rankingGroups} contentKind="billboard" />
         {categoryStats.length > 0 && (
           <div className="mb-4" data-export-section data-export-label="تفکیک دسته تبلیغات محیطی">
-            <BillboardCategoryChart data={categoryStats} />
+            <BillboardCategoryChart
+              data={categoryStats}
+              selectedLabel={categoryFilter === "all" ? null : categoryFilter}
+              onSelect={(label) =>
+                setCategoryFilter((prev) => (prev === label ? "all" : label))
+              }
+            />
           </div>
         )}
         <div className="mb-6 space-y-3">

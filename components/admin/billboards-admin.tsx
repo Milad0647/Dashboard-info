@@ -41,7 +41,6 @@ import {
   BILLBOARD_CATEGORIES,
   billboardCategoryLabels,
   buildBillboardCategoryStats,
-  resolveBillboardCategoryDisplay,
   resolveBillboardCategoryLabel,
 } from "@/lib/billboard-categories";
 import { BillboardCategoryChart } from "@/components/charts/billboard-category-chart";
@@ -134,7 +133,7 @@ export function BillboardsAdmin({
     const filtered = billboards.filter((item) => {
       if (!matchesAdminContentFilter(item, contentFilter)) return false;
       if (categoryFilter === ADMIN_FILTER_ALL) return true;
-      return resolveBillboardCategoryDisplay(item) === categoryFilter;
+      return resolveBillboardCategoryLabel(item) === categoryFilter;
     });
     return sortAdminContentItems(
       filtered,
@@ -315,7 +314,13 @@ export function BillboardsAdmin({
 
       {categoryStats.length > 0 && (
         <div className="mb-4">
-          <BillboardCategoryChart data={categoryStats} />
+          <BillboardCategoryChart
+            data={categoryStats}
+            selectedLabel={categoryFilter === ADMIN_FILTER_ALL ? null : categoryFilter}
+            onSelect={(label) =>
+              setCategoryFilter((prev) => (prev === label ? ADMIN_FILTER_ALL : label))
+            }
+          />
         </div>
       )}
 
@@ -585,6 +590,18 @@ export function BillboardsAdmin({
                 openEdit(previewBillboard);
               }
             : undefined
+        }
+        canSendMessage={canTransferOwnership || isFullAdmin}
+        messageTarget={
+          previewBillboard
+            ? {
+                campaignId,
+                contentType: "billboard",
+                contentId: previewBillboard.id,
+                contentTitle: previewBillboard.title,
+                ownerName: previewBillboard.ownerName,
+              }
+            : null
         }
       />
     </div>
