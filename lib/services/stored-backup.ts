@@ -147,7 +147,9 @@ export function openStoredBackupStream(filename: string): {
   };
 }
 
-export async function createDailyBackupsForAllCampaigns(): Promise<{
+export async function createDailyBackupsForAllCampaigns(options?: {
+  includeUploads?: boolean;
+}): Promise<{
   created: CreateStoredBackupResult[];
   failed: Array<{ campaignId: string; slug: string; error: string }>;
 }> {
@@ -157,7 +159,9 @@ export async function createDailyBackupsForAllCampaigns(): Promise<{
 
   for (const campaign of campaigns) {
     try {
-      const result = await createStoredCampaignBackup(campaign.id);
+      const result = await createStoredCampaignBackup(campaign.id, {
+        includeUploads: options?.includeUploads === true,
+      });
       created.push(result);
     } catch (error) {
       failed.push({

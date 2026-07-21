@@ -1,9 +1,6 @@
+import { runDailyBackupIfDue } from "@/lib/services/daily-backup-scheduler";
+import { getLastDailyBackupDay } from "@/lib/services/daily-backup-state";
 import { getTehranCalendarDateIso } from "@/lib/safe-dates";
-import {
-  markDailyBackupCompleted,
-  shouldMarkDailyBackupComplete,
-} from "@/lib/services/daily-backup-state";
-import { createDailyBackupsForAllCampaigns } from "@/lib/services/stored-backup";
 import { isPostgresConfigured } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +31,6 @@ function authorizeCron(request: Request): boolean {
     if (bearer === secret || headerSecret === secret) return true;
   }
 
-  // Docker sidecar poller calls 127.0.0.1 — allow even when CRON_SECRET is unset.
   return isLocalhostRequest(request);
 }
 
@@ -57,25 +53,17 @@ async function handleCron(request: Request) {
     );
   }
 
-  const summary = await createDailyBackupsForAllCampaigns();
+  const before = await getLastDailyBackupDay();
+  await runDailyBackupIfDue();
+  const after = await getLastDailyBackupDay();
   const tehranDay = getTehranCalendarDateIso();
-  let markedComplete = false;
-  if (shouldMarkDailyBackupComplete(summary)) {
-    try {
-      await markDailyBackupCompleted(tehranDay);
-      markedComplete = true;
-    } catch (error) {
-      console.warn("[daily-backup] Could not persist last-run date:", error);
-    }
-  }
 
   return Response.json({
     success: true,
-    createdCount: summary.created.length,
-    failedCount: summary.failed.length,
     tehranDay,
-    markedComplete,
-    summary,
+    alreadyDone: before === tehranDay,
+    markedComplete: after === tehranDay,
+    lastDailyBackupDay: after,
   });
 }
 

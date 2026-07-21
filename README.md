@@ -95,16 +95,30 @@ What it updates:
 
 ### 5b. Daily campaign ZIP backup
 
-Stored campaign backups (ZIP on disk, downloadable from **Admin → پشتیبان‌گیری**) are created:
+### 5b. Daily disaster-recovery backup
 
-1. **Automatically every day at 00:00 Asia/Tehran (midnight)** via an in-process scheduler (`instrumentation.ts`) and, in Docker, a localhost poller (`scripts/daily-backup-poller.mjs`). No Coolify cron required.
-2. Optionally via Coolify: `GET|POST /api/cron/daily-backup` with `Authorization: Bearer $CRON_SECRET`. The Docker poller calls `127.0.0.1` and works even if `CRON_SECRET` is unset.
+Nightly job (Tehran **00:00–05:59** catch-up window, **once per day**):
 
-Backups are **per-user folder ZIPs** (`users/{userId}/{section}.json` + media under `files/by-id/`) and cover all campaign content. Restore from **Admin → پشتیبان‌گیری** wipes the target campaign (or one user) and replaces it.
+1. `pg_dump` → `BACKUP_DIR/db-dump-YYYY-MM-DD.sql`
+2. Per-campaign **data-only** ZIP (users/sections JSON, **no media files**)
 
-Persist backups with a volume mounted at `BACKUP_DIR` (default `/app/data/backups`). Backups are **never auto-deleted** — only an admin can remove them from the UI.
+Media files stay on the persistent `UPLOAD_DIR` volume — do not rely on huge ZIPs for nightly runs.
 
-Set `DISABLE_DAILY_BACKUP_SCHEDULER=1` to turn off both the in-app midnight scheduler and the Docker poller.
+**To bring the app back after total loss:**
+
+1. Restore Postgres from the latest `db-dump-*.sql`
+2. Mount/restore the `UPLOAD_DIR` volume (or copy files back)
+3. Optionally restore campaign JSON from a backup ZIP (Admin → پشتیبان‌گیری → بازیابی کامل)
+4. Start the app
+
+Manual buttons:
+
+- **بکاپ سریع (بدون رسانه)** — small, recommended daily/manual
+- **بکاپ کامل با رسانه** — large; runs in background; use when you need a portable ZIP with files
+
+Persist volumes: `BACKUP_DIR` (default `/app/data/backups`) and `UPLOAD_DIR` (default `/app/data/uploads`).
+
+Set `DISABLE_DAILY_BACKUP_SCHEDULER=1` to turn off nightly automation.
 
 ### 6. Local Docker test
 

@@ -1,15 +1,16 @@
 import { getTehranCalendarDateIso } from "@/lib/safe-dates";
 import {
   getLastDailyBackupDay,
+  isWithinDailyBackupWindow,
   markDailyBackupCompleted,
   shouldMarkDailyBackupComplete,
+  tryAcquireDailyBackupLock,
 } from "@/lib/services/daily-backup-state";
 import { createDailyBackupsForAllCampaigns } from "@/lib/services/stored-backup";
+import { createPostgresDumpBackup } from "@/lib/services/db-dump-backup";
 import { isPostgresConfigured } from "@/lib/utils";
 
 const TEHRAN_TIME_ZONE = "Asia/Tehran";
-/** Daily backup hour in Asia/Tehran (midnight). */
-const BACKUP_HOUR_TEHRAN = 0;
 const CHECK_INTERVAL_MS = 60_000;
 
 const tehranPartsFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -38,7 +39,6 @@ function getTehranClock(date: Date = new Date()): {
   const month = get("month");
   const day = get("day");
   let hour = Number(get("hour"));
-  // en-GB midnight can be reported as 24 in some environments
   if (hour === 24) hour = 0;
   const minute = Number(get("minute"));
 
@@ -49,50 +49,81 @@ function getTehranClock(date: Date = new Date()): {
   };
 }
 
-async function runDailyBackupIfDue(): Promise<void> {
+/**
+ * Nightly DR backup:
+ * 1) Postgres dump (full DB)
+ * 2) Per-campaign data ZIPs without media (media stays on UPLOAD_DIR volume)
+ * Runs once per Tehran day inside 00:00–05:59 window only.
+ */
+export async function runDailyBackupIfDue(): Promise<void> {
   if (isRunning) return;
   if (!isPostgresConfigured()) return;
 
   const { dateIso, hour } = getTehranClock();
-  if (hour < BACKUP_HOUR_TEHRAN) return;
+  if (!isWithinDailyBackupWindow(hour)) return;
 
-  // Always re-read disk so Docker poller / HTTP cron can dedupe with this process.
   const lastCompleted = (await getLastDailyBackupDay()) ?? "";
   if (lastCompleted === dateIso) return;
 
+  const release = await tryAcquireDailyBackupLock();
+  if (!release) {
+    console.info("[daily-backup] Another run holds the lock; skipping");
+    return;
+  }
+
   isRunning = true;
   try {
-    console.info(`[daily-backup] Starting scheduled backup for Tehran day ${dateIso}`);
-    const summary = await createDailyBackupsForAllCampaigns();
+    // Re-check after lock (poller + in-app race)
+    const again = (await getLastDailyBackupDay()) ?? "";
+    if (again === dateIso) return;
+
+    console.info(`[daily-backup] Starting nightly DR backup for Tehran day ${dateIso}`);
+
+    let dbDump: { filename: string; sizeBytes: number } | null = null;
+    try {
+      dbDump = await createPostgresDumpBackup();
+      console.info(
+        `[daily-backup] DB dump ok: ${dbDump.filename} (${dbDump.sizeBytes} bytes)`
+      );
+    } catch (error) {
+      console.error("[daily-backup] DB dump failed:", error);
+    }
+
+    // Data-only campaign ZIPs — fast & small; media lives on the uploads volume.
+    const summary = await createDailyBackupsForAllCampaigns({
+      includeUploads: false,
+    });
+
     if (shouldMarkDailyBackupComplete(summary)) {
       try {
         await markDailyBackupCompleted(dateIso);
       } catch (error) {
         console.warn("[daily-backup] Could not persist last-run date:", error);
       }
-    } else {
-      console.warn(
-        "[daily-backup] All campaigns failed; will retry later the same day"
-      );
     }
+
     console.info(
-      `[daily-backup] Done: created=${summary.created.length} failed=${summary.failed.length}`
+      `[daily-backup] Done: dbDump=${dbDump ? "yes" : "no"} created=${summary.created.length} failed=${summary.failed.length}`
     );
     if (summary.failed.length > 0) {
-      console.warn("[daily-backup] Failures:", summary.failed);
+      console.warn("[daily-backup] Campaign ZIP failures:", summary.failed);
     }
   } catch (error) {
     console.error("[daily-backup] Scheduled run failed:", error);
+    // Still mark the day to stop every-minute spam; admin can run manual backup.
+    try {
+      await markDailyBackupCompleted(dateIso);
+    } catch {
+      // ignore
+    }
   } finally {
     isRunning = false;
+    await release();
   }
 }
 
 /**
- * Starts an in-process timer that creates campaign ZIP backups once per Tehran day
- * at/after 12:00. Safe to call multiple times (no-op after first start).
- * Persists last successful day under BACKUP_DIR so restarts do not double-run.
- * If the process was down at noon, it catches up later the same day.
+ * Starts an in-process timer for nightly Tehran backups (00:00–05:59 catch-up).
  */
 export function startDailyBackupScheduler(): void {
   if (schedulerStarted) return;
@@ -106,7 +137,7 @@ export function startDailyBackupScheduler(): void {
   void (async () => {
     const lastCompleted = (await getLastDailyBackupDay()) ?? "none";
     console.info(
-      `[daily-backup] Scheduler started (Tehran midnight). Today=${getTehranCalendarDateIso()}, lastCompleted=${lastCompleted}`
+      `[daily-backup] Scheduler started (Tehran 00:00–05:59). Today=${getTehranCalendarDateIso()}, lastCompleted=${lastCompleted}`
     );
     await runDailyBackupIfDue();
     setInterval(() => {

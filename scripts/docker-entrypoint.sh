@@ -28,9 +28,9 @@ fi
 mkdir -p "$UPLOAD_DIR" "$BACKUP_DIR"
 chown -R nextjs:nodejs "$UPLOAD_DIR" "$BACKUP_DIR" 2>/dev/null || true
 
-# In-container midnight backup trigger (Asia/Tehran) — complements in-app instrumentation scheduler.
+# In-container nightly DR backup trigger (Asia/Tehran 00:00–05:59) — complements in-app scheduler.
 if [ "${DISABLE_DAILY_BACKUP_SCHEDULER:-}" != "1" ]; then
-  echo "Starting daily backup poller (Tehran 00:00 midnight)..."
+  echo "Starting daily backup poller (Tehran 00:00–05:59)..."
   su-exec nextjs:nodejs node ./scripts/daily-backup-poller.mjs &
 fi
 

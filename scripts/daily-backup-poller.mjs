@@ -1,9 +1,8 @@
 /**
- * Sidecar poller for Docker: triggers daily campaign backups at 12:00 Asia/Tehran
+ * Sidecar poller for Docker: triggers nightly DR backups at 00:00–05:59 Asia/Tehran
  * by calling the local Next.js cron endpoint. Started from docker-entrypoint.sh.
  *
- * Shares BACKUP_DIR/.last-daily-backup with the in-app scheduler so only one run happens per day.
- * Localhost calls are authorized even without CRON_SECRET (see /api/cron/daily-backup).
+ * Shares BACKUP_DIR/.last-daily-backup + .daily-backup.lock with the in-app scheduler.
  */
 import { readFile } from "fs/promises";
 import path from "path";
@@ -13,6 +12,8 @@ const CHECK_MS = 60_000;
 const STATE_FILENAME = ".last-daily-backup";
 const SERVER_WAIT_ATTEMPTS = 90;
 const SERVER_WAIT_MS = 2_000;
+/** Only trigger inside midnight catch-up window (matches in-app scheduler). */
+const CATCHUP_UNTIL_HOUR = 6;
 
 let running = false;
 
@@ -61,7 +62,6 @@ async function waitForServer() {
         method: "GET",
         redirect: "manual",
       });
-      // Any HTTP response means the Next server is accepting connections.
       if (response.status > 0) {
         console.info(
           `[daily-backup-poller] Server ready after ${attempt} attempt(s) (HTTP ${response.status})`
@@ -95,8 +95,7 @@ async function triggerBackup() {
     throw new Error(`HTTP ${response.status}: ${body.slice(0, 200)}`);
   }
 
-  const result = await response.json().catch(() => null);
-  return result;
+  return response.json().catch(() => null);
 }
 
 async function tick() {
@@ -104,19 +103,18 @@ async function tick() {
   if (process.env.DISABLE_DAILY_BACKUP_SCHEDULER === "1") return;
 
   const { dateIso, hour } = tehranClock();
-  if (hour < 0) return;
+  // CRITICAL: do not run all day — only midnight hour + early catch-up.
+  if (hour !== 0 && !(hour > 0 && hour < CATCHUP_UNTIL_HOUR)) return;
 
   const lastCompleted = await loadLastCompleted();
   if (lastCompleted === dateIso) return;
 
   running = true;
   try {
-    console.info(`[daily-backup-poller] Triggering backup for ${dateIso}`);
+    console.info(`[daily-backup-poller] Triggering nightly backup for ${dateIso}`);
     const result = await triggerBackup();
-    const created = result?.createdCount ?? "?";
-    const failed = result?.failedCount ?? "?";
     console.info(
-      `[daily-backup-poller] Completed for ${dateIso} (created=${created} failed=${failed})`
+      `[daily-backup-poller] Result for ${dateIso}: markedComplete=${result?.markedComplete} alreadyDone=${result?.alreadyDone}`
     );
   } catch (error) {
     console.error("[daily-backup-poller] Failed:", error);
@@ -125,7 +123,9 @@ async function tick() {
   }
 }
 
-console.info("[daily-backup-poller] Started (Tehran midnight via localhost cron)");
+console.info(
+  "[daily-backup-poller] Started (Tehran 00:00–05:59 window via localhost cron)"
+);
 
 void (async () => {
   const ready = await waitForServer();

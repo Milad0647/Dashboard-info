@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "97c299c2aafb3e4516629da4ef8551947287d898",
+      "committedAt": "2026-07-20T22:18:38+03:30",
+      "title": "رفع خطای حجم زیاد بکاپ با اجرای پس‌زمینه و گزینه بدون رسانه",
+      "subject": "Run large backups in background to avoid proxy timeouts"
+    },
+    {
       "hash": "733df6d93272f7c59ab2a4ac6b45ab87fa634a0f",
       "committedAt": "2026-07-20T21:44:11+03:30",
       "title": "بکاپ کامل بر اساس هر کاربر با فولدر بخش‌ها و بازیابی یک‌کلیکه",

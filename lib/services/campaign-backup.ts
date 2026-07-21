@@ -1,5 +1,5 @@
 import { createWriteStream } from "fs";
-import { mkdir, writeFile, stat } from "fs/promises";
+import { mkdir, writeFile, stat, unlink, rename } from "fs/promises";
 import { basename } from "path";
 import JSZip from "jszip";
 import {
@@ -456,7 +456,15 @@ export async function writeCampaignBackupZipToFile(
   options?: CreateCampaignBackupOptions
 ): Promise<CampaignBackupWriteResult> {
   const prepared = await prepareBackupEntries(campaignId, options);
-  const output = createWriteStream(outputPath);
+  const tempPath = `${outputPath}.tmp`;
+
+  try {
+    await unlink(tempPath);
+  } catch {
+    // ignore
+  }
+
+  const output = createWriteStream(tempPath);
   const archive = archiver("zip", { zlib: { level: 5 } });
 
   const done = new Promise<void>((resolve, reject) => {
@@ -477,7 +485,15 @@ export async function writeCampaignBackupZipToFile(
   await archive.finalize();
   await done;
 
-  const info = await stat(outputPath);
+  const info = await stat(tempPath);
+  // A real v2 backup always has manifest + full-data JSON — reject near-empty files.
+  if (info.size < 200) {
+    await unlink(tempPath).catch(() => undefined);
+    throw new Error("Backup ZIP was empty or incomplete");
+  }
+
+  await rename(tempPath, outputPath);
+
   return {
     includedFiles: prepared.includedFiles,
     skippedFiles: prepared.skippedFiles,
