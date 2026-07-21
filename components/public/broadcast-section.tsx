@@ -14,7 +14,8 @@ import { flattenOwnerGroupsInSortOrder, shouldRenderChronologically } from "@/li
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, FileText, Play } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Download, Eye, FileText, Music, Play } from "lucide-react";
 import { PublicContentCard } from "@/components/public/public-content-card";
 import {
   broadcastHasDisplayContent,
@@ -23,10 +24,15 @@ import {
 } from "@/lib/public-media-section";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { useContentScoreAccess } from "@/lib/context/content-score-context";
-import { resolveBroadcastMediaType } from "@/lib/broadcast-media";
+import {
+  broadcastMediaCategoryLabel,
+  resolveBroadcastFileKind,
+  resolveBroadcastMediaType,
+} from "@/lib/broadcast-media";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
 import { VideoModal } from "@/components/media/video-modal";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
+import { ImageZoom } from "@/components/ui/image-zoom";
 
 const BROADCAST_ITEMS_PER_ROW = 1;
 
@@ -52,15 +58,19 @@ function toBroadcastVideoVersion(report: BroadcastReport): VideoVersion {
 
 function BroadcastReportCard({ report }: { report: BroadcastReport }) {
   const { canScore, campaignId } = useContentScoreAccess();
-  const [videoOpen, setVideoOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const mediaType = resolveBroadcastMediaType(report);
-  const isVideo = mediaType === "video";
-  const videoVersion = isVideo ? toBroadcastVideoVersion(report) : null;
+  const fileKind = resolveBroadcastFileKind(report);
+  const isMedia = mediaType === "media";
+  const category = broadcastMediaCategoryLabel(report);
+  const videoVersion = fileKind === "video" ? toBroadcastVideoVersion(report) : null;
 
   const handleDownload = () => {
+    const fallbackExt =
+      fileKind === "image" ? "jpg" : fileKind === "audio" ? "mp3" : fileKind === "video" ? "mp4" : "pdf";
     void downloadMedia(
       report.pdfUrl,
-      report.fileName || getFilenameFromUrl(report.pdfUrl, isVideo ? `${report.title}.mp4` : `${report.title}.pdf`)
+      report.fileName || getFilenameFromUrl(report.pdfUrl, `${report.title}.${fallbackExt}`)
     );
   };
 
@@ -68,15 +78,15 @@ function BroadcastReportCard({ report }: { report: BroadcastReport }) {
     <>
       <PublicContentCard
         scrollId={report.id}
-        onClick={isVideo ? () => setVideoOpen(true) : undefined}
+        onClick={isMedia ? () => setPreviewOpen(true) : undefined}
         title={report.title}
         date={formatPersianDate(report.reportDate)}
-        category={isVideo ? "ویدیو پخش" : "گزارش PDF"}
+        category={category}
         topics={report.planLabels ?? (report.planLabel ? [report.planLabel] : [])}
         ownerUserId={report.ownerUserId}
         ownerName={report.ownerName}
         media={
-          isVideo ? (
+          fileKind === "video" ? (
             <div className="group relative h-full w-full cursor-pointer">
               <VideoThumbnail
                 videoUrl={report.pdfUrl}
@@ -87,6 +97,18 @@ function BroadcastReportCard({ report }: { report: BroadcastReport }) {
               <div className="apple-overlay pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/35">
                 <Play className="h-12 w-12 text-white drop-shadow-lg transition-transform duration-[var(--duration-apple)] ease-[var(--ease-apple-spring)] group-hover:scale-110" />
               </div>
+            </div>
+          ) : fileKind === "image" ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={report.pdfUrl}
+              alt={report.title}
+              className="apple-media-zoom h-full w-full cursor-pointer object-cover"
+            />
+          ) : fileKind === "audio" ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted">
+              <Music className="h-16 w-16 text-primary" />
+              <span className="text-xs text-muted-foreground">صوت</span>
             </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted">
@@ -109,8 +131,8 @@ function BroadcastReportCard({ report }: { report: BroadcastReport }) {
         }
         actions={
           <>
-            {isVideo ? (
-              <Button variant="outline" size="sm" onClick={() => setVideoOpen(true)}>
+            {isMedia ? (
+              <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
                 <Eye className="h-4 w-4" />
                 مشاهده
               </Button>
@@ -132,17 +154,47 @@ function BroadcastReportCard({ report }: { report: BroadcastReport }) {
 
       {videoVersion && (
         <VideoModal
-          open={videoOpen}
-          onOpenChange={setVideoOpen}
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
           title={report.title}
           versions={[videoVersion]}
           initialVersionId={videoVersion.id}
           description={report.summaryData.notes}
-          category="ویدیو پخش"
+          category={category}
           topics={report.planLabels ?? (report.planLabel ? [report.planLabel] : [])}
           ownerName={report.ownerName}
           createdAt={report.createdAt}
         />
+      )}
+
+      {fileKind === "image" && (
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{report.title}</DialogTitle>
+            </DialogHeader>
+            <ImageZoom
+              src={report.pdfUrl}
+              alt={report.title}
+              className="w-full rounded-lg bg-muted"
+              imgClassName="max-h-[70vh] w-full object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {fileKind === "audio" && (
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{report.title}</DialogTitle>
+            </DialogHeader>
+            {report.summaryData.notes?.trim() ? (
+              <p className="text-sm text-muted-foreground">{report.summaryData.notes}</p>
+            ) : null}
+            <audio src={report.pdfUrl} controls className="w-full" preload="metadata" />
+          </DialogContent>
+        </Dialog>
       )}
     </>
   );
@@ -195,7 +247,7 @@ export function BroadcastSection({ reports, groups }: BroadcastSectionProps) {
     <CollapsibleSection
       id="broadcast-reports"
       title="گزارش پخش صدا و سیما"
-      description="گزارش‌های PDF و ویدیوی روزانه"
+      description="گزارش‌های PDF و مدیای روزانه (تصویر، صوت، ویدیو)"
     >
       <SectionTopCompaniesBox groups={filteredGroups} contentKind="broadcast" />
       {filteredReports.length === 0 ? (

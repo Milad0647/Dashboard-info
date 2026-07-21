@@ -8,7 +8,7 @@ import {
   CONTENT_TITLE_MAX_LENGTH,
   CONTENT_TITLE_MAX_LENGTH_MESSAGE,
 } from "@/lib/content-constraints";
-import { FileText, Play, Plus, Upload, Video } from "lucide-react";
+import { FileText, ImageIcon, Music, Play, Plus, Upload, Video } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,11 +30,17 @@ import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { DocumentUpload } from "@/components/ui/document-upload";
 import { MediaUpload } from "@/components/ui/media-upload";
+import { ImageZoom } from "@/components/ui/image-zoom";
 import { VideoModal } from "@/components/media/video-modal";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteBroadcastReportAction, saveBroadcastReportAction } from "@/lib/actions/extended-actions";
-import { resolveBroadcastMediaType, type BroadcastMediaType } from "@/lib/broadcast-media";
+import {
+  resolveBroadcastFileKind,
+  resolveBroadcastMediaType,
+  type BroadcastFileKind,
+  type BroadcastMediaType,
+} from "@/lib/broadcast-media";
 import { useAdminEditDeepLink } from "@/lib/hooks/use-admin-edit-deep-link";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
@@ -42,10 +48,13 @@ import { todayISO } from "@/lib/jalali";
 import type { BroadcastReport, VideoVersion } from "@/lib/types";
 import { cn, formatPersianDate } from "@/lib/utils";
 
+const MEDIA_ACCEPT =
+  "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,audio/mpeg,audio/mp3,audio/wav,audio/mp4,audio/aac,audio/ogg,.mp3,.wav,.m4a,.aac,.ogg";
+
 const schema = z.object({
   title: z.string().min(1).max(CONTENT_TITLE_MAX_LENGTH, CONTENT_TITLE_MAX_LENGTH_MESSAGE),
   reportDate: z.string(),
-  mediaType: z.enum(["pdf", "video"]),
+  mediaType: z.enum(["pdf", "media"]),
   pdfUrl: z.string().min(1),
   fileName: z.string().min(1),
   coverImageUrl: z.string().optional(),
@@ -98,6 +107,16 @@ function toBroadcastVideoVersion(report: BroadcastReport): VideoVersion {
   };
 }
 
+function detectFormFileKind(url: string, fileName: string): BroadcastFileKind {
+  return (
+    resolveBroadcastFileKind({
+      pdfUrl: url,
+      fileName,
+      summaryData: { mediaType: "media" },
+    }) ?? "video"
+  );
+}
+
 export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("broadcast");
   const [open, setOpen] = useState(false);
@@ -139,6 +158,8 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
   const highlightTitle = highlightFields.includes("title") && !watchedTitle?.trim();
   const highlightDate = highlightFields.includes("date") && !watchedReportDate?.trim();
   const highlightFile = highlightFields.includes("file") && !watchedPdfUrl?.trim();
+  const formFileKind =
+    watchedMediaType === "media" ? detectFormFileKind(watchedPdfUrl, watchedFileName) : null;
 
   const setMediaType = (nextType: BroadcastMediaType) => {
     const currentType = form.getValues("mediaType");
@@ -172,7 +193,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
   };
 
   const handleView = (report: BroadcastReport) => {
-    if (resolveBroadcastMediaType(report) === "video") {
+    if (resolveBroadcastMediaType(report) === "media") {
       setPreviewReport(report);
       return;
     }
@@ -189,10 +210,12 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
 
   const onSubmit = form.handleSubmit((data) => {
     startTransition(async () => {
+      const fileKind =
+        data.mediaType === "media" ? detectFormFileKind(data.pdfUrl, data.fileName) : null;
       const summaryData = {
         notes: data.notes,
         mediaType: data.mediaType,
-        ...(data.mediaType === "video" && data.coverImageUrl?.trim()
+        ...(fileKind === "video" && data.coverImageUrl?.trim()
           ? { coverImageUrl: data.coverImageUrl.trim() }
           : {}),
       };
@@ -238,7 +261,9 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
     });
   });
 
-  const previewVersion = previewReport ? toBroadcastVideoVersion(previewReport) : null;
+  const previewKind = previewReport ? resolveBroadcastFileKind(previewReport) : null;
+  const previewVersion =
+    previewReport && previewKind === "video" ? toBroadcastVideoVersion(previewReport) : null;
 
   return (
     <div className="space-y-4">
@@ -247,7 +272,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
         <div>
           <h1 className="text-2xl font-bold">گزارش پخش صدا و سیما</h1>
           <p className="text-sm text-muted-foreground">
-            آپلود و انتشار گزارش PDF یا ویدیو — روی کارت کلیک کنید یا با + گزارش جدید بسازید
+            آپلود و انتشار گزارش PDF یا مدیا (تصویر، صوت، ویدیو) — روی کارت کلیک کنید یا با + گزارش جدید بسازید
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -291,6 +316,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
         <div className="overflow-hidden rounded-xl border">
           {sortedRows.map((report) => {
             const type = resolveBroadcastMediaType(report);
+            const fileKind = resolveBroadcastFileKind(report);
             return (
               <div
                 key={report.id}
@@ -298,7 +324,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-md bg-muted">
-                    {type === "video" ? (
+                    {type === "media" && fileKind === "video" ? (
                       <>
                         <VideoThumbnail
                           videoUrl={report.pdfUrl}
@@ -311,6 +337,17 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                           <Play className="h-5 w-5 text-white" />
                         </div>
                       </>
+                    ) : type === "media" && fileKind === "image" ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={report.pdfUrl}
+                        alt={report.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : type === "media" && fileKind === "audio" ? (
+                      <div className="flex h-full items-center justify-center">
+                        <Music className="h-5 w-5 text-primary" />
+                      </div>
                     ) : (
                       <div className="flex h-full items-center justify-center">
                         <FileText className="h-5 w-5 text-primary" />
@@ -376,11 +413,11 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                 </Button>
                 <Button
                   type="button"
-                  variant={watchedMediaType === "video" ? "default" : "outline"}
-                  onClick={() => setMediaType("video")}
+                  variant={watchedMediaType === "media" ? "default" : "outline"}
+                  onClick={() => setMediaType("media")}
                 >
-                  <Video className="h-4 w-4" />
-                  ویدیو
+                  <ImageIcon className="h-4 w-4" />
+                  مدیا
                 </Button>
               </div>
             </div>
@@ -390,10 +427,10 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                 highlightFile && "rounded-lg border border-destructive bg-destructive/5 p-3"
               )}
             >
-              {watchedMediaType === "video" ? (
+              {watchedMediaType === "media" ? (
                 <MediaUpload
-                  label="فایل ویدیو"
-                  kind="video"
+                  label="فایل مدیا (تصویر، صوت یا ویدیو)"
+                  kind="image"
                   fileOnly
                   value={watchedPdfUrl}
                   coverImageUrl={watchedCoverImageUrl}
@@ -403,16 +440,19 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                   }
                   onUploadedMeta={(meta) => {
                     form.setValue("pdfUrl", meta.url, { shouldDirty: true, shouldValidate: true });
-                    form.setValue("fileName", meta.fileName || "broadcast.mp4", { shouldDirty: true });
+                    form.setValue("fileName", meta.fileName || "broadcast-media", { shouldDirty: true });
                     if (!form.getValues("title")) {
                       form.setValue(
                         "title",
-                        meta.fileName?.replace(/\.(mp4|webm|mov|ogg)$/i, "") ?? "ویدیو پخش",
+                        meta.fileName?.replace(
+                          /\.(mp4|webm|mov|ogg|mp3|wav|m4a|aac|jpe?g|png|webp|gif)$/i,
+                          ""
+                        ) ?? "مدیا پخش",
                         { shouldDirty: true }
                       );
                     }
                   }}
-                  accept="video/mp4,video/webm,video/quicktime"
+                  accept={MEDIA_ACCEPT}
                   showPreview={false}
                   showLinkInput={false}
                   dropzoneContent={
@@ -423,7 +463,25 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                       )}
                     >
                       {watchedPdfUrl ? (
-                        watchedCoverImageUrl ? (
+                        formFileKind === "image" ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={watchedPdfUrl}
+                            alt={watchedTitle || "تصویر"}
+                            className="h-full w-full object-contain"
+                          />
+                        ) : formFileKind === "audio" ? (
+                          <div className="flex h-full flex-col items-center justify-center gap-3 px-4">
+                            <Music className="h-10 w-10 text-primary" />
+                            <audio
+                              key={watchedPdfUrl}
+                              src={watchedPdfUrl}
+                              controls
+                              className="w-full max-w-sm"
+                              preload="metadata"
+                            />
+                          </div>
+                        ) : watchedCoverImageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={watchedCoverImageUrl}
@@ -442,15 +500,19 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                         )
                       ) : (
                         <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-sm text-muted-foreground">
-                          <Video className="h-10 w-10" />
-                          <span className="text-sm">ویدیو را بکشید و رها کنید یا انتخاب کنید</span>
+                          <div className="flex items-center gap-2">
+                            <ImageIcon className="h-8 w-8" />
+                            <Music className="h-8 w-8" />
+                            <Video className="h-8 w-8" />
+                          </div>
+                          <span className="text-sm">تصویر، صوت یا ویدیو را بکشید و رها کنید یا انتخاب کنید</span>
                           <span className="inline-flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm">
                             <Upload className="h-3.5 w-3.5" />
-                            انتخاب ویدیو
+                            انتخاب مدیا
                           </span>
                         </div>
                       )}
-                      {watchedPdfUrl && watchedCoverImageUrl ? (
+                      {watchedPdfUrl && formFileKind === "video" && watchedCoverImageUrl ? (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
                           <Play className="h-12 w-12 text-white drop-shadow-lg" />
                         </div>
@@ -483,8 +545,8 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
               )}
               {highlightFile && (
                 <p className="mt-2 text-xs text-destructive">
-                  {watchedMediaType === "video"
-                    ? "ویدیو هنوز آپلود نشده است."
+                  {watchedMediaType === "media"
+                    ? "فایل مدیا هنوز آپلود نشده است."
                     : "فایل PDF هنوز آپلود نشده است."}
                 </p>
               )}
@@ -502,7 +564,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
         </DialogContent>
       </Dialog>
 
-      {previewVersion && previewReport && (
+      {previewVersion && previewReport && previewKind === "video" && (
         <VideoModal
           open={Boolean(previewReport)}
           onOpenChange={(nextOpen) => {
@@ -515,6 +577,33 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
           category="ویدیو پخش"
           createdAt={previewReport.createdAt}
         />
+      )}
+
+      {previewReport && previewKind === "image" && (
+        <Dialog open onOpenChange={(next) => !next && setPreviewReport(null)}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{previewReport.title}</DialogTitle>
+            </DialogHeader>
+            <ImageZoom
+              src={previewReport.pdfUrl}
+              alt={previewReport.title}
+              className="w-full rounded-lg bg-muted"
+              imgClassName="max-h-[70vh] w-full object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {previewReport && previewKind === "audio" && (
+        <Dialog open onOpenChange={(next) => !next && setPreviewReport(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{previewReport.title}</DialogTitle>
+            </DialogHeader>
+            <audio src={previewReport.pdfUrl} controls className="w-full" preload="metadata" />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

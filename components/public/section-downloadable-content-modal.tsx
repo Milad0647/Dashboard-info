@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Eye, FileText, Play } from "lucide-react";
+import { Download, Eye, FileText, Music, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,11 @@ import {
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { VideoModal } from "@/components/media/video-modal";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
-import { resolveBroadcastMediaType } from "@/lib/broadcast-media";
+import {
+  broadcastMediaCategoryLabel,
+  resolveBroadcastFileKind,
+  resolveBroadcastMediaType,
+} from "@/lib/broadcast-media";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
 import type { BroadcastReport, RawMediaUpload, VideoVersion } from "@/lib/types";
 import { formatPersianDateTime } from "@/lib/utils";
@@ -53,7 +57,9 @@ function getItemThumbnail(entry: DownloadableItem): string | null {
   if (entry.kind === "raw_media") {
     return entry.item.mediaKind === "image" ? entry.item.fileUrl : null;
   }
-  if (resolveBroadcastMediaType(entry.item) === "video") {
+  const fileKind = resolveBroadcastFileKind(entry.item);
+  if (fileKind === "image") return entry.item.pdfUrl;
+  if (fileKind === "video") {
     return entry.item.summaryData.coverImageUrl?.trim() || null;
   }
   return null;
@@ -63,7 +69,7 @@ function getItemBadge(entry: DownloadableItem): string {
   if (entry.kind === "raw_media") {
     return entry.item.mediaKind === "video" ? "ویدیو خام" : "تصویر خام";
   }
-  return resolveBroadcastMediaType(entry.item) === "video" ? "ویدیو پخش" : "گزارش PDF";
+  return broadcastMediaCategoryLabel(entry.item);
 }
 
 export function SectionDownloadableContentModal({
@@ -81,10 +87,11 @@ export function SectionDownloadableContentModal({
     [items]
   );
 
-  const selectedBroadcastVideo =
-    selected?.kind === "broadcast" && resolveBroadcastMediaType(selected.item) === "video"
-      ? selected.item
-      : null;
+  const selectedBroadcast =
+    selected?.kind === "broadcast" ? selected.item : null;
+  const selectedBroadcastKind = selectedBroadcast
+    ? resolveBroadcastFileKind(selectedBroadcast)
+    : null;
 
   const selectedRawImage =
     selected?.kind === "raw_media" && selected.item.mediaKind === "image" ? selected.item : null;
@@ -114,9 +121,10 @@ export function SectionDownloadableContentModal({
               {sortedItems.map((entry) => {
                 const itemTitle = getItemTitle(entry);
                 const thumbnailUrl = getItemThumbnail(entry);
-                const isBroadcastVideo =
-                  entry.kind === "broadcast" &&
-                  resolveBroadcastMediaType(entry.item) === "video";
+                const broadcastKind =
+                  entry.kind === "broadcast" ? resolveBroadcastFileKind(entry.item) : null;
+                const isBroadcastVideo = broadcastKind === "video";
+                const isBroadcastAudio = broadcastKind === "audio";
                 const isRawVideo =
                   entry.kind === "raw_media" && entry.item.mediaKind === "video";
 
@@ -166,6 +174,10 @@ export function SectionDownloadableContentModal({
                           <div className="absolute inset-0 flex items-center justify-center bg-black/25">
                             <Play className="h-4 w-4 text-white" />
                           </div>
+                        </div>
+                      ) : isBroadcastAudio ? (
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                          <Music className="h-5 w-5 text-primary" />
                         </div>
                       ) : (
                         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
@@ -229,18 +241,81 @@ export function SectionDownloadableContentModal({
         </Dialog>
       )}
 
-      {selectedBroadcastVideo && (
+      {selectedBroadcast && selectedBroadcastKind === "video" && (
         <VideoModal
           open
           onOpenChange={(next) => {
             if (!next) setSelected(null);
           }}
-          title={selectedBroadcastVideo.title}
-          versions={[toBroadcastVideoVersion(selectedBroadcastVideo)]}
-          initialVersionId={selectedBroadcastVideo.id}
-          ownerName={selectedBroadcastVideo.ownerName}
-          createdAt={selectedBroadcastVideo.createdAt}
+          title={selectedBroadcast.title}
+          versions={[toBroadcastVideoVersion(selectedBroadcast)]}
+          initialVersionId={selectedBroadcast.id}
+          ownerName={selectedBroadcast.ownerName}
+          createdAt={selectedBroadcast.createdAt}
         />
+      )}
+
+      {selectedBroadcast && selectedBroadcastKind === "image" && (
+        <Dialog open onOpenChange={(next) => !next && setSelected(null)}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto overflow-x-hidden">
+            <DialogHeader>
+              <DialogTitle className="break-words">{selectedBroadcast.title}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <ImageZoom
+                src={selectedBroadcast.pdfUrl}
+                alt={selectedBroadcast.title}
+                className="w-full rounded-lg bg-muted"
+                imgClassName="max-h-[70vh] w-full object-contain"
+              />
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() => {
+                  void downloadMedia(
+                    selectedBroadcast.pdfUrl,
+                    getFilenameFromUrl(
+                      selectedBroadcast.pdfUrl,
+                      selectedBroadcast.fileName || `${selectedBroadcast.title}.jpg`
+                    )
+                  );
+                }}
+              >
+                <Download className="h-4 w-4" />
+                دانلود فایل
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {selectedBroadcast && selectedBroadcastKind === "audio" && (
+        <Dialog open onOpenChange={(next) => !next && setSelected(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="break-words">{selectedBroadcast.title}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <audio src={selectedBroadcast.pdfUrl} controls className="w-full" preload="metadata" />
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() => {
+                  void downloadMedia(
+                    selectedBroadcast.pdfUrl,
+                    getFilenameFromUrl(
+                      selectedBroadcast.pdfUrl,
+                      selectedBroadcast.fileName || `${selectedBroadcast.title}.mp3`
+                    )
+                  );
+                }}
+              >
+                <Download className="h-4 w-4" />
+                دانلود فایل
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   );

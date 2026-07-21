@@ -111,6 +111,19 @@ export function isDirectAudioUrl(url: string): boolean {
   return /\.(mp3|wav|ogg|m4a|aac|mpeg)(\?.*)?$/i.test(trimmed);
 }
 
+export function isDirectImageUrl(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+  if (/^\/api\/files\/.+\.(jpe?g|png|webp|gif|avif)(\?.*)?$/i.test(trimmed)) return true;
+  try {
+    const pathname = new URL(trimmed, "https://local.invalid").pathname;
+    if (/^\/api\/files\/.+\.(jpe?g|png|webp|gif|avif)$/i.test(pathname)) return true;
+    return /\.(jpe?g|png|webp|gif|avif)$/i.test(pathname);
+  } catch {
+    return /\.(jpe?g|png|webp|gif|avif)(\?.*)?$/i.test(trimmed);
+  }
+}
+
 export function resolveAbsoluteMediaUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return trimmed;

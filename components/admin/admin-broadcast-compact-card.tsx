@@ -1,12 +1,12 @@
 "use client";
 
-import { FileText, Play } from "lucide-react";
+import { FileText, Music, Play } from "lucide-react";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
-import { resolveBroadcastMediaType } from "@/lib/broadcast-media";
+import { resolveBroadcastFileKind, resolveBroadcastMediaType } from "@/lib/broadcast-media";
 import type { BroadcastReport } from "@/lib/types";
 import { cn, formatPersianDate } from "@/lib/utils";
 
@@ -26,7 +26,8 @@ export function AdminBroadcastCompactCard({
   onDelete,
 }: AdminBroadcastCompactCardProps) {
   const mediaType = resolveBroadcastMediaType(report);
-  const isVideo = mediaType === "video";
+  const fileKind = resolveBroadcastFileKind(report);
+  const isMedia = mediaType === "media";
 
   return (
     <div className="apple-lift group relative w-full overflow-hidden rounded-xl border bg-card text-right hover:border-primary/50">
@@ -38,7 +39,7 @@ export function AdminBroadcastCompactCard({
         )}
       >
         <div className="relative aspect-video w-full overflow-hidden bg-muted">
-          {isVideo ? (
+          {isMedia && fileKind === "video" ? (
             <>
               <VideoThumbnail
                 videoUrl={report.pdfUrl}
@@ -50,6 +51,18 @@ export function AdminBroadcastCompactCard({
                 <Play className="h-8 w-8 text-white drop-shadow-lg" />
               </div>
             </>
+          ) : isMedia && fileKind === "image" ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={report.pdfUrl}
+              alt={report.title}
+              className="h-full w-full object-contain"
+            />
+          ) : isMedia && fileKind === "audio" ? (
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+              <Music className="h-10 w-10 text-primary" />
+              <span className="text-[10px]">صوت</span>
+            </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
               <FileText className="h-10 w-10 text-primary" />

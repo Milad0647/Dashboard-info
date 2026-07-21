@@ -11,7 +11,11 @@ import { PublicContentDetailDialog } from "@/components/public/public-content-de
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageZoom } from "@/components/ui/image-zoom";
-import { resolveBroadcastMediaType } from "@/lib/broadcast-media";
+import {
+  broadcastMediaCategoryLabel,
+  resolveBroadcastFileKind,
+  resolveBroadcastMediaType,
+} from "@/lib/broadcast-media";
 import type { RecentActivityItem } from "@/lib/campaign-overview-insights";
 import { downloadMedia, getFilenameFromUrl, resolveDisplayVersion } from "@/lib/media-utils";
 import type {
@@ -185,9 +189,11 @@ function BroadcastDetail({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const isVideo = resolveBroadcastMediaType(report) === "video";
+  const mediaType = resolveBroadcastMediaType(report);
+  const fileKind = resolveBroadcastFileKind(report);
+  const category = broadcastMediaCategoryLabel(report);
 
-  if (isVideo) {
+  if (fileKind === "video") {
     const videoVersion = toBroadcastVideoVersion(report);
     return (
       <VideoModal
@@ -197,11 +203,80 @@ function BroadcastDetail({
         versions={[videoVersion]}
         initialVersionId={videoVersion.id}
         description={report.summaryData.notes}
-        category="ویدیو پخش"
+        category={category}
         topics={report.planLabels ?? (report.planLabel ? [report.planLabel] : [])}
         ownerName={report.ownerName}
         createdAt={report.createdAt}
       />
+    );
+  }
+
+  if (fileKind === "image") {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto overflow-x-hidden">
+          <DialogHeader>
+            <DialogTitle className="break-words">{report.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {report.summaryData.notes?.trim() && (
+              <p className="text-sm text-muted-foreground">{report.summaryData.notes}</p>
+            )}
+            <ImageZoom
+              src={report.pdfUrl}
+              alt={report.title}
+              className="w-full rounded-lg bg-muted"
+              imgClassName="max-h-[70vh] w-full object-contain"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                void downloadMedia(
+                  report.pdfUrl,
+                  getFilenameFromUrl(report.pdfUrl, report.fileName || `${report.title}.jpg`)
+                );
+              }}
+            >
+              <Download className="h-4 w-4" />
+              دانلود
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (fileKind === "audio") {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto overflow-x-hidden">
+          <DialogHeader>
+            <DialogTitle className="break-words">{report.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {report.summaryData.notes?.trim() && (
+              <p className="text-sm text-muted-foreground">{report.summaryData.notes}</p>
+            )}
+            <audio src={report.pdfUrl} controls className="w-full" preload="metadata" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                void downloadMedia(
+                  report.pdfUrl,
+                  getFilenameFromUrl(report.pdfUrl, report.fileName || `${report.title}.mp3`)
+                );
+              }}
+            >
+              <Download className="h-4 w-4" />
+              دانلود
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
@@ -219,7 +294,7 @@ function BroadcastDetail({
             <Button variant="outline" size="sm" asChild>
               <a href={report.pdfUrl} target="_blank" rel="noreferrer">
                 <FileText className="h-4 w-4" />
-                مشاهده PDF
+                {mediaType === "media" ? "مشاهده" : "مشاهده PDF"}
               </a>
             </Button>
             <Button

@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "8a33948894b2bf74930dd60bda946a0500d33a9b",
+      "committedAt": "2026-07-21T14:51:00+03:30",
+      "title": "امکان رد مشارکت با ذکر دلیل و پیگیری در کارتابل",
+      "subject": "Require rejection reason and inbox for rejected submissions"
+    },
+    {
       "hash": "8b3bdd35e6dedc6eb0cf220075714ece9f3998da",
       "committedAt": "2026-07-21T14:28:07+03:30",
       "title": "افزودن پخش گروهی لینک و بازدید در پست‌های شبکه اجتماعی",
