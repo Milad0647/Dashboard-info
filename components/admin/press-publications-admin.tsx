@@ -45,6 +45,11 @@ import {
   saveCampaignActivityAction,
 } from "@/lib/actions/extended-actions";
 import { normalizePlanLabels, type ContentTopic } from "@/lib/content-topics";
+import {
+  isDefaultActivityTitle,
+  type EditSuggestionMissingField,
+} from "@/lib/edit-suggestions";
+import { useAdminEditDeepLink } from "@/lib/hooks/use-admin-edit-deep-link";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
@@ -135,6 +140,42 @@ export function PressPublicationsAdmin({
     },
   });
 
+  const { highlightFields, setHighlightFields, resetDeepLink } = useAdminEditDeepLink({
+    items: rows,
+    getId: (row) => row.id,
+    basePath: "/admin/press-publications",
+    onOpen: (activity, fields) => {
+      setEditingId(activity.id);
+      setMediaItems(activity.mediaItems ?? []);
+      setPlanLabels(normalizePlanLabels(activity.planLabels, activity.planLabel));
+      setEditOwnerUserId(activity.ownerUserId ?? null);
+      form.reset({
+        title: activity.title,
+        activityType: activity.activityType === "newspaper" ? "newspaper" : "magazine",
+        activityDate: activity.activityDate,
+        location: activity.location,
+        link: activity.link ?? "",
+        description: activity.description ?? "",
+      });
+      setHighlightFields(fields);
+      setOpen(true);
+    },
+  });
+
+  const watchedTitle = form.watch("title");
+  const watchedActivityDate = form.watch("activityDate");
+  const watchedDescription = form.watch("description");
+  const hasDisplayMedia =
+    Boolean(form.watch("link")?.trim()) ||
+    mediaItems.some((item) => item.type === "image" && item.url.trim());
+  const highlightTitle =
+    highlightFields.includes("title") &&
+    (!watchedTitle?.trim() || isDefaultActivityTitle(watchedTitle));
+  const highlightDate = highlightFields.includes("date") && !watchedActivityDate?.trim();
+  const highlightMedia = highlightFields.includes("media") && !hasDisplayMedia;
+  const highlightDescription =
+    highlightFields.includes("description") && !watchedDescription?.trim();
+
   const primaryImage = useMemo(
     () => mediaItems.find((item) => item.type === "image")?.url ?? null,
     [mediaItems]
@@ -150,6 +191,7 @@ export function PressPublicationsAdmin({
       setMediaItems([]);
       setPlanLabels([]);
       setEditOwnerUserId(null);
+      setHighlightFields([]);
       form.reset({
         title: "",
         activityType: "magazine",
@@ -162,7 +204,7 @@ export function PressPublicationsAdmin({
     });
   };
 
-  const openEdit = (activity: CampaignActivity) => {
+  const openEdit = (activity: CampaignActivity, fields: EditSuggestionMissingField[] = []) => {
     setEditingId(activity.id);
     setMediaItems(activity.mediaItems ?? []);
     setPlanLabels(normalizePlanLabels(activity.planLabels, activity.planLabel));
@@ -175,7 +217,16 @@ export function PressPublicationsAdmin({
       link: activity.link ?? "",
       description: activity.description ?? "",
     });
+    setHighlightFields(fields);
     setOpen(true);
+  };
+
+  const closeDialog = () => {
+    setOpen(false);
+    setEditingId(null);
+    setPlanLabels([]);
+    setEditOwnerUserId(null);
+    resetDeepLink();
   };
 
   const handleDelete = (activity: CampaignActivity) => {
@@ -183,7 +234,7 @@ export function PressPublicationsAdmin({
       await deleteCampaignActivityAction(activity.id);
       setRows((prev) => prev.filter((row) => row.id !== activity.id));
       toast.success("حذف شد");
-      setOpen(false);
+      closeDialog();
       setPreviewActivity(null);
     });
   };
@@ -326,7 +377,7 @@ export function PressPublicationsAdmin({
           : [...prev, nextActivity]
       );
       toast.success("ذخیره شد");
-      setOpen(false);
+      closeDialog();
     });
   });
 
@@ -457,15 +508,19 @@ export function PressPublicationsAdmin({
         deleteLabel="این انتشار"
       />
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : closeDialog())}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "ویرایش" : "ثبت جدید"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label>عنوان</Label>
-              <Input {...form.register("title")} maxLength={CONTENT_TITLE_MAX_LENGTH} />
+              <Label className={cn(highlightTitle && "text-destructive")}>عنوان</Label>
+              <Input
+                {...form.register("title")}
+                maxLength={CONTENT_TITLE_MAX_LENGTH}
+                className={cn(highlightTitle && "border-destructive focus-visible:ring-destructive")}
+              />
             </div>
             <div className="space-y-2">
               <Label>نوع</Label>
@@ -483,15 +538,20 @@ export function PressPublicationsAdmin({
                 </SelectContent>
               </Select>
             </div>
-            <PersianDateField control={form.control} name="activityDate" label="تاریخ" />
+            <div className={cn(highlightDate && "rounded-lg border border-destructive bg-destructive/5 p-3")}>
+              <PersianDateField control={form.control} name="activityDate" label="تاریخ" />
+            </div>
             <div className="space-y-2">
-              <Label>لینک مطلب (اختیاری)</Label>
+              <Label className={cn(highlightMedia && "text-destructive")}>لینک مطلب (اختیاری)</Label>
               <div className="flex gap-2">
                 <Input
                   {...form.register("link")}
                   dir="ltr"
                   placeholder="https://example.com/article"
-                  className="min-w-0 flex-1"
+                  className={cn(
+                    "min-w-0 flex-1",
+                    highlightMedia && "border-destructive focus-visible:ring-destructive"
+                  )}
                 />
                 <Button
                   type="button"
@@ -515,7 +575,9 @@ export function PressPublicationsAdmin({
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <Label>رسانه‌ها (حداکثر {MAX_MEDIA_ITEMS})</Label>
+                <Label className={cn(highlightMedia && "text-destructive")}>
+                  رسانه‌ها (حداکثر {MAX_MEDIA_ITEMS})
+                </Label>
                 <div className="flex flex-wrap justify-end gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={() => addMediaItem("image")}>
                     + تصویر
@@ -528,6 +590,9 @@ export function PressPublicationsAdmin({
                   </Button>
                 </div>
               </div>
+              {highlightMedia && (
+                <p className="text-xs text-destructive">حداقل لینک یا یک تصویر لازم است</p>
+              )}
               {mediaItems.map((item) => (
                 <div key={item.id} className="space-y-2 rounded-lg border p-3">
                   <div className="flex items-center justify-between">
@@ -588,8 +653,16 @@ export function PressPublicationsAdmin({
               ))}
             </div>
             <div className="space-y-2">
-              <Label>توضیحات (اختیاری)</Label>
-              <Textarea {...form.register("description")} rows={4} />
+              <Label className={cn(highlightDescription && "text-amber-700 dark:text-amber-300")}>
+                توضیحات (اختیاری)
+              </Label>
+              <Textarea
+                {...form.register("description")}
+                rows={4}
+                className={cn(
+                  highlightDescription && "border-amber-500 focus-visible:ring-amber-500"
+                )}
+              />
             </div>
             <PlanLabelSelect
               topics={contentTopics}

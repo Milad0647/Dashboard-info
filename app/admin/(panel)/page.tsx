@@ -18,7 +18,6 @@ import { getAuthSession, getOwnerFilter, isFullAdmin } from "@/lib/auth/get-sess
 import {
   defaultContributorPermissions,
   hasContributorPermission,
-  type ContributorPermissionKey,
   type ContributorPermissions,
 } from "@/lib/contributor-permissions";
 import { pgListDirectivesForUserInbox } from "@/lib/db/repository-directives";
@@ -33,21 +32,6 @@ import { withFileAccessTokensDeep } from "@/lib/uploads";
 import { formatPersianNumber, adminHref, isPostgresConfigured } from "@/lib/utils";
 import { buildBillboardCategoryStats } from "@/lib/billboard-categories";
 import { BillboardCategoryChart } from "@/components/charts/billboard-category-chart";
-
-const PERMISSION_TO_CONTENT_TYPE: Partial<
-  Record<ContributorPermissionKey, EditSuggestionContentType>
-> = {
-  billboards: "billboard",
-  posters: "poster",
-  videos: "video",
-  files: "file",
-  rawMedia: "rawMedia",
-  sitePublications: "sitePublication",
-  socialPosts: "socialPost",
-  broadcast: "broadcast",
-  meetings: "meeting",
-  activities: "activity",
-};
 
 interface AdminDashboardProps {
   searchParams: Promise<{ campaign?: string }>;
@@ -139,7 +123,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
       ? features[definition.featureKey]
       : hasContributorPermission(contributorPermissions, definition.permissionKey)
   ).map((definition) => {
-    const contentType = PERMISSION_TO_CONTENT_TYPE[definition.permissionKey];
+    const contentType = definition.completenessContentType;
     return {
       label: definition.label,
       value: definition.getCount(data, billboards),

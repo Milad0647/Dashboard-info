@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "4bf323a99a575d9eb9aab771855d0647faec5b0f",
+      "committedAt": "2026-07-21T14:01:41+03:30",
+      "title": "رفع بکاپ هر دقیقه‌ای خالی و تنظیم پشتیبان شبانه برای بازیابی سریع",
+      "subject": "Fix every-minute empty backups; nightly DB dump + data-only ZIPs"
+    },
+    {
       "hash": "97c299c2aafb3e4516629da4ef8551947287d898",
       "committedAt": "2026-07-20T22:18:38+03:30",
       "title": "رفع خطای حجم زیاد بکاپ با اجرای پس‌زمینه و گزینه بدون رسانه",

@@ -1,3 +1,4 @@
+import { splitPressActivities } from "@/lib/press-publications";
 import { splitSocialPosts } from "@/lib/social-posts";
 import type {
   Billboard,
@@ -23,7 +24,8 @@ export type EditSuggestionContentType =
   | "rawMedia"
   | "broadcast"
   | "meeting"
-  | "activity";
+  | "activity"
+  | "pressPublication";
 
 export type EditSuggestionMissingField =
   | "title"
@@ -108,6 +110,7 @@ const CONTENT_TYPE_PATH: Record<EditSuggestionContentType, string> = {
   broadcast: "/admin/broadcast",
   meeting: "/admin/meetings",
   activity: "/admin/activities",
+  pressPublication: "/admin/press-publications",
 };
 
 export const editSuggestionFieldLabels: Record<EditSuggestionMissingField, string> = {
@@ -133,6 +136,7 @@ export const editSuggestionContentTypeLabels: Record<EditSuggestionContentType, 
   broadcast: "پخش صدا و سیما",
   meeting: "جلسه",
   activity: "اقدام",
+  pressPublication: "مجله و روزنامه",
 };
 
 const DEFAULT_POSTER_TITLE_PATTERN = /^پوستر\s+\d+$/;
@@ -328,6 +332,21 @@ function getActivityChecks(activity: CampaignActivity): CheckedField[] {
   ];
 }
 
+/** Press rows live under /admin/press-publications; public cards need a link or image. */
+function getPressPublicationChecks(activity: CampaignActivity): CheckedField[] {
+  const hasDisplayContent =
+    Boolean(activity.link?.trim()) ||
+    Boolean(activity.imageUrl?.trim()) ||
+    Boolean(activity.mediaItems?.some((item) => item.type === "image" && item.url.trim()));
+
+  return [
+    { key: "title", ok: !isWeakTitle(activity.title, DEFAULT_ACTIVITY_TITLE_PATTERN) },
+    { key: "date", ok: !isBlank(activity.activityDate) },
+    { key: "media", ok: hasDisplayContent },
+    { key: "description", ok: !isBlank(activity.description) },
+  ];
+}
+
 function toSuggestion(
   contentType: EditSuggestionContentType,
   campaignId: string,
@@ -464,7 +483,10 @@ export function buildCategoryCompleteness(
   const ownedRawMedia = scopedByOwner(rawMedia, ownerUserId);
   const ownedBroadcasts = scopedByOwner(broadcastReports, ownerUserId);
   const ownedMeetings = scopedByOwner(meetings, ownerUserId);
-  const ownedActivities = scopedByOwner(activities, ownerUserId);
+  const {
+    pressPublications: ownedPressPublications,
+    fieldActivities: ownedActivities,
+  } = splitPressActivities(scopedByOwner(activities, ownerUserId));
 
   const posterSuggestions = ownedPosters
     .map((poster) =>
@@ -522,6 +544,12 @@ export function buildCategoryCompleteness(
     .map((activity) => toSuggestion("activity", campaignId, activity, getActivityChecks(activity)))
     .filter((item): item is EditSuggestionItem => Boolean(item));
 
+  const pressSuggestions = ownedPressPublications
+    .map((activity) =>
+      toSuggestion("pressPublication", campaignId, activity, getPressPublicationChecks(activity))
+    )
+    .filter((item): item is EditSuggestionItem => Boolean(item));
+
   return [
     summarizeCategory("billboard", ownedBillboards.length, billboardSuggestions),
     summarizeCategory("poster", ownedPosters.length, posterSuggestions),
@@ -533,6 +561,7 @@ export function buildCategoryCompleteness(
     summarizeCategory("broadcast", ownedBroadcasts.length, broadcastSuggestions),
     summarizeCategory("meeting", ownedMeetings.length, meetingSuggestions),
     summarizeCategory("activity", ownedActivities.length, activitySuggestions),
+    summarizeCategory("pressPublication", ownedPressPublications.length, pressSuggestions),
   ];
 }
 
