@@ -427,6 +427,18 @@ export function SitePublicationsAdmin({
         }
         onDelete={previewPost ? () => handleDelete(previewPost) : undefined}
         deleteLabel="این انتشار"
+        canSendMessage={canTransferOwnership || isFullAdmin}
+        messageTarget={
+          previewPost
+            ? {
+                campaignId,
+                contentType: "site_publication",
+                contentId: previewPost.id,
+                contentTitle: previewPost.title,
+                ownerName: previewPost.ownerName,
+              }
+            : null
+        }
       />
 
       <Dialog open={open} onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : closeDialog())}>

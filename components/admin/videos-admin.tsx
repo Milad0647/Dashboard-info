@@ -41,6 +41,7 @@ import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import { VideoModal } from "@/components/media/video-modal";
+import { SendContentMessageButton } from "@/components/admin/send-content-message-button";
 import type { AdminUser, MediaCategory, Video, VideoVersion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { pickDefaultVideoCategoryId } from "@/lib/video-types";
@@ -446,6 +447,19 @@ export function VideosAdmin({
             topics={previewVideo.planLabels ?? (previewVideo.planLabel ? [previewVideo.planLabel] : [])}
             ownerName={previewVideo.ownerName}
             createdAt={previewVideo.createdAt}
+            actions={
+              (canTransferOwnership || isFullAdmin) ? (
+                <SendContentMessageButton
+                  target={{
+                    campaignId,
+                    contentType: "video",
+                    contentId: previewVideo.id,
+                    contentTitle: previewVideo.title,
+                    ownerName: previewVideo.ownerName,
+                  }}
+                />
+              ) : undefined
+            }
           />
         );
       })()}

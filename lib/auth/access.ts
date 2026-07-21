@@ -37,3 +37,8 @@ export function canScoreContent(session: AuthSession): boolean {
   if (isClientUser(session)) return true;
   return false;
 }
+
+/** Admin and کارفرما can send content-card messages to owners. */
+export function canSendContentMessages(session: AuthSession): boolean {
+  return canManageAllContent(session);
+}

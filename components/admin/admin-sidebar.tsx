@@ -20,6 +20,7 @@ import {
   ListChecks,
   LogOut,
   Menu,
+  MessageSquare,
   Radio,
   Rocket,
   ScrollText,
@@ -54,10 +55,15 @@ import {
   type ContributorPermissions,
 } from "@/lib/contributor-permissions";
 import { getMyUnreadProblemReplyCountAction } from "@/lib/actions/problem-report-actions";
+import { getMyUnreadContentMessageCountAction } from "@/lib/actions/content-message-actions";
 import {
   PROBLEM_REPORTS_UNREAD_EVENT,
   readUnreadCountFromEvent,
 } from "@/lib/problem-reports-unread";
+import {
+  CONTENT_MESSAGES_UNREAD_EVENT,
+  readContentMessagesUnreadFromEvent,
+} from "@/lib/content-messages-unread";
 import type { CampaignSettings } from "@/lib/types";
 
 const allNavItems: {
@@ -93,6 +99,7 @@ const allNavItems: {
   { href: "/admin/press-publications", label: "مجله و روزنامه", icon: FileText, permissionKey: "activities" },
   { href: "/admin/activities", label: "اقدامات", icon: Sparkles, permissionKey: "activities" },
   { href: "/admin/elanha", label: "اعلان‌ها", icon: Bell, adminOrClientOnly: true },
+  { href: "/admin/messages", label: "پیام‌ها", icon: MessageSquare, alwaysVisible: true },
   { href: "/admin/directives", label: "دستورکارها", icon: ClipboardCheck, alwaysVisible: true },
   {
     href: "/admin/problem-reports",
@@ -141,6 +148,7 @@ type SidebarNavBodyProps = {
   contentNavItems: typeof allNavItems;
   managementNavItems: typeof allNavItems;
   problemReportsUnread: number;
+  contentMessagesUnread: number;
   isFullAdminUser: boolean;
   currentCampaign: CampaignSettings | undefined;
   setCampaignId: (id: string) => void;
@@ -158,6 +166,7 @@ function SidebarNavBody({
   contentNavItems,
   managementNavItems,
   problemReportsUnread,
+  contentMessagesUnread,
   isFullAdminUser,
   currentCampaign,
   setCampaignId,
@@ -253,6 +262,13 @@ function SidebarNavBody({
                     aria-label="پاسخ خوانده‌نشده"
                   />
                 )}
+                {item.href === "/admin/messages" && contentMessagesUnread > 0 && (
+                  <span
+                    className="ms-auto h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
+                    title="پیام خوانده‌نشده"
+                    aria-label="پیام خوانده‌نشده"
+                  />
+                )}
               </Link>
             );
           })}
@@ -321,6 +337,7 @@ export function AdminSidebar() {
   const [isClientRole, setIsClientRole] = useState(false);
   const [permissions, setPermissions] = useState<ContributorPermissions | null>(null);
   const [problemReportsUnread, setProblemReportsUnread] = useState(0);
+  const [contentMessagesUnread, setContentMessagesUnread] = useState(0);
   const { campaignId, campaigns, currentCampaign, setCampaignId } = useAdminCampaign();
   const desktopNavRef = useRef<HTMLElement | null>(null);
 
@@ -338,11 +355,22 @@ export function AdminSidebar() {
 
     const refreshUnread = async () => {
       try {
-        const result = await getMyUnreadProblemReplyCountAction();
-        if (cancelled || !result.success) return;
-        setProblemReportsUnread(result.count ?? 0);
+        const [problemResult, messageResult] = await Promise.all([
+          getMyUnreadProblemReplyCountAction(),
+          getMyUnreadContentMessageCountAction(),
+        ]);
+        if (cancelled) return;
+        if (problemResult.success) {
+          setProblemReportsUnread(problemResult.count ?? 0);
+        }
+        if (messageResult.success) {
+          setContentMessagesUnread(messageResult.count ?? 0);
+        }
       } catch {
-        if (!cancelled) setProblemReportsUnread(0);
+        if (!cancelled) {
+          setProblemReportsUnread(0);
+          setContentMessagesUnread(0);
+        }
       }
     };
 
@@ -351,16 +379,22 @@ export function AdminSidebar() {
       void refreshUnread();
     }, 60_000);
 
-    const onUnreadEvent = (event: Event) => {
+    const onProblemUnreadEvent = (event: Event) => {
       const count = readUnreadCountFromEvent(event);
       if (count !== null) setProblemReportsUnread(count);
     };
-    window.addEventListener(PROBLEM_REPORTS_UNREAD_EVENT, onUnreadEvent);
+    const onMessagesUnreadEvent = (event: Event) => {
+      const count = readContentMessagesUnreadFromEvent(event);
+      if (count !== null) setContentMessagesUnread(count);
+    };
+    window.addEventListener(PROBLEM_REPORTS_UNREAD_EVENT, onProblemUnreadEvent);
+    window.addEventListener(CONTENT_MESSAGES_UNREAD_EVENT, onMessagesUnreadEvent);
 
     return () => {
       cancelled = true;
       window.clearInterval(timer);
-      window.removeEventListener(PROBLEM_REPORTS_UNREAD_EVENT, onUnreadEvent);
+      window.removeEventListener(PROBLEM_REPORTS_UNREAD_EVENT, onProblemUnreadEvent);
+      window.removeEventListener(CONTENT_MESSAGES_UNREAD_EVENT, onMessagesUnreadEvent);
     };
   }, []);
 
@@ -420,6 +454,7 @@ export function AdminSidebar() {
     contentNavItems,
     managementNavItems,
     problemReportsUnread,
+    contentMessagesUnread,
     isFullAdminUser,
     currentCampaign,
     setCampaignId,

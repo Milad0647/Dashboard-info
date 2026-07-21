@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, MessageSquare, Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +19,7 @@ interface AdminItemActionsProps {
   onView?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onMessage?: () => void;
   className?: string;
   compact?: boolean;
   deleteLabel?: string;
@@ -28,6 +29,7 @@ export function AdminItemActions({
   onView,
   onEdit,
   onDelete,
+  onMessage,
   className,
   compact = false,
   deleteLabel = "این محتوا",
@@ -55,6 +57,23 @@ export function AdminItemActions({
           >
             <Eye className="h-3.5 w-3.5" />
             {!compact && <span>نمایش</span>}
+          </Button>
+        )}
+        {onMessage && (
+          <Button
+            type="button"
+            variant="outline"
+            size={compact ? "icon" : "sm"}
+            className={cn(
+              compact ? "h-7 w-7" : undefined,
+              "hover:border-violet-500 hover:bg-violet-500/10 hover:text-violet-700 dark:hover:text-violet-300"
+            )}
+            onClick={onMessage}
+            title="ارسال پیام"
+            aria-label="ارسال پیام"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            {!compact && <span>پیام</span>}
           </Button>
         )}
         {onEdit && (

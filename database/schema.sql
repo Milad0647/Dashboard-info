@@ -865,3 +865,79 @@ CREATE INDEX IF NOT EXISTS idx_campaign_page_access_codes_campaign
   ON campaign_page_access_codes(campaign_id)
   WHERE revoked_at IS NULL;
 
+-- Content messages: admin/کارفرما notes on a content card for the owner to read
+CREATE TABLE IF NOT EXISTS content_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id UUID NOT NULL REFERENCES campaign_settings(id) ON DELETE CASCADE,
+  content_type TEXT NOT NULL
+    CHECK (content_type IN (
+      'billboard',
+      'poster',
+      'video',
+      'file',
+      'raw_media',
+      'social_post',
+      'site_publication',
+      'activity',
+      'broadcast',
+      'meeting'
+    )),
+  content_id UUID NOT NULL,
+  content_title TEXT NOT NULL DEFAULT '',
+  recipient_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sender_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  sender_name TEXT,
+  sender_role TEXT,
+  body TEXT NOT NULL,
+  seen_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_messages_recipient
+  ON content_messages(recipient_user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_content_messages_unread
+  ON content_messages(recipient_user_id, created_at DESC)
+  WHERE seen_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_content_messages_campaign
+  ON content_messages(campaign_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_content_messages_content
+  ON content_messages(content_type, content_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_content_messages_sender
+  ON content_messages(sender_user_id, created_at DESC)
+  WHERE sender_user_id IS NOT NULL;
+
+-- Manual SMS / message send reports (documentation of bulk messaging)
+CREATE TABLE IF NOT EXISTS sms_send_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id UUID NOT NULL REFERENCES campaign_settings(id) ON DELETE CASCADE,
+  owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  send_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  recipient_count INT NOT NULL DEFAULT 0,
+  message_body TEXT NOT NULL DEFAULT '',
+  evidence_file_url TEXT,
+  evidence_file_name TEXT,
+  evidence_mime_type TEXT,
+  evidence_file_size BIGINT NOT NULL DEFAULT 0,
+  published BOOLEAN NOT NULL DEFAULT true,
+  sort_order INT NOT NULL DEFAULT 0,
+  plan_label TEXT,
+  plan_labels JSONB NOT NULL DEFAULT '[]'::jsonb,
+  score DOUBLE PRECISION,
+  auto_score DOUBLE PRECISION,
+  manual_score DOUBLE PRECISION DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sms_send_reports_campaign
+  ON sms_send_reports(campaign_id, published, sort_order);
+
+-- Group social distribution: multiple published links + views (summed into views)
+ALTER TABLE social_media_posts
+  ADD COLUMN IF NOT EXISTS link_entries JSONB NOT NULL DEFAULT '[]'::jsonb;
+

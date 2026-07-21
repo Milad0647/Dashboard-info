@@ -8,6 +8,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
+import {
+  SendContentMessageButton,
+  type SendContentMessageTarget,
+} from "@/components/admin/send-content-message-button";
 import { ImageZoom } from "@/components/ui/image-zoom";
 
 interface AdminContentPreviewDialogProps {
@@ -21,6 +25,9 @@ interface AdminContentPreviewDialogProps {
   onEdit?: () => void;
   onDelete?: () => void;
   deleteLabel?: string;
+  /** When set, admin/کارفرما can send a message about this card. */
+  messageTarget?: SendContentMessageTarget | null;
+  canSendMessage?: boolean;
 }
 
 export function AdminContentPreviewDialog({
@@ -34,7 +41,11 @@ export function AdminContentPreviewDialog({
   onEdit,
   onDelete,
   deleteLabel,
+  messageTarget,
+  canSendMessage = false,
 }: AdminContentPreviewDialogProps) {
+  const showFooter = Boolean(onEdit || onDelete || (canSendMessage && messageTarget));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!flex max-h-[92vh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
@@ -84,27 +95,34 @@ export function AdminContentPreviewDialog({
           )}
         </div>
 
-        {(onEdit || onDelete) && (
-          <div className="shrink-0 border-t px-6 py-3">
-            <AdminItemActions
-              onEdit={
-                onEdit
-                  ? () => {
-                      onOpenChange(false);
-                      onEdit();
-                    }
-                  : undefined
-              }
-              onDelete={
-                onDelete
-                  ? () => {
-                      onOpenChange(false);
-                      onDelete();
-                    }
-                  : undefined
-              }
-              deleteLabel={deleteLabel}
-            />
+        {showFooter && (
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t px-6 py-3">
+            {canSendMessage && messageTarget ? (
+              <SendContentMessageButton target={messageTarget} />
+            ) : (
+              <span />
+            )}
+            {(onEdit || onDelete) && (
+              <AdminItemActions
+                onEdit={
+                  onEdit
+                    ? () => {
+                        onOpenChange(false);
+                        onEdit();
+                      }
+                    : undefined
+                }
+                onDelete={
+                  onDelete
+                    ? () => {
+                        onOpenChange(false);
+                        onDelete();
+                      }
+                    : undefined
+                }
+                deleteLabel={deleteLabel}
+              />
+            )}
           </div>
         )}
       </DialogContent>

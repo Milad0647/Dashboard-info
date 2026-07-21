@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
+import { SendContentMessageButton } from "@/components/admin/send-content-message-button";
 import { VideoModal } from "@/components/media/video-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,6 +98,7 @@ function NotificationCard({
   item,
   campaignId,
   canScore,
+  canSendMessage,
   selected,
   onToggleSelect,
   onOpen,
@@ -108,6 +110,7 @@ function NotificationCard({
   item: NotificationFeedItem;
   campaignId: string;
   canScore: boolean;
+  canSendMessage: boolean;
   selected: boolean;
   onToggleSelect: () => void;
   onOpen: () => void;
@@ -191,26 +194,40 @@ function NotificationCard({
         </div>
       )}
 
-      {showConfirm && onConfirm && (
+      {(showConfirm && onConfirm) || canSendMessage ? (
         <div className="flex items-center gap-2 border-t p-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="flex-1 gap-2"
-            disabled={confirming}
-            onClick={onConfirm}
-          >
-            <Check className="h-4 w-4" />
-            تأیید مشاهده
-          </Button>
+          {showConfirm && onConfirm ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-2"
+              disabled={confirming}
+              onClick={onConfirm}
+            >
+              <Check className="h-4 w-4" />
+              تأیید مشاهده
+            </Button>
+          ) : null}
+          {canSendMessage && (
+            <SendContentMessageButton
+              target={{
+                campaignId,
+                contentType: item.contentType,
+                contentId: item.contentId,
+                contentTitle: item.title,
+                ownerName: item.ownerName,
+              }}
+              compact
+            />
+          )}
           <Button type="button" variant="ghost" size="icon" className="shrink-0" asChild>
             <Link href={item.adminPath} title="ویرایش در پنل">
               <ExternalLink className="h-4 w-4" />
             </Link>
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -527,6 +544,7 @@ export function NotificationsAdmin({
                     item={item}
                     campaignId={campaignId}
                     canScore={canScore}
+                    canSendMessage
                     selected={selectedKeys.has(item.key)}
                     onToggleSelect={() => toggleSelect(item.key)}
                     onOpen={() => setPreviewItem(item)}
@@ -555,6 +573,17 @@ export function NotificationsAdmin({
           topics={previewItem.planLabel ? [previewItem.planLabel] : []}
           ownerName={previewItem.ownerName}
           createdAt={previewItem.createdAt}
+          actions={
+            <SendContentMessageButton
+              target={{
+                campaignId,
+                contentType: previewItem.contentType,
+                contentId: previewItem.contentId,
+                contentTitle: previewItem.title,
+                ownerName: previewItem.ownerName,
+              }}
+            />
+          }
         />
       ) : (
         <AdminContentPreviewDialog
@@ -563,6 +592,18 @@ export function NotificationsAdmin({
           title={previewItem?.title ?? "پیش‌نمایش اعلان"}
           description={previewDescription}
           imageUrl={previewItem?.thumbnailUrl}
+          canSendMessage
+          messageTarget={
+            previewItem
+              ? {
+                  campaignId,
+                  contentType: previewItem.contentType,
+                  contentId: previewItem.contentId,
+                  contentTitle: previewItem.title,
+                  ownerName: previewItem.ownerName,
+                }
+              : null
+          }
           meta={
             previewItem ? (
               <div className="flex flex-wrap gap-1.5">

@@ -506,6 +506,18 @@ export function PressPublicationsAdmin({
         }
         onDelete={previewActivity ? () => handleDelete(previewActivity) : undefined}
         deleteLabel="این انتشار"
+        canSendMessage={canTransferOwnership || isFullAdmin}
+        messageTarget={
+          previewActivity
+            ? {
+                campaignId,
+                contentType: "activity",
+                contentId: previewActivity.id,
+                contentTitle: previewActivity.title,
+                ownerName: previewActivity.ownerName,
+              }
+            : null
+        }
       />
 
       <Dialog open={open} onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : closeDialog())}>

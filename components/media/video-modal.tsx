@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,8 @@ interface VideoModalProps {
   topics?: string[];
   ownerName?: string | null;
   createdAt?: string | null;
+  /** Extra actions shown next to download buttons (e.g. send message). */
+  actions?: ReactNode;
 }
 
 export function VideoModal({
@@ -43,6 +45,7 @@ export function VideoModal({
   topics,
   ownerName,
   createdAt,
+  actions,
 }: VideoModalProps) {
   const activeVersion = useMemo(() => {
     return resolveDisplayVersion(versions) ?? versions[0];
@@ -139,6 +142,7 @@ export function VideoModal({
                 دانلود کاور
               </Button>
             )}
+            {actions}
           </div>
         </div>
       </DialogContent>

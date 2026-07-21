@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AdminPosterAddCard, AdminPosterCompactCard } from "@/components/admin/admin-poster-compact-card";
 import { AdminPosterEditor } from "@/components/admin/admin-poster-editor";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
+import { SendContentMessageButton } from "@/components/admin/send-content-message-button";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import {
   AdminContentFilterBar,
@@ -449,12 +450,25 @@ export function PostersAdmin({
                 );
               })()}
               <p className="text-sm text-muted-foreground">{previewPoster.description || "بدون توضیحات"}</p>
-              <AdminItemActions
-                onEdit={() => {
-                  setPreviewPoster(null);
-                  openEditor(previewPoster.id);
-                }}
-              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {(canTransferOwnership || isFullAdmin) && (
+                  <SendContentMessageButton
+                    target={{
+                      campaignId,
+                      contentType: "poster",
+                      contentId: previewPoster.id,
+                      contentTitle: previewPoster.title,
+                      ownerName: previewPoster.ownerName,
+                    }}
+                  />
+                )}
+                <AdminItemActions
+                  onEdit={() => {
+                    setPreviewPoster(null);
+                    openEditor(previewPoster.id);
+                  }}
+                />
+              </div>
             </div>
           )}
         </DialogContent>
