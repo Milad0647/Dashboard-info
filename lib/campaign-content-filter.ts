@@ -6,7 +6,7 @@ import {
   type CampaignContentSort,
   type OwnerLocationFilter,
 } from "@/lib/owner-location-filter";
-import { getTehranOffsetDateIso } from "@/lib/safe-dates";
+import { getTehranOffsetDateIso, timestampToTehranDateIso } from "@/lib/safe-dates";
 
 export function isDateFilterActive(filter: OwnerLocationFilter): boolean {
   return filter.datePreset !== OWNER_DATE_ALL;
@@ -73,7 +73,8 @@ export function getOwnableContentDate(item: Ownable & Record<string, unknown>): 
 
   for (const value of candidates) {
     if (typeof value === "string" && value.trim()) {
-      return value.trim().slice(0, 10);
+      // Keep full timestamps so matchesDateFilter can convert to Tehran calendar day.
+      return value.trim();
     }
   }
 
@@ -88,9 +89,9 @@ export function matchesDateFilter(
   const range = resolveDateFilterRange(filter);
   if (!range) return true;
 
-  const itemDate = (
-    getItemDate?.(item) ?? getOwnableContentDate(item as Ownable & Record<string, unknown>)
-  ).slice(0, 10);
+  const rawDate =
+    getItemDate?.(item) ?? getOwnableContentDate(item as Ownable & Record<string, unknown>);
+  const itemDate = timestampToTehranDateIso(rawDate);
   if (!itemDate) return false;
 
   return itemDate >= range.from && itemDate <= range.to;

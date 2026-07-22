@@ -1,4 +1,5 @@
 import type { CampaignKPIs, PublicCampaignData } from "@/lib/types";
+import { getBillboardUploadActivityDate } from "@/lib/billboards";
 import { resolveDateFilterRange, isCampaignContentFilterActive } from "@/lib/campaign-content-filter";
 import {
   filterItemsByOwnerLocation,
@@ -75,7 +76,11 @@ export function computeFilteredCampaignKpis(
   }
 
   const { sections } = data;
-  const billboards = filterItemsByOwnerLocation(data.billboards, filter);
+  const billboards = filterItemsByOwnerLocation(
+    data.billboards,
+    filter,
+    (billboard) => getBillboardUploadActivityDate(billboard)
+  );
   const posters = filterItemsByOwnerLocation(data.posters, filter);
   const videos = filterItemsByOwnerLocation(data.videos, filter);
   const socialPosts = filterItemsByOwnerLocation(data.socialPosts, filter);

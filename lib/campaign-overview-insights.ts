@@ -120,7 +120,11 @@ function filterCampaignData(
 ): PublicCampaignData {
   return {
     ...data,
-    billboards: filterItemsByOwnerLocation(data.billboards, filter),
+    billboards: filterItemsByOwnerLocation(
+      data.billboards,
+      filter,
+      (billboard) => getBillboardUploadActivityDate(billboard)
+    ),
     posters: filterItemsByOwnerLocation(data.posters, filter),
     videos: filterItemsByOwnerLocation(data.videos, filter),
     socialPosts: filterItemsByOwnerLocation(data.socialPosts, filter),

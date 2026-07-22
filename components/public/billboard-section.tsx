@@ -35,7 +35,7 @@ import { useFilteredOwnableItems } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import { groupByOwnerPreservingOrder, shouldRenderChronologically } from "@/lib/owner-groups";
-import { hasBillboardCoordinates } from "@/lib/billboards";
+import { getBillboardUploadActivityDate, hasBillboardCoordinates } from "@/lib/billboards";
 import type { Billboard } from "@/lib/types";
 import { formatPersianNumber, getStatusLabel } from "@/lib/utils";
 import {
@@ -43,11 +43,12 @@ import {
   resolveBillboardCategoryDisplay,
   resolveBillboardCategoryLabel,
 } from "@/lib/billboard-categories";
+import { getSafeUploadTimestamp } from "@/lib/safe-dates";
 
 type BillboardSort = PublicMediaSort | "category";
 
 function getBillboardUploadDate(billboard: Billboard): string {
-  return billboard.updatedAt || billboard.createdAt;
+  return getSafeUploadTimestamp(billboard);
 }
 
 function matchesBillboardStatusFilter(billboard: Billboard, statusFilter: string): boolean {
@@ -67,7 +68,12 @@ interface BillboardSectionProps {
 
 export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSectionProps) {
   const { filter } = useOwnerLocationFilter();
-  const locationFilteredBillboards = useFilteredOwnableItems(billboards, (billboard) => billboard.date);
+  // Date filter must use upload time (createdAt), same as the "+N امروز" KPI badge —
+  // not billboard.date, which is the display-period start.
+  const locationFilteredBillboards = useFilteredOwnableItems(
+    billboards,
+    (billboard) => getBillboardUploadActivityDate(billboard)
+  );
   const [cityFilter, setCityFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
