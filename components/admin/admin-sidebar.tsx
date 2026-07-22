@@ -45,7 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { cn, adminHref, isSupabaseConfigured } from "@/lib/utils";
+import { cn, adminHref, formatPersianNumber, isSupabaseConfigured } from "@/lib/utils";
 import { logoutAdminAction } from "@/lib/actions/auth-actions";
 import { getSessionContextAction } from "@/lib/actions/extended-actions";
 import { createClient } from "@/lib/supabase/client";
@@ -57,6 +57,7 @@ import {
 } from "@/lib/contributor-permissions";
 import { getMyUnreadProblemReplyCountAction } from "@/lib/actions/problem-report-actions";
 import { getMyUnreadContentMessageCountAction } from "@/lib/actions/content-message-actions";
+import { getMyUnreadDirectivesCountAction } from "@/lib/actions/directive-actions";
 import {
   PROBLEM_REPORTS_UNREAD_EVENT,
   readUnreadCountFromEvent,
@@ -65,6 +66,10 @@ import {
   CONTENT_MESSAGES_UNREAD_EVENT,
   readContentMessagesUnreadFromEvent,
 } from "@/lib/content-messages-unread";
+import {
+  DIRECTIVES_UNREAD_EVENT,
+  readDirectivesUnreadFromEvent,
+} from "@/lib/directives-unread";
 import type { CampaignSettings } from "@/lib/types";
 
 const allNavItems: {
@@ -146,6 +151,7 @@ type SidebarNavBodyProps = {
   campaigns: CampaignSettings[];
   pathname: string;
   showDirectivesAlert: boolean;
+  directivesUnread: number;
   directivesNavItem: (typeof allNavItems)[number] | undefined;
   contentNavItems: typeof allNavItems;
   managementNavItems: typeof allNavItems;
@@ -164,6 +170,7 @@ function SidebarNavBody({
   campaigns,
   pathname,
   showDirectivesAlert,
+  directivesUnread,
   directivesNavItem,
   contentNavItems,
   managementNavItems,
@@ -231,6 +238,11 @@ function SidebarNavBody({
             >
               <ClipboardCheck className="h-5 w-5 shrink-0" />
               <span>دستورکارها</span>
+              {directivesUnread > 0 && (
+                <span className="rounded-md bg-white/20 px-2 py-0.5 text-xs font-bold tabular-nums">
+                  {formatPersianNumber(directivesUnread)} جدید
+                </span>
+              )}
             </Link>
           </div>
         )}
@@ -340,6 +352,7 @@ export function AdminSidebar() {
   const [permissions, setPermissions] = useState<ContributorPermissions | null>(null);
   const [problemReportsUnread, setProblemReportsUnread] = useState(0);
   const [contentMessagesUnread, setContentMessagesUnread] = useState(0);
+  const [directivesUnread, setDirectivesUnread] = useState(0);
   const { campaignId, campaigns, currentCampaign, setCampaignId } = useAdminCampaign();
   const desktopNavRef = useRef<HTMLElement | null>(null);
 
@@ -357,9 +370,12 @@ export function AdminSidebar() {
 
     const refreshUnread = async () => {
       try {
-        const [problemResult, messageResult] = await Promise.all([
+        const [problemResult, messageResult, directivesResult] = await Promise.all([
           getMyUnreadProblemReplyCountAction(),
           getMyUnreadContentMessageCountAction(),
+          campaignId
+            ? getMyUnreadDirectivesCountAction(campaignId)
+            : Promise.resolve({ success: true as const, count: 0 }),
         ]);
         if (cancelled) return;
         if (problemResult.success) {
@@ -368,10 +384,14 @@ export function AdminSidebar() {
         if (messageResult.success) {
           setContentMessagesUnread(messageResult.count ?? 0);
         }
+        if (directivesResult.success) {
+          setDirectivesUnread(directivesResult.count ?? 0);
+        }
       } catch {
         if (!cancelled) {
           setProblemReportsUnread(0);
           setContentMessagesUnread(0);
+          setDirectivesUnread(0);
         }
       }
     };
@@ -389,16 +409,22 @@ export function AdminSidebar() {
       const count = readContentMessagesUnreadFromEvent(event);
       if (count !== null) setContentMessagesUnread(count);
     };
+    const onDirectivesUnreadEvent = (event: Event) => {
+      const count = readDirectivesUnreadFromEvent(event);
+      if (count !== null) setDirectivesUnread(count);
+    };
     window.addEventListener(PROBLEM_REPORTS_UNREAD_EVENT, onProblemUnreadEvent);
     window.addEventListener(CONTENT_MESSAGES_UNREAD_EVENT, onMessagesUnreadEvent);
+    window.addEventListener(DIRECTIVES_UNREAD_EVENT, onDirectivesUnreadEvent);
 
     return () => {
       cancelled = true;
       window.clearInterval(timer);
       window.removeEventListener(PROBLEM_REPORTS_UNREAD_EVENT, onProblemUnreadEvent);
       window.removeEventListener(CONTENT_MESSAGES_UNREAD_EVENT, onMessagesUnreadEvent);
+      window.removeEventListener(DIRECTIVES_UNREAD_EVENT, onDirectivesUnreadEvent);
     };
-  }, []);
+  }, [campaignId]);
 
   // Restore sidebar scroll after navigation remounts / soft refreshes.
   useEffect(() => {
@@ -426,8 +452,8 @@ export function AdminSidebar() {
     return hasContributorPermission(permissions, item.permissionKey);
   });
 
-  /** Pin directives as a red alert CTA at the top for every panel user. */
-  const showDirectivesAlert = true;
+  /** Pin directives as a red alert CTA when the user has unread items. */
+  const showDirectivesAlert = directivesUnread > 0;
   const directivesNavItem = navItems.find((item) => item.href === DIRECTIVES_HREF);
   const contentNavItems = navItems.filter((item) => {
     if (managementNavHrefs.has(item.href)) return false;
@@ -452,6 +478,7 @@ export function AdminSidebar() {
     campaigns,
     pathname,
     showDirectivesAlert,
+    directivesUnread,
     directivesNavItem,
     contentNavItems,
     managementNavItems,

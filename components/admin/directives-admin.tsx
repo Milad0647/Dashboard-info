@@ -46,6 +46,11 @@ import {
   DIRECTIVE_SYSTEM_ACTIONS,
   getDirectiveSystemAction,
 } from "@/lib/directive-cta";
+import {
+  DIRECTIVES_UNREAD_EVENT,
+  emitDirectivesUnreadChanged,
+  readDirectivesConfirmedIdFromEvent,
+} from "@/lib/directives-unread";
 import type {
   CampaignDirective,
   CampaignSubmission,
@@ -287,6 +292,28 @@ export function DirectivesAdmin({
     setRejectedCount(initialRejected.length);
   }, [initialRejected]);
 
+  useEffect(() => {
+    setInboxRowsState(initialInbox);
+  }, [initialInbox]);
+
+  useEffect(() => {
+    const onUnreadEvent = (event: Event) => {
+      const confirmedId = readDirectivesConfirmedIdFromEvent(event);
+      if (!confirmedId) return;
+      const seenAt = new Date().toISOString();
+      setInboxRowsState((prev) =>
+        prev.map((row) =>
+          row.id === confirmedId ? { ...row, confirmed: true, seenAt } : row
+        )
+      );
+      setDetailItem((current) =>
+        current?.id === confirmedId ? { ...current, confirmed: true, seenAt } : current
+      );
+    };
+    window.addEventListener(DIRECTIVES_UNREAD_EVENT, onUnreadEvent);
+    return () => window.removeEventListener(DIRECTIVES_UNREAD_EVENT, onUnreadEvent);
+  }, []);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -525,17 +552,19 @@ export function DirectivesAdmin({
     startTransition(async () => {
       const result = await confirmDirectiveSeenAction(item.id, campaignId);
       if (!result.success) {
-        toast.error(result.error ?? "تأیید ثبت نشد");
+        toast.error(result.error ?? "ثبت مشاهده ناموفق بود");
         return;
       }
       const next = { ...item, confirmed: true, seenAt: new Date().toISOString() };
-      setInboxRowsState((prev) =>
-        prev.map((row) => (row.id === item.id ? next : row))
-      );
+      setInboxRowsState((prev) => {
+        const updated = prev.map((row) => (row.id === item.id ? next : row));
+        emitDirectivesUnreadChanged(updated.filter((row) => !row.confirmed).length, item.id);
+        return updated;
+      });
       if (detailItem?.id === item.id) {
         setDetailItem(next);
       }
-      toast.success("تأیید مشاهده ثبت شد");
+      toast.success("مشاهده ثبت شد");
     });
   };
 
@@ -547,7 +576,7 @@ export function DirectivesAdmin({
           <p className="text-sm text-muted-foreground">
             {canManage
               ? "انتشار دستورکار مشترک برای کاربران؛ پس از اتمام به آرشیو می‌رود و حذف نمی‌شود"
-              : "دستورکارهای جدید را ببینید، نامه رسمی را مشاهده کنید و تأیید مشاهده بزنید"}
+              : "دستورکارهای جدید را ببینید، نامه رسمی را مشاهده کنید و دکمه «دیدم» را بزنید"}
           </p>
         </div>
         {canManage && managerView === "manage" && (
@@ -660,7 +689,7 @@ export function DirectivesAdmin({
                   {showingInbox && !item.confirmed && (
                     <Button size="sm" disabled={isPending} onClick={() => confirmSeen(item)}>
                       <Check className="h-4 w-4" />
-                      تأیید مشاهده
+                      دیدم
                     </Button>
                   )}
                   {!showingInbox && canManage && (
@@ -1106,7 +1135,7 @@ export function DirectivesAdmin({
                 {showingInbox && !detailItem.confirmed && (
                   <Button disabled={isPending} onClick={() => confirmSeen(detailItem)}>
                     <Check className="h-4 w-4" />
-                    تأیید مشاهده
+                    دیدم
                   </Button>
                 )}
               </div>

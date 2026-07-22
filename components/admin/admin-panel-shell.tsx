@@ -10,6 +10,7 @@ import {
   AdminCampaignProviderStatic,
 } from "@/components/admin/admin-campaign-provider";
 import { AuditTracker } from "@/components/admin/audit-tracker";
+import { DirectiveAckGate } from "@/components/admin/directive-ack-gate";
 import { ProblemReportButton } from "@/components/admin/problem-report-button";
 import { ScrollToTopButton } from "@/components/ui/scroll-to-top-button";
 import type { CampaignSettings } from "@/lib/types";
@@ -86,6 +87,9 @@ function PanelChrome({
       <AdminElanhaButton />
       <Suspense fallback={null}>
         <ProblemReportButton />
+      </Suspense>
+      <Suspense fallback={null}>
+        <DirectiveAckGate />
       </Suspense>
       <Suspense fallback={null}>
         <NavigationPendingOverlay />

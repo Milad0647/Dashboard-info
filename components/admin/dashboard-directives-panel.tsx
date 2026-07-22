@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, ClipboardCheck, Download, Eye } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { confirmDirectiveSeenAction } from "@/lib/actions/directive-actions";
+import {
+  DIRECTIVES_UNREAD_EVENT,
+  emitDirectivesUnreadChanged,
+  readDirectivesConfirmedIdFromEvent,
+} from "@/lib/directives-unread";
 import type { CampaignDirective, DirectiveAttachment } from "@/lib/types";
 import { adminHref, cn, formatPersianDate, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
@@ -139,6 +144,28 @@ export function DashboardDirectivesPanel({
   const [detailItem, setDetailItem] = useState<CampaignDirective | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  useEffect(() => {
+    setInboxRows(initialInbox);
+  }, [initialInbox]);
+
+  useEffect(() => {
+    const onUnreadEvent = (event: Event) => {
+      const confirmedId = readDirectivesConfirmedIdFromEvent(event);
+      if (!confirmedId) return;
+      const seenAt = new Date().toISOString();
+      setInboxRows((prev) =>
+        prev.map((row) =>
+          row.id === confirmedId ? { ...row, confirmed: true, seenAt } : row
+        )
+      );
+      setDetailItem((current) =>
+        current?.id === confirmedId ? { ...current, confirmed: true, seenAt } : current
+      );
+    };
+    window.addEventListener(DIRECTIVES_UNREAD_EVENT, onUnreadEvent);
+    return () => window.removeEventListener(DIRECTIVES_UNREAD_EVENT, onUnreadEvent);
+  }, []);
+
   const unreadCount = useMemo(
     () => inboxRows.filter((row) => !row.confirmed).length,
     [inboxRows]
@@ -161,22 +188,24 @@ export function DashboardDirectivesPanel({
     startTransition(async () => {
       const result = await confirmDirectiveSeenAction(item.id, campaignId);
       if (!result.success) {
-        toast.error(result.error ?? "تأیید مشاهده ثبت نشد");
+        toast.error(result.error ?? "ثبت مشاهده ناموفق بود");
         return;
       }
-      setInboxRows((prev) =>
-        prev.map((row) =>
+      setInboxRows((prev) => {
+        const next = prev.map((row) =>
           row.id === item.id
             ? { ...row, confirmed: true, seenAt: new Date().toISOString() }
             : row
-        )
-      );
+        );
+        emitDirectivesUnreadChanged(next.filter((row) => !row.confirmed).length, item.id);
+        return next;
+      });
       setDetailItem((current) =>
         current?.id === item.id
           ? { ...current, confirmed: true, seenAt: new Date().toISOString() }
           : current
       );
-      toast.success("مشاهده تأیید شد");
+      toast.success("مشاهده ثبت شد");
     });
   };
 
@@ -200,7 +229,7 @@ export function DashboardDirectivesPanel({
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               {unreadCount > 0
-                ? "دستورکارهای جدید را ببینید و تأیید مشاهده بزنید"
+                ? "دستورکارهای جدید را ببینید و دکمه «دیدم» را بزنید"
                 : inboxRows.length > 0
                   ? "همه دستورکارهای شما دیده‌شده‌اند"
                   : canManage
@@ -258,7 +287,7 @@ export function DashboardDirectivesPanel({
                     {!item.confirmed && (
                       <Button size="sm" disabled={isPending} onClick={() => confirmSeen(item)}>
                         <Check className="h-4 w-4" />
-                        تأیید مشاهده
+                        دیدم
                       </Button>
                     )}
                   </div>
@@ -319,7 +348,7 @@ export function DashboardDirectivesPanel({
                     onClick={() => confirmSeen(detailItem)}
                   >
                     <Check className="h-4 w-4" />
-                    تأیید مشاهده
+                    دیدم
                   </Button>
                 )}
               </div>

@@ -21,7 +21,7 @@ import type {
 } from "@/lib/types";
 import type { UserRegion } from "@/lib/user-regions";
 import { isPostgresConfigured } from "@/lib/utils";
-import { stripFileAccessTokensDeep } from "@/lib/uploads";
+import { stripFileAccessTokensDeep, withFileAccessTokensDeep } from "@/lib/uploads";
 import {
   isDirectiveSystemAction,
   normalizeDirectiveActionUrl,
@@ -354,6 +354,43 @@ export async function archiveDirectiveAction(id: string, campaignId: string) {
 /** @deprecated Use archiveDirectiveAction — directives are never hard-deleted. */
 export async function deleteDirectiveAction(id: string, campaignId: string) {
   return archiveDirectiveAction(id, campaignId);
+}
+
+/** Unread (unconfirmed) directives for the current user — used by the mandatory ack gate. */
+export async function listUnreadDirectivesAction(campaignId: string): Promise<{
+  success: boolean;
+  directives: CampaignDirective[];
+  error?: string;
+}> {
+  const access = await assertDirectivesAccess(campaignId);
+  if (access.error || !access.session) {
+    return { success: false, directives: [], error: access.error ?? "Unauthorized" };
+  }
+  if (!access.session.userId) {
+    return { success: true, directives: [] };
+  }
+  if (!isPostgresConfigured()) {
+    return { success: false, directives: [], error: "Database required" };
+  }
+
+  const inbox = await pgDirectives.pgListDirectivesForUserInbox(
+    campaignId,
+    access.session.userId
+  );
+  const unread = inbox.filter((item) => !item.confirmed);
+  return { success: true, directives: withFileAccessTokensDeep(unread) };
+}
+
+export async function getMyUnreadDirectivesCountAction(campaignId: string): Promise<{
+  success: boolean;
+  count: number;
+  error?: string;
+}> {
+  const result = await listUnreadDirectivesAction(campaignId);
+  if (!result.success) {
+    return { success: false, count: 0, error: result.error };
+  }
+  return { success: true, count: result.directives.length };
 }
 
 export async function confirmDirectiveSeenAction(directiveId: string, campaignId: string) {
