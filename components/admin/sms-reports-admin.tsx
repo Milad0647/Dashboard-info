@@ -23,6 +23,7 @@ import {
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
+import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { DocumentUpload } from "@/components/ui/document-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
@@ -285,6 +286,11 @@ export function SmsReportsAdmin({ campaignId, initialReports }: SmsReportsAdminP
                 </p>
               ) : null}
               <AdminCreatedAtText createdAt={report.createdAt} className="mt-2 text-xs" />
+              <AdminOwnerBadge
+                ownerUserId={report.ownerUserId}
+                ownerName={report.ownerName}
+                className="mt-1"
+              />
             </button>
           ))}
         </div>
@@ -309,6 +315,11 @@ export function SmsReportsAdmin({ campaignId, initialReports }: SmsReportsAdminP
                     {truncateMessage(report.messageBody, 120)}
                   </p>
                   <AdminCreatedAtText createdAt={report.createdAt} className="text-xs" />
+                  <AdminOwnerBadge
+                    ownerUserId={report.ownerUserId}
+                    ownerName={report.ownerName}
+                    className="mt-1"
+                  />
                 </div>
               </div>
               <AdminItemActions

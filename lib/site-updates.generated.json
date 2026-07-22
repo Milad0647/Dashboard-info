@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "a0693953fcb2facf1ec2794627351155a2342699",
+      "committedAt": "2026-07-22T11:35:55+03:30",
+      "title": "نمایش اجباری دستورکارها هنگام ورود و بازگشت به سایت",
+      "subject": "Strengthen directive ack gate on login and return"
+    },
+    {
       "hash": "243f1b0e2f69747be4a3b2fc19393c36197297b6",
       "committedAt": "2026-07-22T11:07:13+03:30",
       "title": "افزودن تأیید اجباری دستورکار و نشانگر موارد جدید",
