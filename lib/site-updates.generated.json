@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "243f1b0e2f69747be4a3b2fc19393c36197297b6",
+      "committedAt": "2026-07-22T11:07:13+03:30",
+      "title": "افزودن تأیید اجباری دستورکار و نشانگر موارد جدید",
+      "subject": "Add mandatory directive ack gate and unread badges"
+    },
+    {
       "hash": "62d7539b210ddd54aa9e0dd6810719beeec28545",
       "committedAt": "2026-07-22T11:03:27+03:30",
       "title": "اصلاح فیلتر امروز در بخش تبلیغات محیطی",

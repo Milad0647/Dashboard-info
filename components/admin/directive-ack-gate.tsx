@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ClipboardCheck, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -108,9 +108,49 @@ function AttachmentList({ attachments }: { attachments: DirectiveAttachment[] })
   );
 }
 
+/** Ignore rapid alt-tab focus flaps; still refresh after real absence (incl. multi-hour return). */
+const MIN_RETURN_REFRESH_MS = 2_000;
+const POLL_MS = 90_000;
+const LAST_ACTIVE_STORAGE_KEY = "directive-ack-last-active";
+
+function readLastActiveAt(): number | null {
+  try {
+    const raw = window.sessionStorage.getItem(LAST_ACTIVE_STORAGE_KEY);
+    if (!raw) return null;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastActiveAt(timestamp = Date.now()) {
+  try {
+    window.sessionStorage.setItem(LAST_ACTIVE_STORAGE_KEY, String(timestamp));
+  } catch {
+    // Ignore storage failures (private mode / quota).
+  }
+}
+
+function sortUnreadDirectives(items: CampaignDirective[]): CampaignDirective[] {
+  return [...items].sort((a, b) => {
+    const aUrgent = a.priority === "urgent" ? 0 : 1;
+    const bUrgent = b.priority === "urgent" ? 0 : 1;
+    if (aUrgent !== bUrgent) return aUrgent - bUrgent;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
 /**
  * Full-panel blocking gate: unread directives must be acknowledged with «دیدم»
  * before the user can continue using the admin panel.
+ *
+ * Triggers:
+ * - Fresh login / any panel mount
+ * - Window focus, tab visibility, or pageshow after being away
+ * - Periodic poll for newly published directives
+ *
+ * Until every unread item is acknowledged, the overlay stays up (one at a time).
  */
 export function DirectiveAckGate() {
   const router = useRouter();
@@ -118,11 +158,13 @@ export function DirectiveAckGate() {
   const [queue, setQueue] = useState<CampaignDirective[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const hasLoadedOnceRef = useRef(false);
 
   const refreshQueue = useCallback(async () => {
     if (!campaignId) {
       setQueue([]);
       setLoaded(true);
+      hasLoadedOnceRef.current = true;
       emitDirectivesUnreadChanged(0);
       return;
     }
@@ -130,41 +172,84 @@ export function DirectiveAckGate() {
     try {
       const result = await listUnreadDirectivesAction(campaignId);
       if (!result.success) {
-        setQueue([]);
-        emitDirectivesUnreadChanged(0);
+        // Keep an already-loaded queue on transient auth/network errors.
+        if (!hasLoadedOnceRef.current) {
+          setQueue([]);
+          emitDirectivesUnreadChanged(0);
+          setLoaded(true);
+        }
         return;
       }
-      const sorted = [...result.directives].sort((a, b) => {
-        const aUrgent = a.priority === "urgent" ? 0 : 1;
-        const bUrgent = b.priority === "urgent" ? 0 : 1;
-        if (aUrgent !== bUrgent) return aUrgent - bUrgent;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
+      const sorted = sortUnreadDirectives(result.directives);
       setQueue(sorted);
       emitDirectivesUnreadChanged(sorted.length);
-    } catch {
-      setQueue([]);
-      emitDirectivesUnreadChanged(0);
-    } finally {
+      hasLoadedOnceRef.current = true;
       setLoaded(true);
+      writeLastActiveAt();
+    } catch {
+      if (!hasLoadedOnceRef.current) {
+        setQueue([]);
+        emitDirectivesUnreadChanged(0);
+        setLoaded(true);
+      }
     }
   }, [campaignId]);
 
   useEffect(() => {
+    hasLoadedOnceRef.current = false;
     setLoaded(false);
     void refreshQueue();
   }, [refreshQueue]);
 
   useEffect(() => {
-    const onFocus = () => {
-      void refreshQueue();
+    let hiddenAt: number | null = document.visibilityState === "hidden" ? Date.now() : null;
+
+    const maybeRefreshAfterReturn = () => {
+      const now = Date.now();
+      const lastActive = readLastActiveAt();
+      const awayFromHidden = hiddenAt != null ? now - hiddenAt : 0;
+      const awayFromStorage = lastActive != null ? now - lastActive : Number.POSITIVE_INFINITY;
+      const awayMs = Math.max(awayFromHidden, awayFromStorage);
+
+      // Covers login remounts, return after a few hours, and normal tab switches.
+      if (awayMs >= MIN_RETURN_REFRESH_MS) {
+        void refreshQueue();
+      }
+      writeLastActiveAt(now);
+      hiddenAt = null;
     };
+
+    const onFocus = () => {
+      maybeRefreshAfterReturn();
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+        writeLastActiveAt(hiddenAt);
+        return;
+      }
+      maybeRefreshAfterReturn();
+    };
+
+    const onPageShow = () => {
+      maybeRefreshAfterReturn();
+    };
+
     window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisibility);
     const timer = window.setInterval(() => {
+      writeLastActiveAt();
       void refreshQueue();
-    }, 90_000);
+    }, POLL_MS);
+
+    writeLastActiveAt();
+
     return () => {
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.clearInterval(timer);
     };
   }, [refreshQueue]);
@@ -261,7 +346,7 @@ export function DirectiveAckGate() {
               isUrgent ? "text-white/90" : "text-muted-foreground"
             )}
           >
-            برای ادامه کار با پنل، باید این دستورکار را ببینید و دکمه «دیدم» را بزنید.
+            تا وقتی همه دستورکارهای دیده‌نشده را با «دیدم» تأیید نکنید، امکان ادامه کار با پنل نیست.
           </p>
         </header>
 
