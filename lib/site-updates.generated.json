@@ -1,6 +1,24 @@
 {
   "entries": [
     {
+      "hash": "62d7539b210ddd54aa9e0dd6810719beeec28545",
+      "committedAt": "2026-07-22T11:03:27+03:30",
+      "title": "اصلاح فیلتر امروز در بخش تبلیغات محیطی",
+      "subject": "Fix billboard today filter to use upload createdAt"
+    },
+    {
+      "hash": "df970cd69bf7fbbcde525d412a6c522273992ee3",
+      "committedAt": "2026-07-21T16:06:09+03:30",
+      "title": "مخفی شدن ۵ شرکت برتر هنگام فیلتر بر اساس شرکت",
+      "subject": "Hide top companies box when filtering by user"
+    },
+    {
+      "hash": "32df04c86016ac1b4a66c3c041a0908ce04bdb7f",
+      "committedAt": "2026-07-21T14:56:08+03:30",
+      "title": "امکان آپلود تصویر و صوت در گزارش پخش صدا و سیما",
+      "subject": "Allow image and audio in IRIB broadcast media uploads"
+    },
+    {
       "hash": "8a33948894b2bf74930dd60bda946a0500d33a9b",
       "committedAt": "2026-07-21T14:51:00+03:30",
       "title": "امکان رد مشارکت با ذکر دلیل و پیگیری در کارتابل",
