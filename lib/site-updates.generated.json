@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "e0b5a310230ef5718af4a18c531547da1089a896",
+      "committedAt": "2026-07-23T13:36:33+03:30",
+      "title": "رفع مشکل دانلود و دکمه‌های دستورکار در پنجره اجباری",
+      "subject": "Fix directive overlay clicks and file downloads"
+    },
+    {
+      "hash": "53ed9d2afadadea97a0995d9ec605be92d39b12e",
+      "committedAt": "2026-07-23T13:35:51+03:30",
+      "title": "جدا کردن بخش پیام‌های من از محتواهای آپلودی",
+      "subject": "Separate My Messages from content upload nav"
+    },
+    {
       "hash": "918f22c97fc0b84e7271a9f77259f162a5f0ad43",
       "committedAt": "2026-07-23T13:23:52+03:30",
       "title": "برجسته کردن دائمی دستورکارها در منو و داشبورد",

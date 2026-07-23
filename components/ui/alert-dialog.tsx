@@ -4,8 +4,49 @@ import * as React from "react";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  isAdminModalLocked,
+  subscribeAdminModalLock,
+} from "@/lib/admin-modal-lock";
 
-const AlertDialog = AlertDialogPrimitive.Root;
+function AlertDialog({
+  open,
+  defaultOpen,
+  onOpenChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Root>) {
+  const [locked, setLocked] = React.useState(false);
+  const onOpenChangeRef = React.useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+
+  React.useEffect(() => {
+    setLocked(isAdminModalLocked());
+    return subscribeAdminModalLock(setLocked);
+  }, []);
+
+  React.useEffect(() => {
+    if (!locked) return;
+    onOpenChangeRef.current?.(false);
+  }, [locked]);
+
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      if (locked && next) return;
+      onOpenChangeRef.current?.(next);
+    },
+    [locked]
+  );
+
+  return (
+    <AlertDialogPrimitive.Root
+      {...props}
+      open={locked ? false : open}
+      defaultOpen={locked ? false : defaultOpen}
+      onOpenChange={handleOpenChange}
+    />
+  );
+}
+
 const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
 const AlertDialogPortal = AlertDialogPrimitive.Portal;
 

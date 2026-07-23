@@ -13,6 +13,7 @@ import {
   confirmDirectiveSeenAction,
   listUnreadDirectivesAction,
 } from "@/lib/actions/directive-actions";
+import { emitAdminModalLock } from "@/lib/admin-modal-lock";
 import { emitDirectivesUnreadChanged } from "@/lib/directives-unread";
 import type { CampaignDirective, DirectiveAttachment } from "@/lib/types";
 import { cn, formatPersianDate, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
@@ -263,6 +264,15 @@ export function DirectiveAckGate() {
     return () => {
       document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [current]);
+
+  // Close every other admin Dialog/AlertDialog while this gate is visible.
+  useEffect(() => {
+    const blocking = Boolean(current);
+    emitAdminModalLock(blocking, "directive-ack");
+    return () => {
+      if (blocking) emitAdminModalLock(false);
     };
   }, [current]);
 

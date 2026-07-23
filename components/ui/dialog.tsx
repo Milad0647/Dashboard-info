@@ -3,9 +3,51 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
+import {
+  isAdminModalLocked,
+  subscribeAdminModalLock,
+} from "@/lib/admin-modal-lock";
 import { cn } from "@/lib/utils";
 
-const Dialog = DialogPrimitive.Root;
+function Dialog({
+  open,
+  defaultOpen,
+  onOpenChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>) {
+  const [locked, setLocked] = React.useState(false);
+  const onOpenChangeRef = React.useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+
+  React.useEffect(() => {
+    setLocked(isAdminModalLocked());
+    return subscribeAdminModalLock(setLocked);
+  }, []);
+
+  // Close any open dialog when the directive ack gate takes over.
+  React.useEffect(() => {
+    if (!locked) return;
+    onOpenChangeRef.current?.(false);
+  }, [locked]);
+
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      if (locked && next) return;
+      onOpenChangeRef.current?.(next);
+    },
+    [locked]
+  );
+
+  return (
+    <DialogPrimitive.Root
+      {...props}
+      open={locked ? false : open}
+      defaultOpen={locked ? false : defaultOpen}
+      onOpenChange={handleOpenChange}
+    />
+  );
+}
+
 const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
 const DialogClose = DialogPrimitive.Close;
