@@ -120,9 +120,9 @@ export function ContentMessagesPanel({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">پیام‌ها</h1>
+          <h1 className="text-2xl font-bold">پیام‌های من</h1>
           <p className="text-sm text-muted-foreground">
-            پیام‌های مدیر و کارفرما درباره کارت‌های محتوا — بدون رد کردن، فقط توضیح و یادآوری
+            پیام‌های دریافتی و ارسال‌شده درباره کارت‌های محتوا — جدا از بخش آپلود محتوا
           </p>
         </div>
         <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={refresh}>

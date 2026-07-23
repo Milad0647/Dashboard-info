@@ -105,7 +105,7 @@ const allNavItems: {
   { href: "/admin/press-publications", label: "مجله و روزنامه", icon: FileText, permissionKey: "activities" },
   { href: "/admin/activities", label: "اقدامات", icon: Sparkles, permissionKey: "activities" },
   { href: "/admin/elanha", label: "اعلان‌ها", icon: Bell, adminOrClientOnly: true },
-  { href: "/admin/messages", label: "پیام‌ها", icon: MessageSquare, alwaysVisible: true },
+  { href: "/admin/messages", label: "پیام‌های من", icon: MessageSquare, alwaysVisible: true },
   { href: "/admin/directives", label: "دستورکارها", icon: ClipboardCheck, alwaysVisible: true },
   {
     href: "/admin/problem-reports",
@@ -142,7 +142,11 @@ const managementNavHrefs = new Set([
   "/admin/backups",
 ]);
 
+/** Personal inbox — kept outside uploaded-content sections. */
+const myMessagesNavHrefs = new Set(["/admin/messages"]);
+
 const DIRECTIVES_HREF = "/admin/directives";
+const MESSAGES_HREF = "/admin/messages";
 
 const SIDEBAR_NAV_SCROLL_KEY = "admin-sidebar-nav-scroll";
 
@@ -152,6 +156,7 @@ type SidebarNavBodyProps = {
   pathname: string;
   directivesUnread: number;
   directivesNavItem: (typeof allNavItems)[number] | undefined;
+  myMessagesNavItems: typeof allNavItems;
   contentNavItems: typeof allNavItems;
   managementNavItems: typeof allNavItems;
   problemReportsUnread: number;
@@ -164,12 +169,66 @@ type SidebarNavBodyProps = {
   navRef?: RefObject<HTMLElement | null>;
 };
 
+function renderNavLink({
+  item,
+  campaignId,
+  pathname,
+  setMobileOpen,
+  problemReportsUnread,
+  contentMessagesUnread,
+}: {
+  item: (typeof allNavItems)[number];
+  campaignId: string;
+  pathname: string;
+  setMobileOpen: (open: boolean) => void;
+  problemReportsUnread: number;
+  contentMessagesUnread: number;
+}) {
+  const Icon = item.icon;
+  const href = adminHref(item.href, campaignId);
+  const isActive =
+    pathname === item.href ||
+    (item.href === "/admin/elanha" && pathname === "/admin/notifications");
+  return (
+    <Link
+      key={item.href}
+      href={href}
+      prefetch={false}
+      onClick={() => setMobileOpen(false)}
+      className={cn(
+        "apple-nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
+        isActive
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="truncate flex-1">{item.label}</span>
+      {item.href === "/admin/problem-reports" && problemReportsUnread > 0 && (
+        <span
+          className="ms-auto h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
+          title="پاسخ خوانده‌نشده"
+          aria-label="پاسخ خوانده‌نشده"
+        />
+      )}
+      {item.href === MESSAGES_HREF && contentMessagesUnread > 0 && (
+        <span
+          className="ms-auto h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
+          title="پیام خوانده‌نشده"
+          aria-label="پیام خوانده‌نشده"
+        />
+      )}
+    </Link>
+  );
+}
+
 function SidebarNavBody({
   campaignId,
   campaigns,
   pathname,
   directivesUnread,
   directivesNavItem,
+  myMessagesNavItems,
   contentNavItems,
   managementNavItems,
   problemReportsUnread,
@@ -245,45 +304,34 @@ function SidebarNavBody({
           </div>
         )}
 
+        {myMessagesNavItems.length > 0 && (
+          <div className="mb-3 rounded-xl border border-border/80 bg-muted/30 p-2">
+            <div className="space-y-1">
+              {myMessagesNavItems.map((item) =>
+                renderNavLink({
+                  item,
+                  campaignId,
+                  pathname,
+                  setMobileOpen,
+                  problemReportsUnread,
+                  contentMessagesUnread,
+                })
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-1">
-          {contentNavItems.map((item) => {
-            const Icon = item.icon;
-            const href = adminHref(item.href, campaignId);
-            const isActive =
-              pathname === item.href ||
-              (item.href === "/admin/elanha" && pathname === "/admin/notifications");
-            return (
-              <Link
-                key={item.href}
-                href={href}
-                prefetch={false}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "apple-nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="truncate flex-1">{item.label}</span>
-                {item.href === "/admin/problem-reports" && problemReportsUnread > 0 && (
-                  <span
-                    className="ms-auto h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
-                    title="پاسخ خوانده‌نشده"
-                    aria-label="پاسخ خوانده‌نشده"
-                  />
-                )}
-                {item.href === "/admin/messages" && contentMessagesUnread > 0 && (
-                  <span
-                    className="ms-auto h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
-                    title="پیام خوانده‌نشده"
-                    aria-label="پیام خوانده‌نشده"
-                  />
-                )}
-              </Link>
-            );
-          })}
+          {contentNavItems.map((item) =>
+            renderNavLink({
+              item,
+              campaignId,
+              pathname,
+              setMobileOpen,
+              problemReportsUnread,
+              contentMessagesUnread,
+            })
+          )}
         </div>
 
         {managementNavItems.length > 0 && (
@@ -292,30 +340,16 @@ function SidebarNavBody({
               تنظیمات و مدیریت
             </p>
             <div className="space-y-1">
-              {managementNavItems.map((item) => {
-                const Icon = item.icon;
-                const href = adminHref(item.href, campaignId);
-                const isActive =
-                  pathname === item.href ||
-                  (item.href === "/admin/elanha" && pathname === "/admin/notifications");
-                return (
-                  <Link
-                    key={item.href}
-                    href={href}
-                    prefetch={false}
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "apple-nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                );
-              })}
+              {managementNavItems.map((item) =>
+                renderNavLink({
+                  item,
+                  campaignId,
+                  pathname,
+                  setMobileOpen,
+                  problemReportsUnread,
+                  contentMessagesUnread,
+                })
+              )}
             </div>
           </div>
         )}
@@ -452,8 +486,10 @@ export function AdminSidebar() {
 
   /** Always pin directives as a red CTA above every other panel menu. */
   const directivesNavItem = navItems.find((item) => item.href === DIRECTIVES_HREF);
+  const myMessagesNavItems = navItems.filter((item) => myMessagesNavHrefs.has(item.href));
   const contentNavItems = navItems.filter((item) => {
     if (managementNavHrefs.has(item.href)) return false;
+    if (myMessagesNavHrefs.has(item.href)) return false;
     if (item.href === DIRECTIVES_HREF) return false;
     return true;
   });
@@ -476,6 +512,7 @@ export function AdminSidebar() {
     pathname,
     directivesUnread,
     directivesNavItem,
+    myMessagesNavItems,
     contentNavItems,
     managementNavItems,
     problemReportsUnread,
