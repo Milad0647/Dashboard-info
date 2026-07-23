@@ -150,7 +150,6 @@ type SidebarNavBodyProps = {
   campaignId: string;
   campaigns: CampaignSettings[];
   pathname: string;
-  showDirectivesAlert: boolean;
   directivesUnread: number;
   directivesNavItem: (typeof allNavItems)[number] | undefined;
   contentNavItems: typeof allNavItems;
@@ -169,7 +168,6 @@ function SidebarNavBody({
   campaignId,
   campaigns,
   pathname,
-  showDirectivesAlert,
   directivesUnread,
   directivesNavItem,
   contentNavItems,
@@ -222,7 +220,7 @@ function SidebarNavBody({
           }
         }}
       >
-        {showDirectivesAlert && directivesNavItem && (
+        {directivesNavItem && (
           <div className="mb-3">
             <Link
               href={adminHref(DIRECTIVES_HREF, campaignId)}
@@ -452,12 +450,11 @@ export function AdminSidebar() {
     return hasContributorPermission(permissions, item.permissionKey);
   });
 
-  /** Pin directives as a red alert CTA when the user has unread items. */
-  const showDirectivesAlert = directivesUnread > 0;
+  /** Always pin directives as a red CTA above every other panel menu. */
   const directivesNavItem = navItems.find((item) => item.href === DIRECTIVES_HREF);
   const contentNavItems = navItems.filter((item) => {
     if (managementNavHrefs.has(item.href)) return false;
-    if (showDirectivesAlert && item.href === DIRECTIVES_HREF) return false;
+    if (item.href === DIRECTIVES_HREF) return false;
     return true;
   });
   const managementNavItems = navItems.filter((item) => managementNavHrefs.has(item.href));
@@ -477,7 +474,6 @@ export function AdminSidebar() {
     campaignId,
     campaigns,
     pathname,
-    showDirectivesAlert,
     directivesUnread,
     directivesNavItem,
     contentNavItems,

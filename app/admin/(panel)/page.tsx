@@ -184,13 +184,13 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
         )}
       </div>
 
-      <CampaignTools isFullAdmin={canManageAll} />
-
       <DashboardDirectivesPanel
         campaignId={campaignId}
         canManage={canManageDirectivesForUser}
         inboxDirectives={inboxDirectives}
       />
+
+      <CampaignTools isFullAdmin={canManageAll} />
 
       <EditSuggestionsPanel
         suggestions={editSuggestions}

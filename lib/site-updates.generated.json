@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "d5c07e5392d18f5ce11e83d695887bb981b7f5ff",
+      "committedAt": "2026-07-23T09:50:19+03:30",
+      "title": "نمایش نام ایجادکننده در لیست دستورکارها برای مدیر",
+      "subject": "Show directive creator on admin manage list"
+    },
+    {
       "hash": "7de45a9a2344e37b9a66ed2f38c631ff921a7aa9",
       "committedAt": "2026-07-22T15:06:31+03:30",
       "title": "نمایش نام کاربر روی کارت‌های ارسال پیام",

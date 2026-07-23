@@ -213,15 +213,13 @@ export function DashboardDirectivesPanel({
 
   return (
     <>
-      <Card
-        className={cn(
-          unreadCount > 0 && "border-red-500/40 bg-red-500/[0.04]"
-        )}
-      >
+      <Card className="border-red-500/50 bg-red-500/[0.06] shadow-md shadow-red-600/10">
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0 pb-3">
           <div className="min-w-0 space-y-1">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ClipboardCheck className="h-5 w-5 shrink-0 text-red-600" />
+            <CardTitle className="flex items-center gap-2 text-lg font-extrabold text-red-700 dark:text-red-400">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm">
+                <ClipboardCheck className="h-5 w-5 shrink-0" />
+              </span>
               دستورکارها
               {unreadCount > 0 && (
                 <Badge variant="destructive">{formatPersianNumber(unreadCount)} جدید</Badge>
@@ -238,7 +236,15 @@ export function DashboardDirectivesPanel({
             </p>
           </div>
           <Link href={directivesHref}>
-            <Button variant={unreadCount > 0 ? "default" : "outline"} size="sm">
+            <Button
+              size="sm"
+              className={cn(
+                unreadCount > 0
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+              )}
+              variant={unreadCount > 0 ? "default" : "outline"}
+            >
               مشاهده همه
             </Button>
           </Link>
