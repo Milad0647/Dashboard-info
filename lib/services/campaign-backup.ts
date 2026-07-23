@@ -12,7 +12,12 @@ import {
   pgRestoreUserCampaignData,
 } from "@/lib/db/campaign-backup-repository";
 import { getUploadsDir } from "@/lib/uploads";
-import { ZipFile } from "yazl";
+
+// yazl is CommonJS — require avoids Next ESM interop issues with ZipFile.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const yazl = require("yazl") as typeof import("yazl");
+const ZipFileCtor = yazl.ZipFile;
+type YazlZipFile = InstanceType<typeof yazl.ZipFile>;
 
 /** Prefer including all media; skip only missing/unreadable files. */
 const DEFAULT_MAX_SINGLE_FILE_BYTES = 2 * 1024 * 1024 * 1024;
@@ -412,7 +417,7 @@ async function prepareBackupEntries(
 }
 
 function fillZipFile(
-  zipfile: ZipFile,
+  zipfile: YazlZipFile,
   textEntries: ZipTextEntry[],
   diskEntries: ZipDiskEntry[]
 ): void {
@@ -430,7 +435,7 @@ export async function createCampaignBackupZip(
   options?: CreateCampaignBackupOptions
 ): Promise<Buffer> {
   const prepared = await prepareBackupEntries(campaignId, options);
-  const zipfile = new ZipFile();
+  const zipfile = new ZipFileCtor();
   const chunks: Buffer[] = [];
 
   const done = new Promise<void>((resolve, reject) => {
@@ -461,7 +466,7 @@ export async function writeCampaignBackupZipToFile(
     // ignore
   }
 
-  const zipfile = new ZipFile();
+  const zipfile = new ZipFileCtor();
   const output = createWriteStream(tempPath);
 
   const done = new Promise<void>((resolve, reject) => {

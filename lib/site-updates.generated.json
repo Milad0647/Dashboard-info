@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "01762b407d5db3b06cac7fb739bc947a4f39ef8d",
+      "committedAt": "2026-07-23T16:12:40+03:30",
+      "title": "رفع قطعی خطای بکاپ و امکان گرفتن پشتیبان کامل",
+      "subject": "Replace archiver with yazl for reliable campaign backups"
+    },
+    {
       "hash": "c9277c2562cd87797c426cb04c6c50d1f30117c7",
       "committedAt": "2026-07-23T15:39:29+03:30",
       "title": "رفع خطا در گرفتن بکاپ کامل کمپین",

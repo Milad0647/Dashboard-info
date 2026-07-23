@@ -27,7 +27,7 @@ async function readJob(jobId: string): Promise<BackupJobPollResult> {
   return body.job;
 }
 
-/** Start async backup and poll until done/failed. */
+/** Start backup and wait until done/failed (supports sync + async API responses). */
 export async function startAndWaitForBackup(input: {
   campaignId: string;
   includeUploads?: boolean;
@@ -47,11 +47,24 @@ export async function startAndWaitForBackup(input: {
 
   const startBody = (await startResponse.json().catch(() => ({}))) as {
     error?: string;
-    job?: { id?: string };
+    async?: boolean;
+    job?: { id?: string; status?: BackupJobPollResult["status"]; result?: BackupJobPollResult["result"] };
+    result?: BackupJobPollResult["result"];
   };
 
   if (!startResponse.ok && startResponse.status !== 202) {
     throw new Error(startBody.error ?? "شروع بکاپ ناموفق بود");
+  }
+
+  // Sync path (data-only): file is already on disk.
+  if (startBody.async === false || startBody.job?.status === "done" || startBody.result) {
+    const result = startBody.result ?? startBody.job?.result;
+    input.onProgress?.("done");
+    const done: BackupJobPollResult = { status: "done", result };
+    if (result && result.skippedFiles > 0) {
+      done.warning = `${result.skippedFiles} فایل رسانه پیدا نشد یا خوانده نشد.`;
+    }
+    return done;
   }
 
   const jobId = startBody.job?.id;

@@ -1,18 +1,70 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { spawn } from "child_process";
 import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
-import { getBackupJob, startStoredBackupJob } from "@/lib/services/backup-jobs";
+import {
+  enqueueStoredBackupJob,
+  getBackupJob,
+  runBackupJob,
+} from "@/lib/services/backup-jobs";
 import { getLastDailyBackupDay } from "@/lib/services/daily-backup-state";
 import { getTehranCalendarDateIso } from "@/lib/safe-dates";
-import { listStoredBackups } from "@/lib/services/stored-backup";
+import {
+  createStoredCampaignBackup,
+  listStoredBackups,
+} from "@/lib/services/stored-backup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+/** Allow long ZIP builds on self-hosted Node (media backups). */
+export const maxDuration = 3600;
 
 async function requireFullAdmin() {
   const session = await getAuthSession();
   if (!session || !isFullAdmin(session)) return null;
   return session;
+}
+
+/** Kick the job inside this process and optionally via localhost HTTP. */
+function scheduleBackupJob(jobId: string, options?: { detachWorker?: boolean }): void {
+  after(() => runBackupJob(jobId));
+
+  if (!options?.detachWorker) return;
+
+  const port = process.env.PORT?.trim() || "3030";
+  const secret = process.env.AUTH_SECRET ?? "";
+  const safeJobId = jobId.replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!safeJobId) return;
+
+  const script = `
+fetch("http://127.0.0.1:${port}/api/backups/run", {
+  method: "POST",
+  headers: {
+    "content-type": "application/json",
+    "x-internal-backup": process.env.AUTH_SECRET || ""
+  },
+  body: JSON.stringify({ jobId: "${safeJobId}" })
+}).then(async (r) => {
+  const text = await r.text();
+  if (!r.ok) {
+    console.error("[backup-kick] failed", r.status, text);
+    process.exitCode = 1;
+  }
+}).catch((err) => {
+  console.error("[backup-kick] error", err);
+  process.exitCode = 1;
+});
+`;
+
+  try {
+    const child = spawn(process.execPath, ["-e", script], {
+      detached: true,
+      stdio: "ignore",
+      env: { ...process.env, AUTH_SECRET: secret },
+    });
+    child.unref();
+  } catch (error) {
+    console.error("[backup-kick] spawn failed", error);
+  }
 }
 
 /** List stored backup ZIP files, or poll a background job with ?jobId=. */
@@ -29,6 +81,17 @@ export async function GET(request: Request) {
       if (!job) {
         return NextResponse.json({ error: "Job not found" }, { status: 404 });
       }
+
+      // If the original after() never ran (or process died mid-job), kick again.
+      if (job.status === "queued") {
+        scheduleBackupJob(job.id);
+      } else if (job.status === "running") {
+        const staleMs = Date.now() - new Date(job.updatedAt).getTime();
+        if (Number.isFinite(staleMs) && staleMs > 60_000) {
+          scheduleBackupJob(job.id);
+        }
+      }
+
       return NextResponse.json({ job });
     }
 
@@ -50,8 +113,9 @@ export async function GET(request: Request) {
 }
 
 /**
- * Start a campaign backup in the background (returns immediately).
- * Poll GET /api/backups?jobId=... until status is done|failed.
+ * Create a campaign backup.
+ * - includeUploads=false → runs synchronously (reliable small ZIP)
+ * - includeUploads=true → enqueues job and continues via after() (avoids proxy 504)
  */
 export async function POST(request: Request) {
   if (!(await requireFullAdmin())) {
@@ -79,11 +143,33 @@ export async function POST(request: Request) {
   }
 
   try {
-    const job = await startStoredBackupJob({
+    // Data-only backups are usually small — finish in this request so the file always lands.
+    if (!includeUploads) {
+      const result = await createStoredCampaignBackup(campaignId, {
+        userId,
+        includeUploads: false,
+      });
+      return NextResponse.json({
+        success: true,
+        async: false,
+        result,
+        job: {
+          id: result.filename,
+          status: "done" as const,
+          result,
+        },
+        message: "بکاپ سریع آماده شد",
+      });
+    }
+
+    const job = await enqueueStoredBackupJob({
       campaignId,
       userId,
-      includeUploads,
+      includeUploads: true,
     });
+
+    scheduleBackupJob(job.id, { detachWorker: true });
+
     return NextResponse.json(
       {
         success: true,

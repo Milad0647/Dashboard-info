@@ -45,12 +45,18 @@ export async function getBackupJob(jobId: string): Promise<BackupJobRecord | nul
   }
 }
 
-async function runJob(jobId: string): Promise<void> {
+/** Execute a queued/running backup job to completion (idempotent per process). */
+export async function runBackupJob(jobId: string): Promise<void> {
   if (runningJobs.has(jobId)) return;
   runningJobs.add(jobId);
 
   const current = await getBackupJob(jobId);
   if (!current) {
+    runningJobs.delete(jobId);
+    return;
+  }
+
+  if (current.status === "done" || current.status === "failed") {
     runningJobs.delete(jobId);
     return;
   }
@@ -63,6 +69,10 @@ async function runJob(jobId: string): Promise<void> {
   await writeJob(running);
 
   try {
+    console.info("[backup-job] started", jobId, {
+      campaignId: current.campaignId,
+      includeUploads: current.includeUploads,
+    });
     const result = await createStoredCampaignBackup(current.campaignId, {
       userId: current.userId,
       includeUploads: current.includeUploads,
@@ -74,6 +84,7 @@ async function runJob(jobId: string): Promise<void> {
       result,
       error: undefined,
     });
+    console.info("[backup-job] done", jobId, result.filename, result.sizeBytes);
   } catch (error) {
     const message =
       error instanceof Error
@@ -93,8 +104,8 @@ async function runJob(jobId: string): Promise<void> {
   }
 }
 
-/** Start a background backup job and return immediately (avoids proxy 504). */
-export async function startStoredBackupJob(input: {
+/** Persist a job record and return it. Caller must schedule runBackupJob (e.g. via after()). */
+export async function enqueueStoredBackupJob(input: {
   campaignId: string;
   userId?: string;
   includeUploads?: boolean;
@@ -109,6 +120,19 @@ export async function startStoredBackupJob(input: {
     updatedAt: new Date().toISOString(),
   };
   await writeJob(job);
-  void runJob(job.id);
+  return job;
+}
+
+/**
+ * @deprecated Prefer enqueueStoredBackupJob + after(runBackupJob).
+ * Kept for callers that still fire-and-forget.
+ */
+export async function startStoredBackupJob(input: {
+  campaignId: string;
+  userId?: string;
+  includeUploads?: boolean;
+}): Promise<BackupJobRecord> {
+  const job = await enqueueStoredBackupJob(input);
+  void runBackupJob(job.id);
   return job;
 }
