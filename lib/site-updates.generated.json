@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "c9277c2562cd87797c426cb04c6c50d1f30117c7",
+      "committedAt": "2026-07-23T15:39:29+03:30",
+      "title": "رفع خطا در گرفتن بکاپ کامل کمپین",
+      "subject": "Fix campaign ZIP backup with archiver v8 ZipArchive"
+    },
+    {
       "hash": "942a948f686b3a1b981a9233570981b20f19c7d8",
       "committedAt": "2026-07-23T14:17:58+03:30",
       "title": "قرمز شدن دکمه‌ها و اعلان دستورکار و برجسته شدن ایجاد در منو",

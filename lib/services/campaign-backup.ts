@@ -12,7 +12,7 @@ import {
   pgRestoreUserCampaignData,
 } from "@/lib/db/campaign-backup-repository";
 import { getUploadsDir } from "@/lib/uploads";
-import { ZipArchive } from "archiver";
+import { ZipFile } from "yazl";
 
 /** Prefer including all media; skip only missing/unreadable files. */
 const DEFAULT_MAX_SINGLE_FILE_BYTES = 2 * 1024 * 1024 * 1024;
@@ -411,35 +411,36 @@ async function prepareBackupEntries(
   return { textEntries, diskEntries, includedFiles, skippedFiles };
 }
 
+function fillZipFile(
+  zipfile: ZipFile,
+  textEntries: ZipTextEntry[],
+  diskEntries: ZipDiskEntry[]
+): void {
+  for (const entry of textEntries) {
+    zipfile.addBuffer(Buffer.from(entry.content, "utf8"), entry.path);
+  }
+  for (const entry of diskEntries) {
+    zipfile.addFile(entry.diskPath, entry.path);
+  }
+}
+
 /** Build a campaign backup ZIP in memory (for immediate download). */
 export async function createCampaignBackupZip(
   campaignId: string,
   options?: CreateCampaignBackupOptions
 ): Promise<Buffer> {
-  // Prefer streaming to a temp buffer via archiver for lower peak memory than JSZip.
-  const { PassThrough } = await import("stream");
+  const prepared = await prepareBackupEntries(campaignId, options);
+  const zipfile = new ZipFile();
   const chunks: Buffer[] = [];
-  const pass = new PassThrough();
-  pass.on("data", (chunk: Buffer) => chunks.push(chunk));
-
-  const archive = new ZipArchive({ zlib: { level: 5 } });
-  archive.pipe(pass);
 
   const done = new Promise<void>((resolve, reject) => {
-    pass.on("end", () => resolve());
-    pass.on("error", reject);
-    archive.on("error", reject);
+    zipfile.outputStream.on("data", (chunk: Buffer) => chunks.push(chunk));
+    zipfile.outputStream.on("end", () => resolve());
+    zipfile.outputStream.on("error", reject);
   });
 
-  const prepared = await prepareBackupEntries(campaignId, options);
-  for (const entry of prepared.textEntries) {
-    archive.append(entry.content, { name: entry.path });
-  }
-  for (const entry of prepared.diskEntries) {
-    archive.file(entry.diskPath, { name: entry.path });
-  }
-
-  await archive.finalize();
+  fillZipFile(zipfile, prepared.textEntries, prepared.diskEntries);
+  zipfile.end();
   await done;
 
   return Buffer.concat(chunks);
@@ -460,25 +461,18 @@ export async function writeCampaignBackupZipToFile(
     // ignore
   }
 
+  const zipfile = new ZipFile();
   const output = createWriteStream(tempPath);
-  const archive = new ZipArchive({ zlib: { level: 5 } });
 
   const done = new Promise<void>((resolve, reject) => {
     output.on("close", () => resolve());
     output.on("error", reject);
-    archive.on("error", reject);
+    zipfile.outputStream.on("error", reject);
   });
 
-  archive.pipe(output);
-
-  for (const entry of prepared.textEntries) {
-    archive.append(entry.content, { name: entry.path });
-  }
-  for (const entry of prepared.diskEntries) {
-    archive.file(entry.diskPath, { name: entry.path });
-  }
-
-  await archive.finalize();
+  zipfile.outputStream.pipe(output);
+  fillZipFile(zipfile, prepared.textEntries, prepared.diskEntries);
+  zipfile.end();
   await done;
 
   const info = await stat(tempPath);

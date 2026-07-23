@@ -75,11 +75,18 @@ async function runJob(jobId: string): Promise<void> {
       error: undefined,
     });
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+          ? error
+          : "Backup failed";
+    console.error("[backup-job] failed", jobId, error);
     await writeJob({
       ...running,
       status: "failed",
       updatedAt: new Date().toISOString(),
-      error: error instanceof Error ? error.message : "Backup failed",
+      error: message,
     });
   } finally {
     runningJobs.delete(jobId);
