@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { cn, adminHref, formatPersianNumber, isSupabaseConfigured } from "@/lib/utils";
+import { logoutAdminAction } from "@/lib/actions/auth-actions";
+import { getSessionContextAction } from "@/lib/actions/extended-actions";
+import { DIRECTIVE_SIDEBAR_CTA_CLASS } from "@/lib/directive-ui";
 import {
   Archive,
   BarChart3,
@@ -21,6 +25,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  Plus,
   Radio,
   Rocket,
   ScrollText,
@@ -45,9 +50,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { cn, adminHref, formatPersianNumber, isSupabaseConfigured } from "@/lib/utils";
-import { logoutAdminAction } from "@/lib/actions/auth-actions";
-import { getSessionContextAction } from "@/lib/actions/extended-actions";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminCampaign } from "@/components/admin/admin-campaign-provider";
 import {
@@ -156,6 +158,7 @@ type SidebarNavBodyProps = {
   pathname: string;
   directivesUnread: number;
   directivesNavItem: (typeof allNavItems)[number] | undefined;
+  canManageDirectives: boolean;
   myMessagesNavItems: typeof allNavItems;
   contentNavItems: typeof allNavItems;
   managementNavItems: typeof allNavItems;
@@ -228,6 +231,7 @@ function SidebarNavBody({
   pathname,
   directivesUnread,
   directivesNavItem,
+  canManageDirectives,
   myMessagesNavItems,
   contentNavItems,
   managementNavItems,
@@ -286,15 +290,16 @@ function SidebarNavBody({
               prefetch={false}
               onClick={() => setMobileOpen(false)}
               className={cn(
-                "flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-extrabold tracking-wide",
-                "bg-red-600 text-white shadow-lg shadow-red-600/40",
-                "ring-2 ring-red-400/70 hover:bg-red-700 hover:shadow-red-700/50",
-                "transition-colors",
+                DIRECTIVE_SIDEBAR_CTA_CLASS,
                 pathname === DIRECTIVES_HREF && "ring-4 ring-white/70"
               )}
             >
-              <ClipboardCheck className="h-5 w-5 shrink-0" />
-              <span>دستورکارها</span>
+              {canManageDirectives ? (
+                <Plus className="h-5 w-5 shrink-0" />
+              ) : (
+                <ClipboardCheck className="h-5 w-5 shrink-0" />
+              )}
+              <span>{canManageDirectives ? "ایجاد دستورکار" : "دستورکارها"}</span>
               {directivesUnread > 0 && (
                 <span className="rounded-md bg-white/20 px-2 py-0.5 text-xs font-bold tabular-nums">
                   {formatPersianNumber(directivesUnread)} جدید
@@ -485,6 +490,7 @@ export function AdminSidebar() {
   });
 
   /** Always pin directives as a red CTA above every other panel menu. */
+  const canManageDirectives = isFullAdminUser || isClientRole;
   const directivesNavItem = navItems.find((item) => item.href === DIRECTIVES_HREF);
   const myMessagesNavItems = navItems.filter((item) => myMessagesNavHrefs.has(item.href));
   const contentNavItems = navItems.filter((item) => {
@@ -512,6 +518,7 @@ export function AdminSidebar() {
     pathname,
     directivesUnread,
     directivesNavItem,
+    canManageDirectives,
     myMessagesNavItems,
     contentNavItems,
     managementNavItems,

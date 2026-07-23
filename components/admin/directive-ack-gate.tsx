@@ -15,6 +15,7 @@ import {
 } from "@/lib/actions/directive-actions";
 import { emitAdminModalLock } from "@/lib/admin-modal-lock";
 import { emitDirectivesUnreadChanged } from "@/lib/directives-unread";
+import { DIRECTIVE_PRIMARY_BUTTON_CLASS, DIRECTIVE_TOAST_OPTIONS } from "@/lib/directive-ui";
 import type { CampaignDirective, DirectiveAttachment } from "@/lib/types";
 import { cn, formatPersianDate, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
@@ -291,7 +292,7 @@ export function DirectiveAckGate() {
         emitDirectivesUnreadChanged(next.length, current.id);
         return next;
       });
-      toast.success("مشاهده ثبت شد");
+      toast.success("مشاهده ثبت شد", DIRECTIVE_TOAST_OPTIONS);
       router.refresh();
     });
   };
@@ -311,25 +312,18 @@ export function DirectiveAckGate() {
       aria-labelledby="directive-ack-title"
     >
       {/* Separate blur layer — backdrop-filter on the interactive parent breaks clicks in some browsers */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" aria-hidden="true" />
 
       <div className="relative flex h-full items-end justify-center p-0 sm:items-center sm:p-4">
         <div
           className={cn(
             "pointer-events-auto flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden bg-card shadow-2xl sm:max-h-[92vh] sm:rounded-2xl",
-            isUrgent ? "ring-2 ring-red-500/60" : "ring-1 ring-border"
+            "ring-2 ring-red-500/70 shadow-red-900/30"
           )}
           onMouseDown={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
         >
-          <header
-            className={cn(
-              "shrink-0 space-y-2 border-b px-5 py-4",
-              isUrgent
-                ? "bg-red-600 text-white"
-                : "bg-gradient-to-l from-red-600/10 to-transparent"
-            )}
-          >
+          <header className="shrink-0 space-y-2 border-b border-red-700/40 bg-red-600 px-5 py-4 text-white">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <ClipboardCheck className="h-5 w-5 shrink-0" />
@@ -337,24 +331,19 @@ export function DirectiveAckGate() {
               </div>
               {remaining > 1 && (
                 <Badge
-                  variant={isUrgent ? "secondary" : "destructive"}
-                  className={cn(isUrgent && "bg-white/20 text-white hover:bg-white/25")}
+                  variant="secondary"
+                  className="bg-white/20 text-white hover:bg-white/25"
                 >
                   {formatPersianNumber(position)} از {formatPersianNumber(remaining)}
                 </Badge>
               )}
             </div>
-            <p
-              className={cn(
-                "text-sm",
-                isUrgent ? "text-white/90" : "text-muted-foreground"
-              )}
-            >
+            <p className="text-sm text-white/90">
               تا وقتی همه دستورکارهای دیده‌نشده را با «دیدم» تأیید نکنید، امکان ادامه کار با پنل نیست.
             </p>
           </header>
 
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-red-50/40 px-5 py-4 dark:bg-red-950/20">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 id="directive-ack-title" className="text-xl font-bold leading-snug">
@@ -387,11 +376,11 @@ export function DirectiveAckGate() {
             )}
           </div>
 
-          <footer className="shrink-0 space-y-2 border-t bg-muted/40 px-5 py-4">
+          <footer className="shrink-0 space-y-2 border-t border-red-200/60 bg-red-50/80 px-5 py-4 dark:border-red-900/50 dark:bg-red-950/40">
             <Button
               type="button"
               size="lg"
-              className="h-12 w-full text-base font-bold"
+              className={cn("h-12 w-full text-base font-bold", DIRECTIVE_PRIMARY_BUTTON_CLASS)}
               disabled={isPending}
               onClick={confirmSeen}
             >

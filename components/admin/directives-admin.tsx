@@ -46,6 +46,7 @@ import {
   DIRECTIVE_SYSTEM_ACTIONS,
   getDirectiveSystemAction,
 } from "@/lib/directive-cta";
+import { DIRECTIVE_PRIMARY_BUTTON_CLASS, DIRECTIVE_TOAST_OPTIONS } from "@/lib/directive-ui";
 import {
   DIRECTIVES_UNREAD_EVENT,
   emitDirectivesUnreadChanged,
@@ -502,7 +503,7 @@ export function DirectivesAdmin({
         return;
       }
 
-      toast.success(editingId ? "دستورکار به‌روز شد" : "دستورکار منتشر شد");
+      toast.success(editingId ? "دستورکار به‌روز شد" : "دستورکار منتشر شد", DIRECTIVE_TOAST_OPTIONS);
       closeDialog();
       window.location.reload();
     });
@@ -547,7 +548,7 @@ export function DirectivesAdmin({
       if (detailItem?.id === item.id) {
         setDetailItem(next);
       }
-      toast.success("مشاهده ثبت شد");
+      toast.success("مشاهده ثبت شد", DIRECTIVE_TOAST_OPTIONS);
     });
   };
 
@@ -555,7 +556,12 @@ export function DirectivesAdmin({
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">دستورکارها</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-red-700 dark:text-red-400">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm">
+              <ClipboardList className="h-5 w-5 shrink-0" />
+            </span>
+            دستورکارها
+          </h1>
           <p className="text-sm text-muted-foreground">
             {canManage
               ? "انتشار دستورکار مشترک برای کاربران؛ پس از اتمام به آرشیو می‌رود و حذف نمی‌شود"
@@ -563,7 +569,7 @@ export function DirectivesAdmin({
           </p>
         </div>
         {canManage && managerView === "manage" && (
-          <Button onClick={openCreate}>
+          <Button onClick={openCreate} className={DIRECTIVE_PRIMARY_BUTTON_CLASS}>
             <Plus className="h-4 w-4" />
             دستورکار جدید
           </Button>
@@ -673,7 +679,12 @@ export function DirectivesAdmin({
                     جزئیات
                   </Button>
                   {showingInbox && !item.confirmed && (
-                    <Button size="sm" disabled={isPending} onClick={() => confirmSeen(item)}>
+                    <Button
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => confirmSeen(item)}
+                      className={DIRECTIVE_PRIMARY_BUTTON_CLASS}
+                    >
                       <Check className="h-4 w-4" />
                       دیدم
                     </Button>
@@ -1024,7 +1035,7 @@ export function DirectivesAdmin({
               <Button type="button" variant="outline" onClick={closeDialog}>
                 انصراف
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending} className={DIRECTIVE_PRIMARY_BUTTON_CLASS}>
                 {editingId ? "ذخیره" : "انتشار"}
               </Button>
             </div>
@@ -1119,7 +1130,11 @@ export function DirectivesAdmin({
                   </div>
                 )}
                 {showingInbox && !detailItem.confirmed && (
-                  <Button disabled={isPending} onClick={() => confirmSeen(detailItem)}>
+                  <Button
+                    disabled={isPending}
+                    onClick={() => confirmSeen(detailItem)}
+                    className={DIRECTIVE_PRIMARY_BUTTON_CLASS}
+                  >
                     <Check className="h-4 w-4" />
                     دیدم
                   </Button>

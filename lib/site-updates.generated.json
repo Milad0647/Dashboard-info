@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "dc67e8916767e06dcccc9a2ff6a7a26ef9f8a1cd",
+      "committedAt": "2026-07-23T13:40:18+03:30",
+      "title": "بستن بقیه پنجره‌ها وقتی دستورکار اجباری باز است",
+      "subject": "Close other modals while directive ack gate is open"
+    },
+    {
       "hash": "e0b5a310230ef5718af4a18c531547da1089a896",
       "committedAt": "2026-07-23T13:36:33+03:30",
       "title": "رفع مشکل دانلود و دکمه‌های دستورکار در پنجره اجباری",

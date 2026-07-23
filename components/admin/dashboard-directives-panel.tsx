@@ -16,6 +16,7 @@ import {
   emitDirectivesUnreadChanged,
   readDirectivesConfirmedIdFromEvent,
 } from "@/lib/directives-unread";
+import { DIRECTIVE_OUTLINE_BUTTON_CLASS, DIRECTIVE_PRIMARY_BUTTON_CLASS, DIRECTIVE_TOAST_OPTIONS } from "@/lib/directive-ui";
 import type { CampaignDirective, DirectiveAttachment } from "@/lib/types";
 import { adminHref, cn, formatPersianDate, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
@@ -189,7 +190,7 @@ export function DashboardDirectivesPanel({
           ? { ...current, confirmed: true, seenAt: new Date().toISOString() }
           : current
       );
-      toast.success("مشاهده ثبت شد");
+      toast.success("مشاهده ثبت شد", DIRECTIVE_TOAST_OPTIONS);
     });
   };
 
@@ -223,9 +224,7 @@ export function DashboardDirectivesPanel({
             <Button
               size="sm"
               className={cn(
-                unreadCount > 0
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+                unreadCount > 0 ? DIRECTIVE_PRIMARY_BUTTON_CLASS : DIRECTIVE_OUTLINE_BUTTON_CLASS
               )}
               variant={unreadCount > 0 ? "default" : "outline"}
             >
@@ -275,7 +274,12 @@ export function DashboardDirectivesPanel({
                       جزئیات
                     </Button>
                     {!item.confirmed && (
-                      <Button size="sm" disabled={isPending} onClick={() => confirmSeen(item)}>
+                      <Button
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => confirmSeen(item)}
+                        className={DIRECTIVE_PRIMARY_BUTTON_CLASS}
+                      >
                         <Check className="h-4 w-4" />
                         دیدم
                       </Button>
@@ -333,7 +337,7 @@ export function DashboardDirectivesPanel({
                 )}
                 {!detailItem.confirmed && (
                   <Button
-                    className="w-full sm:w-auto"
+                    className={cn("w-full sm:w-auto", DIRECTIVE_PRIMARY_BUTTON_CLASS)}
                     disabled={isPending}
                     onClick={() => confirmSeen(detailItem)}
                   >

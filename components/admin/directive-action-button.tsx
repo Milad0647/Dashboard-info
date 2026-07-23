@@ -7,7 +7,9 @@ import {
   resolveDirectiveActionHref,
   resolveDirectiveActionLabel,
 } from "@/lib/directive-cta";
+import { DIRECTIVE_PRIMARY_BUTTON_CLASS } from "@/lib/directive-ui";
 import type { CampaignDirective } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface DirectiveActionButtonProps {
   item: CampaignDirective;
@@ -42,9 +44,11 @@ export function DirectiveActionButton({
 
   if (!label || !resolved) return null;
 
+  const buttonClassName = cn(DIRECTIVE_PRIMARY_BUTTON_CLASS, className);
+
   if (resolved.external || openInNewTab) {
     return (
-      <Button asChild size={size} variant={variant} className={className}>
+      <Button asChild size={size} variant={variant} className={buttonClassName}>
         <a href={resolved.href} target="_blank" rel="noopener noreferrer">
           <ExternalLink className="h-4 w-4" />
           {label}
@@ -54,7 +58,7 @@ export function DirectiveActionButton({
   }
 
   return (
-    <Button asChild size={size} variant={variant} className={className}>
+    <Button asChild size={size} variant={variant} className={buttonClassName}>
       <Link href={resolved.href}>{label}</Link>
     </Button>
   );
