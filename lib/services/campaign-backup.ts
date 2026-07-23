@@ -12,13 +12,7 @@ import {
   pgRestoreUserCampaignData,
 } from "@/lib/db/campaign-backup-repository";
 import { getUploadsDir } from "@/lib/uploads";
-
-// CommonJS package — loaded via require for Next/webpack compatibility.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const archiver = require("archiver") as (
-  format: "zip",
-  options?: { zlib?: { level?: number } }
-) => import("archiver").Archiver;
+import { ZipArchive } from "archiver";
 
 /** Prefer including all media; skip only missing/unreadable files. */
 const DEFAULT_MAX_SINGLE_FILE_BYTES = 2 * 1024 * 1024 * 1024;
@@ -428,8 +422,14 @@ export async function createCampaignBackupZip(
   const pass = new PassThrough();
   pass.on("data", (chunk: Buffer) => chunks.push(chunk));
 
-  const archive = archiver("zip", { zlib: { level: 5 } });
+  const archive = new ZipArchive({ zlib: { level: 5 } });
   archive.pipe(pass);
+
+  const done = new Promise<void>((resolve, reject) => {
+    pass.on("end", () => resolve());
+    pass.on("error", reject);
+    archive.on("error", reject);
+  });
 
   const prepared = await prepareBackupEntries(campaignId, options);
   for (const entry of prepared.textEntries) {
@@ -440,11 +440,7 @@ export async function createCampaignBackupZip(
   }
 
   await archive.finalize();
-  await new Promise<void>((resolve, reject) => {
-    pass.on("end", () => resolve());
-    pass.on("error", reject);
-    archive.on("error", reject);
-  });
+  await done;
 
   return Buffer.concat(chunks);
 }
@@ -465,7 +461,7 @@ export async function writeCampaignBackupZipToFile(
   }
 
   const output = createWriteStream(tempPath);
-  const archive = archiver("zip", { zlib: { level: 5 } });
+  const archive = new ZipArchive({ zlib: { level: 5 } });
 
   const done = new Promise<void>((resolve, reject) => {
     output.on("close", () => resolve());

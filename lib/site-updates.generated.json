@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "942a948f686b3a1b981a9233570981b20f19c7d8",
+      "committedAt": "2026-07-23T14:17:58+03:30",
+      "title": "قرمز شدن دکمه‌ها و اعلان دستورکار و برجسته شدن ایجاد در منو",
+      "subject": "Make directive CTAs and notifications fully red"
+    },
+    {
       "hash": "dc67e8916767e06dcccc9a2ff6a7a26ef9f8a1cd",
       "committedAt": "2026-07-23T13:40:18+03:30",
       "title": "بستن بقیه پنجره‌ها وقتی دستورکار اجباری باز است",

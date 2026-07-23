@@ -20,6 +20,8 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname),
+  // Keep archiver (ESM streaming ZIP) outside the bundler so ZipArchive works at runtime.
+  serverExternalPackages: ["archiver"],
   experimental: {
     serverActions: {
       bodySizeLimit: "2gb",
