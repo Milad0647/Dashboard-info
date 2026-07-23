@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "7de45a9a2344e37b9a66ed2f38c631ff921a7aa9",
+      "committedAt": "2026-07-22T15:06:31+03:30",
+      "title": "نمایش نام کاربر روی کارت‌های ارسال پیام",
+      "subject": "Show owner badge on SMS report cards"
+    },
+    {
       "hash": "a0693953fcb2facf1ec2794627351155a2342699",
       "committedAt": "2026-07-22T11:35:55+03:30",
       "title": "نمایش اجباری دستورکارها هنگام ورود و بازگشت به سایت",

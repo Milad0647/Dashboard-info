@@ -672,6 +672,9 @@ export function DirectivesAdmin({
                       <span>آرشیو: {formatPersianDateTime(item.archivedAt)}</span>
                     )}
                     <DirectiveDateRange item={item} />
+                    {!showingInbox && canManage && (
+                      <span>ایجادکننده: {item.createdByName?.trim() || "نامشخص"}</span>
+                    )}
                     {!showingInbox && (
                       <span>
                         {formatPersianNumber(item.seenCount ?? 0)} دیده‌اند ·{" "}
@@ -1114,9 +1117,9 @@ export function DirectivesAdmin({
                     {formatPersianDateTime(detailItem.publishedAt ?? detailItem.createdAt)}
                   </span>
                   <DirectiveDateRange item={detailItem} />
-                  {detailItem.createdByName && (
-                    <span>از طرف: {detailItem.createdByName}</span>
-                  )}
+                  <span>
+                    ایجادکننده: {detailItem.createdByName?.trim() || "نامشخص"}
+                  </span>
                 </div>
                 <div>
                   <h3 className="mb-2 text-sm font-medium">نامه رسمی</h3>
