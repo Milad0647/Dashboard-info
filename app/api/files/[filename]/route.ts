@@ -37,6 +37,11 @@ function sanitizeFilename(raw: string): string | null {
   return safeName;
 }
 
+function contentDispositionAttachment(filename: string): string {
+  const asciiFallback = filename.replace(/[^\w.\-()+ ]+/g, "_").trim() || "download";
+  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+}
+
 async function canAccessFile(request: Request, filename: string): Promise<boolean> {
   const session = await getAuthSession();
   if (session) return true;
@@ -90,6 +95,8 @@ export async function GET(
     const contentType = getContentType(filename);
     const fileSize = fileStat.size;
     const range = request.headers.get("range");
+    const forceDownload = searchParams.get("download") === "1";
+    const disposition = forceDownload ? contentDispositionAttachment(filename) : null;
 
     if (range) {
       const match = /^bytes=(\d+)-(\d*)$/i.exec(range);
@@ -124,6 +131,7 @@ export async function GET(
             "Content-Range": `bytes ${start}-${end}/${fileSize}`,
             "Accept-Ranges": "bytes",
             "Cache-Control": "private, max-age=3600",
+            ...(disposition ? { "Content-Disposition": disposition } : {}),
           },
         });
       }
@@ -144,6 +152,7 @@ export async function GET(
         "Content-Length": String(fileSize),
         "Accept-Ranges": "bytes",
         "Cache-Control": "private, max-age=3600",
+        ...(disposition ? { "Content-Disposition": disposition } : {}),
       },
     });
   } catch {

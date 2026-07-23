@@ -14,6 +14,11 @@ interface DirectiveActionButtonProps {
   className?: string;
   size?: ButtonProps["size"];
   variant?: ButtonProps["variant"];
+  /**
+   * Open destination in a new tab (needed inside the mandatory ack overlay,
+   * where in-app Link navigation is hidden behind the gate).
+   */
+  openInNewTab?: boolean;
 }
 
 export function DirectiveActionButton({
@@ -21,6 +26,7 @@ export function DirectiveActionButton({
   className,
   size = "default",
   variant = "default",
+  openInNewTab = false,
 }: DirectiveActionButtonProps) {
   const label = resolveDirectiveActionLabel({
     actionType: item.actionType,
@@ -36,10 +42,10 @@ export function DirectiveActionButton({
 
   if (!label || !resolved) return null;
 
-  if (resolved.external) {
+  if (resolved.external || openInNewTab) {
     return (
       <Button asChild size={size} variant={variant} className={className}>
-        <a href={resolved.href} target="_blank" rel="noreferrer">
+        <a href={resolved.href} target="_blank" rel="noopener noreferrer">
           <ExternalLink className="h-4 w-4" />
           {label}
         </a>

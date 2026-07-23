@@ -8,13 +8,13 @@ import {
   Archive,
   Check,
   ClipboardList,
-  Download,
   Eye,
   Plus,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DirectiveActionButton } from "@/components/admin/directive-action-button";
+import { DirectiveFileLink } from "@/components/admin/directive-file-link";
 import { RejectedSubmissionsInbox } from "@/components/admin/rejected-submissions-inbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -162,20 +162,12 @@ function OfficialLetterPreview({ item }: { item: CampaignDirective }) {
           className="max-h-64 w-full rounded-md object-contain bg-muted/30"
         />
       )}
-      <a
-        href={item.letterFileUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-start gap-2 text-sm text-primary hover:underline"
-      >
-        <Download className="mt-0.5 h-4 w-4 shrink-0" />
-        <span className="min-w-0">
-          <span className="block font-medium text-foreground">
-            {item.letterFileName || "نامه رسمی"}
-          </span>
-          <span className="block text-xs text-muted-foreground">دانلود / مشاهده نامه رسمی</span>
-        </span>
-      </a>
+      <DirectiveFileLink
+        url={item.letterFileUrl}
+        title={item.letterFileName || "نامه رسمی"}
+        subtitle="دانلود / مشاهده نامه رسمی"
+        fileName={item.letterFileName}
+      />
     </div>
   );
 }
@@ -208,27 +200,18 @@ function AttachmentList({ attachments }: { attachments: DirectiveAttachment[] })
                 className="max-h-56 w-full rounded-md bg-black"
               />
             ) : null}
-            <a
-              href={file.fileUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-start gap-2 text-sm text-primary hover:underline"
-            >
-              <Download className="mt-0.5 h-4 w-4 shrink-0" />
-              <span className="min-w-0">
-                <span className="block font-medium text-foreground">
-                  {file.title || file.fileName}
-                </span>
-                {file.title && file.title !== file.fileName && (
-                  <span className="block text-xs text-muted-foreground">{file.fileName}</span>
-                )}
-                {(isImage || isVideo) && (
-                  <span className="block text-xs text-muted-foreground">
-                    {isImage ? "تصویر" : "ویدیو"} — دانلود / مشاهده
-                  </span>
-                )}
-              </span>
-            </a>
+            <DirectiveFileLink
+              url={file.fileUrl}
+              title={file.title || file.fileName}
+              subtitle={
+                file.title && file.title !== file.fileName
+                  ? file.fileName
+                  : isImage || isVideo
+                    ? `${isImage ? "تصویر" : "ویدیو"} — دانلود / مشاهده`
+                    : "دانلود فایل"
+              }
+              fileName={file.fileName}
+            />
           </li>
         );
       })}

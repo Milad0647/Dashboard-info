@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ClipboardCheck, Download, Loader2 } from "lucide-react";
+import { Check, ClipboardCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminCampaign } from "@/components/admin/admin-campaign-provider";
 import { DirectiveActionButton } from "@/components/admin/directive-action-button";
+import { DirectiveFileLink } from "@/components/admin/directive-file-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,20 +39,12 @@ function OfficialLetterPreview({ item }: { item: CampaignDirective }) {
           className="max-h-72 w-full rounded-md object-contain bg-background/60"
         />
       )}
-      <a
-        href={item.letterFileUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-start gap-2 text-sm text-primary hover:underline"
-      >
-        <Download className="mt-0.5 h-4 w-4 shrink-0" />
-        <span className="min-w-0">
-          <span className="block font-medium text-foreground">
-            {item.letterFileName || "نامه رسمی"}
-          </span>
-          <span className="block text-xs text-muted-foreground">باز کردن در تب جدید</span>
-        </span>
-      </a>
+      <DirectiveFileLink
+        url={item.letterFileUrl}
+        title={item.letterFileName || "نامه رسمی"}
+        subtitle="دانلود / مشاهده نامه رسمی"
+        fileName={item.letterFileName}
+      />
     </div>
   );
 }
@@ -84,22 +77,18 @@ function AttachmentList({ attachments }: { attachments: DirectiveAttachment[] })
                   className="max-h-48 w-full rounded-md bg-black"
                 />
               ) : null}
-              <a
-                href={file.fileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-start gap-2 text-sm text-primary hover:underline"
-              >
-                <Download className="mt-0.5 h-4 w-4 shrink-0" />
-                <span className="min-w-0">
-                  <span className="block font-medium text-foreground">
-                    {file.title || file.fileName}
-                  </span>
-                  {file.title && file.title !== file.fileName && (
-                    <span className="block text-xs text-muted-foreground">{file.fileName}</span>
-                  )}
-                </span>
-              </a>
+              <DirectiveFileLink
+                url={file.fileUrl}
+                title={file.title || file.fileName}
+                subtitle={
+                  file.title && file.title !== file.fileName
+                    ? file.fileName
+                    : isImage || isVideo
+                      ? `${isImage ? "تصویر" : "ویدیو"} — دانلود / مشاهده`
+                      : "دانلود فایل"
+                }
+                fileName={file.fileName}
+              />
             </li>
           );
         })}
@@ -306,101 +295,108 @@ export function DirectiveAckGate() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-[100]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="directive-ack-title"
-      onMouseDown={(event) => event.stopPropagation()}
     >
-      <div
-        className={cn(
-          "flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden bg-card shadow-2xl sm:max-h-[92vh] sm:rounded-2xl",
-          isUrgent ? "ring-2 ring-red-500/60" : "ring-1 ring-border"
-        )}
-      >
-        <header
+      {/* Separate blur layer — backdrop-filter on the interactive parent breaks clicks in some browsers */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" aria-hidden="true" />
+
+      <div className="relative flex h-full items-end justify-center p-0 sm:items-center sm:p-4">
+        <div
           className={cn(
-            "shrink-0 space-y-2 border-b px-5 py-4",
-            isUrgent
-              ? "bg-red-600 text-white"
-              : "bg-gradient-to-l from-red-600/10 to-transparent"
+            "pointer-events-auto flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden bg-card shadow-2xl sm:max-h-[92vh] sm:rounded-2xl",
+            isUrgent ? "ring-2 ring-red-500/60" : "ring-1 ring-border"
           )}
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <ClipboardCheck className="h-5 w-5 shrink-0" />
-              <span>دستورکار جدید — مشاهده الزامی</span>
-            </div>
-            {remaining > 1 && (
-              <Badge
-                variant={isUrgent ? "secondary" : "destructive"}
-                className={cn(isUrgent && "bg-white/20 text-white hover:bg-white/25")}
-              >
-                {formatPersianNumber(position)} از {formatPersianNumber(remaining)}
-              </Badge>
-            )}
-          </div>
-          <p
+          <header
             className={cn(
-              "text-sm",
-              isUrgent ? "text-white/90" : "text-muted-foreground"
+              "shrink-0 space-y-2 border-b px-5 py-4",
+              isUrgent
+                ? "bg-red-600 text-white"
+                : "bg-gradient-to-l from-red-600/10 to-transparent"
             )}
           >
-            تا وقتی همه دستورکارهای دیده‌نشده را با «دیدم» تأیید نکنید، امکان ادامه کار با پنل نیست.
-          </p>
-        </header>
-
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 id="directive-ack-title" className="text-xl font-bold leading-snug">
-                {current.title}
-              </h2>
-              {isUrgent && <Badge variant="destructive">فوری</Badge>}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <ClipboardCheck className="h-5 w-5 shrink-0" />
+                <span>دستورکار جدید — مشاهده الزامی</span>
+              </div>
+              {remaining > 1 && (
+                <Badge
+                  variant={isUrgent ? "secondary" : "destructive"}
+                  className={cn(isUrgent && "bg-white/20 text-white hover:bg-white/25")}
+                >
+                  {formatPersianNumber(position)} از {formatPersianNumber(remaining)}
+                </Badge>
+              )}
             </div>
-            <p className="whitespace-pre-wrap text-sm leading-7 text-foreground/90">
-              {current.body}
+            <p
+              className={cn(
+                "text-sm",
+                isUrgent ? "text-white/90" : "text-muted-foreground"
+              )}
+            >
+              تا وقتی همه دستورکارهای دیده‌نشده را با «دیدم» تأیید نکنید، امکان ادامه کار با پنل نیست.
             </p>
-          </div>
+          </header>
 
-          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            <span>
-              انتشار: {formatPersianDateTime(current.publishedAt ?? current.createdAt)}
-            </span>
-            {start && <span>شروع: {formatPersianDate(start)}</span>}
-            {end && <span>پایان: {formatPersianDate(end)}</span>}
-            {current.createdByName && <span>از طرف: {current.createdByName}</span>}
-          </div>
-
-          <OfficialLetterPreview item={current} />
-          <AttachmentList attachments={extras} />
-
-          {current.actionType !== "none" && (
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
             <div className="space-y-2">
-              <p className="text-sm font-semibold">اقدام مرتبط</p>
-              <DirectiveActionButton item={current} />
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 id="directive-ack-title" className="text-xl font-bold leading-snug">
+                  {current.title}
+                </h2>
+                {isUrgent && <Badge variant="destructive">فوری</Badge>}
+              </div>
+              <p className="whitespace-pre-wrap text-sm leading-7 text-foreground/90">
+                {current.body}
+              </p>
             </div>
-          )}
-        </div>
 
-        <footer className="shrink-0 space-y-2 border-t bg-muted/40 px-5 py-4">
-          <Button
-            size="lg"
-            className="h-12 w-full text-base font-bold"
-            disabled={isPending}
-            onClick={confirmSeen}
-          >
-            {isPending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Check className="h-5 w-5" />
+            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+              <span>
+                انتشار: {formatPersianDateTime(current.publishedAt ?? current.createdAt)}
+              </span>
+              {start && <span>شروع: {formatPersianDate(start)}</span>}
+              {end && <span>پایان: {formatPersianDate(end)}</span>}
+              {current.createdByName && <span>از طرف: {current.createdByName}</span>}
+            </div>
+
+            <OfficialLetterPreview item={current} />
+            <AttachmentList attachments={extras} />
+
+            {current.actionType !== "none" && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">اقدام مرتبط</p>
+                <DirectiveActionButton item={current} openInNewTab />
+              </div>
             )}
-            دیدم
-          </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            با زدن این دکمه، مشاهده شما برای مدیر ثبت می‌شود
-          </p>
-        </footer>
+          </div>
+
+          <footer className="shrink-0 space-y-2 border-t bg-muted/40 px-5 py-4">
+            <Button
+              type="button"
+              size="lg"
+              className="h-12 w-full text-base font-bold"
+              disabled={isPending}
+              onClick={confirmSeen}
+            >
+              {isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Check className="h-5 w-5" />
+              )}
+              دیدم
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              با زدن این دکمه، مشاهده شما برای مدیر ثبت می‌شود
+            </p>
+          </footer>
+        </div>
       </div>
     </div>
   );
