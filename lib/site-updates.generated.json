@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "9cc74c2ee821319e84f584c5296b85447bb818df",
+      "committedAt": "2026-07-24T16:21:45+03:30",
+      "title": "بکاپ شبانه خودکار اکنون کامل و همراه با فایل‌های رسانه گرفته می‌شود",
+      "subject": "Use full media ZIPs for nightly automatic backup"
+    },
+    {
+      "hash": "eaac4e9604163fe9b6060f6a8f49edb8cbb1ba3a",
+      "committedAt": "2026-07-24T16:19:02+03:30",
+      "title": "افزودن جستجوی متنی برای محتوای صفحه کمپین",
+      "subject": "Add free-text content search to campaign filter"
+    },
+    {
       "hash": "6e8f3a9cf8aacf195a44bc33e91446711d667421",
       "committedAt": "2026-07-23T16:43:00+03:30",
       "title": "رفع مشکل ناتمام ماندن بکاپ و اطمینان از ذخیره فایل پشتیبان",

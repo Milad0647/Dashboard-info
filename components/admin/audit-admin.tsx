@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   FileStack,
   LogIn,
+  MessageSquare,
   MousePointerClick,
   Navigation,
   Radio,
@@ -35,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuditDayCalendar } from "@/components/admin/audit-day-calendar";
+import { AuditMessagesPanel } from "@/components/admin/audit-messages-panel";
 import { AuditProblemsPanel } from "@/components/admin/audit-problems-panel";
 import {
   AuditUserProfileDialog,
@@ -861,6 +863,10 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="messages" className="gap-1.5">
+            <MessageSquare className="h-3.5 w-3.5" />
+            پیام‌ها
+          </TabsTrigger>
           <TabsTrigger value="users">کاربران</TabsTrigger>
           <TabsTrigger value="content">محتوای هر کاربر</TabsTrigger>
           <TabsTrigger value="calendar">تقویم روزانه</TabsTrigger>
@@ -873,6 +879,10 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
             reports={data.problemReports ?? []}
             signals={data.stuckSignals ?? []}
           />
+        </TabsContent>
+
+        <TabsContent value="messages">
+          <AuditMessagesPanel users={data.allUsersPresence ?? []} />
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">

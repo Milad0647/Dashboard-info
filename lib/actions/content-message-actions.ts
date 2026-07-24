@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { canManageAllContent, canSendContentMessages } from "@/lib/auth/access";
-import { getAuthSession } from "@/lib/auth/get-session";
+import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
 import { logAuditForSession } from "@/lib/audit/log-event";
 import {
   CONTENT_MESSAGE_CONTENT_TYPES,
@@ -15,11 +15,13 @@ import {
 import {
   pgCountUnreadContentMessages,
   pgInsertContentMessage,
+  pgListAllContentMessages,
   pgListMessagesForContent,
   pgListReceivedContentMessages,
   pgListSentContentMessages,
   pgLookupContentOwner,
   pgMarkContentMessagesSeen,
+  type ContentMessageWithRecipient,
 } from "@/lib/db/content-messages-repository";
 import { pgGetUserById } from "@/lib/db/repository-extended";
 import { isPostgresConfigured } from "@/lib/utils";
@@ -32,6 +34,11 @@ export type ContentMessageListItem = ContentMessage & {
   isUnread: boolean;
 };
 
+export type AdminContentMessageListItem = ContentMessageListItem & {
+  recipientName: string | null;
+  recipientEmail: string | null;
+};
+
 function toListItem(message: ContentMessage): ContentMessageListItem {
   return {
     ...message,
@@ -42,6 +49,14 @@ function toListItem(message: ContentMessage): ContentMessageListItem {
       message.contentId
     ),
     isUnread: !message.seenAt,
+  };
+}
+
+function toAdminListItem(message: ContentMessageWithRecipient): AdminContentMessageListItem {
+  return {
+    ...toListItem(message),
+    recipientName: message.recipientName,
+    recipientEmail: message.recipientEmail,
   };
 }
 
@@ -228,5 +243,32 @@ export async function listContentMessagesForCardAction(input: {
   }
 
   const messages = (await pgListMessagesForContent({ contentType, contentId })).map(toListItem);
+  return { success: true, messages };
+}
+
+/** Full admin only: all content messages across every user (Rasad). */
+export async function listAllContentMessagesAction(input?: {
+  recipientUserId?: string | null;
+  limit?: number;
+}): Promise<{
+  success: boolean;
+  messages?: AdminContentMessageListItem[];
+  error?: string;
+}> {
+  const session = await getAuthSession();
+  if (!session || !isFullAdmin(session)) {
+    return { success: false, error: "فقط مدیر می‌تواند همه پیام‌ها را ببیند" };
+  }
+  if (!isPostgresConfigured()) {
+    return { success: true, messages: [] };
+  }
+
+  const messages = (
+    await pgListAllContentMessages({
+      recipientUserId: input?.recipientUserId,
+      limit: input?.limit,
+    })
+  ).map(toAdminListItem);
+
   return { success: true, messages };
 }

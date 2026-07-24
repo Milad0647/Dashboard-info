@@ -296,3 +296,45 @@ export async function pgListMessagesForContent(input: {
 
   return rows.map((row) => mapRow(row as Record<string, unknown>));
 }
+
+export type ContentMessageWithRecipient = ContentMessage & {
+  recipientName: string | null;
+  recipientEmail: string | null;
+};
+
+/** Admin-only: list all content messages across users, newest first. */
+export async function pgListAllContentMessages(input?: {
+  recipientUserId?: string | null;
+  limit?: number;
+}): Promise<ContentMessageWithRecipient[]> {
+  if (!isPostgresConfigured()) return [];
+  await ensureContentMessagesTable();
+
+  const sql = getSql();
+  const limit = Math.min(Math.max(input?.limit ?? 200, 1), 500);
+  const recipientUserId = input?.recipientUserId?.trim() || null;
+
+  const rows = await sql`
+    SELECT
+      cm.*,
+      r.name AS recipient_name,
+      r.email AS recipient_email
+    FROM content_messages cm
+    LEFT JOIN users r ON r.id = cm.recipient_user_id
+    WHERE (
+      ${recipientUserId}::uuid IS NULL
+      OR cm.recipient_user_id = ${recipientUserId}::uuid
+    )
+    ORDER BY cm.created_at DESC
+    LIMIT ${limit}
+  `;
+
+  return rows.map((row) => {
+    const record = row as Record<string, unknown>;
+    return {
+      ...mapRow(record),
+      recipientName: record.recipient_name ? String(record.recipient_name) : null,
+      recipientEmail: record.recipient_email ? String(record.recipient_email) : null,
+    };
+  });
+}
