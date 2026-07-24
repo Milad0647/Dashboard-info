@@ -1,6 +1,7 @@
 import type { Ownable } from "@/lib/types";
 import {
   isOwnerFilterActive,
+  isSearchFilterActive,
   OWNER_DATE_ALL,
   type CampaignDateFilter,
   type CampaignContentSort,
@@ -13,7 +14,7 @@ export function isDateFilterActive(filter: OwnerLocationFilter): boolean {
 }
 
 export function isCampaignContentFilterActive(filter: OwnerLocationFilter): boolean {
-  return isOwnerFilterActive(filter) || isDateFilterActive(filter);
+  return isOwnerFilterActive(filter) || isDateFilterActive(filter) || isSearchFilterActive(filter);
 }
 
 function rollingDayRange(dayCountInclusive: number): { from: string; to: string } {

@@ -1,4 +1,4 @@
-import type { CampaignKPIs, PublicCampaignData } from "@/lib/types";
+import type { CampaignKPIs, PublicCampaignData, SectionVisibility } from "@/lib/types";
 import { getBillboardUploadActivityDate } from "@/lib/billboards";
 import { resolveDateFilterRange, isCampaignContentFilterActive } from "@/lib/campaign-content-filter";
 import {
@@ -11,6 +11,7 @@ import {
 import type { OwnerFilterOption } from "@/lib/owner-users";
 import { formatPersianDate } from "@/lib/utils";
 import { formatPlanLabelDisplay } from "@/lib/content-topics";
+import type { KpiTodayDeltas } from "@/lib/kpi-today-deltas";
 
 const DATE_PRESET_LABELS: Record<string, string> = {
   today: "امروز",
@@ -50,6 +51,11 @@ export function getOwnerFilterLabel(
 
   if (filter.planLabels.length > 0) {
     parts.push(`موضوع: ${filter.planLabels.map((label) => formatPlanLabelDisplay(label)).join("، ")}`);
+  }
+
+  const searchQuery = filter.searchQuery.trim();
+  if (searchQuery) {
+    parts.push(`جستجو: «${searchQuery}»`);
   }
 
   if (filter.sortOrder === "newest") parts.push("جدیدترین آپلود");
@@ -112,4 +118,66 @@ export function computeFilteredCampaignKpis(
     totalParticipants: 0,
     totalFiles: sections.files ? files.length : 0,
   };
+}
+
+/** Content types that count as uploaded media (excludes analytics metrics & participants). */
+export function sumUploadedContentFromKpis(
+  kpis: CampaignKPIs,
+  sections: SectionVisibility,
+  rawMediaCount = 0
+): number {
+  let total = 0;
+  if (sections.billboards) total += kpis.totalBillboards;
+  if (sections.posters) total += kpis.totalPosters;
+  if (sections.videos) total += kpis.totalVideos;
+  if (sections.socialPosts) total += kpis.totalSocialPosts;
+  if (sections.sitePublications) total += kpis.totalSitePublications;
+  if (sections.activities) total += kpis.totalActivities;
+  if (sections.pressPublications) total += kpis.totalPressPublications;
+  if (sections.broadcastReports) total += kpis.totalBroadcastReports;
+  if (sections.meetings) total += kpis.totalMeetings;
+  if (sections.files) total += kpis.totalFiles;
+  if (sections.rawMedia) total += rawMediaCount;
+  return total;
+}
+
+export function sumUploadedContentTodayDelta(deltas: KpiTodayDeltas, sections: SectionVisibility): number {
+  let total = 0;
+  if (sections.billboards) total += deltas.billboards;
+  if (sections.posters) total += deltas.posters;
+  if (sections.videos) total += deltas.videos;
+  if (sections.socialPosts) total += deltas.socialPosts;
+  if (sections.sitePublications) total += deltas.sitePublications;
+  if (sections.activities) total += deltas.activities;
+  if (sections.pressPublications) total += deltas.pressPublications;
+  if (sections.broadcastReports) total += deltas.broadcastReports;
+  if (sections.meetings) total += deltas.meetings;
+  if (sections.files) total += deltas.files;
+  if (sections.rawMedia) total += deltas.rawMedia;
+  return total;
+}
+
+export function countFilteredRawMedia(
+  data: PublicCampaignData,
+  filter: OwnerLocationFilter
+): number {
+  if (!data.sections.rawMedia) return 0;
+  if (!isCampaignContentFilterActive(filter)) return data.rawMedia.length;
+  return filterItemsByOwnerLocation(data.rawMedia, filter).length;
+}
+
+export function hasUploadedContentSections(sections: SectionVisibility): boolean {
+  return Boolean(
+    sections.billboards ||
+      sections.posters ||
+      sections.videos ||
+      sections.socialPosts ||
+      sections.sitePublications ||
+      sections.activities ||
+      sections.pressPublications ||
+      sections.broadcastReports ||
+      sections.meetings ||
+      sections.files ||
+      sections.rawMedia
+  );
 }

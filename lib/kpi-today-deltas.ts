@@ -18,6 +18,9 @@ export interface KpiTodayDeltas {
   sitePublications: number;
   activities: number;
   pressPublications: number;
+  broadcastReports: number;
+  meetings: number;
+  rawMedia: number;
   submissions: number;
   files: number;
 }
@@ -116,6 +119,13 @@ export function computeKpiTodayDeltas(
     // Keep activities separate from press so KPI cards do not double-count.
     activities: activitiesToday,
     pressPublications: pressToday,
+    broadcastReports: sections.broadcastReports
+      ? countCreatedToday(data.broadcastReports, filter)
+      : 0,
+    meetings: sections.meetings
+      ? countCreatedToday(data.meetings, filter, (meeting) => meeting.meetingDate)
+      : 0,
+    rawMedia: sections.rawMedia ? countCreatedToday(data.rawMedia, filter) : 0,
     submissions: sections.submissions ? countUniqueParticipantsToday(data.submissions, filter) : 0,
     files: sections.files ? countCreatedToday(data.files, filter) : 0,
   };

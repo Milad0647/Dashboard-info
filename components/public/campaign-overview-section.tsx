@@ -7,6 +7,7 @@ import {
   FileText,
   Globe,
   ImageIcon,
+  Layers,
   LayoutGrid,
   Megaphone,
   Newspaper,
@@ -32,7 +33,11 @@ import {
 } from "@/lib/campaign-overview-insights";
 import {
   computeFilteredCampaignKpis,
+  countFilteredRawMedia,
   getOwnerFilterLabel,
+  hasUploadedContentSections,
+  sumUploadedContentFromKpis,
+  sumUploadedContentTodayDelta,
 } from "@/lib/filtered-campaign-kpis";
 import { isCampaignContentFilterActive } from "@/lib/campaign-content-filter";
 import { computeKpiTodayDeltas } from "@/lib/kpi-today-deltas";
@@ -59,6 +64,15 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
   const uploadStats = useMemo(() => buildUploadActivityStats(data), [data]);
   const todayUploads = useMemo(() => collectTodaysUploads(data), [data]);
   const todayDeltas = useMemo(() => computeKpiTodayDeltas(data, filter), [data, filter]);
+  const rawMediaCount = useMemo(() => countFilteredRawMedia(data, filter), [data, filter]);
+  const totalUploadedContent = useMemo(
+    () => sumUploadedContentFromKpis(kpis, data.sections, rawMediaCount),
+    [kpis, data.sections, rawMediaCount]
+  );
+  const totalUploadedToday = useMemo(
+    () => sumUploadedContentTodayDelta(todayDeltas, data.sections),
+    [todayDeltas, data.sections]
+  );
   const campaignProgress = useMemo(
     () => computeCampaignProgress(settings.startDate, settings.endDate),
     [settings.startDate, settings.endDate]
@@ -92,6 +106,13 @@ export function CampaignOverviewSection({ data }: CampaignOverviewSectionProps) 
     todayDelta?: number;
     compactValue?: boolean;
   }[] = [
+    {
+      show: hasUploadedContentSections(data.sections),
+      title: "مجموع محتوای آپلودشده",
+      value: totalUploadedContent,
+      icon: Layers,
+      todayDelta: totalUploadedToday,
+    },
     { show: kpiVisibility.billboards, title: "تبلیغات محیطی", value: kpis.totalBillboards, icon: LayoutGrid, sectionId: "billboards", todayDelta: todayDeltas.billboards },
     { show: kpiVisibility.posters, title: "پوسترها", value: kpis.totalPosters, icon: ImageIcon, sectionId: "posters", todayDelta: todayDeltas.posters },
     { show: kpiVisibility.videos, title: "ویدیوها", value: kpis.totalVideos, icon: Video, sectionId: "videos", todayDelta: todayDeltas.videos },

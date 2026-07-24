@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowUpDown, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -78,7 +77,6 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sort, setSort] = useState<BillboardSort>("newest");
-  const [search, setSearch] = useState("");
   const [selectedBillboard, setSelectedBillboard] = useState<Billboard | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
@@ -107,7 +105,6 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
       if (cityFilter !== "all" && billboard.city !== cityFilter) return false;
       if (!matchesBillboardCategoryFilter(billboard, categoryFilter)) return false;
       if (!matchesBillboardStatusFilter(billboard, statusFilter)) return false;
-      if (search && !billboard.title.includes(search) && !billboard.city.includes(search)) return false;
       return true;
     });
     if (sortByCategory) {
@@ -121,7 +118,6 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
     cityFilter,
     categoryFilter,
     statusFilter,
-    search,
     displaySort,
     sortByCategory,
   ]);
@@ -135,7 +131,7 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
 
   const { visibleCount, hasMore, loadMore, revealContentId } = usePublicMediaPagination(
     filtered.length,
-    `${cityFilter}:${categoryFilter}:${statusFilter}:${search}:${sort}`
+    `${cityFilter}:${categoryFilter}:${statusFilter}:${sort}`
   );
 
   const billboardIds = useMemo(() => filtered.map((billboard) => billboard.id), [filtered]);
@@ -163,15 +159,6 @@ export function BillboardSection({ billboards, adminOwnerLabel }: BillboardSecti
 
   const controls = (
     <>
-      <div className="relative">
-        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="جستجو..."
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          className="w-40 pr-9"
-        />
-      </div>
       <Select value={cityFilter} onValueChange={setCityFilter}>
         <SelectTrigger className="w-32">
           <SelectValue placeholder="شهر" />

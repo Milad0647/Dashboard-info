@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowUpDown, Building2, CalendarRange, MapPin, RotateCcw, X } from "lucide-react";
+import { ArrowUpDown, Building2, CalendarRange, MapPin, RotateCcw, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { PersianDateInput } from "@/components/ui/persian-date-input";
 import {
   Select,
@@ -35,6 +36,7 @@ export function OwnerLocationFilterBar() {
     setSortOrder,
     setPlanLabels,
     togglePlanLabel,
+    setSearchQuery,
     resetFilters,
     provinces,
     cities,
@@ -91,6 +93,27 @@ export function OwnerLocationFilterBar() {
             <RotateCcw className="h-4 w-4" />
             بازگشت به پیش‌فرض
           </Button>
+        )}
+      </div>
+
+      <div className="relative">
+        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={filter.searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="جستجو در عنوان، توضیحات، شهر، شرکت..."
+          className="pr-9"
+          aria-label="جستجوی محتوا"
+        />
+        {filter.searchQuery.trim() && (
+          <button
+            type="button"
+            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={() => setSearchQuery("")}
+            aria-label="پاک کردن جستجو"
+          >
+            <X className="h-4 w-4" />
+          </button>
         )}
       </div>
 

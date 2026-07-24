@@ -25,6 +25,8 @@ export interface OwnerLocationFilter extends CampaignDateFilter {
   userKey: string;
   /** Empty array means all plan labels. */
   planLabels: string[];
+  /** Free-text search across content title / description / location fields. */
+  searchQuery: string;
   sortOrder: CampaignContentSort;
 }
 
@@ -33,6 +35,7 @@ export const DEFAULT_OWNER_LOCATION_FILTER: OwnerLocationFilter = {
   city: OWNER_LOCATION_ALL,
   userKey: OWNER_USER_ALL,
   planLabels: [],
+  searchQuery: "",
   datePreset: OWNER_DATE_ALL,
   dateFrom: "",
   dateTo: "",
@@ -53,6 +56,70 @@ export function isOwnerPlanFilterActive(filter: OwnerLocationFilter): boolean {
 
 export function isOwnerFilterActive(filter: OwnerLocationFilter): boolean {
   return isOwnerLocationFilterActive(filter) || isOwnerUserFilterActive(filter) || isOwnerPlanFilterActive(filter);
+}
+
+export function isSearchFilterActive(filter: OwnerLocationFilter): boolean {
+  return filter.searchQuery.trim().length > 0;
+}
+
+const SEARCHABLE_STRING_KEYS = [
+  "title",
+  "description",
+  "city",
+  "location",
+  "province",
+  "ownerName",
+  "ownerCity",
+  "ownerProvince",
+  "fileName",
+  "category",
+  "notes",
+  "code",
+  "participantName",
+  "discussionSummary",
+  "summaryPreview",
+  "messageBody",
+  "platform",
+] as const;
+
+function collectSearchableText(item: Ownable): string {
+  const record = item as Ownable & Record<string, unknown>;
+  const parts: string[] = [];
+
+  for (const key of SEARCHABLE_STRING_KEYS) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) {
+      parts.push(value);
+    }
+  }
+
+  if (Array.isArray(record.tags)) {
+    for (const tag of record.tags) {
+      if (typeof tag === "string" && tag.trim()) parts.push(tag);
+    }
+  }
+
+  if (Array.isArray(record.attendees)) {
+    for (const attendee of record.attendees) {
+      if (typeof attendee === "string" && attendee.trim()) parts.push(attendee);
+    }
+  }
+
+  if (Array.isArray(record.planLabels)) {
+    for (const label of record.planLabels) {
+      if (typeof label === "string" && label.trim()) parts.push(label);
+    }
+  } else if (typeof record.planLabel === "string" && record.planLabel.trim()) {
+    parts.push(record.planLabel);
+  }
+
+  return parts.join(" ").toLowerCase();
+}
+
+export function matchesContentSearch(item: Ownable, filter: OwnerLocationFilter): boolean {
+  const query = filter.searchQuery.trim().toLowerCase();
+  if (!query) return true;
+  return collectSearchableText(item).includes(query);
 }
 
 function matchesPlanLabel(item: Ownable, filter: OwnerLocationFilter): boolean {
@@ -101,6 +168,7 @@ export function matchesOwnerLocation(
   filter: OwnerLocationFilter,
   getItemDate?: (item: Ownable) => string | undefined
 ): boolean {
+  if (!matchesContentSearch(item, filter)) return false;
   if (!matchesPlanLabel(item, filter)) return false;
   if (!matchesOwnerUser(item, filter)) return false;
 

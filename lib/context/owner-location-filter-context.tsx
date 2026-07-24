@@ -28,6 +28,7 @@ interface OwnerLocationFilterContextValue {
   setSortOrder: (sortOrder: CampaignContentSort) => void;
   setPlanLabels: (planLabels: string[]) => void;
   togglePlanLabel: (planLabel: string) => void;
+  setSearchQuery: (searchQuery: string) => void;
   resetFilters: () => void;
   provinces: string[];
   cities: string[];
@@ -137,6 +138,7 @@ export function OwnerLocationFilterProvider({
               : [...current.planLabels, planLabel],
           };
         }),
+      setSearchQuery: (searchQuery) => setFilter((current) => ({ ...current, searchQuery })),
       resetFilters: () => setFilter(DEFAULT_OWNER_LOCATION_FILTER),
       provinces,
       cities,
@@ -167,6 +169,7 @@ export function useOwnerLocationFilter(): OwnerLocationFilterContextValue {
       setSortOrder: () => undefined,
       setPlanLabels: () => undefined,
       togglePlanLabel: () => undefined,
+      setSearchQuery: () => undefined,
       resetFilters: () => undefined,
       provinces: [],
       cities: [],

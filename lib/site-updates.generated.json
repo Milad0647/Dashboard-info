@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "6e8f3a9cf8aacf195a44bc33e91446711d667421",
+      "committedAt": "2026-07-23T16:43:00+03:30",
+      "title": "رفع مشکل ناتمام ماندن بکاپ و اطمینان از ذخیره فایل پشتیبان",
+      "subject": "Make campaign backups complete reliably after API response"
+    },
+    {
       "hash": "01762b407d5db3b06cac7fb739bc947a4f39ef8d",
       "committedAt": "2026-07-23T16:12:40+03:30",
       "title": "رفع قطعی خطای بکاپ و امکان گرفتن پشتیبان کامل",
