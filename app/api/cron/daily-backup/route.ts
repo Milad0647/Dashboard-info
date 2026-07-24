@@ -4,7 +4,8 @@ import { getTehranCalendarDateIso } from "@/lib/safe-dates";
 import { isPostgresConfigured } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+/** Full nightly ZIPs with media can take a long time on large campaigns. */
+export const maxDuration = 3600;
 
 function isLocalhostRequest(request: Request): boolean {
   try {

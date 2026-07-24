@@ -61,7 +61,8 @@ export function shouldMarkDailyBackupComplete(_summary?: {
   return true;
 }
 
-const LOCK_STALE_MS = 2 * 60 * 60 * 1000;
+/** Stale lock after 6h — full media ZIPs can run for a long time. */
+const LOCK_STALE_MS = 6 * 60 * 60 * 1000;
 
 /**
  * Exclusive lock across in-app scheduler + Docker poller.

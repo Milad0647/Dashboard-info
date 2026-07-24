@@ -100,21 +100,20 @@ What it updates:
 Nightly job (Tehran **00:00–05:59** catch-up window, **once per day**):
 
 1. `pg_dump` → `BACKUP_DIR/db-dump-YYYY-MM-DD.sql`
-2. Per-campaign **data-only** ZIP (users/sections JSON, **no media files**)
+2. Per-campaign **full** ZIP (users/sections JSON **+ media files**)
 
-Media files stay on the persistent `UPLOAD_DIR` volume — do not rely on huge ZIPs for nightly runs.
+Ensure `BACKUP_DIR` has enough free disk — full ZIPs grow with upload size.
 
 **To bring the app back after total loss:**
 
 1. Restore Postgres from the latest `db-dump-*.sql`
-2. Mount/restore the `UPLOAD_DIR` volume (or copy files back)
-3. Optionally restore campaign JSON from a backup ZIP (Admin → پشتیبان‌گیری → بازیابی کامل)
-4. Start the app
+2. Restore from a full campaign ZIP (Admin → پشتیبان‌گیری → بازیابی کامل), **or** remount/copy the `UPLOAD_DIR` volume
+3. Start the app
 
 Manual buttons:
 
-- **بکاپ سریع (بدون رسانه)** — small, recommended daily/manual
-- **بکاپ کامل با رسانه** — large; runs in background; use when you need a portable ZIP with files
+- **بکاپ سریع (بدون رسانه)** — small, fast
+- **بکاپ کامل با رسانه** — same as nightly ZIP; runs in background
 
 Persist volumes: `BACKUP_DIR` (default `/app/data/backups`) and `UPLOAD_DIR` (default `/app/data/uploads`).
 

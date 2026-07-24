@@ -52,7 +52,7 @@ function getTehranClock(date: Date = new Date()): {
 /**
  * Nightly DR backup:
  * 1) Postgres dump (full DB)
- * 2) Per-campaign data ZIPs without media (media stays on UPLOAD_DIR volume)
+ * 2) Per-campaign full ZIPs including media files
  * Runs once per Tehran day inside 00:00–05:59 window only.
  */
 export async function runDailyBackupIfDue(): Promise<void> {
@@ -77,7 +77,9 @@ export async function runDailyBackupIfDue(): Promise<void> {
     const again = (await getLastDailyBackupDay()) ?? "";
     if (again === dateIso) return;
 
-    console.info(`[daily-backup] Starting nightly DR backup for Tehran day ${dateIso}`);
+    console.info(
+      `[daily-backup] Starting nightly full backup (DB + media ZIPs) for Tehran day ${dateIso}`
+    );
 
     let dbDump: { filename: string; sizeBytes: number } | null = null;
     try {
@@ -89,9 +91,9 @@ export async function runDailyBackupIfDue(): Promise<void> {
       console.error("[daily-backup] DB dump failed:", error);
     }
 
-    // Data-only campaign ZIPs — fast & small; media lives on the uploads volume.
+    // Full campaign ZIPs with media — portable restore in one archive.
     const summary = await createDailyBackupsForAllCampaigns({
-      includeUploads: false,
+      includeUploads: true,
     });
 
     if (shouldMarkDailyBackupComplete(summary)) {
