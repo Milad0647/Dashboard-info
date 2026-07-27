@@ -151,7 +151,7 @@ export function AuditMessagesPanel({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir="rtl">
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-start justify-between gap-3">

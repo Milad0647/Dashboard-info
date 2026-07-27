@@ -115,7 +115,7 @@ export function AuditProblemsPanel({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {showSignals ? (
         <Card>
           <CardHeader className="pb-2">
@@ -195,8 +195,9 @@ export function AuditProblemsPanel({
           <Tabs
             value={activeTab}
             onValueChange={(value) => setActiveTab(value as ProblemTab)}
+            dir="rtl"
           >
-            <TabsList className="w-full sm:w-auto">
+            <TabsList className="w-full justify-start sm:w-auto">
               <TabsTrigger value="open" className="gap-1.5">
                 مشکلات باز
                 <Badge

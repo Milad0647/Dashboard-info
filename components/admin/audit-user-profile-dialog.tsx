@@ -251,7 +251,7 @@ export function AuditUserProfileDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] w-[min(96vw,1100px)] max-w-5xl overflow-hidden flex flex-col gap-0 p-0">
+      <DialogContent className="max-h-[92vh] w-[min(96vw,1100px)] max-w-5xl overflow-hidden flex flex-col gap-0 p-0" dir="rtl">
         <DialogHeader className="px-6 pt-6 pb-3 border-b shrink-0 space-y-3">
           <DialogTitle className="flex flex-wrap items-center gap-2">
             {user?.isOnline !== undefined && (
@@ -605,10 +605,10 @@ export function AuditUserProfileDialog({
                       در این تاریخ فعالیت معناداری برای این کاربر ثبت نشده است.
                     </p>
                   ) : (
-                    <ol className="relative border-r border-border/70 mr-4 sm:mr-6">
+                    <ol className="relative border-s border-border/70 ms-4 sm:ms-6">
                       {timelineEvents.map((event) => (
-                        <li key={event.id} className="pr-6 sm:pr-8 pb-4 last:pb-2 relative">
-                          <span className="absolute top-1.5 -right-[5px] h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-background" />
+                        <li key={event.id} className="ps-6 sm:ps-8 pb-4 last:pb-2 relative">
+                          <span className="absolute top-1.5 -start-[5px] h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-background" />
                           <div className="rounded-lg border px-3 py-2.5 space-y-1.5">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="text-xs text-muted-foreground tabular-nums">

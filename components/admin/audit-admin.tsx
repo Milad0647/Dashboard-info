@@ -682,7 +682,7 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
 
   if (!databaseReady || !data) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" dir="rtl">
         <AdminPageHeader
           title="رصد فعالیت کاربران"
           description="گزارش کامل ورود، فعالیت و محتوای ثبت‌شده توسط کاربران"
@@ -700,7 +700,7 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
   const { summary } = data;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       <AdminPageHeader
         title="رصد فعالیت کاربران"
         description="چه کسی وارد شده، چه محتوایی ثبت کرده، کجا رفته و روی چه دکمه‌هایی کلیک کرده است"
@@ -744,7 +744,7 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
             <CardTitle className="text-base flex flex-wrap items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
               وضعیت همه کاربران
-              <Badge variant="outline" className="mr-1">
+              <Badge variant="outline" className="ms-1">
                 {formatPersianNumber(presenceStats.total)}
               </Badge>
               <span className="text-xs font-normal text-muted-foreground">
@@ -797,7 +797,7 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
             <CardTitle className="text-base flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-destructive" />
               ورودهای ناموفق امروز
-              <Badge variant="destructive" className="mr-1">
+              <Badge variant="destructive" className="ms-1">
                 {formatPersianNumber(
                   groupedFailedLoginsToday.length > 0
                     ? groupedFailedLoginsToday.length
@@ -852,13 +852,13 @@ export function AuditAdmin({ data, databaseReady }: AuditAdminProps) {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview">
-        <TabsList>
+      <Tabs defaultValue="overview" dir="rtl">
+        <TabsList className="w-full justify-start">
           <TabsTrigger value="overview">نمای کلی</TabsTrigger>
-          <TabsTrigger value="problems">
+          <TabsTrigger value="problems" className="gap-1.5">
             مشکلات
             {(summary.openProblemReports > 0 || summary.stuckSignals > 0) && (
-              <Badge variant="warning" className="mr-1.5">
+              <Badge variant="warning" className="text-[10px] px-1.5 py-0">
                 {formatPersianNumber(summary.openProblemReports + summary.stuckSignals)}
               </Badge>
             )}

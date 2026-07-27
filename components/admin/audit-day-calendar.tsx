@@ -229,7 +229,7 @@ export function AuditDayCalendar({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir="rtl">
       <Card>
         <CardContent className="p-4 sm:p-5 space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-end gap-3">
@@ -281,7 +281,7 @@ export function AuditDayCalendar({
               </Button>
             </div>
 
-            <p className="text-sm text-muted-foreground lg:mr-auto flex items-center gap-1.5">
+            <p className="text-sm text-muted-foreground lg:ms-auto flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4 shrink-0" />
               فعالیت‌های {formatPersianDateShort(selectedDate)}
             </p>
@@ -383,11 +383,11 @@ export function AuditDayCalendar({
                                   </button>
                                 )}
                               </div>
-                              <div className="shrink-0 text-left space-y-1">
+                              <div className="shrink-0 text-start space-y-1">
                                 <Badge variant={isSelected ? "default" : "outline"}>
                                   {formatPersianNumber(actor.eventCount)} رویداد
                                 </Badge>
-                                <div className="flex flex-wrap justify-end gap-1 text-[11px] text-muted-foreground">
+                                <div className="flex flex-wrap justify-start gap-1 text-[11px] text-muted-foreground">
                                   {actor.loginCount > 0 && (
                                     <span>ورود {formatPersianNumber(actor.loginCount)}</span>
                                   )}
@@ -443,7 +443,7 @@ export function AuditDayCalendar({
                               </p>
                             )}
                           </div>
-                          <div className="shrink-0 text-left text-xs text-muted-foreground space-y-0.5">
+                          <div className="shrink-0 text-start text-xs text-muted-foreground space-y-0.5">
                             <p>{formatPersianDateTime(event.createdAt)}</p>
                             {event.ipAddress && (
                               <p className="font-mono" dir="ltr">
