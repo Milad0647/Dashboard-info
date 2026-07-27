@@ -1,17 +1,10 @@
 import { parseBillboardAssignmentId } from "@/lib/models/billboard-api";
 import {
-  fetchAllExternalBillboards,
-  fetchCampaignIntegration,
-  mapExternalBillboardToBillboard,
-  mapIntegrationBillboardToBillboard,
-} from "@/lib/services/billboard-api";
-import { matchOwnerToUser } from "@/lib/services/owner-user-match";
-import {
   getSafeCreatedTimestamp,
   getTehranCalendarDateIso,
   isSameDay,
 } from "@/lib/safe-dates";
-import type { AdminUser, Billboard, CampaignSettings } from "@/lib/types";
+import type { Billboard, CampaignSettings, AdminUser } from "@/lib/types";
 
 export {
   BILLBOARD_PLACEHOLDER_IMAGE,
@@ -52,7 +45,7 @@ export function collectPersistedExternalBillboardIds(dbBillboards: Billboard[]):
 
 /**
  * Ephemeral billboards from a live map-bilboard fetch (not DB rows).
- * Persisted imports use a real UUID id even if source was historically "api".
+ * Live fetch is disabled; kept for legacy id checks.
  */
 export function isLiveApiBillboard(billboard: Billboard): boolean {
   return billboard.id.startsWith("api-") || billboard.id.startsWith("int-");
@@ -87,19 +80,6 @@ export function filterBillboardsByOwnerUser(
   return billboards.filter((billboard) => billboardBelongsToUser(billboard, ownerUserId));
 }
 
-function excludePersistedLiveBillboards(
-  liveBillboards: Billboard[],
-  dbBillboards: Billboard[]
-): Billboard[] {
-  const persistedIds = collectPersistedExternalBillboardIds(dbBillboards);
-  if (persistedIds.size === 0) return liveBillboards;
-
-  return liveBillboards.filter((billboard) => {
-    const externalId = getBillboardExternalMapId(billboard);
-    return !externalId || !persistedIds.has(externalId);
-  });
-}
-
 function getBillboardRecency(billboard: Billboard): string {
   return billboard.createdAt || billboard.updatedAt || "";
 }
@@ -118,77 +98,20 @@ export function getExternalCampaignSlug(settings: CampaignSettings): string | nu
   return slug || null;
 }
 
-export function hasExternalBillboardConnection(settings: CampaignSettings): boolean {
-  return Boolean(
-    getExternalCampaignSlug(settings) || settings.billboardConfig?.externalCampaignId
-  );
-}
-
-async function fetchLiveBillboards(
-  settings: CampaignSettings,
-  users: AdminUser[] = []
-): Promise<Billboard[]> {
-  const integrationSlug = getExternalCampaignSlug(settings);
-  if (integrationSlug) {
-    const integration = await fetchCampaignIntegration(integrationSlug);
-
-    return integration.billboards.map((item, index) => {
-      const matchedUser = item.owner ? matchOwnerToUser(item.owner, users) : null;
-      return mapIntegrationBillboardToBillboard(item, settings.id, {
-        sortOrder: index + 1,
-        published: true,
-        matchedUser,
-      });
-    });
-  }
-
-  const externalCampaignId = settings.billboardConfig?.externalCampaignId;
-  if (!externalCampaignId) {
-    return [];
-  }
-
-  const externalBillboards = await fetchAllExternalBillboards(externalCampaignId);
-  return externalBillboards
-    .filter((item) => item.status === "active")
-    .map((item, index) =>
-      mapExternalBillboardToBillboard(item, settings.id, {
-        sortOrder: index + 1,
-        published: true,
-      })
-    );
+export function hasExternalBillboardConnection(_settings: CampaignSettings): boolean {
+  void _settings;
+  return false;
 }
 
 export async function resolveAdminBillboards(
-  settings: CampaignSettings,
+  _settings: CampaignSettings,
   dbBillboards: Billboard[],
-  users: AdminUser[] = [],
+  _users: AdminUser[] = [],
   ownerUserId?: string | null
 ): Promise<Billboard[]> {
-  // Always keep every persisted row; only merge live items not already saved.
-  const localBillboards = sortLocalBillboards(dbBillboards);
-
-  let resolved: Billboard[];
-
-  if (!hasExternalBillboardConnection(settings)) {
-    resolved = localBillboards;
-  } else {
-    try {
-      const liveBillboards = excludePersistedLiveBillboards(
-        await fetchLiveBillboards(settings, users),
-        dbBillboards
-      );
-      resolved = [
-        ...localBillboards,
-        ...liveBillboards.map((billboard, index) => ({
-          ...billboard,
-          sortOrder: localBillboards.length + index + 1,
-        })),
-      ];
-    } catch (error) {
-      console.error("Admin billboard API fetch failed:", error);
-      resolved = localBillboards;
-    }
-  }
+  void _settings;
+  void _users;
+  const resolved = sortLocalBillboards(dbBillboards);
 
   // undefined = admin/client (unscoped). null/string = contributor scope.
   if (ownerUserId !== undefined) {
@@ -199,34 +122,13 @@ export async function resolveAdminBillboards(
 }
 
 export async function resolvePublicBillboards(
-  settings: CampaignSettings,
+  _settings: CampaignSettings,
   dbBillboards: Billboard[],
-  users: AdminUser[] = []
+  _users: AdminUser[] = []
 ): Promise<Billboard[]> {
-  // Always keep every persisted row; only merge live items not already saved.
-  const localBillboards = sortLocalBillboards(dbBillboards);
-
-  if (!hasExternalBillboardConnection(settings)) {
-    return localBillboards;
-  }
-
-  try {
-    const liveBillboards = excludePersistedLiveBillboards(
-      await fetchLiveBillboards(settings, users),
-      dbBillboards
-    );
-    return [
-      ...localBillboards,
-      ...liveBillboards.map((billboard, index) => ({
-        ...billboard,
-        sortOrder: localBillboards.length + index + 1,
-        published: true,
-      })),
-    ];
-  } catch (error) {
-    console.error("Live billboard fetch failed:", error);
-    return localBillboards;
-  }
+  void _settings;
+  void _users;
+  return sortLocalBillboards(dbBillboards);
 }
 
 export function hasBillboardCoordinates(billboard: Billboard): boolean {

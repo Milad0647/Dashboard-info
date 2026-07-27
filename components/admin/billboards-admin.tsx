@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Wrench } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,16 +15,11 @@ import {
   sortAdminContentItems,
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
-import { AdminDataTable } from "@/components/admin/admin-data-table";
-import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import {
   AdminBillboardAddCard,
   AdminBillboardCompactCard,
 } from "@/components/admin/admin-billboard-compact-card";
-import { MapBilboardBackupImportPanel } from "@/components/admin/map-bilboard-backup-import-panel";
-import { BillboardIntegrationImportPanel } from "@/components/admin/billboard-integration-import-panel";
 import { BillboardCreateAssignmentDialog } from "@/components/admin/billboard-create-assignment-dialog";
-import { BillboardAddPeriodDialog } from "@/components/admin/billboard-add-period-dialog";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
@@ -44,7 +39,7 @@ import {
   resolveBillboardCategoryLabel,
 } from "@/lib/billboard-categories";
 import { BillboardCategoryChart } from "@/components/charts/billboard-category-chart";
-import { canManageBillboardPeriods, isApiBillboard } from "@/lib/billboards";
+import { isApiBillboard } from "@/lib/billboards";
 import { getBillboardDisplayImage } from "@/lib/billboard-media";
 import type { ContentTopic } from "@/lib/content-topics";
 import { type EditSuggestionMissingField } from "@/lib/edit-suggestions";
@@ -70,9 +65,6 @@ interface BillboardsAdminProps {
   contentPlans?: string[];
   contentTopics?: ContentTopic[];
   canScore?: boolean;
-  liveApiEnabled?: boolean;
-  externalCampaignSlug?: string | null;
-  externalCampaignId?: string | null;
   isFullAdmin?: boolean;
   canTransferOwnership?: boolean;
   users?: AdminUser[];
@@ -85,9 +77,6 @@ export function BillboardsAdmin({
   contentPlans = [],
   contentTopics = [],
   canScore = false,
-  liveApiEnabled = false,
-  externalCampaignSlug = null,
-  externalCampaignId = null,
   isFullAdmin = false,
   canTransferOwnership = false,
   users = [],
@@ -99,9 +88,6 @@ export function BillboardsAdmin({
   const [formOpen, setFormOpen] = useState(false);
   const [editingBillboard, setEditingBillboard] = useState<Billboard | null>(null);
   const [previewBillboard, setPreviewBillboard] = useState<Billboard | null>(null);
-  const [periodOpen, setPeriodOpen] = useState(false);
-  const [periodBillboard, setPeriodBillboard] = useState<Billboard | null>(null);
-  const [isNormalizing, setIsNormalizing] = useState(false);
   const [isRestoringCategories, setIsRestoringCategories] = useState(false);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const [categoryFilter, setCategoryFilter] = useState(ADMIN_FILTER_ALL);
@@ -149,36 +135,10 @@ export function BillboardsAdmin({
     return buildBillboardCategoryStats(base);
   }, [billboards, contentFilter]);
 
-  const handleNormalizeApiBillboards = () => {
-    void (async () => {
-      setIsNormalizing(true);
-      try {
-        const response = await fetch("/api/billboard/normalize-locations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ campaignId }),
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          toast.error(result.error ?? "اصلاح استان/شهر ناموفق بود");
-          return;
-        }
-        toast.success(`اصلاح انجام شد: ${result.updated} بیلبورد`);
-        router.refresh();
-      } catch {
-        toast.error("اصلاح استان/شهر با خطا مواجه شد");
-      } finally {
-        setIsNormalizing(false);
-      }
-    })();
-  };
-
   const manualBillboards = useMemo(
     () => filteredBillboards.filter((billboard) => !isApiBillboard(billboard)),
     [filteredBillboards]
   );
-  const apiBillboards = filteredBillboards.filter((billboard) => isApiBillboard(billboard));
-  const allApiBillboards = billboards.filter((billboard) => isApiBillboard(billboard));
   const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${categoryFilter}:${viewMode}`;
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     manualBillboards.length,
@@ -193,8 +153,6 @@ export function BillboardsAdmin({
     [visibleManualBillboards]
   );
   const bulk = useSectionBulkEdit(visibleIds);
-  const showExternalMigrationTools = isFullAdmin && liveApiEnabled && Boolean(externalCampaignSlug);
-  const showExternalPeriodTools = showExternalMigrationTools && Boolean(externalCampaignId);
 
   const openCreate = () => {
     void requestCreate(() => {
@@ -274,9 +232,6 @@ export function BillboardsAdmin({
           <h1 className="text-2xl font-bold">تبلیغات محیطی</h1>
           <p className="text-sm text-muted-foreground">
             بیلبورد، استرابورد، عرشه پل، تلویزیون شهری و سایر رسانه‌های محیطی
-            {allApiBillboards.length > 0
-              ? ` — ${allApiBillboards.length} مورد قدیمی از Map-Bilboard فقط برای مشاهده است.`
-              : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -341,42 +296,6 @@ export function BillboardsAdmin({
         users={users}
       />
 
-      {showExternalMigrationTools && (
-        <>
-          <BillboardIntegrationImportPanel
-            campaignId={campaignId}
-            externalCampaignSlug={externalCampaignSlug}
-            onImported={() => router.refresh()}
-          />
-          <MapBilboardBackupImportPanel
-            campaignId={campaignId}
-            externalCampaignSlug={externalCampaignSlug}
-            onImported={() => router.refresh()}
-          />
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isNormalizing}
-              onClick={handleNormalizeApiBillboards}
-              className="mt-3"
-            >
-              {isNormalizing ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  در حال اصلاح...
-                </>
-              ) : (
-                <>
-                  <Wrench className="h-4 w-4" />
-                  اصلاح استان/شهر بیلبوردهای API
-                </>
-              )}
-            </Button>
-          </div>
-        </>
-      )}
-
       <BillboardCreateAssignmentDialog
         open={formOpen}
         onOpenChange={(open) => (open ? setFormOpen(true) : closeForm())}
@@ -392,17 +311,6 @@ export function BillboardsAdmin({
         highlightFields={highlightFields}
         onCreated={() => router.refresh()}
       />
-
-      {showExternalPeriodTools && externalCampaignId && (
-        <BillboardAddPeriodDialog
-          open={periodOpen}
-          onOpenChange={setPeriodOpen}
-          campaignId={campaignId}
-          externalCampaignId={externalCampaignId}
-          billboard={periodBillboard}
-          onAdded={() => router.refresh()}
-        />
-      )}
 
       {manualBillboards.length === 0 ? (
         <div className="rounded-xl border px-4 py-8 text-center text-sm text-muted-foreground">
@@ -490,66 +398,6 @@ export function BillboardsAdmin({
         onLoadMore={loadMore}
         remaining={manualBillboards.length - visibleCount}
       />
-
-      {apiBillboards.length > 0 && (
-        <AdminDataTable
-          data={apiBillboards}
-          searchKeys={["title", "city"]}
-          columns={[
-            {
-              key: "source",
-              label: "منبع",
-              render: () => <Badge variant="secondary">API</Badge>,
-            },
-            { key: "title", label: "عنوان" },
-            ...(isFullAdmin ? [adminOwnerTableColumn<Billboard>()] : []),
-            {
-              key: "category",
-              label: "دسته",
-              render: (item: Billboard) => (
-                <Badge variant="outline">{resolveBillboardCategoryLabel(item)}</Badge>
-              ),
-            },
-            { key: "city", label: "شهر" },
-            {
-              key: "status",
-              label: "وضعیت",
-              render: (item) =>
-                item.status === "draft" || item.status === "published" ? (
-                  <span className="text-xs text-muted-foreground">—</span>
-                ) : (
-                  <Badge status={item.status}>{getStatusLabel(item.status)}</Badge>
-                ),
-            },
-            ...(showExternalPeriodTools
-              ? [
-                  {
-                    key: "periods",
-                    label: "دوره‌ها",
-                    render: (item: Billboard) =>
-                      canManageBillboardPeriods(item) ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setPeriodBillboard(item);
-                            setPeriodOpen(true);
-                          }}
-                        >
-                          افزودن دوره
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      ),
-                  },
-                ]
-              : []),
-          ]}
-          onEdit={() => undefined}
-          onDelete={handleDelete}
-          isReadOnly={isApiBillboard}
-        />
-      )}
 
       <AdminContentPreviewDialog
         open={Boolean(previewBillboard)}

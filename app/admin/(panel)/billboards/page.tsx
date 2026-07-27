@@ -5,11 +5,7 @@ import { getAuthSession, getOwnerFilter, isFullAdmin } from "@/lib/auth/get-sess
 import { canScoreContent, canTransferContentOwnership } from "@/lib/auth/access";
 import { requireContributorAccess } from "@/lib/auth/require-contributor-access";
 import { pgGetUserById } from "@/lib/db/repository-extended";
-import {
-  hasExternalBillboardConnection,
-  resolveAdminBillboards,
-  getExternalCampaignSlug,
-} from "@/lib/billboards";
+import { resolveAdminBillboards } from "@/lib/billboards";
 import { BillboardsAdmin } from "@/components/admin/billboards-admin";
 import type { Billboard, CampaignSettings } from "@/lib/types";
 
@@ -59,9 +55,6 @@ export default async function BillboardsPage({ searchParams }: PageProps) {
       contentPlans={settings?.contentPlans ?? []}
       contentTopics={settings?.contentTopics ?? []}
       canScore={canScore}
-      liveApiEnabled={Boolean(settings && hasExternalBillboardConnection(settings))}
-      externalCampaignSlug={settings ? getExternalCampaignSlug(settings) : null}
-      externalCampaignId={settings?.billboardConfig?.externalCampaignId ?? null}
       isFullAdmin={fullAdmin}
       canTransferOwnership={canTransfer}
       users={canTransfer ? users : []}

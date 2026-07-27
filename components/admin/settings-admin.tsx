@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +17,6 @@ import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { updateSettingsAction } from "@/lib/actions/admin-actions";
 import { saveCampaignPagePasswordAction } from "@/lib/actions/extended-actions";
-import { fetchExternalCampaignsAction } from "@/lib/actions/billboard-import-actions";
 import { SmsSettingsCard } from "@/components/admin/sms-settings-card";
 import { CampaignPageAccessCodesAdmin } from "@/components/admin/campaign-page-access-codes-admin";
 import {
@@ -32,7 +30,6 @@ import {
   CONTENT_TITLE_MAX_LENGTH_MESSAGE,
 } from "@/lib/content-constraints";
 import type { AnalyticsConfig, CampaignFeatures, CampaignSettings, ChannelAnalyticsConfig } from "@/lib/types";
-import type { ExternalCampaign } from "@/lib/models/billboard-api";
 
 const featuresSchema = z.object({
   billboards: z.boolean(),
@@ -76,8 +73,6 @@ const schema = z.object({
   coverImageUrl: z.string().optional(),
   published: z.boolean(),
   features: featuresSchema,
-  externalCampaignId: z.string().optional(),
-  externalCampaignSlug: z.string().optional(),
   adminOwnerLabel: z.string().optional(),
   siteAnalytics: channelSchema,
   socialAnalyticsConfig: channelSchema,
@@ -231,8 +226,6 @@ export function SettingsAdmin({
   hasPagePassword = false,
 }: SettingsAdminProps) {
   const [isPending, startTransition] = useTransition();
-  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
-  const [externalCampaigns, setExternalCampaigns] = useState<ExternalCampaign[]>([]);
   const [contentTopics, setContentTopics] = useState<ContentTopic[]>(() =>
     normalizeContentTopics(
       initialSettings.contentTopics?.length
@@ -261,8 +254,6 @@ export function SettingsAdmin({
         rawMedia: initialSettings.features.rawMedia ?? true,
         smsReports: initialSettings.features.smsReports ?? true,
       },
-      externalCampaignId: initialSettings.billboardConfig?.externalCampaignId ?? "",
-      externalCampaignSlug: initialSettings.billboardConfig?.externalCampaignSlug ?? "",
       adminOwnerLabel: initialSettings.adminOwnerLabel ?? DEFAULT_ADMIN_OWNER_LABEL,
       siteAnalytics: {
         source: initialSettings.analyticsConfig.site.source,
@@ -289,30 +280,6 @@ export function SettingsAdmin({
     },
   });
 
-  const loadExternalCampaigns = useCallback(async () => {
-    setLoadingCampaigns(true);
-    const result = await fetchExternalCampaignsAction();
-    setLoadingCampaigns(false);
-    if (result.success && result.campaigns) {
-      setExternalCampaigns(result.campaigns);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadExternalCampaigns();
-  }, [loadExternalCampaigns]);
-
-  useEffect(() => {
-    const currentSlug = form.getValues("externalCampaignSlug");
-    const currentId = form.getValues("externalCampaignId");
-    if (!currentSlug && currentId && externalCampaigns.length > 0) {
-      const match = externalCampaigns.find((item) => item.id === currentId);
-      if (match) {
-        form.setValue("externalCampaignSlug", match.slug);
-      }
-    }
-  }, [externalCampaigns, form]);
-
   const onSubmit = form.handleSubmit((data) => {
     if (!canEditFullSettings) return;
     startTransition(async () => {
@@ -329,8 +296,8 @@ export function SettingsAdmin({
         features: data.features,
         analyticsConfig: buildAnalyticsConfig(data, initialSettings.analyticsConfig),
         billboardConfig: {
-          externalCampaignId: data.externalCampaignId || null,
-          externalCampaignSlug: data.externalCampaignSlug || null,
+          externalCampaignId: null,
+          externalCampaignSlug: null,
         },
         adminOwnerLabel: data.adminOwnerLabel?.trim() || DEFAULT_ADMIN_OWNER_LABEL,
         contentTopics,
@@ -575,45 +542,6 @@ export function SettingsAdmin({
                   <Switch checked={form.watch(`features.${key}`)} onCheckedChange={(v) => form.setValue(`features.${key}`, v)} />
                 </div>
               ))}
-            </div>
-
-            <div className="space-y-3 border rounded-lg p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <Label className="text-sm font-semibold">بیلبورد زنده (Map Bilboard)</Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    بیلبوردها از API integration خوانده می‌شوند — کمپین خارجی را انتخاب کنید.
-                  </p>
-                </div>
-                <Button type="button" variant="outline" size="icon" onClick={() => void loadExternalCampaigns()} disabled={loadingCampaigns}>
-                  {loadingCampaigns ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                </Button>
-              </div>
-              <Select
-                value={form.watch("externalCampaignSlug") || "none"}
-                onValueChange={(value) => {
-                  if (value === "none") {
-                    form.setValue("externalCampaignSlug", "");
-                    form.setValue("externalCampaignId", "");
-                    return;
-                  }
-
-                  const campaign = externalCampaigns.find((item) => item.slug === value);
-                  form.setValue("externalCampaignSlug", value);
-                  form.setValue("externalCampaignId", campaign?.id ?? "");
-                }}
-              >
-                <SelectTrigger><SelectValue placeholder="انتخاب کمپین خارجی" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">بدون اتصال — فقط بیلبوردهای دستی</SelectItem>
-                  {externalCampaigns.map((campaign) => (
-                    <SelectItem key={campaign.id} value={campaign.slug}>
-                      {campaign.name}
-                      {campaign.date_range_shamsi ? ` — ${campaign.date_range_shamsi}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
             <ChannelAnalyticsSettings

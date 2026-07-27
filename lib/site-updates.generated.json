@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "f59ec278e079a52f373930af5d9a5c2263446be2",
+      "committedAt": "2026-07-27T13:58:12+03:30",
+      "title": "لینک‌های چت قابل‌کلیک شدند و طراحی چت راست‌چین شد",
+      "subject": "Make chat links clickable and enforce RTL layout"
+    },
+    {
       "hash": "3932a864935a7f7e8692baf1cc5a7e3b6623b1f2",
       "committedAt": "2026-07-27T13:56:06+03:30",
       "title": "افزودن آیکون شناور چت با طراحی اپل در همه صفحات پنل",
