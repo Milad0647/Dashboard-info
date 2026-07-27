@@ -3,8 +3,8 @@ export const USER_COMPANY_TYPES = ["distribution", "regional_electricity"] as co
 export type UserCompanyType = (typeof USER_COMPANY_TYPES)[number];
 
 export const userCompanyTypeLabels: Record<UserCompanyType, string> = {
-  distribution: "توزیع",
-  regional_electricity: "برق منطقه",
+  distribution: "شرکت توزیع",
+  regional_electricity: "برق منطقه‌ای",
 };
 
 export function isUserCompanyType(value: unknown): value is UserCompanyType {

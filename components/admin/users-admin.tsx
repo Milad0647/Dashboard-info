@@ -38,9 +38,17 @@ import {
   userRegionLabels,
   type UserRegion,
 } from "@/lib/user-regions";
+import {
+  USER_COMPANY_TYPES,
+  getUserCompanyTypeLabel,
+  normalizeUserCompanyType,
+  userCompanyTypeLabels,
+  type UserCompanyType,
+} from "@/lib/user-company-types";
 import type { AdminUser, CampaignSettings } from "@/lib/types";
 
 const NO_REGION = "__none__";
+const NO_COMPANY_TYPE = "__none_company__";
 
 const schema = z.object({
   email: z.string().min(1, "نام کاربری یا ایمیل الزامی است"),
@@ -50,6 +58,7 @@ const schema = z.object({
   province: z.string().optional(),
   city: z.string().optional(),
   region: z.enum(["north", "south", "east", "west"]).nullable().optional(),
+  companyType: z.enum(["distribution", "regional_electricity"]).nullable().optional(),
   phone: z.string().optional(),
   campaignIds: z.array(z.string()),
 });
@@ -85,6 +94,7 @@ export function UsersAdmin({
       province: "",
       city: "",
       region: null as UserRegion | null,
+      companyType: null as UserCompanyType | null,
       phone: "",
       campaignIds: [] as string[],
     },
@@ -95,6 +105,7 @@ export function UsersAdmin({
   const selectedProvince = form.watch("province");
   const selectedCity = form.watch("city");
   const selectedRegion = form.watch("region");
+  const selectedCompanyType = form.watch("companyType");
 
   const toggleCampaign = (campaignId: string) => {
     const current = form.getValues("campaignIds");
@@ -130,6 +141,7 @@ export function UsersAdmin({
         const result = await saveUserRegionAction({
           userId: editingId,
           region: data.region ?? null,
+          companyType: data.companyType ?? null,
         });
         if (!result.success) {
           toast.error("error" in result ? result.error : "ذخیره نشد");
@@ -137,7 +149,13 @@ export function UsersAdmin({
         }
         setRows((prev) =>
           prev.map((row) =>
-            row.id === editingId ? { ...row, region: normalizeUserRegion(data.region) } : row
+            row.id === editingId
+              ? {
+                  ...row,
+                  region: normalizeUserRegion(data.region),
+                  companyType: normalizeUserCompanyType(data.companyType),
+                }
+              : row
           )
         );
         toast.success("دسته‌بندی ذخیره شد");
@@ -159,6 +177,7 @@ export function UsersAdmin({
         province: data.province?.trim() || null,
         city: data.city?.trim() || null,
         region: data.region ?? null,
+        companyType: data.companyType ?? null,
         phone: data.phone?.trim() || null,
         campaignPermissions: data.role === "contributor" || data.role === "client" ? campaignPermissions : undefined,
       });
@@ -178,6 +197,7 @@ export function UsersAdmin({
         province: data.province?.trim() || null,
         city: data.city?.trim() || null,
         region: normalizeUserRegion(data.region),
+        companyType: normalizeUserCompanyType(data.companyType),
         phone: data.phone?.trim() || null,
         accountManagerName: existing?.accountManagerName ?? null,
         campaignIds: data.campaignIds,
@@ -205,6 +225,7 @@ export function UsersAdmin({
       province: "",
       city: "",
       region: null,
+      companyType: null,
       phone: "",
       campaignIds: [],
     });
@@ -235,6 +256,7 @@ export function UsersAdmin({
       province: normalizedProvince,
       city: normalizedCity,
       region: normalizeUserRegion(user.region),
+      companyType: normalizeUserCompanyType(user.companyType),
       phone: user.phone ?? "",
       campaignIds: user.campaignIds ?? [],
     });
@@ -247,8 +269,8 @@ export function UsersAdmin({
         <h1 className="text-2xl font-bold">کاربران</h1>
         <p className="text-sm text-muted-foreground">
           {isFullMode
-            ? "تعریف کاربر، دسته‌بندی منطقه‌ای، ورود گروهی از Excel، دسترسی به کمپین و بخش‌های پنل"
-            : "تعیین دسته‌بندی منطقه‌ای کاربران (شمال / جنوب / شرق / غرب)"}
+            ? "تعریف کاربر، نوع شرکت، دسته‌بندی منطقه‌ای، ورود گروهی از Excel، دسترسی به کمپین و بخش‌های پنل"
+            : "تعیین نوع شرکت و دسته‌بندی منطقه‌ای کاربران"}
         </p>
       </div>
 
@@ -271,7 +293,7 @@ export function UsersAdmin({
           <AdminDataTable
             data={rows}
             selectable={isFullMode}
-            searchKeys={["name", "email", "role", "province", "city", "region", "accountManagerName"]}
+            searchKeys={["name", "email", "role", "province", "city", "region", "companyType", "accountManagerName"]}
             columns={[
               { key: "name", label: "نام" },
               {
@@ -280,6 +302,11 @@ export function UsersAdmin({
                 render: (item) => getLoginUsernameFromEmail(item.email),
               },
               { key: "province", label: "استان", render: (item) => item.province || "—" },
+              {
+                key: "companyType",
+                label: "نوع شرکت",
+                render: (item) => getUserCompanyTypeLabel(item.companyType),
+              },
               {
                 key: "region",
                 label: "دسته منطقه‌ای",
@@ -362,7 +389,7 @@ export function UsersAdmin({
           <DialogHeader>
             <DialogTitle>
               {!isFullMode
-                ? "دسته‌بندی منطقه‌ای کاربر"
+                ? "دسته‌بندی کاربر"
                 : editingId
                   ? "ویرایش کاربر"
                   : "کاربر جدید"}
@@ -415,6 +442,34 @@ export function UsersAdmin({
                 )}
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label>نوع شرکت</Label>
+              <Select
+                value={selectedCompanyType ?? NO_COMPANY_TYPE}
+                onValueChange={(value) =>
+                  form.setValue(
+                    "companyType",
+                    value === NO_COMPANY_TYPE ? null : (value as UserCompanyType)
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="انتخاب نوع شرکت" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_COMPANY_TYPE}>بدون نوع</SelectItem>
+                  {USER_COMPANY_TYPES.map((companyType) => (
+                    <SelectItem key={companyType} value={companyType}>
+                      {userCompanyTypeLabels[companyType]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                فقط مدیر و کارفرما نوع شرکت را برای کاربر تعیین می‌کنند.
+              </p>
+            </div>
 
             <div className="space-y-2">
               <Label>دسته‌بندی منطقه‌ای</Label>
