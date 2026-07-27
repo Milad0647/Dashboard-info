@@ -12,6 +12,7 @@ export type DetectedFileKind =
   | "webm"
   | "pdf"
   | "zip"
+  | "rar"
   | "ogg"
   | "wav"
   | "mp3"
@@ -42,6 +43,8 @@ export function detectFileKind(buffer: Buffer): DetectedFileKind {
   if (startsWithBytes(buffer, [0x1a, 0x45, 0xdf, 0xa3])) return "webm";
   if (startsWithBytes(buffer, [0x25, 0x50, 0x44, 0x46])) return "pdf";
   if (startsWithBytes(buffer, [0x50, 0x4b, 0x03, 0x04])) return "zip"; // docx/xlsx/etc.
+  // RAR 1.5+ (`Rar!\x1a\x07\x00`) and RAR 5 (`Rar!\x1a\x07\x01\x00`)
+  if (startsWithBytes(buffer, [0x52, 0x61, 0x72, 0x21, 0x1a, 0x07])) return "rar";
   if (startsWithBytes(buffer, [0x4f, 0x67, 0x67, 0x53])) return "ogg";
   if (
     buffer.length >= 12 &&
@@ -87,7 +90,7 @@ export function looksLikeSvg(buffer: Buffer): boolean {
 const IMAGE_KINDS = new Set<DetectedFileKind>(["jpeg", "png", "gif", "webp"]);
 const VIDEO_KINDS = new Set<DetectedFileKind>(["mp4", "webm"]);
 const AUDIO_KINDS = new Set<DetectedFileKind>(["mp3", "wav", "ogg"]);
-const DOCUMENT_KINDS = new Set<DetectedFileKind>(["pdf", "zip"]);
+const DOCUMENT_KINDS = new Set<DetectedFileKind>(["pdf", "zip", "rar"]);
 
 export function assertMagicMatchesKind(
   buffer: Buffer,

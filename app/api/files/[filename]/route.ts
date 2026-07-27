@@ -24,6 +24,7 @@ const MIME_TYPES: Record<string, string> = {
   ".xls": "application/vnd.ms-excel",
   ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ".txt": "text/plain",
+  ".rar": "application/vnd.rar",
 };
 
 function getContentType(filename: string): string {

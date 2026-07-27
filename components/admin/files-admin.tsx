@@ -299,7 +299,7 @@ export function FilesAdmin({
         <div>
           <h1 className="text-2xl font-bold">فایل‌های کمپین</h1>
           <p className="text-sm text-muted-foreground">
-            PDF، Word، Excel و سایر فایل‌های قابل دانلود — با + فایل جدید آپلود کنید
+            PDF، Word، Excel، RAR و سایر فایل‌های قابل دانلود — با + فایل جدید آپلود کنید
           </p>
         </div>
         <div className="flex items-center gap-2">

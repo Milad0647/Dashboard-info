@@ -39,7 +39,7 @@ const LETTER_ACCEPT =
   ".pdf,image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif,application/pdf";
 
 const DOCUMENT_ACCEPT =
-  ".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain";
+  ".pdf,.doc,.docx,.xls,.xlsx,.txt,.rar,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,application/vnd.rar,application/x-rar-compressed,application/x-rar";
 
 const ATTACHMENT_ACCEPT = [
   "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif",
@@ -47,9 +47,9 @@ const ATTACHMENT_ACCEPT = [
   DOCUMENT_ACCEPT,
 ].join(",");
 
-const MAX_ATTACHMENT_IMAGE_BYTES = 10 * 1024 * 1024;
-const MAX_ATTACHMENT_VIDEO_BYTES = 100 * 1024 * 1024;
-const MAX_ATTACHMENT_DOCUMENT_BYTES = 25 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
 
 function resolveAttachmentUploadKind(file: File): "image" | "video" | "document" | null {
   if (file.type.startsWith("image/")) return "image";
@@ -61,11 +61,30 @@ function resolveAttachmentUploadKind(file: File): "image" | "video" | "document"
     file.type === "application/vnd.ms-excel" ||
     file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
     file.type === "text/plain" ||
-    /\.(pdf|doc|docx|xls|xlsx|txt)$/i.test(file.name)
+    file.type === "application/vnd.rar" ||
+    file.type === "application/x-rar-compressed" ||
+    file.type === "application/x-rar" ||
+    /\.(pdf|doc|docx|xls|xlsx|txt|rar)$/i.test(file.name)
   ) {
     return "document";
   }
   return null;
+}
+
+function maxBytesForKind(kind: "image" | "video" | "document"): number {
+  if (kind === "image") return MAX_IMAGE_BYTES;
+  if (kind === "video") return MAX_VIDEO_BYTES;
+  return MAX_DOCUMENT_BYTES;
+}
+
+function sizeLimitError(kind: "image" | "video" | "document"): string {
+  if (kind === "image") {
+    return `حجم تصویر بیشتر از ${formatPersianNumber(10)} مگابایت است`;
+  }
+  if (kind === "video") {
+    return `حجم ویدیو بیشتر از ${formatPersianNumber(100)} مگابایت است`;
+  }
+  return `حجم فایل بیشتر از ${formatPersianNumber(25)} مگابایت است`;
 }
 
 export function DocumentUpload({
@@ -86,10 +105,10 @@ export function DocumentUpload({
   const isAttachment = variant === "attachment";
   const isCard = layout === "card";
   const hintText = isLetter
-    ? "PDF یا تصویر نامه رسمی — حداکثر ۲۵ مگابایت"
+    ? `PDF یا تصویر نامه رسمی — تصویر تا ${formatPersianNumber(10)}، PDF تا ${formatPersianNumber(25)} مگابایت`
     : isAttachment
-      ? "تصویر، ویدیو، PDF، Word یا Excel — تصویر تا ۱۰، سند تا ۲۵، ویدیو تا ۱۰۰ مگابایت"
-      : "PDF، Word، Excel یا فایل متنی — حداکثر ۲۵ مگابایت";
+      ? `تصویر، ویدیو، PDF، Word، Excel یا RAR — تصویر تا ${formatPersianNumber(10)}، سند تا ${formatPersianNumber(25)}، ویدیو تا ${formatPersianNumber(100)} مگابایت`
+      : `PDF، Word، Excel، RAR یا فایل متنی — حداکثر ${formatPersianNumber(25)} مگابایت`;
   const dragText = "فایل را بکشید و رها کنید یا انتخاب کنید";
   const accept = isLetter ? LETTER_ACCEPT : isAttachment ? ATTACHMENT_ACCEPT : DOCUMENT_ACCEPT;
 
@@ -107,28 +126,19 @@ export function DocumentUpload({
     if (isAttachment) {
       const resolved = resolveAttachmentUploadKind(file);
       if (!resolved) {
-        toast.error("فقط تصویر، ویدیو، PDF، Word یا Excel مجاز است");
+        toast.error("فقط تصویر، ویدیو، PDF، Word، Excel یا RAR مجاز است");
         return;
       }
       kind = resolved;
-      const maxBytes =
-        kind === "image"
-          ? MAX_ATTACHMENT_IMAGE_BYTES
-          : kind === "video"
-            ? MAX_ATTACHMENT_VIDEO_BYTES
-            : MAX_ATTACHMENT_DOCUMENT_BYTES;
-      if (file.size > maxBytes) {
-        toast.error(
-          kind === "image"
-            ? "حجم تصویر بیشتر از ۱۰ مگابایت است"
-            : kind === "video"
-              ? "حجم ویدیو بیشتر از ۱۰۰ مگابایت است"
-              : "حجم فایل بیشتر از ۲۵ مگابایت است"
-        );
-        return;
-      }
     } else if (isLetter && file.type.startsWith("image/")) {
       kind = "image";
+    }
+
+    const maxBytes = maxBytesForKind(kind);
+    if (file.size > maxBytes) {
+      toast.error(sizeLimitError(kind));
+      if (inputRef.current) inputRef.current.value = "";
+      return;
     }
 
     setUploading(true);

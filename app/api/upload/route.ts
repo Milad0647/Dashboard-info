@@ -40,6 +40,19 @@ const DOCUMENT_TYPES = new Set([
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/plain",
+  "application/vnd.rar",
+  "application/x-rar-compressed",
+  "application/x-rar",
+]);
+
+const DOCUMENT_EXTENSIONS = new Set([
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".txt",
+  ".rar",
 ]);
 
 const AUDIO_TYPES = new Set([
@@ -153,6 +166,10 @@ function extensionForMime(mime: string): string {
       return ".xlsx";
     case "text/plain":
       return ".txt";
+    case "application/vnd.rar":
+    case "application/x-rar-compressed":
+    case "application/x-rar":
+      return ".rar";
     case "audio/mpeg":
     case "audio/mp3":
       return ".mp3";
@@ -200,6 +217,13 @@ function isAllowedVideo(file: File): boolean {
   return ext === ".mp4" || ext === ".webm" || ext === ".mov" || ext === ".m4v";
 }
 
+function isAllowedDocument(file: File): boolean {
+  if (DOCUMENT_TYPES.has(file.type)) return true;
+  // Browsers often send empty or octet-stream MIME for .rar archives.
+  if (file.type && file.type !== "application/octet-stream") return false;
+  return DOCUMENT_EXTENSIONS.has(extensionFromFileName(file.name));
+}
+
 export async function POST(request: Request) {
   const session = await getAuthSession();
   if (!session) {
@@ -240,7 +264,7 @@ export async function POST(request: Request) {
           : kind === "audio"
             ? AUDIO_TYPES.has(file.type)
             : kind === "document"
-              ? DOCUMENT_TYPES.has(file.type)
+              ? isAllowedDocument(file)
               : IMAGE_TYPES.has(file.type);
 
   if (!allowed) {
