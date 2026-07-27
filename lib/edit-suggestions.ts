@@ -264,7 +264,10 @@ function getVideoChecks(video: Video, versions: VideoVersion[]): CheckedField[] 
 function getSocialChecks(post: SocialMediaPost): CheckedField[] {
   return [
     { key: "title", ok: !isBlank(post.title) },
-    { key: "link", ok: !isBlank(post.link) },
+    {
+      key: "link",
+      ok: !isBlank(post.link) || (post.linkEntries?.length ?? 0) > 0,
+    },
     {
       key: "media",
       ok: Boolean(post.coverImageUrl?.trim() || post.mediaUrl?.trim()),

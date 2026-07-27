@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { ExternalLink, Eye, Globe } from "lucide-react";
 import type { DataOwnerGroup, SocialMediaPost } from "@/lib/types";
-import { formatPersianDate } from "@/lib/utils";
+import { formatPersianDate, formatPersianNumber } from "@/lib/utils";
 import { CollapsibleSection } from "@/components/public/collapsible-section";
 import { OwnerGroupedSection } from "@/components/public/owner-grouped-section";
 import { SectionTopCompaniesBox } from "@/components/public/section-top-companies-box";
@@ -25,6 +25,7 @@ import {
 } from "@/lib/public-media-section";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { useContentScoreAccess } from "@/lib/context/content-score-context";
+import { isGroupSocialPost } from "@/lib/social-posts";
 
 const PUBLICATIONS_ITEMS_PER_ROW = 1;
 
@@ -99,8 +100,30 @@ function PublicationCard({ item }: { item: SocialMediaPost }) {
             {cover}
           </div>
         }
+        extras={
+          isGroupSocialPost(item) ? (
+            <div className="space-y-1.5 rounded-lg border bg-muted/40 p-3 text-sm">
+              <p className="font-medium text-foreground">
+                پخش گروهی · {formatPersianNumber(item.linkEntries?.length ?? 0)} لینک
+              </p>
+              <div className="max-h-40 space-y-1 overflow-y-auto" dir="ltr">
+                {(item.linkEntries ?? []).map((entry) => (
+                  <a
+                    key={entry.id}
+                    href={entry.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block break-all text-xs text-primary underline"
+                  >
+                    {entry.link}
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null
+        }
         actions={
-          item.link ? (
+          item.link && !(item.linkEntries && item.linkEntries.length > 1) ? (
             <Button variant="outline" size="sm" asChild>
               <a href={item.link} target="_blank" rel="noreferrer">
                 <ExternalLink className="h-4 w-4" />

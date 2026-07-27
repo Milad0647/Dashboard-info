@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "957c101f9c9ae017d6326ac15bc85d311dd45b61",
+      "committedAt": "2026-07-27T11:54:24+03:30",
+      "title": "نمایش و انتخاب نوع شرکت در بخش کاربران",
+      "subject": "Show company type field in users admin UI"
+    },
+    {
+      "hash": "0c43fb2c28bb0e225c505672b376716b6f3f1141",
+      "committedAt": "2026-07-27T11:53:52+03:30",
+      "title": "افزودن صفحه مشاهده عملکرد کاربران با خروجی اکسل",
+      "subject": "Add admin performance overview with Excel export"
+    },
+    {
       "hash": "c3ce525b5454a1273ddaf2899b9d41fcfffcee0e",
       "committedAt": "2026-07-27T11:52:31+03:30",
       "title": "امکان آپلود فایل RAR در بخش فایل‌ها",
