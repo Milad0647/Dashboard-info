@@ -71,7 +71,7 @@ function RawMediaList({ items }: { items: RawMediaUpload[] }) {
               )
             }
             score={
-              canScore || item.score != null ? (
+              canScore ? (
                 <ContentScoreControl
                   campaignId={campaignId || item.campaignId}
                   contentType="raw_media"

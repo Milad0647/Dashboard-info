@@ -560,7 +560,9 @@ export function SitePublicationsAdmin({
                     ? `${formatPersianNumber(previewPost.linkEntries?.length ?? 0)} لینک`
                     : "—",
                 },
-                { label: "امتیاز", value: previewPost.score ?? "—" },
+                ...(canScore
+                  ? [{ label: "امتیاز", value: previewPost.score ?? "—" }]
+                  : []),
                 { label: "مالک", value: previewPost.ownerName ?? "—" },
               ]
             : []

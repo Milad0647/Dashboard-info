@@ -67,7 +67,7 @@ function PublicationCard({ item }: { item: SocialMediaPost }) {
         ownerName={item.ownerName}
         media={cover}
         score={
-          canScore || item.score != null ? (
+          canScore ? (
             <ContentScoreControl
               campaignId={campaignId || item.campaignId}
               contentType="site_publication"

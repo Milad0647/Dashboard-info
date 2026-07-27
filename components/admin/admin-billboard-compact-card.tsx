@@ -83,7 +83,7 @@ export function AdminBillboardCompactCard({
           onEdit={onEdit}
           onDelete={onDelete ? () => onDelete(billboard) : undefined}
         />
-        {(canScore || billboard.score != null) && (
+        {canScore && (
           <div className="min-w-0 flex-1">
             <ContentScoreControl
               campaignId={billboard.campaignId}

@@ -85,6 +85,7 @@ interface PressPublicationsAdminProps {
   contentTopics?: ContentTopic[];
   isFullAdmin?: boolean;
   canTransferOwnership?: boolean;
+  canScore?: boolean;
   users?: AdminUser[];
 }
 
@@ -95,6 +96,7 @@ export function PressPublicationsAdmin({
   contentTopics = [],
   isFullAdmin = false,
   canTransferOwnership = false,
+  canScore = false,
   users = [],
 }: PressPublicationsAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("pressPublications");
@@ -426,6 +428,7 @@ export function PressPublicationsAdmin({
           >
             <AdminActivityCompactCard
               activity={activity}
+              canScore={canScore}
               onClick={() => openEdit(activity)}
               onView={() => setPreviewActivity(activity)}
               onEdit={() => openEdit(activity)}
@@ -492,7 +495,9 @@ export function PressPublicationsAdmin({
                   value: previewActivity.planLabels?.length ? previewActivity.planLabels.join("، ") : "—",
                 },
                 { label: "مالک", value: previewActivity.ownerName ?? "—" },
-                { label: "امتیاز", value: previewActivity.score ?? "—" },
+                ...(canScore
+                  ? [{ label: "امتیاز", value: previewActivity.score ?? "—" }]
+                  : []),
               ]
             : []
         }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { ArrowUpDown, Building2, CalendarRange, MapPin, RotateCcw, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { isCampaignContentFilterActive } from "@/lib/campaign-content-filter";
 import { formatPlanLabelDisplay } from "@/lib/content-topics";
+import { useContentScoreAccess } from "@/lib/context/content-score-context";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import {
   OWNER_DATE_ALL,
@@ -43,6 +45,13 @@ export function OwnerLocationFilterBar() {
     plans,
     users,
   } = useOwnerLocationFilter();
+  const { canScore } = useContentScoreAccess();
+
+  useEffect(() => {
+    if (!canScore && filter.sortOrder === "top_scored") {
+      setSortOrder("default");
+    }
+  }, [canScore, filter.sortOrder, setSortOrder]);
 
   const userLocked = filter.userKey !== OWNER_USER_ALL;
   const provinceLocked = userLocked && filter.province !== OWNER_LOCATION_ALL;
@@ -182,7 +191,7 @@ export function OwnerLocationFilterBar() {
             <SelectItem value="default">ترتیب پیش‌فرض</SelectItem>
             <SelectItem value="newest">جدیدترین آپلود</SelectItem>
             <SelectItem value="oldest">قدیمی‌ترین آپلود</SelectItem>
-            <SelectItem value="top_scored">۵ برتر (امتیاز)</SelectItem>
+            {canScore && <SelectItem value="top_scored">۵ برتر (امتیاز)</SelectItem>}
           </SelectContent>
         </Select>
 

@@ -510,6 +510,7 @@ export function ActivitiesAdmin({
             >
               <AdminActivityCompactCard
                 activity={activity}
+                canScore={canScore}
                 onClick={() => openEdit(activity)}
                 onView={() => setPreviewActivity(activity)}
                 onEdit={() => openEdit(activity)}
@@ -624,7 +625,9 @@ export function ActivitiesAdmin({
                   label: "خلاقانه",
                   value: previewActivity.isCreative ? "بله" : "خیر",
                 },
-                { label: "امتیاز", value: previewActivity.score ?? "—" },
+                ...(canScore
+                  ? [{ label: "امتیاز", value: previewActivity.score ?? "—" }]
+                  : []),
               ]
             : []
         }

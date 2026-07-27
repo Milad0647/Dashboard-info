@@ -70,7 +70,7 @@ export function AdminVideoCompactCard({
         </div>
       </button>
 
-      {(canScore || video.score != null || onView || onEdit || onDelete) && (
+      {(canScore || onView || onEdit || onDelete) && (
         <div className="flex items-end gap-2 px-2 pb-2">
           {(onView || onEdit || onDelete) && (
             <AdminItemActions
@@ -81,7 +81,7 @@ export function AdminVideoCompactCard({
               onDelete={onDelete}
             />
           )}
-          {(canScore || video.score != null) && (
+          {canScore && (
             <div className="min-w-0 flex-1">
               <ContentScoreControl
                 campaignId={video.campaignId}

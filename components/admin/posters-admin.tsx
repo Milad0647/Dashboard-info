@@ -435,10 +435,12 @@ export function PostersAdmin({
                         <p className="text-xs text-muted-foreground">برچسب‌ها</p>
                         <p>{previewPoster.planLabels?.length ? previewPoster.planLabels.join("، ") : "—"}</p>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">امتیاز</p>
-                        <p>{previewPoster.score ?? "—"}</p>
-                      </div>
+                      {canScore && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">امتیاز</p>
+                          <p>{previewPoster.score ?? "—"}</p>
+                        </div>
+                      )}
                       {displayVersion?.notes ? (
                         <div className="sm:col-span-2">
                           <p className="text-xs text-muted-foreground">یادداشت</p>

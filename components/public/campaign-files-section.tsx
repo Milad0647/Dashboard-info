@@ -55,7 +55,7 @@ function FileList({ files }: { files: CampaignFile[] }) {
               </div>
             }
             score={
-              canScore || file.score != null ? (
+              canScore ? (
                 <ContentScoreControl
                   campaignId={campaignId || file.campaignId}
                   contentType="file"

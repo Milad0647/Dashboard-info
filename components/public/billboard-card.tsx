@@ -77,7 +77,7 @@ export function BillboardCard({ billboard, onView }: BillboardCardProps) {
         </div>
       }
       score={
-        canScore || billboard.score != null ? (
+        canScore ? (
           <ContentScoreControl
             campaignId={campaignId || billboard.campaignId}
             contentType="billboard"

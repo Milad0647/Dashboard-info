@@ -89,7 +89,7 @@ export function AdminSocialPostCompactCard({
         </div>
       </button>
 
-      {(canScore || post.score != null || onView || onEdit || onDelete) && (
+      {(canScore || onView || onEdit || onDelete) && (
         <div className="flex items-end gap-2 px-2 pb-2">
           {(onView || onEdit || onDelete) && (
             <AdminItemActions
@@ -100,7 +100,7 @@ export function AdminSocialPostCompactCard({
               onDelete={onDelete}
             />
           )}
-          {(canScore || post.score != null) && (
+          {canScore && (
             <div className="min-w-0 flex-1">
               <ContentScoreControl
                 campaignId={post.campaignId}

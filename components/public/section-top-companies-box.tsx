@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Building2, Star, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LeaderboardBillboardsModal } from "@/components/public/leaderboard-billboards-modal";
 import { LeaderboardContentModal } from "@/components/public/leaderboard-content-modal";
 import { SectionDownloadableContentModal } from "@/components/public/section-downloadable-content-modal";
+import { useContentScoreAccess } from "@/lib/context/content-score-context";
 import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-context";
 import { isOwnerUserFilterActive } from "@/lib/owner-location-filter";
 import {
@@ -38,8 +39,13 @@ export function SectionTopCompaniesBox({
   title = "۵ شرکت برتر این بخش",
 }: SectionTopCompaniesBoxProps) {
   const { filter } = useOwnerLocationFilter();
+  const { canScore } = useContentScoreAccess();
   const [sort, setSort] = useState<SectionTopSort>("count");
   const [selectedCompany, setSelectedCompany] = useState<SectionTopCompany | null>(null);
+
+  useEffect(() => {
+    if (!canScore && sort === "score") setSort("count");
+  }, [canScore, sort]);
 
   const companies = useMemo(
     () => buildSectionTopCompanies(groups, sort, 5),
@@ -68,26 +74,28 @@ export function SectionTopCompaniesBox({
             <Trophy className="h-4 w-4 text-primary" />
             {title}
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              size="sm"
-              variant={sort === "count" ? "default" : "outline"}
-              className="h-7 text-xs"
-              onClick={() => setSort("count")}
-            >
-              بیشترین آپلود
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={sort === "score" ? "default" : "outline"}
-              className="h-7 text-xs"
-              onClick={() => setSort("score")}
-            >
-              بر اساس امتیاز
-            </Button>
-          </div>
+          {canScore && (
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant={sort === "count" ? "default" : "outline"}
+                className="h-7 text-xs"
+                onClick={() => setSort("count")}
+              >
+                بیشترین آپلود
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={sort === "score" ? "default" : "outline"}
+                className="h-7 text-xs"
+                onClick={() => setSort("score")}
+              >
+                بر اساس امتیاز
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
@@ -108,10 +116,12 @@ export function SectionTopCompaniesBox({
                 </p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                   <span>{formatPersianNumber(company.count)} محتوا</span>
-                  <span className="inline-flex items-center gap-0.5">
-                    <Star className="h-3 w-3 text-warning" />
-                    {formatPersianNumber(Math.round(company.scoreTotal))}
-                  </span>
+                  {canScore && (
+                    <span className="inline-flex items-center gap-0.5">
+                      <Star className="h-3 w-3 text-warning" />
+                      {formatPersianNumber(Math.round(company.scoreTotal))}
+                    </span>
+                  )}
                 </div>
               </div>
             </button>

@@ -29,7 +29,7 @@ import { CampaignScreenshotExporter } from "@/components/public/campaign-screens
 import { ScrollToTopButton } from "@/components/ui/scroll-to-top-button";
 import { CampaignExportProvider } from "@/lib/context/campaign-export-context";
 import { CampaignScrollProvider, useCampaignScroll } from "@/lib/context/campaign-scroll-context";
-import { ContentScoreProvider } from "@/lib/context/content-score-context";
+import { ContentScoreProvider, useContentScoreAccess } from "@/lib/context/content-score-context";
 import {
   collectCampaignOwnerLocations,
   OwnerLocationFilterProvider,
@@ -83,6 +83,7 @@ function CampaignDashboardBody({
 }) {
   const { settings, sections } = data;
   const { filter } = useOwnerLocationFilter();
+  const { canScore } = useContentScoreAccess();
   const { forceSectionsMounted } = useCampaignScroll();
   const contentFilterActive = isCampaignContentFilterActive(filter);
   const forceRender = exportMode || forceSectionsMounted;
@@ -111,12 +112,14 @@ function CampaignDashboardBody({
               <ThemeToggle />
             </span>
             <CampaignHeaderAuth user={headerUser} returnPath={`/campaign/${slug}`} />
-            <Button variant="outline" size="sm" asChild data-export-hide>
-              <Link href={`/campaign/${slug}/cities`}>
-                <Trophy className="h-4 w-4" />
-                رتبه‌بندی
-              </Link>
-            </Button>
+            {canScore && (
+              <Button variant="outline" size="sm" asChild data-export-hide>
+                <Link href={`/campaign/${slug}/cities`}>
+                  <Trophy className="h-4 w-4" />
+                  رتبه‌بندی
+                </Link>
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing} data-export-hide>
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
               بروزرسانی

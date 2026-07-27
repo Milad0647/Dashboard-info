@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getPublicCampaignData } from "@/lib/data-access/campaign";
 import { CityLeaderboardDashboard } from "@/components/public/city-leaderboard-dashboard";
 import { CampaignPageUnlock } from "@/components/public/campaign-page-unlock";
@@ -28,8 +28,13 @@ export default async function CityLeaderboardPage({ params }: CityLeaderboardPag
   }
 
   const session = await getAuthSession();
+  // Leaderboard / scores are only for admin and کارفرما.
+  if (!session || !canScoreContent(session)) {
+    redirect(`/campaign/${slug}`);
+  }
+
   const headerUser = resolveCampaignHeaderUser(session);
-  const canBypassPassword = Boolean(session && canScoreContent(session));
+  const canBypassPassword = true;
   const requiresLock = Boolean(lockGate?.requiresLock);
   const unlocked =
     !requiresLock ||

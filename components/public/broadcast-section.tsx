@@ -118,7 +118,7 @@ function BroadcastReportCard({ report }: { report: BroadcastReport }) {
           )
         }
         score={
-          canScore || report.score != null ? (
+          canScore ? (
             <ContentScoreControl
               campaignId={campaignId || report.campaignId}
               contentType="broadcast"

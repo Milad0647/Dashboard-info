@@ -84,16 +84,8 @@ export function ContentScoreControl({
     };
   }, []);
 
-  // Contributors: show final score only when set (including 0).
-  if (!canScore) {
-    if (typeof score !== "number" || !Number.isFinite(score)) return null;
-    return (
-      <div className="inline-flex items-center gap-1 rounded-md bg-warning/10 px-2 py-1 text-xs text-warning">
-        <Star className="h-3 w-3 fill-current" />
-        امتیاز: {formatPersianNumber(score)}
-      </div>
-    );
-  }
+  // Scores are visible only to admin and کارفرما (canScore).
+  if (!canScore) return null;
 
   const persist = (raw: string) => {
     if (raw === lastSavedRef.current) return;

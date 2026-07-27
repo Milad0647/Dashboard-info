@@ -711,6 +711,7 @@ export function SocialPostsAdmin({
             >
               <AdminSocialPostCompactCard
                 post={post}
+                canScore={canScore}
                 onClick={() => openEdit(post)}
                 onView={() => setPreviewPost(post)}
                 onEdit={() => openEdit(post)}
@@ -847,7 +848,9 @@ export function SocialPostsAdmin({
                     "—"
                   ),
                 },
-                { label: "امتیاز", value: previewPost.score ?? "—" },
+                ...(canScore
+                  ? [{ label: "امتیاز", value: previewPost.score ?? "—" }]
+                  : []),
               ]
             : []
         }

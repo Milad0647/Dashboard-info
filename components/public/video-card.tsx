@@ -78,7 +78,7 @@ export function VideoCard({
           </div>
         }
         score={
-          id && (canScore || score != null) ? (
+          id && canScore ? (
             <ContentScoreControl
               campaignId={campaignId || scoreCampaignId}
               contentType="video"

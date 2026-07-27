@@ -152,7 +152,7 @@ function ActivityCard({
         </div>
       }
       score={
-        canScore || activity.score != null ? (
+        canScore ? (
           <ContentScoreControl
             campaignId={campaignId || activity.campaignId}
             contentType="activity"

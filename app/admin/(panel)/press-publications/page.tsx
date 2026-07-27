@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getAdminData } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
 import { getAdminBulkEditProps } from "@/lib/admin-bulk-edit-props";
+import { canScoreContent } from "@/lib/auth/access";
+import { getAuthSession } from "@/lib/auth/get-session";
 import { requireContributorAccess } from "@/lib/auth/require-contributor-access";
 import { PressPublicationsAdmin } from "@/components/admin/press-publications-admin";
 
@@ -14,6 +16,8 @@ export default async function PressPublicationsPage({ searchParams }: PageProps)
   const { campaignId } = await resolveAdminCampaignId(params.campaign);
   if (!campaignId) redirect("/admin/campaigns");
   await requireContributorAccess(campaignId, "activities");
+  const session = await getAuthSession();
+  const canScore = Boolean(session && canScoreContent(session));
   const [data, bulkProps] = await Promise.all([
     getAdminData(campaignId, ["activities"]),
     getAdminBulkEditProps(),
@@ -26,6 +30,7 @@ export default async function PressPublicationsPage({ searchParams }: PageProps)
       contentTopics={data.settings?.contentTopics ?? []}
       isFullAdmin={bulkProps.isFullAdmin}
       canTransferOwnership={bulkProps.canTransferOwnership}
+      canScore={canScore}
       users={bulkProps.users}
     />
   );

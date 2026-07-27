@@ -137,7 +137,7 @@ function SocialPostCard({ post }: { post: SocialMediaPost }) {
           </div>
         }
         score={
-          canScore || post.score != null ? (
+          canScore ? (
             <ContentScoreControl
               campaignId={campaignId || post.campaignId}
               contentType={post.platform === "site" ? "site_publication" : "social_post"}
