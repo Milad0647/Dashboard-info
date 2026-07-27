@@ -11,6 +11,7 @@ import {
 } from "@/components/admin/admin-campaign-provider";
 import { AuditTracker } from "@/components/admin/audit-tracker";
 import { DirectiveAckGate } from "@/components/admin/directive-ack-gate";
+import { ErrorModalProvider } from "@/components/admin/error-modal-provider";
 import { ProblemReportButton } from "@/components/admin/problem-report-button";
 import { ScrollToTopButton } from "@/components/ui/scroll-to-top-button";
 import type { CampaignSettings } from "@/lib/types";
@@ -83,6 +84,7 @@ function PanelChrome({
           <AuditTracker />
         </Suspense>
       ) : null}
+      <ErrorModalProvider />
       <AdminSidebar />
       <AdminElanhaButton />
       <Suspense fallback={null}>

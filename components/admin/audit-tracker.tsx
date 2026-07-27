@@ -3,6 +3,8 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { resolveErrorInfo } from "@/lib/error-solutions";
+import { emitUiError } from "@/lib/ui-error-bus";
 
 const MAX_LABEL_LENGTH = 120;
 const MAX_ERROR_LABEL_LENGTH = 200;
@@ -33,15 +35,66 @@ function currentPath(): string {
   return window.location.pathname + window.location.search;
 }
 
-function trackUiError(message: string, metadata?: Record<string, unknown>) {
-  const label = message.replace(/\s+/g, " ").trim().slice(0, MAX_ERROR_LABEL_LENGTH);
+function toastMessageToString(message: unknown): string {
+  if (typeof message === "string") return message;
+  if (typeof message === "number" || typeof message === "boolean") return String(message);
+  if (message && typeof message === "object" && "message" in message) {
+    const nested = (message as { message?: unknown }).message;
+    if (typeof nested === "string") return nested;
+  }
+  return "خطای کاربر";
+}
+
+/**
+ * Report a user-facing error: open modal, and log to rasad (ui.error).
+ * Dedupes identical messages within a short window to avoid modal spam.
+ */
+let lastErrorKey = "";
+let lastErrorAt = 0;
+const ERROR_DEDUP_MS = 1500;
+
+const NOISY_RUNTIME =
+  /ResizeObserver|Script error\.?$|Loading chunk|ChunkLoadError|AbortError|cancelled|canceled/i;
+
+function reportUiError(
+  rawMessage: string,
+  metadata?: Record<string, unknown>,
+  options?: { openModal?: boolean }
+) {
+  const info = resolveErrorInfo(rawMessage);
+  const label = info.message.slice(0, MAX_ERROR_LABEL_LENGTH);
   if (!label) return;
-  sendTrack({
-    action: "ui.error",
-    path: currentPath(),
-    label,
-    metadata: { source: "client", ...metadata },
-  });
+
+  const openModal = options?.openModal !== false;
+  const now = Date.now();
+  const key = `${label}|${currentPath()}`;
+  const isDuplicate = key === lastErrorKey && now - lastErrorAt < ERROR_DEDUP_MS;
+  lastErrorKey = key;
+  lastErrorAt = now;
+
+  if (openModal && !isDuplicate) {
+    emitUiError({
+      info,
+      source: typeof metadata?.source === "string" ? metadata.source : "client",
+      path: currentPath(),
+    });
+  }
+
+  if (!isDuplicate) {
+    sendTrack({
+      action: "ui.error",
+      path: currentPath(),
+      label,
+      metadata: {
+        source: "client",
+        title: info.title,
+        problem: info.problem,
+        solution: info.solution,
+        category: info.category,
+        ...metadata,
+      },
+    });
+  }
 }
 
 function resolveClickTarget(target: EventTarget | null): {
@@ -77,19 +130,9 @@ function resolveClickTarget(target: EventTarget | null): {
   return { label: label.slice(0, MAX_LABEL_LENGTH), role };
 }
 
-function toastMessageToString(message: unknown): string {
-  if (typeof message === "string") return message;
-  if (typeof message === "number" || typeof message === "boolean") return String(message);
-  if (message && typeof message === "object" && "message" in message) {
-    const nested = (message as { message?: unknown }).message;
-    if (typeof nested === "string") return nested;
-  }
-  return "خطای کاربر";
-}
-
 /**
  * Client-side audit tracker for the admin panel.
- * Records page views, clicks, user-facing errors, and presence heartbeats.
+ * Records page views, clicks, user-facing errors (modal + rasad), and presence heartbeats.
  */
 export function AuditTracker() {
   const pathname = usePathname();
@@ -146,12 +189,13 @@ export function AuditTracker() {
     return () => window.clearInterval(intervalId);
   }, []);
 
-  // Capture toast errors shown to users (save failures, validation, etc.).
+  // Capture toast errors → modal + rasad (suppress toast UI to avoid double surfaces).
   useEffect(() => {
     const originalError = toast.error.bind(toast);
-    toast.error = ((message, data) => {
-      trackUiError(toastMessageToString(message), { source: "toast" });
-      return originalError(message, data);
+    toast.error = ((message) => {
+      reportUiError(toastMessageToString(message), { source: "toast" });
+      // Return a synthetic id so callers stay compatible without showing a toast.
+      return `error-modal-${Date.now()}`;
     }) as typeof toast.error;
 
     return () => {
@@ -163,7 +207,11 @@ export function AuditTracker() {
   useEffect(() => {
     const onError = (event: ErrorEvent) => {
       const message = event.message?.trim() || event.error?.message || "خطای زمان اجرا";
-      trackUiError(message, { source: "window.error" });
+      if (NOISY_RUNTIME.test(message)) {
+        reportUiError(message, { source: "window.error" }, { openModal: false });
+        return;
+      }
+      reportUiError(message, { source: "window.error" });
     };
     const onRejection = (event: PromiseRejectionEvent) => {
       const reason = event.reason;
@@ -173,7 +221,11 @@ export function AuditTracker() {
           : reason instanceof Error
             ? reason.message
             : "خطای Promise رسیدگی‌نشده";
-      trackUiError(message, { source: "unhandledrejection" });
+      if (NOISY_RUNTIME.test(message)) {
+        reportUiError(message, { source: "unhandledrejection" }, { openModal: false });
+        return;
+      }
+      reportUiError(message, { source: "unhandledrejection" });
     };
 
     window.addEventListener("error", onError);

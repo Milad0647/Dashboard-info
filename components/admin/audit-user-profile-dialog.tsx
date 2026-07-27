@@ -37,6 +37,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PersianDateInput } from "@/components/ui/persian-date-input";
+import { resolveErrorInfo } from "@/lib/error-solutions";
 import {
   getUserAuditProfileAction,
   type UserAuditProfileResult,
@@ -627,6 +628,11 @@ export function AuditUserProfileDialog({
                                 {event.label?.trim() || event.path}
                               </p>
                             )}
+                            {event.action === "ui.error" && event.label?.trim() ? (
+                              <p className="text-xs text-amber-700 dark:text-amber-400 leading-5">
+                                راهکار: {resolveErrorInfo(event.label).solution}
+                              </p>
+                            ) : null}
                           </div>
                         </li>
                       ))}

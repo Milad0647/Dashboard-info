@@ -19,6 +19,7 @@ import {
   type StuckBehaviorSignal,
 } from "@/lib/audit/problem-types";
 import { getAuditRoleLabel } from "@/lib/audit/labels";
+import { resolveErrorInfo } from "@/lib/error-solutions";
 import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 import { ProblemReportAttachmentsView } from "@/components/admin/problem-report-attachments";
 
@@ -159,12 +160,28 @@ export function AuditProblemsPanel({
                     <p className="text-sm font-medium">{signal.title}</p>
                     <p className="text-sm text-muted-foreground">{signal.detail}</p>
                     {signal.recentErrors && signal.recentErrors.length > 0 && (
-                      <div className="rounded-md bg-destructive/5 border border-destructive/20 px-3 py-2 space-y-1">
+                      <div className="rounded-md bg-destructive/5 border border-destructive/20 px-3 py-2 space-y-2">
                         <p className="text-xs font-medium text-destructive">خطاهای اخیر کاربر:</p>
-                        <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
-                          {signal.recentErrors.map((errorMessage) => (
-                            <li key={errorMessage}>{errorMessage}</li>
-                          ))}
+                        <ul className="space-y-2">
+                          {signal.recentErrors.map((errorMessage) => {
+                            const resolved = resolveErrorInfo(errorMessage);
+                            return (
+                              <li
+                                key={errorMessage}
+                                className="rounded-md border border-destructive/10 bg-background/60 px-2.5 py-2 text-xs space-y-1"
+                              >
+                                <p className="font-medium text-foreground">
+                                  {resolved.title}: {resolved.message}
+                                </p>
+                                <p className="text-muted-foreground">
+                                  مشکل: {resolved.problem}
+                                </p>
+                                <p className="text-amber-700 dark:text-amber-400">
+                                  راهکار: {resolved.solution}
+                                </p>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     )}
