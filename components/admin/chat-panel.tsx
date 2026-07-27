@@ -441,7 +441,7 @@ export function ChatPanel({
         <div className="flex shrink-0 items-center justify-between gap-2 border-b bg-card/80 px-3 py-3 backdrop-blur-sm sm:px-4">
           <div className="min-w-0">
             <p className="truncate text-[15px] font-semibold tracking-tight">
-              پشتیبانی آنلاین
+              چت آنلاین
             </p>
             <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <span

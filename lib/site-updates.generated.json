@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "59100f15797c6ae1f9382f1c8be8cdc18adb3edc",
+      "committedAt": "2026-07-27T14:20:30+03:30",
+      "title": "حذف چت از منوی کناری و قرار گرفتن گزارش مشکل پشت ویجت چت",
+      "subject": "Remove chat from sidebar and keep problem report behind open chat"
+    },
+    {
       "hash": "f98a4b85a675331d53fc378847e7fa2e986ba71c",
       "committedAt": "2026-07-27T14:17:43+03:30",
       "title": "انتقال دکمه چت به پایین چپ و باز شدن خودکار با پیام جدید",

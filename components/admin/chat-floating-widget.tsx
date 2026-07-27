@@ -234,7 +234,7 @@ export function ChatFloatingWidget() {
         }
         aria-hidden={!open}
         role="dialog"
-        aria-label="پشتیبانی آنلاین"
+        aria-label="چت آنلاین"
       >
         {open && (
           <div className="flex h-full min-h-0 flex-col">
@@ -260,8 +260,8 @@ export function ChatFloatingWidget() {
         type="button"
         onClick={() => void handleToggle()}
         aria-expanded={open}
-        aria-label={open ? "بستن چت" : "باز کردن پشتیبانی آنلاین"}
-        title={open ? "بستن" : "پشتیبانی آنلاین"}
+        aria-label={open ? "بستن چت" : "باز کردن چت آنلاین"}
+        title={open ? "بستن" : "چت آنلاین"}
         data-audit-label="چت شناور"
         className={cn(
           "relative flex items-center justify-center rounded-full",
