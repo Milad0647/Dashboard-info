@@ -12,7 +12,7 @@ import {
   resolveVideoEmbedUrl,
   resolveVideoThumbnail,
 } from "@/lib/media-utils";
-import { cn } from "@/lib/utils";
+import { cn, formatPersianNumber } from "@/lib/utils";
 import {
   captureAndUploadVideoCover,
   captureAndUploadVideoCoverFromUrl,
@@ -21,6 +21,35 @@ import {
 import { Loader2, Trash2, Upload } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+type UploadKind = "image" | "video" | "audio" | "activity-video" | "raw-image" | "raw-video";
+
+/** Keep in sync with app/api/upload/route.ts */
+const DEFAULT_MAX_BYTES: Record<UploadKind, number> = {
+  image: 10 * 1024 * 1024,
+  video: 100 * 1024 * 1024,
+  audio: 50 * 1024 * 1024,
+  "activity-video": 50 * 1024 * 1024,
+  "raw-image": 100 * 1024 * 1024,
+  "raw-video": 2 * 1024 * 1024 * 1024,
+};
+
+function formatMaxSizeLabel(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) {
+    const gb = Math.round((bytes / (1024 * 1024 * 1024)) * 10) / 10;
+    return `${formatPersianNumber(gb)} گیگابایت`;
+  }
+  const mb = Math.round(bytes / (1024 * 1024));
+  return `${formatPersianNumber(mb)} مگابایت`;
+}
+
+function sizeLimitHint(bytes: number): string {
+  return `حداکثر حجم مجاز: ${formatMaxSizeLabel(bytes)}`;
+}
+
+function sizeLimitErrorMessage(bytes: number): string {
+  return `حجم فایل نباید بیشتر از ${formatMaxSizeLabel(bytes)} باشد`;
+}
 
 interface MediaUploadProps {
   value: string;
@@ -43,7 +72,7 @@ interface MediaUploadProps {
   autoVideoCover?: boolean;
   label?: string;
   kind?: "image" | "video" | "audio";
-  uploadKind?: "image" | "video" | "audio" | "activity-video" | "raw-image" | "raw-video";
+  uploadKind?: UploadKind;
   accept?: string;
   dropzone?: boolean;
   fileOnly?: boolean;
@@ -151,7 +180,7 @@ export function MediaUpload({
     onCoverImageUrlChange,
   ]);
 
-  const resolveUploadKind = (file: File): "image" | "video" | "audio" | "activity-video" | "raw-image" | "raw-video" => {
+  const resolveUploadKind = (file: File): UploadKind => {
     if (uploadKind) return uploadKind;
 
     const acceptLower = (accept ?? "").toLowerCase();
@@ -171,21 +200,50 @@ export function MediaUpload({
     return kind;
   };
 
+  const resolveMaxBytesForKind = (resolvedKind: UploadKind): number => {
+    if (typeof maxFileSizeBytes === "number" && maxFileSizeBytes > 0) {
+      return maxFileSizeBytes;
+    }
+    return DEFAULT_MAX_BYTES[resolvedKind];
+  };
+
+  const displaySizeHint = (() => {
+    if (typeof maxFileSizeBytes === "number" && maxFileSizeBytes > 0) {
+      return sizeLimitHint(maxFileSizeBytes);
+    }
+    if (uploadKind) return sizeLimitHint(DEFAULT_MAX_BYTES[uploadKind]);
+    const acceptLower = (accept ?? "").toLowerCase();
+    const allowsVideo = acceptLower.includes("video") || kind === "video";
+    const allowsAudio = acceptLower.includes("audio") || kind === "audio";
+    const allowsImage = acceptLower.includes("image") || kind === "image" || !accept;
+    if (allowsVideo && allowsImage && allowsAudio) {
+      return `تصویر تا ${formatMaxSizeLabel(DEFAULT_MAX_BYTES.image)}، صوت تا ${formatMaxSizeLabel(DEFAULT_MAX_BYTES.audio)}، ویدیو تا ${formatMaxSizeLabel(DEFAULT_MAX_BYTES.video)}`;
+    }
+    if (allowsVideo && allowsImage) {
+      return `تصویر تا ${formatMaxSizeLabel(DEFAULT_MAX_BYTES.image)}، ویدیو تا ${formatMaxSizeLabel(DEFAULT_MAX_BYTES.video)}`;
+    }
+    if (allowsVideo && allowsAudio) {
+      return `صوت تا ${formatMaxSizeLabel(DEFAULT_MAX_BYTES.audio)}، ویدیو تا ${formatMaxSizeLabel(DEFAULT_MAX_BYTES.video)}`;
+    }
+    if (allowsAudio && allowsImage) {
+      return `تصویر تا ${formatMaxSizeLabel(DEFAULT_MAX_BYTES.image)}، صوت تا ${formatMaxSizeLabel(DEFAULT_MAX_BYTES.audio)}`;
+    }
+    if (allowsVideo) return sizeLimitHint(DEFAULT_MAX_BYTES.video);
+    if (allowsAudio) return sizeLimitHint(DEFAULT_MAX_BYTES.audio);
+    return sizeLimitHint(DEFAULT_MAX_BYTES.image);
+  })();
+
   const handleUpload = async (file: File) => {
-    if (maxFileSizeBytes && file.size > maxFileSizeBytes) {
-      const maxMb = Math.round(maxFileSizeBytes / (1024 * 1024));
-      const maxGb = Math.round((maxFileSizeBytes / (1024 * 1024 * 1024)) * 10) / 10;
-      toast.error(
-        maxFileSizeBytes >= 1024 * 1024 * 1024
-          ? `حجم فایل نباید بیشتر از ${maxGb} گیگابایت باشد`
-          : `حجم فایل نباید بیشتر از ${maxMb} مگابایت باشد`
-      );
+    const resolvedKind = resolveUploadKind(file);
+    const effectiveMaxBytes = resolveMaxBytesForKind(resolvedKind);
+    if (file.size > effectiveMaxBytes) {
+      toast.error(sizeLimitErrorMessage(effectiveMaxBytes));
+      if (inputRef.current) inputRef.current.value = "";
       return;
     }
 
     setUploading(true);
     try {
-      const resolvedKind = resolveUploadKind(file);
       const formData = new FormData();
       formData.append("file", file);
       formData.append("kind", resolvedKind);
@@ -517,6 +575,8 @@ export function MediaUpload({
           </p>
         )}
       </div>
+
+      <p className="text-xs text-muted-foreground">{displaySizeHint}</p>
 
       <input
         ref={inputRef}
