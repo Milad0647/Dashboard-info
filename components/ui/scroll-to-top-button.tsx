@@ -43,7 +43,7 @@ export function ScrollToTopButton({
       className={cn(
         "apple-soft-pop fixed z-[70] h-11 w-11 rounded-full border shadow-lg hover:-translate-y-1 hover:shadow-xl",
         clearProblemReport
-          ? "bottom-[4.75rem] left-5 lg:left-6"
+          ? "bottom-[9.25rem] left-4 md:bottom-[10rem] md:left-6"
           : "bottom-6 left-6",
         className
       )}

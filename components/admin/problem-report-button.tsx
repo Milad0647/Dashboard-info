@@ -199,7 +199,7 @@ export function ProblemReportButton() {
         type="button"
         variant="outline"
         size="sm"
-        className="fixed bottom-5 left-5 z-[80] gap-2 shadow-md lg:left-6"
+        className="fixed bottom-[5.75rem] left-4 z-[80] gap-2 shadow-md md:bottom-[6.25rem] md:left-6"
         data-audit-label="گزارش مشکل"
         onClick={() => handleOpenChange(true)}
       >

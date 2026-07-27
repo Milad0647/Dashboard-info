@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle, X } from "lucide-react";
 import { ChatPanel } from "@/components/admin/chat-panel";
@@ -18,8 +18,8 @@ import type { ChatConversationSummary } from "@/lib/chat/types";
 import { cn, formatPersianNumber } from "@/lib/utils";
 
 /**
- * Apple-style floating chat launcher shown on every admin panel page
- * (except login / full chat page), similar to website live-chat widgets.
+ * Professional store-style floating chat widget.
+ * Mounted once from AdminPanelShell so it appears on every admin page.
  */
 export function ChatFloatingWidget() {
   const pathname = usePathname();
@@ -29,12 +29,19 @@ export function ChatFloatingWidget() {
   const [canStartWithAnyone, setCanStartWithAnyone] = useState(false);
   const [conversations, setConversations] = useState<ChatConversationSummary[]>([]);
   const [loadingPanel, setLoadingPanel] = useState(false);
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
 
   const hidden =
     pathname === "/admin/login" ||
     pathname.startsWith("/admin/login/") ||
     pathname === "/admin/chat" ||
     pathname.startsWith("/admin/chat/");
+
+  const supportOnline = useMemo(
+    () => conversations.some((item) => item.peer.isOnline) || open,
+    [conversations, open]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +103,30 @@ export function ChatFloatingWidget() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  const handleOpen = async () => {
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 639px)");
+    const syncMedia = () => setIsMobileLayout(media.matches);
+    syncMedia();
+    media.addEventListener("change", syncMedia);
+
+    const syncViewport = () => {
+      const height = window.visualViewport?.height ?? window.innerHeight;
+      setViewportHeight(height);
+    };
+    syncViewport();
+    window.visualViewport?.addEventListener("resize", syncViewport);
+    window.visualViewport?.addEventListener("scroll", syncViewport);
+    window.addEventListener("resize", syncViewport);
+
+    return () => {
+      media.removeEventListener("change", syncMedia);
+      window.visualViewport?.removeEventListener("resize", syncViewport);
+      window.visualViewport?.removeEventListener("scroll", syncViewport);
+      window.removeEventListener("resize", syncViewport);
+    };
+  }, []);
+
+  const handleToggle = async () => {
     const next = !open;
     setOpen(next);
     if (!next) return;
@@ -118,24 +148,43 @@ export function ChatFloatingWidget() {
 
   if (hidden || !ready) return null;
 
+  const mobilePanelHeight =
+    viewportHeight != null
+      ? Math.max(280, Math.min(viewportHeight - 16, viewportHeight - 8))
+      : undefined;
+
   return (
     <div
-        className={cn(
-          "fixed z-[55] flex flex-col items-end gap-3",
-          // Clear the right sidebar on desktop; sit opposite the problem-report control.
-          "bottom-5 left-5 lg:bottom-6 lg:left-auto lg:right-[17.5rem]"
-        )}
-        dir="rtl"
-      >
+      dir="rtl"
+      className="pointer-events-none fixed bottom-4 left-4 z-[55] flex flex-col items-start md:bottom-6 md:left-6"
+      data-chat-floating-widget
+    >
       <div
         className={cn(
-          "origin-bottom overflow-hidden rounded-[28px] border border-black/5 bg-card/92 shadow-[var(--shadow-apple-hover)] backdrop-blur-2xl transition-all duration-[var(--duration-apple)] ease-[var(--ease-apple-spring)] dark:border-white/10",
-          "lg:origin-bottom-right",
+          "pointer-events-auto flex origin-bottom-left flex-col overflow-hidden",
+          "border border-black/5 bg-card shadow-[var(--shadow-apple-hover)] backdrop-blur-xl dark:border-white/10",
+          "transition-all duration-[var(--duration-apple)] ease-[var(--ease-apple-spring)]",
+          // Mobile near-fullscreen sheet
+          "fixed inset-x-2 z-[55] rounded-3xl sm:static sm:inset-auto sm:mb-3",
+          // Desktop store widget size
+          "sm:h-[520px] sm:w-[360px] sm:rounded-[24px]",
           open
-            ? "h-[min(640px,calc(100dvh-7.5rem))] w-[min(400px,calc(100vw-2.5rem))] translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none h-0 w-0 translate-y-4 scale-95 opacity-0"
+            ? "translate-y-0 scale-100 opacity-100"
+            : "pointer-events-none invisible translate-y-3 scale-[0.96] opacity-0"
         )}
+        style={
+          open && isMobileLayout && mobilePanelHeight
+            ? {
+                top: 8,
+                height: mobilePanelHeight,
+                maxHeight: mobilePanelHeight,
+                bottom: "auto",
+              }
+            : undefined
+        }
         aria-hidden={!open}
+        role="dialog"
+        aria-label="پشتیبانی آنلاین"
       >
         {open && (
           <div className="flex h-full min-h-0 flex-col">
@@ -149,6 +198,7 @@ export function ChatFloatingWidget() {
                 initialConversations={conversations}
                 initialUnreadTotal={unread}
                 canStartWithAnyone={canStartWithAnyone}
+                supportOnline={supportOnline}
                 onClose={() => setOpen(false)}
               />
             )}
@@ -156,31 +206,35 @@ export function ChatFloatingWidget() {
         )}
       </div>
 
-      {/* Lift above «گزارش مشکل» on mobile (same corner); on desktop sits near sidebar edge. */}
       <button
         type="button"
-        onClick={() => void handleOpen()}
-        aria-label={open ? "بستن چت" : "باز کردن چت"}
-        title={open ? "بستن چت" : "چت"}
+        onClick={() => void handleToggle()}
+        aria-expanded={open}
+        aria-label={open ? "بستن چت" : "باز کردن پشتیبانی آنلاین"}
+        title={open ? "بستن" : "پشتیبانی آنلاین"}
         data-audit-label="چت شناور"
         className={cn(
-          "apple-soft-pop group relative flex h-14 w-14 items-center justify-center rounded-full",
+          "pointer-events-auto relative flex items-center justify-center rounded-full",
+          "h-[50px] w-[50px] md:h-14 md:w-14",
           "bg-primary text-primary-foreground",
-          "shadow-[0_10px_30px_rgba(37,99,235,0.35)]",
-          "transition-transform duration-[var(--duration-apple)] ease-[var(--ease-apple-spring)]",
-          "hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(37,99,235,0.42)]",
-          "active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          "before:pointer-events-none before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-white/30 before:to-transparent",
-          // Mobile: stack above problem-report button
-          !open && "mb-[3.25rem] lg:mb-0"
+          "shadow-[0_8px_28px_rgba(37,99,235,0.38)]",
+          "transition-all duration-[var(--duration-apple)] ease-[var(--ease-apple-spring)]",
+          "hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(37,99,235,0.45)]",
+          "active:scale-[0.96]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "before:pointer-events-none before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-white/30 before:to-transparent"
         )}
       >
         <span className="relative z-[1]">
-          {open ? <X className="h-6 w-6" strokeWidth={2.25} /> : <MessageCircle className="h-6 w-6" strokeWidth={2.25} />}
+          {open ? (
+            <X className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.25} />
+          ) : (
+            <MessageCircle className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.25} />
+          )}
         </span>
         {!open && unread > 0 && (
-          <span className="absolute -top-1 -end-1 z-[2] flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-background tabular-nums">
-            {formatPersianNumber(unread > 99 ? 99 : unread)}
+          <span className="absolute -top-1 -end-1 z-[2] flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-background tabular-nums">
+            {formatPersianNumber(Math.min(unread, 99))}
           </span>
         )}
       </button>

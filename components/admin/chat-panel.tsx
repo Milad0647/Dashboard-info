@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Loader2,
   MessageCircle,
+  Minus,
   Plus,
   Search,
   SendHorizontal,
@@ -110,12 +111,15 @@ export function ChatPanel({
   initialUnreadTotal = 0,
   canStartWithAnyone = false,
   variant = "page",
+  supportOnline = false,
   onClose,
 }: {
   initialConversations?: ChatConversationSummary[];
   initialUnreadTotal?: number;
   canStartWithAnyone?: boolean;
   variant?: "page" | "widget";
+  /** Shown in the floating widget header as online/offline support status. */
+  supportOnline?: boolean;
   onClose?: () => void;
 }) {
   const isWidget = variant === "widget";
@@ -434,17 +438,28 @@ export function ChatPanel({
       className={cn(isWidget ? "flex h-full min-h-0 flex-col" : "space-y-4")}
     >
       {isWidget ? (
-        <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b bg-card/80 px-3 py-3 backdrop-blur-sm sm:px-4">
           <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold tracking-tight">پیام‌ها</p>
-            <p className="truncate text-[11px] text-muted-foreground">گفتگوی آنلاین</p>
+            <p className="truncate text-[15px] font-semibold tracking-tight">
+              پشتیبانی آنلاین
+            </p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span
+                className={cn(
+                  "inline-block h-2 w-2 rounded-full",
+                  supportOnline || peer?.isOnline ? "bg-emerald-500" : "bg-zinc-400"
+                )}
+                aria-hidden
+              />
+              {supportOnline || peer?.isOnline ? "آنلاین" : "آفلاین"}
+            </p>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <Button
               type="button"
               size="icon"
               variant="ghost"
-              className="h-9 w-9 rounded-full"
+              className="h-8 w-8 rounded-full"
               onClick={() => void openContacts()}
               aria-label="گفتگوی جدید"
               title="گفتگوی جدید"
@@ -452,16 +467,30 @@ export function ChatPanel({
               <Plus className="h-4 w-4" />
             </Button>
             {onClose && (
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="h-9 w-9 rounded-full"
-                onClick={onClose}
-                aria-label="بستن"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 rounded-full"
+                  onClick={onClose}
+                  aria-label="کوچک‌کردن"
+                  title="کوچک‌کردن"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 rounded-full"
+                  onClick={onClose}
+                  aria-label="بستن"
+                  title="بستن"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </>
             )}
           </div>
         </div>

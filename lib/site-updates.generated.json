@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "025cad3bc9e8fda3f0b89b9eec1213680cfcaa15",
+      "committedAt": "2026-07-27T14:00:54+03:30",
+      "title": "حذف اتصال Map-Bilboard از پنل و سایت",
+      "subject": "Remove Map-Bilboard connection from the site"
+    },
+    {
       "hash": "f59ec278e079a52f373930af5d9a5c2263446be2",
       "committedAt": "2026-07-27T13:58:12+03:30",
       "title": "لینک‌های چت قابل‌کلیک شدند و طراحی چت راست‌چین شد",
