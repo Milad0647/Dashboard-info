@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "c3ce525b5454a1273ddaf2899b9d41fcfffcee0e",
+      "committedAt": "2026-07-27T11:52:31+03:30",
+      "title": "امکان آپلود فایل RAR در بخش فایل‌ها",
+      "subject": "Allow RAR archives in campaign files uploads"
+    },
+    {
+      "hash": "8518ac9d001d2ba186a37eae1eff9e3f4a3e7beb",
+      "committedAt": "2026-07-27T11:46:58+03:30",
+      "title": "افزودن تگ نوع شرکت (توزیع و برق منطقه) برای کاربران",
+      "subject": "Add company type classification for users"
+    },
+    {
       "hash": "fd54fcb7af722e5a6b35ed320af62587788180a0",
       "committedAt": "2026-07-27T11:41:27+03:30",
       "title": "امکان دانلود گزارش اکسل از صفحه رتبه‌بندی",

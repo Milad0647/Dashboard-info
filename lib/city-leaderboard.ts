@@ -12,10 +12,32 @@ import type {
   CampaignFile,
   Ownable,
   PosterWithVersions,
-  PublicCampaignData,
+  SectionVisibility,
   SocialMediaPost,
   VideoWithVersions,
 } from "@/lib/types";
+
+/** Minimal campaign payload needed to compute leaderboard metrics. */
+export type LeaderboardSourceData = {
+  sections: Pick<
+    SectionVisibility,
+    | "billboards"
+    | "posters"
+    | "videos"
+    | "socialPosts"
+    | "sitePublications"
+    | "activities"
+    | "files"
+  >;
+  billboards: Billboard[];
+  posters: Array<Ownable & { id: string; title: string; createdAt?: string | null; province?: string | null }>;
+  videos: Array<Ownable & { id: string; title: string; createdAt?: string | null; province?: string | null }>;
+  socialPosts: SocialMediaPost[];
+  sitePublications: SocialMediaPost[];
+  activities: CampaignActivity[];
+  pressPublications: CampaignActivity[];
+  files: CampaignFile[];
+};
 
 export interface ProvinceLeaderboardMetrics {
   billboards: number;
@@ -225,7 +247,7 @@ function addUserItem<T extends Ownable & { createdAt?: string | null; province?:
 }
 
 function collectLeaderboardItems(
-  data: PublicCampaignData,
+  data: LeaderboardSourceData,
   add: <T extends Ownable & { createdAt?: string | null; province?: string | null }>(
     items: T[],
     field: MetricField
@@ -243,7 +265,7 @@ function collectLeaderboardItems(
   if (data.sections.files) add(data.files, "files");
 }
 
-export function buildProvinceLeaderboard(data: PublicCampaignData): ProvinceLeaderboardEntry[] {
+export function buildProvinceLeaderboard(data: LeaderboardSourceData): ProvinceLeaderboardEntry[] {
   const map = new Map<string, ProvinceLeaderboardMetrics & { province: string }>();
 
   collectLeaderboardItems(data, (items, field) => {
@@ -272,7 +294,7 @@ export function buildProvinceLeaderboard(data: PublicCampaignData): ProvinceLead
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
-export function buildUserLeaderboard(data: PublicCampaignData): UserLeaderboardEntry[] {
+export function buildUserLeaderboard(data: LeaderboardSourceData): UserLeaderboardEntry[] {
   const map = new Map<string, UserAccumulator>();
 
   collectLeaderboardItems(data, (items, field) => {
@@ -302,7 +324,7 @@ export function buildUserLeaderboard(data: PublicCampaignData): UserLeaderboardE
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
-export function buildUserRatingLeaderboard(data: PublicCampaignData): UserLeaderboardEntry[] {
+export function buildUserRatingLeaderboard(data: LeaderboardSourceData): UserLeaderboardEntry[] {
   return buildUserLeaderboard(data)
     .slice()
     .sort((a, b) => b.ratingScore - a.ratingScore || b.totalUploads - a.totalUploads)
@@ -327,18 +349,19 @@ function resolveUserKeyMatch(item: Ownable, userKey: string): boolean {
 }
 
 export function collectUserContentItems(
-  data: PublicCampaignData,
+  data: LeaderboardSourceData,
   userKey: string
 ): UserContentScoreItem[] {
   const items: UserContentScoreItem[] = [];
 
-  const push = <T extends Ownable & { id: string; title: string; createdAt?: string | null }>(
+  const push = <T extends Ownable & { id?: string; title?: string; createdAt?: string | null }>(
     list: T[],
     typeLabel: string,
     contentType: string,
     getThumb?: (item: T) => string | null | undefined
   ) => {
     for (const item of list) {
+      if (!item.id || !item.title) continue;
       if (!resolveUserKeyMatch(item, userKey)) continue;
       items.push({
         id: item.id,
@@ -409,7 +432,7 @@ function matchesLeaderboardScope(
 }
 
 export function collectLeaderboardBillboards(
-  data: PublicCampaignData,
+  data: LeaderboardSourceData,
   filter: LeaderboardContentScope
 ): Billboard[] {
   if (!data.sections.billboards) return [];
@@ -418,7 +441,7 @@ export function collectLeaderboardBillboards(
 }
 
 export function collectLeaderboardContentByMetric(
-  data: PublicCampaignData,
+  data: LeaderboardSourceData,
   metricLabel: LeaderboardMetricLabel,
   filter: LeaderboardContentScope
 ): LeaderboardContentListItem[] {
@@ -437,12 +460,12 @@ export function collectLeaderboardContentByMetric(
   switch (metricLabel) {
     case "پوستر":
       if (data.sections.posters) {
-        pushScoped(data.posters, (item) => ({ kind: "poster", item }));
+        pushScoped(data.posters as PosterWithVersions[], (item) => ({ kind: "poster", item }));
       }
       break;
     case "ویدیو":
       if (data.sections.videos) {
-        pushScoped(data.videos, (item) => ({ kind: "video", item }));
+        pushScoped(data.videos as VideoWithVersions[], (item) => ({ kind: "video", item }));
       }
       break;
     case "شبکه اجتماعی":
@@ -497,7 +520,7 @@ export function getLeaderboardContentTitle(item: LeaderboardContentListItem): st
 }
 
 export function buildProvinceContributorLeaderboard(
-  data: PublicCampaignData
+  data: LeaderboardSourceData
 ): ProvinceContributorEntry[] {
   const map = new Map<string, ProvinceContributorEntry>();
 
