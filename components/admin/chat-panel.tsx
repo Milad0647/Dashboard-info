@@ -38,6 +38,7 @@ import type {
   ChatPeer,
 } from "@/lib/chat/types";
 import { CHAT_MAX_BODY_LENGTH } from "@/lib/chat/types";
+import { playChatBuzz } from "@/lib/chat/buzz";
 import { renderChatMessageBody } from "@/lib/chat/linkify";
 import { cn, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
@@ -93,6 +94,7 @@ function requestDesktopNotificationPermission() {
 }
 
 function maybeNotifyNewMessage(peerName: string, body: string) {
+  playChatBuzz();
   if (typeof window === "undefined" || !("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
   if (document.visibilityState === "visible") return;

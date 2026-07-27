@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "3e1d175b3bc81c9f3ad7448c09d49e4d793a7ef0",
+      "committedAt": "2026-07-27T14:27:55+03:30",
+      "title": "تغییر عنوان ویجت به چت آنلاین",
+      "subject": "Rename chat widget title to online chat"
+    },
+    {
       "hash": "59100f15797c6ae1f9382f1c8be8cdc18adb3edc",
       "committedAt": "2026-07-27T14:20:30+03:30",
       "title": "حذف چت از منوی کناری و قرار گرفتن گزارش مشکل پشت ویجت چت",

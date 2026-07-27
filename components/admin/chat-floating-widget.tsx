@@ -17,6 +17,7 @@ import {
 import {
   emitChatWidgetOpenChanged,
 } from "@/lib/chat-widget-open";
+import { playChatBuzz } from "@/lib/chat/buzz";
 import type { ChatConversationSummary } from "@/lib/chat/types";
 import { cn, formatPersianNumber } from "@/lib/utils";
 
@@ -38,6 +39,7 @@ export function ChatFloatingWidget() {
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const openRef = useRef(false);
   const unreadRef = useRef(0);
+  const unreadPrimedRef = useRef(false);
   const autoOpenLockRef = useRef(false);
 
   const hidden =
@@ -100,15 +102,24 @@ export function ChatFloatingWidget() {
 
   const applyUnreadCount = (count: number, options?: { autoOpen?: boolean }) => {
     const previous = unreadRef.current;
+    const primed = unreadPrimedRef.current;
+    unreadPrimedRef.current = true;
     setUnread(count);
     emitChatUnreadChanged(count);
+
+    // Skip buzz/auto-open on the first sample so stale unread does not alarm on page load.
+    if (!primed) return;
+
+    const hasNewIncoming = count > previous && count > 0;
+    if (hasNewIncoming) {
+      playChatBuzz();
+    }
 
     const shouldAutoOpen =
       Boolean(options?.autoOpen) &&
       !hidden &&
       !openRef.current &&
-      count > previous &&
-      count > 0 &&
+      hasNewIncoming &&
       !autoOpenLockRef.current;
 
     if (shouldAutoOpen) {
