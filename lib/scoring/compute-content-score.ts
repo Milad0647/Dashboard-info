@@ -99,7 +99,12 @@ function ruleMatches(
       return isFilled(value);
     case "equals": {
       if (!isFilled(value) && rule.value !== "false") return false;
-      return normalizeComparable(value) === normalizeComparable(rule.value ?? "");
+      const target = normalizeComparable(rule.value ?? "");
+      // Multi-value fields (e.g. planLabels): match if any selected value equals the rule.
+      if (Array.isArray(value)) {
+        return value.some((entry) => normalizeComparable(entry) === target);
+      }
+      return normalizeComparable(value) === target;
     }
     case "range":
       return matchRange(value, rule, valueType);

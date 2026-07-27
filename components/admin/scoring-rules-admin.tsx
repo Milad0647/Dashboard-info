@@ -20,11 +20,13 @@ import {
   getScoreableField,
   getScoreableFields,
   type ScoreableFieldDef,
+  type ScoreableFieldsContext,
 } from "@/lib/scoring/scoreable-fields";
 import { normalizeScoringRules } from "@/lib/scoring/normalize-scoring-rules";
 import type {
   CampaignScoringRules,
   CampaignSettings,
+  MediaCategory,
   ScoreableContentType,
   ScoringRule,
   ScoringRuleKind,
@@ -67,9 +69,15 @@ function findRangeRule(rules: ScoringRule[]): ScoringRule | undefined {
 
 interface ScoringRulesAdminProps {
   initialSettings: CampaignSettings;
+  posterCategories?: MediaCategory[];
+  videoCategories?: MediaCategory[];
 }
 
-export function ScoringRulesAdmin({ initialSettings }: ScoringRulesAdminProps) {
+export function ScoringRulesAdmin({
+  initialSettings,
+  posterCategories = [],
+  videoCategories = [],
+}: ScoringRulesAdminProps) {
   const [rulesByType, setRulesByType] = useState<CampaignScoringRules>(() =>
     normalizeScoringRules(initialSettings.scoringRules ?? {})
   );
@@ -77,16 +85,31 @@ export function ScoringRulesAdmin({ initialSettings }: ScoringRulesAdminProps) {
   const [fieldToAdd, setFieldToAdd] = useState<string>("");
   const [isPending, startTransition] = useTransition();
 
+  const fieldsContext = useMemo<ScoreableFieldsContext>(
+    () => ({
+      contentTopics: initialSettings.contentTopics ?? [],
+      posterCategories,
+      videoCategories,
+    }),
+    [initialSettings.contentTopics, posterCategories, videoCategories]
+  );
+
   const activeRules = useMemo(
     () => rulesByType[activeType] ?? [],
     [rulesByType, activeType]
   );
-  const fields = useMemo(() => getScoreableFields(activeType), [activeType]);
+  const fields = useMemo(
+    () => getScoreableFields(activeType, fieldsContext),
+    [activeType, fieldsContext]
+  );
   const fieldKeys = useMemo(() => usedFieldKeys(activeRules), [activeRules]);
   const availableFields = useMemo(
     () => fields.filter((f) => !fieldKeys.includes(f.key)),
     [fields, fieldKeys]
   );
+
+  const resolveField = (fieldKey: string) =>
+    getScoreableField(activeType, fieldKey, fieldsContext);
 
   const updateRules = (next: ScoringRule[]) => {
     setRulesByType((prev) => ({
@@ -106,7 +129,7 @@ export function ScoringRulesAdmin({ initialSettings }: ScoringRulesAdminProps) {
 
   const addField = (fieldKey: string) => {
     if (!fieldKey || fieldKeys.includes(fieldKey)) return;
-    const fieldDef = getScoreableField(activeType, fieldKey);
+    const fieldDef = resolveField(fieldKey);
     if (!fieldDef) return;
 
     if (fieldHasOptions(fieldDef)) {
@@ -243,7 +266,7 @@ export function ScoringRulesAdmin({ initialSettings }: ScoringRulesAdminProps) {
   };
 
   const setRuleKindMode = (fieldKey: string, kind: ScoringRuleKind) => {
-    const fieldDef = getScoreableField(activeType, fieldKey);
+    const fieldDef = resolveField(fieldKey);
     if (!fieldDef || fieldHasOptions(fieldDef)) return;
 
     const fieldRules = rulesForField(activeRules, fieldKey);
@@ -321,9 +344,9 @@ export function ScoringRulesAdmin({ initialSettings }: ScoringRulesAdminProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          فیلد را انتخاب کنید و امتیاز بدهید. برای فیلدهای انتخابی (مثل دسته‌بندی) به هر گزینه امتیاز
-          جدا بدهید؛ برای فیلدهای متنی فقط بر اساس پر بودن امتیاز می‌گیرد. امتیاز نهایی کارت = خودکار +
-          دستی.
+          فیلد را انتخاب کنید و امتیاز بدهید. برای فیلدهای انتخابی (مثل دسته‌بندی محتوا، دسته سازه و
+          موضوع) به هر گزینه امتیاز جدا بدهید؛ برای فیلدهای متنی فقط بر اساس پر بودن امتیاز می‌گیرد.
+          امتیاز نهایی کارت = خودکار + دستی.
         </p>
 
         <div>
@@ -359,7 +382,7 @@ export function ScoringRulesAdmin({ initialSettings }: ScoringRulesAdminProps) {
           )}
 
           {fieldKeys.map((fieldKey) => {
-            const fieldDef = getScoreableField(activeType, fieldKey) ?? fields[0];
+            const fieldDef = resolveField(fieldKey) ?? fields[0];
             const fieldRules = rulesForField(activeRules, fieldKey);
             const hasOptions = fieldHasOptions(fieldDef);
             const filledRule = findFilledRule(fieldRules);

@@ -18,12 +18,20 @@ export default async function ScoringRulesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const { campaignId } = await resolveAdminCampaignId(params.campaign);
   if (!campaignId) redirect("/admin/campaigns");
-  const data = await getAdminData(campaignId, ["settings"]);
+  const data = await getAdminData(campaignId, [
+    "settings",
+    "posterCategories",
+    "videoCategories",
+  ]);
   if (!data.settings) redirect("/admin/campaigns");
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <ScoringRulesAdmin initialSettings={data.settings} />
+      <ScoringRulesAdmin
+        initialSettings={data.settings}
+        posterCategories={data.posterCategories ?? []}
+        videoCategories={data.videoCategories ?? []}
+      />
     </div>
   );
 }
