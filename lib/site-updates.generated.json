@@ -1,6 +1,24 @@
 {
   "entries": [
     {
+      "hash": "d1af217b1ab562157df7b0698f238f669339ae6c",
+      "committedAt": "2026-07-27T14:44:47+03:30",
+      "title": "امکان فعال‌سازی جداگانه آموزش هر بخش (پیش‌فرض خاموش)",
+      "subject": "Enable section tutorials individually with default off"
+    },
+    {
+      "hash": "efef045897c1db590db85ab5c855bd1c6da40282",
+      "committedAt": "2026-07-27T14:44:45+03:30",
+      "title": "امکان امتیازدهی جداگانه به هر دسته محتوا و موضوع در پوستر و تبلیغات محیطی",
+      "subject": "Add per-category scoring for posters and content topics"
+    },
+    {
+      "hash": "1c3cab75cb69f4ba4b0bc4844f95aedcdfffcad3",
+      "committedAt": "2026-07-27T14:35:11+03:30",
+      "title": "افزودن صدای بازر برای پیام‌های جدید چت",
+      "subject": "Add buzz sound for incoming chat messages"
+    },
+    {
       "hash": "3e1d175b3bc81c9f3ad7448c09d49e4d793a7ef0",
       "committedAt": "2026-07-27T14:27:55+03:30",
       "title": "تغییر عنوان ویجت به چت آنلاین",
