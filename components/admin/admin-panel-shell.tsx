@@ -10,6 +10,7 @@ import {
   AdminCampaignProviderStatic,
 } from "@/components/admin/admin-campaign-provider";
 import { AuditTracker } from "@/components/admin/audit-tracker";
+import { ChatPresenceBeacon } from "@/components/admin/chat-presence-beacon";
 import { DirectiveAckGate } from "@/components/admin/directive-ack-gate";
 import { ErrorModalProvider } from "@/components/admin/error-modal-provider";
 import { ProblemReportButton } from "@/components/admin/problem-report-button";
@@ -84,6 +85,9 @@ function PanelChrome({
           <AuditTracker />
         </Suspense>
       ) : null}
+      <Suspense fallback={null}>
+        <ChatPresenceBeacon />
+      </Suspense>
       <ErrorModalProvider />
       <AdminSidebar />
       <AdminElanhaButton />

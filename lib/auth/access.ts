@@ -47,3 +47,13 @@ export function canSendContentMessages(session: AuthSession): boolean {
 export function canManageUserProfileNotes(session: AuthSession): boolean {
   return isFullAdmin(session) || isClientUser(session);
 }
+
+/** Any authenticated panel user can use the live chat inbox. */
+export function canUseChat(session: AuthSession): boolean {
+  return Boolean(session);
+}
+
+/** Admin and کارفرما can start a chat with any user. Contributors chat with staff only. */
+export function canStartChatWithAnyone(session: AuthSession): boolean {
+  return canManageAllContent(session);
+}

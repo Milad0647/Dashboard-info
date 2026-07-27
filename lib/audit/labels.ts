@@ -28,6 +28,7 @@ const ACTION_LABELS: Record<string, string> = {
   "profile.update": "ویرایش پروفایل",
   "problem.report": "گزارش مشکل",
   "problem.triage": "رسیدگی به گزارش مشکل",
+  "chat.message": "پیام چت",
 };
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -49,6 +50,8 @@ const ENTITY_LABELS: Record<string, string> = {
   activity: "اقدام",
   meeting: "جلسه",
   user: "کاربر",
+  chat_message: "پیام چت",
+  content_message: "پیام محتوا",
 };
 
 export function getAuditActionLabel(action: string): string {

@@ -25,6 +25,7 @@ import {
   LogOut,
   Medal,
   Menu,
+  MessageCircle,
   MessageSquare,
   Plus,
   Radio,
@@ -60,6 +61,7 @@ import {
 } from "@/lib/contributor-permissions";
 import { getMyUnreadProblemReplyCountAction } from "@/lib/actions/problem-report-actions";
 import { getMyUnreadContentMessageCountAction } from "@/lib/actions/content-message-actions";
+import { getMyUnreadChatCountAction } from "@/lib/actions/chat-actions";
 import { getMyUnreadDirectivesCountAction } from "@/lib/actions/directive-actions";
 import {
   PROBLEM_REPORTS_UNREAD_EVENT,
@@ -69,6 +71,10 @@ import {
   CONTENT_MESSAGES_UNREAD_EVENT,
   readContentMessagesUnreadFromEvent,
 } from "@/lib/content-messages-unread";
+import {
+  CHAT_UNREAD_EVENT,
+  readChatUnreadFromEvent,
+} from "@/lib/chat-unread";
 import {
   DIRECTIVES_UNREAD_EVENT,
   readDirectivesUnreadFromEvent,
@@ -115,6 +121,7 @@ const allNavItems: {
   { href: "/admin/activities", label: "اقدامات", icon: Sparkles, permissionKey: "activities" },
   { href: "/admin/elanha", label: "اعلان‌ها", icon: Bell, adminOrClientOnly: true },
   { href: "/admin/messages", label: "پیام‌های من", icon: MessageSquare, alwaysVisible: true },
+  { href: "/admin/chat", label: "چت", icon: MessageCircle, alwaysVisible: true },
   { href: "/admin/directives", label: "دستورکارها", icon: ClipboardCheck, alwaysVisible: true },
   {
     href: "/admin/problem-reports",
@@ -153,10 +160,11 @@ const managementNavHrefs = new Set([
 ]);
 
 /** Personal inbox — kept outside uploaded-content sections. */
-const myMessagesNavHrefs = new Set(["/admin/messages"]);
+const myMessagesNavHrefs = new Set(["/admin/messages", "/admin/chat"]);
 
 const DIRECTIVES_HREF = "/admin/directives";
 const MESSAGES_HREF = "/admin/messages";
+const CHAT_HREF = "/admin/chat";
 
 const SIDEBAR_NAV_SCROLL_KEY = "admin-sidebar-nav-scroll";
 
@@ -172,6 +180,7 @@ type SidebarNavBodyProps = {
   managementNavItems: typeof allNavItems;
   problemReportsUnread: number;
   contentMessagesUnread: number;
+  chatUnread: number;
   isFullAdminUser: boolean;
   currentCampaign: CampaignSettings | undefined;
   setCampaignId: (id: string) => void;
@@ -187,6 +196,7 @@ function renderNavLink({
   setMobileOpen,
   problemReportsUnread,
   contentMessagesUnread,
+  chatUnread,
 }: {
   item: (typeof allNavItems)[number];
   campaignId: string;
@@ -194,6 +204,7 @@ function renderNavLink({
   setMobileOpen: (open: boolean) => void;
   problemReportsUnread: number;
   contentMessagesUnread: number;
+  chatUnread: number;
 }) {
   const Icon = item.icon;
   const href = adminHref(item.href, campaignId);
@@ -229,6 +240,13 @@ function renderNavLink({
           aria-label="پیام خوانده‌نشده"
         />
       )}
+      {item.href === CHAT_HREF && chatUnread > 0 && (
+        <span
+          className="ms-auto h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
+          title="چت خوانده‌نشده"
+          aria-label="چت خوانده‌نشده"
+        />
+      )}
     </Link>
   );
 }
@@ -245,6 +263,7 @@ function SidebarNavBody({
   managementNavItems,
   problemReportsUnread,
   contentMessagesUnread,
+  chatUnread,
   isFullAdminUser,
   currentCampaign,
   setCampaignId,
@@ -328,6 +347,7 @@ function SidebarNavBody({
                   setMobileOpen,
                   problemReportsUnread,
                   contentMessagesUnread,
+                  chatUnread,
                 })
               )}
             </div>
@@ -343,6 +363,7 @@ function SidebarNavBody({
               setMobileOpen,
               problemReportsUnread,
               contentMessagesUnread,
+              chatUnread,
             })
           )}
         </div>
@@ -361,6 +382,7 @@ function SidebarNavBody({
                   setMobileOpen,
                   problemReportsUnread,
                   contentMessagesUnread,
+                  chatUnread,
                 })
               )}
             </div>
@@ -397,6 +419,7 @@ export function AdminSidebar() {
   const [permissions, setPermissions] = useState<ContributorPermissions | null>(null);
   const [problemReportsUnread, setProblemReportsUnread] = useState(0);
   const [contentMessagesUnread, setContentMessagesUnread] = useState(0);
+  const [chatUnread, setChatUnread] = useState(0);
   const [directivesUnread, setDirectivesUnread] = useState(0);
   const { campaignId, campaigns, currentCampaign, setCampaignId } = useAdminCampaign();
   const desktopNavRef = useRef<HTMLElement | null>(null);
@@ -415,9 +438,10 @@ export function AdminSidebar() {
 
     const refreshUnread = async () => {
       try {
-        const [problemResult, messageResult, directivesResult] = await Promise.all([
+        const [problemResult, messageResult, chatResult, directivesResult] = await Promise.all([
           getMyUnreadProblemReplyCountAction(),
           getMyUnreadContentMessageCountAction(),
+          getMyUnreadChatCountAction(),
           campaignId
             ? getMyUnreadDirectivesCountAction(campaignId)
             : Promise.resolve({ success: true as const, count: 0 }),
@@ -429,6 +453,9 @@ export function AdminSidebar() {
         if (messageResult.success) {
           setContentMessagesUnread(messageResult.count ?? 0);
         }
+        if (chatResult.success) {
+          setChatUnread(chatResult.count ?? 0);
+        }
         if (directivesResult.success) {
           setDirectivesUnread(directivesResult.count ?? 0);
         }
@@ -436,6 +463,7 @@ export function AdminSidebar() {
         if (!cancelled) {
           setProblemReportsUnread(0);
           setContentMessagesUnread(0);
+          setChatUnread(0);
           setDirectivesUnread(0);
         }
       }
@@ -444,7 +472,7 @@ export function AdminSidebar() {
     void refreshUnread();
     const timer = window.setInterval(() => {
       void refreshUnread();
-    }, 60_000);
+    }, 30_000);
 
     const onProblemUnreadEvent = (event: Event) => {
       const count = readUnreadCountFromEvent(event);
@@ -454,12 +482,17 @@ export function AdminSidebar() {
       const count = readContentMessagesUnreadFromEvent(event);
       if (count !== null) setContentMessagesUnread(count);
     };
+    const onChatUnreadEvent = (event: Event) => {
+      const count = readChatUnreadFromEvent(event);
+      if (count !== null) setChatUnread(count);
+    };
     const onDirectivesUnreadEvent = (event: Event) => {
       const count = readDirectivesUnreadFromEvent(event);
       if (count !== null) setDirectivesUnread(count);
     };
     window.addEventListener(PROBLEM_REPORTS_UNREAD_EVENT, onProblemUnreadEvent);
     window.addEventListener(CONTENT_MESSAGES_UNREAD_EVENT, onMessagesUnreadEvent);
+    window.addEventListener(CHAT_UNREAD_EVENT, onChatUnreadEvent);
     window.addEventListener(DIRECTIVES_UNREAD_EVENT, onDirectivesUnreadEvent);
 
     return () => {
@@ -467,6 +500,7 @@ export function AdminSidebar() {
       window.clearInterval(timer);
       window.removeEventListener(PROBLEM_REPORTS_UNREAD_EVENT, onProblemUnreadEvent);
       window.removeEventListener(CONTENT_MESSAGES_UNREAD_EVENT, onMessagesUnreadEvent);
+      window.removeEventListener(CHAT_UNREAD_EVENT, onChatUnreadEvent);
       window.removeEventListener(DIRECTIVES_UNREAD_EVENT, onDirectivesUnreadEvent);
     };
   }, [campaignId]);
@@ -532,6 +566,7 @@ export function AdminSidebar() {
     managementNavItems,
     problemReportsUnread,
     contentMessagesUnread,
+    chatUnread,
     isFullAdminUser,
     currentCampaign,
     setCampaignId,
