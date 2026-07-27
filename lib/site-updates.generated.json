@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "e1c2f7c37114b93ad068bad037cbc706d0e006cb",
+      "committedAt": "2026-07-27T10:52:27+03:30",
+      "title": "راست‌چین شدن تب‌ها و محتوای بخش رصد کاربران",
+      "subject": "Force RTL layout across Rasad audit tabs"
+    },
+    {
+      "hash": "1283c0d43e40806c6f9e5bec8903bf9c6a00a57b",
+      "committedAt": "2026-07-24T16:24:14+03:30",
+      "title": "امکان مشاهده همه پیام‌های کاربران در بخش رصد",
+      "subject": "Add all-users messages tab to Rasad audit"
+    },
+    {
       "hash": "9cc74c2ee821319e84f584c5296b85447bb818df",
       "committedAt": "2026-07-24T16:21:45+03:30",
       "title": "بکاپ شبانه خودکار اکنون کامل و همراه با فایل‌های رسانه گرفته می‌شود",

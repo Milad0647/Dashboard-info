@@ -123,7 +123,11 @@ export function AdminLoginForm() {
         return;
       }
 
-      await loginAdminAction(email, password, redirectTo);
+      const result = await loginAdminAction(email, password, redirectTo);
+      if (result && !result.success) {
+        setErrorMessage(result.error);
+        toast.error(result.error);
+      }
     } catch (err) {
       if (isNextRedirectError(err)) return;
       const nextErrorMessage = err instanceof Error ? err.message : "خطا در ورود";

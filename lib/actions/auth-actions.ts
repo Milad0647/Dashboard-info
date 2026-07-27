@@ -25,6 +25,14 @@ import { isPostgresConfigured } from "@/lib/utils";
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_LIMIT = 5;
 
+function formatLoginLockMessage(retryAfterSec: number): string {
+  const safeSeconds = Math.max(1, retryAfterSec);
+  const minutes = Math.ceil(safeSeconds / 60);
+  const waitLabel =
+    minutes >= 2 ? `حدود ${minutes} دقیقه` : `${safeSeconds} ثانیه`;
+  return `به‌خاطر تلاش‌های ناموفق زیاد، ورود موقتاً قفل شده است. لطفاً ${waitLabel} صبر کنید و دوباره تلاش کنید.`;
+}
+
 async function resolveLoginClient(email: string): Promise<{ rateKey: string; ip: string }> {
   const headerStore = await headers();
   const forwarded = headerStore.get("x-forwarded-for");
@@ -71,7 +79,7 @@ async function registerFailedLogin(rateKey: string, loginEmail: string, ip: stri
     });
     return {
       success: false as const,
-      error: `تلاش‌های ورود بیش از حد مجاز است. ${rate.retryAfterSec} ثانیه دیگر دوباره تلاش کنید`,
+      error: formatLoginLockMessage(rate.retryAfterSec),
     };
   }
 
@@ -114,7 +122,7 @@ export async function loginAdminAction(
       }).catch(() => {});
       return {
         success: false as const,
-        error: `تلاش‌های ورود بیش از حد مجاز است. ${blocked.retryAfterSec} ثانیه دیگر دوباره تلاش کنید`,
+        error: formatLoginLockMessage(blocked.retryAfterSec),
       };
     }
 
