@@ -542,6 +542,8 @@ export interface SocialPostLinkEntry {
   id: string;
   link: string;
   views: number;
+  /** Optional per-link platform when the same content is posted to multiple networks. */
+  platform?: SocialPlatform;
 }
 
 export interface SocialMediaPost extends Ownable {

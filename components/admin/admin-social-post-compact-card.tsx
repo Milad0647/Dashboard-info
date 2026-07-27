@@ -8,6 +8,7 @@ import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badg
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
+import { getSocialPostLinkEntryPlatforms } from "@/lib/social-posts";
 import type { SocialMediaPost, SocialPlatform } from "@/lib/types";
 import { cn, formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
 
@@ -31,6 +32,13 @@ export function AdminSocialPostCompactCard({
   onScoreSaved,
 }: AdminSocialPostCompactCardProps) {
   const coverUrl = post.coverImageUrl ?? post.mediaUrl ?? null;
+  const entryPlatforms = getSocialPostLinkEntryPlatforms(post.linkEntries);
+  const platformBadges =
+    entryPlatforms.length > 0
+      ? entryPlatforms
+      : post.platform !== "site"
+        ? [post.platform as SocialPlatform]
+        : [];
 
   return (
     <div className="apple-lift group relative w-full overflow-hidden rounded-xl border bg-card text-right hover:border-primary/50">
@@ -50,18 +58,21 @@ export function AdminSocialPostCompactCard({
             </div>
           )}
           <div className="absolute top-1.5 right-1.5 flex flex-wrap gap-1 justify-end">
-            <Badge variant="overlay" className="gap-1 text-[10px] px-1.5 py-0">
-              {post.platform !== "site" ? (
+            {platformBadges.map((platform) => (
+              <Badge key={platform} variant="overlay" className="gap-1 text-[10px] px-1.5 py-0">
                 <SocialPlatformIcon
-                  platform={post.platform as SocialPlatform}
+                  platform={platform}
                   size="sm"
                   className="h-3.5 w-3.5 rounded"
                 />
-              ) : null}
-              {post.platform === "site"
-                ? getStatusLabel(post.platform)
-                : getSocialPlatformLabel(post.platform as SocialPlatform)}
-            </Badge>
+                {getSocialPlatformLabel(platform)}
+              </Badge>
+            ))}
+            {post.platform === "site" ? (
+              <Badge variant="overlay" className="gap-1 text-[10px] px-1.5 py-0">
+                {getStatusLabel(post.platform)}
+              </Badge>
+            ) : null}
           </div>
         </div>
         <div className="space-y-1 p-2">

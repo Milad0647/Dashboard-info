@@ -1,6 +1,26 @@
-import type { SocialMediaPost, SocialPostLinkEntry } from "@/lib/types";
+import type { SocialMediaPost, SocialPlatform, SocialPostLinkEntry } from "@/lib/types";
 
 export const MAX_SOCIAL_POST_LINK_ENTRIES = 200;
+
+export const SOCIAL_PLATFORM_OPTIONS: SocialPlatform[] = [
+  "instagram",
+  "x",
+  "telegram",
+  "linkedin",
+  "youtube",
+  "aparat",
+  "rubika",
+  "eitaa",
+  "soroush",
+  "bale",
+  "other",
+];
+
+const SOCIAL_PLATFORM_SET = new Set<string>(SOCIAL_PLATFORM_OPTIONS);
+
+export function isSocialPlatform(value: unknown): value is SocialPlatform {
+  return typeof value === "string" && SOCIAL_PLATFORM_SET.has(value);
+}
 
 export function isSitePublication(post: Pick<SocialMediaPost, "platform">): boolean {
   return post.platform === "site";
@@ -18,8 +38,15 @@ export function isGroupSocialPost(
   return (post.linkEntries?.length ?? 0) > 0;
 }
 
-export function createEmptySocialPostLinkEntry(): SocialPostLinkEntry {
-  return { id: crypto.randomUUID(), link: "", views: 0 };
+export function createEmptySocialPostLinkEntry(
+  platform?: SocialPlatform
+): SocialPostLinkEntry {
+  return {
+    id: crypto.randomUUID(),
+    link: "",
+    views: 0,
+    ...(platform ? { platform } : {}),
+  };
 }
 
 export function parseSocialPostLinkEntries(value: unknown): SocialPostLinkEntry[] {
@@ -49,10 +76,12 @@ export function parseSocialPostLinkEntries(value: unknown): SocialPostLinkEntry[
             : 0;
       const id = typeof record.id === "string" && record.id ? record.id : crypto.randomUUID();
       if (!link) return null;
+      const platform = isSocialPlatform(record.platform) ? record.platform : undefined;
       return {
         id,
         link,
         views: Number.isFinite(views) && views >= 0 ? Math.floor(views) : 0,
+        ...(platform ? { platform } : {}),
       };
     })
     .filter((item): item is SocialPostLinkEntry => Boolean(item))
@@ -67,4 +96,18 @@ export function normalizeSocialPostLinkEntries(
 
 export function sumSocialPostLinkEntryViews(entries: SocialPostLinkEntry[]): number {
   return entries.reduce((sum, entry) => sum + (entry.views ?? 0), 0);
+}
+
+/** Unique platforms present on link entries, in first-seen order. */
+export function getSocialPostLinkEntryPlatforms(
+  entries: SocialPostLinkEntry[] | null | undefined
+): SocialPlatform[] {
+  const seen = new Set<SocialPlatform>();
+  const result: SocialPlatform[] = [];
+  for (const entry of entries ?? []) {
+    if (!entry.platform || seen.has(entry.platform)) continue;
+    seen.add(entry.platform);
+    result.push(entry.platform);
+  }
+  return result;
 }

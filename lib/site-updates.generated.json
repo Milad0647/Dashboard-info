@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "43af45cb611c192555bac6684d645a5d5996c3c7",
+      "committedAt": "2026-07-27T11:56:38+03:30",
+      "title": "نمایش محدودیت حجم و بررسی فوری فایل‌های رسانه‌ای هنگام آپلود",
+      "subject": "Show media upload size limits and validate on select"
+    },
+    {
+      "hash": "ddd07bf4e834237b21095b4e6bd74656703f4fdd",
+      "committedAt": "2026-07-27T11:54:48+03:30",
+      "title": "افزودن پخش گروهی لینک به بخش انتشار در سایت",
+      "subject": "Add group link distribution to site publications"
+    },
+    {
       "hash": "957c101f9c9ae017d6326ac15bc85d311dd45b61",
       "committedAt": "2026-07-27T11:54:24+03:30",
       "title": "نمایش و انتخاب نوع شرکت در بخش کاربران",

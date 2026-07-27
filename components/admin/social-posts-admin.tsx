@@ -52,10 +52,12 @@ import { todayISO } from "@/lib/jalali";
 import { videoNeedsAutoCover } from "@/lib/client/video-cover";
 import {
   createEmptySocialPostLinkEntry,
+  getSocialPostLinkEntryPlatforms,
   isGroupSocialPost,
   isSitePublication,
   MAX_SOCIAL_POST_LINK_ENTRIES,
   normalizeSocialPostLinkEntries,
+  SOCIAL_PLATFORM_OPTIONS,
   sumSocialPostLinkEntryViews,
 } from "@/lib/social-posts";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
@@ -84,19 +86,12 @@ const schema = z.object({
   publishedDate: z.string(),
 });
 
-const platformOptions: SocialPlatform[] = [
-  "instagram",
-  "x",
-  "telegram",
-  "linkedin",
-  "youtube",
-  "aparat",
-  "rubika",
-  "eitaa",
-  "soroush",
-  "bale",
-  "other",
-];
+function platformsFromPost(post: SocialMediaPost): SocialPlatform[] {
+  if (isSitePublication(post)) return ["instagram"];
+  const fromEntries = getSocialPostLinkEntryPlatforms(post.linkEntries);
+  if (fromEntries.length > 0) return fromEntries;
+  return [post.platform as SocialPlatform];
+}
 
 const contentTypeOptions: SocialContentType[] = ["image", "text", "video", "carousel", "story", "reel", "audio"];
 
@@ -132,8 +127,9 @@ export function SocialPostsAdmin({
   const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(null);
   const [highlightFields, setHighlightFields] = useState<EditSuggestionMissingField[]>([]);
   const [isGroupDistribution, setIsGroupDistribution] = useState(false);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>(["instagram"]);
   const [linkEntries, setLinkEntries] = useState<SocialPostLinkEntry[]>([
-    createEmptySocialPostLinkEntry(),
+    createEmptySocialPostLinkEntry("instagram"),
   ]);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("social-posts");
@@ -234,7 +230,8 @@ export function SocialPostsAdmin({
       setPlanLabels([]);
       setEditOwnerUserId(null);
       setIsGroupDistribution(false);
-      setLinkEntries([createEmptySocialPostLinkEntry()]);
+      setSelectedPlatforms(["instagram"]);
+      setLinkEntries([createEmptySocialPostLinkEntry("instagram")]);
       form.reset({
         platform: "instagram",
         title: "",
@@ -261,7 +258,9 @@ export function SocialPostsAdmin({
     setEditOwnerUserId(post.ownerUserId ?? null);
     const groupEntries = normalizeSocialPostLinkEntries(post.linkEntries);
     const groupMode = groupEntries.length > 0;
-    setIsGroupDistribution(groupMode);
+    const platforms = platformsFromPost(post);
+    setSelectedPlatforms(platforms);
+    setIsGroupDistribution(groupMode || platforms.length > 1);
     setLinkEntries(
       groupMode
         ? groupEntries
@@ -270,11 +269,12 @@ export function SocialPostsAdmin({
               id: crypto.randomUUID(),
               link: post.link ?? "",
               views: post.views ?? 0,
+              platform: platforms[0],
             },
           ]
     );
     form.reset({
-      platform: post.platform as SocialPlatform,
+      platform: platforms[0] ?? (post.platform as SocialPlatform),
       title: post.title,
       coverImageUrl: post.coverImageUrl ?? "",
       views: post.views,
@@ -317,7 +317,7 @@ export function SocialPostsAdmin({
   const highlightTitle = highlightFields.includes("title") && !watchedTitle?.trim();
   const highlightLink =
     highlightFields.includes("link") &&
-    (isGroupDistribution
+    (isGroupDistribution || selectedPlatforms.length > 1
       ? filledLinkEntries.length === 0
       : !watchedLink?.trim());
   const highlightDescription =
@@ -325,39 +325,150 @@ export function SocialPostsAdmin({
   const highlightMedia =
     highlightFields.includes("media") && !watchedCover?.trim() && !watchedMedia?.trim();
 
-  const updateLinkEntry = (id: string, patch: Partial<Pick<SocialPostLinkEntry, "link" | "views">>) => {
+  const syncPrimaryPlatform = (platforms: SocialPlatform[]) => {
+    const primary = platforms[0] ?? "instagram";
+    form.setValue("platform", primary);
+  };
+
+  const updateLinkEntry = (
+    id: string,
+    patch: Partial<Pick<SocialPostLinkEntry, "link" | "views" | "platform">>
+  ) => {
     setLinkEntries((prev) =>
       prev.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry))
     );
   };
 
-  const addLinkEntry = () => {
+  const addLinkEntry = (platform?: SocialPlatform) => {
     if (linkEntries.length >= MAX_SOCIAL_POST_LINK_ENTRIES) {
       toast.error(`حداکثر ${MAX_SOCIAL_POST_LINK_ENTRIES} لینک مجاز است`);
       return;
     }
-    setLinkEntries((prev) => [...prev, createEmptySocialPostLinkEntry()]);
+    const entryPlatform = platform ?? selectedPlatforms[0];
+    setLinkEntries((prev) => [...prev, createEmptySocialPostLinkEntry(entryPlatform)]);
   };
 
   const removeLinkEntry = (id: string) => {
     setLinkEntries((prev) => {
-      if (prev.length <= 1) return [createEmptySocialPostLinkEntry()];
+      if (prev.length <= 1) {
+        return [createEmptySocialPostLinkEntry(selectedPlatforms[0] ?? "instagram")];
+      }
       return prev.filter((entry) => entry.id !== id);
     });
+  };
+
+  const ensureGroupModeWithPlatforms = (
+    platforms: SocialPlatform[],
+    seed?: { link: string; views: number }
+  ) => {
+    const nextPlatforms = platforms.length > 0 ? platforms : (["instagram"] as SocialPlatform[]);
+    setSelectedPlatforms(nextPlatforms);
+    syncPrimaryPlatform(nextPlatforms);
+    setIsGroupDistribution(true);
+    setLinkEntries((prev) => {
+      const byPlatform = new Map<SocialPlatform, SocialPostLinkEntry[]>();
+      for (const entry of prev) {
+        if (!entry.platform) continue;
+        const list = byPlatform.get(entry.platform) ?? [];
+        list.push(entry);
+        byPlatform.set(entry.platform, list);
+      }
+
+      const next: SocialPostLinkEntry[] = [];
+      let seedApplied = false;
+      for (const platform of nextPlatforms) {
+        const existing = byPlatform.get(platform);
+        if (existing && existing.length > 0) {
+          if (seed && !seedApplied && !existing[0].link.trim()) {
+            next.push({
+              ...existing[0],
+              link: seed.link,
+              views: seed.views || existing[0].views,
+            });
+            next.push(...existing.slice(1));
+            seedApplied = true;
+          } else {
+            next.push(...existing);
+          }
+          continue;
+        }
+        const useSeed = Boolean(seed) && !seedApplied;
+        next.push({
+          id: crypto.randomUUID(),
+          link: useSeed ? seed!.link : "",
+          views: useSeed ? seed!.views : 0,
+          platform,
+        });
+        if (useSeed) seedApplied = true;
+      }
+
+      const untagged = prev.filter((entry) => !entry.platform);
+      if (untagged.length > 0 && nextPlatforms.length === 1) {
+        return [...next, ...untagged.filter((entry) => entry.link.trim() || entry.views > 0)];
+      }
+      return next.length > 0 ? next : [createEmptySocialPostLinkEntry(nextPlatforms[0])];
+    });
+  };
+
+  const togglePlatform = (platform: SocialPlatform) => {
+    const isSelected = selectedPlatforms.includes(platform);
+    if (isSelected) {
+      if (selectedPlatforms.length <= 1) {
+        toast.error("حداقل یک شبکه اجتماعی را انتخاب کنید");
+        return;
+      }
+      const next = selectedPlatforms.filter((item) => item !== platform);
+      setSelectedPlatforms(next);
+      syncPrimaryPlatform(next);
+
+      if (isGroupDistribution || next.length > 1) {
+        setLinkEntries((prev) => {
+          const remaining = prev.filter((entry) => entry.platform !== platform);
+          if (remaining.length === 0) {
+            return [createEmptySocialPostLinkEntry(next[0])];
+          }
+          return remaining;
+        });
+        if (next.length > 1) {
+          setIsGroupDistribution(true);
+        }
+      }
+      return;
+    }
+
+    const next = [...selectedPlatforms, platform];
+    setSelectedPlatforms(next);
+    syncPrimaryPlatform(next);
+
+    if (next.length > 1 || isGroupDistribution) {
+      const seed =
+        !isGroupDistribution && next.length === 2
+          ? {
+              link: form.getValues("link")?.trim() ?? "",
+              views: Number(form.getValues("views")) || 0,
+            }
+          : undefined;
+      ensureGroupModeWithPlatforms(next, seed);
+      return;
+    }
+
+    setLinkEntries([createEmptySocialPostLinkEntry(platform)]);
   };
 
   const toggleGroupDistribution = (enabled: boolean) => {
     if (enabled) {
       const currentLink = form.getValues("link")?.trim() ?? "";
       const currentViews = Number(form.getValues("views")) || 0;
-      setLinkEntries([
-        {
-          id: crypto.randomUUID(),
-          link: currentLink,
-          views: currentViews,
-        },
-      ]);
-      setIsGroupDistribution(true);
+      const platforms =
+        selectedPlatforms.length > 0
+          ? selectedPlatforms
+          : ([form.getValues("platform")] as SocialPlatform[]);
+      ensureGroupModeWithPlatforms(platforms, { link: currentLink, views: currentViews });
+      return;
+    }
+
+    if (selectedPlatforms.length > 1) {
+      toast.error("برای خاموش کردن پخش گروهی، فقط یک شبکه اجتماعی را انتخاب کنید");
       return;
     }
 
@@ -435,6 +546,7 @@ export function SocialPostsAdmin({
 
       if (platform !== "eitaa" && platform !== "aparat" && (detected === "eitaa" || detected === "aparat")) {
         form.setValue("platform", detected);
+        setSelectedPlatforms([detected]);
       }
 
       toast.success(
@@ -452,24 +564,32 @@ export function SocialPostsAdmin({
         ? users.find((user) => user.id === editOwnerUserId)
         : null;
 
-      const normalizedEntries = isGroupDistribution
+      if (selectedPlatforms.length === 0) {
+        toast.error("حداقل یک شبکه اجتماعی را انتخاب کنید");
+        return;
+      }
+
+      const useGroupLinks = isGroupDistribution || selectedPlatforms.length > 1;
+      const normalizedEntries = useGroupLinks
         ? normalizeSocialPostLinkEntries(linkEntries)
         : [];
 
-      if (isGroupDistribution && normalizedEntries.length === 0) {
+      if (useGroupLinks && normalizedEntries.length === 0) {
         toast.error("حداقل یک لینک برای پخش گروهی وارد کنید");
         return;
       }
 
-      const resolvedViews = isGroupDistribution
+      const primaryPlatform = selectedPlatforms[0] ?? data.platform;
+      const resolvedViews = useGroupLinks
         ? sumSocialPostLinkEntryViews(normalizedEntries)
         : data.views;
-      const resolvedLink = isGroupDistribution
+      const resolvedLink = useGroupLinks
         ? normalizedEntries[0]?.link ?? ""
         : data.link ?? "";
 
       const result = await saveSocialPostAction({
         ...data,
+        platform: primaryPlatform,
         views: resolvedViews,
         link: resolvedLink,
         linkEntries: normalizedEntries,
@@ -504,6 +624,7 @@ export function SocialPostsAdmin({
 
       const savedPatch = {
         ...data,
+        platform: primaryPlatform,
         views: resolvedViews,
         link: resolvedLink,
         linkEntries: normalizedEntries.length > 0 ? normalizedEntries : undefined,
@@ -689,6 +810,16 @@ export function SocialPostsAdmin({
                     <div className="space-y-1 text-right" dir="ltr">
                       {(previewPost.linkEntries ?? []).slice(0, 8).map((entry) => (
                         <div key={entry.id} className="text-xs">
+                          {entry.platform ? (
+                            <span className="me-2 inline-flex items-center gap-1 text-muted-foreground" dir="rtl">
+                              <SocialPlatformIcon
+                                platform={entry.platform}
+                                size="sm"
+                                className="h-3.5 w-3.5 rounded"
+                              />
+                              {getSocialPlatformLabel(entry.platform)}:
+                            </span>
+                          ) : null}
                           <a
                             href={entry.link}
                             target="_blank"
@@ -751,45 +882,55 @@ export function SocialPostsAdmin({
             <DialogTitle>{editingId ? "ویرایش پست" : "پست جدید"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={onSubmit} className="space-y-4 text-right">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>کانال</Label>
-                <Select value={form.watch("platform")} onValueChange={(value) => form.setValue("platform", value as SocialPlatform)}>
-                  <SelectTrigger>
-                    <SelectValue>
-                      <span className="flex items-center gap-2">
-                        <SocialPlatformIcon
-                          platform={form.watch("platform")}
-                          size="sm"
-                          className="h-5 w-5 rounded-md"
-                        />
-                        {getSocialPlatformLabel(form.watch("platform"))}
+            <div className="space-y-2">
+              <Label>شبکه‌های اجتماعی</Label>
+              <p className="text-xs text-muted-foreground">
+                شبکه‌هایی که این محتوا در آن‌ها منتشر شده را انتخاب کنید؛ برای هر کدام یک فیلد لینک نمایش داده می‌شود.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {SOCIAL_PLATFORM_OPTIONS.map((platform) => {
+                  const checked = selectedPlatforms.includes(platform);
+                  return (
+                    <button
+                      key={platform}
+                      type="button"
+                      onClick={() => togglePlatform(platform)}
+                      className={cn(
+                        "flex items-center gap-2 rounded-lg border px-2.5 py-2 text-sm transition-colors text-right",
+                        checked
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-border bg-background text-muted-foreground hover:bg-muted/50"
+                      )}
+                      aria-pressed={checked}
+                    >
+                      <span
+                        className={cn(
+                          "flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-bold",
+                          checked
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-muted-foreground/40"
+                        )}
+                      >
+                        {checked ? "✓" : ""}
                       </span>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {platformOptions.map((platform) => (
-                      <SelectItem key={platform} value={platform}>
-                        <span className="flex items-center gap-2">
-                          <SocialPlatformIcon platform={platform} size="sm" className="h-5 w-5 rounded-md" />
-                          {getSocialPlatformLabel(platform)}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      <SocialPlatformIcon platform={platform} size="sm" className="h-5 w-5 rounded-md" />
+                      <span className="truncate">{getSocialPlatformLabel(platform)}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <div className="space-y-2">
-                <Label>نوع محتوا</Label>
-                <Select value={form.watch("contentType")} onValueChange={(value) => form.setValue("contentType", value as SocialContentType)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {contentTypeOptions.map((type) => (
-                      <SelectItem key={type} value={type}>{getStatusLabel(type)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>نوع محتوا</Label>
+              <Select value={form.watch("contentType")} onValueChange={(value) => form.setValue("contentType", value as SocialContentType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {contentTypeOptions.map((type) => (
+                    <SelectItem key={type} value={type}>{getStatusLabel(type)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -838,39 +979,52 @@ export function SocialPostsAdmin({
               <div className="space-y-1 text-right">
                 <Label htmlFor="group-distribution">پخش گروهی</Label>
                 <p className="text-xs text-muted-foreground">
-                  اگر یک محتوا را در چند لینک منتشر کرده‌اید، لینک و بازدید هر کدام را جدا وارد کنید؛ جمع بازدید خودکار محاسبه می‌شود.
+                  با انتخاب چند شبکه به‌صورت خودکار فعال می‌شود. برای چند لینک روی یک شبکه هم می‌توانید دستی روشن کنید.
                 </p>
               </div>
               <Switch
                 id="group-distribution"
-                checked={isGroupDistribution}
+                checked={isGroupDistribution || selectedPlatforms.length > 1}
                 onCheckedChange={toggleGroupDistribution}
               />
             </div>
 
-            {isGroupDistribution ? (
+            {isGroupDistribution || selectedPlatforms.length > 1 ? (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Label className={cn(highlightLink && "text-destructive")}>
-                    لینک‌ها و بازدیدها ({formatPersianNumber(filledLinkEntries.length)} لینک)
+                    لینک شبکه‌های انتخاب‌شده ({formatPersianNumber(filledLinkEntries.length)} لینک)
                   </Label>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">
                       جمع بازدید: {formatPersianNumber(groupViewsTotal)}
                     </Badge>
-                    <Button type="button" variant="outline" size="sm" onClick={addLinkEntry}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => addLinkEntry()}>
                       + افزودن لینک
                     </Button>
                   </div>
                 </div>
-                <div className="max-h-64 space-y-2 overflow-y-auto rounded-lg border p-2">
+                <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border p-2">
                   {linkEntries.map((entry, index) => (
                     <div
                       key={entry.id}
                       className="grid grid-cols-[minmax(0,1fr)_6.5rem_auto] items-end gap-2 rounded-md border bg-muted/30 p-2"
                     >
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">لینک {index + 1}</Label>
+                        <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          {entry.platform ? (
+                            <>
+                              <SocialPlatformIcon
+                                platform={entry.platform}
+                                size="sm"
+                                className="h-4 w-4 rounded"
+                              />
+                              {getSocialPlatformLabel(entry.platform)}
+                            </>
+                          ) : (
+                            <>لینک {index + 1}</>
+                          )}
+                        </Label>
                         <Input
                           dir="ltr"
                           value={entry.link}
