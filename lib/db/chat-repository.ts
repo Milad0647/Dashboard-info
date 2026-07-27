@@ -632,6 +632,12 @@ export async function pgListChatContacts(input: {
     );
   }
 
+  // Online contacts first when starting a new conversation.
+  peers.sort((a, b) => {
+    if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
+    return a.name.localeCompare(b.name, "fa");
+  });
+
   return peers;
 }
 

@@ -151,10 +151,15 @@ export function ChatPanel({
 
   const filteredContacts = useMemo(() => {
     const q = contactSearch.trim().toLowerCase();
-    if (!q) return contacts;
-    return contacts.filter((item) => {
-      const hay = `${item.name} ${item.email ?? ""} ${roleLabel(item.role)}`.toLowerCase();
-      return hay.includes(q);
+    const list = !q
+      ? contacts
+      : contacts.filter((item) => {
+          const hay = `${item.name} ${item.email ?? ""} ${roleLabel(item.role)}`.toLowerCase();
+          return hay.includes(q);
+        });
+    return [...list].sort((a, b) => {
+      if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
+      return a.name.localeCompare(b.name, "fa");
     });
   }, [contacts, contactSearch]);
 
