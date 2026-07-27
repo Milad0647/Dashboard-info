@@ -100,8 +100,11 @@ export async function GET(request: Request) {
       listStoredBackups(campaignSlug),
       getLastDailyBackupDay(),
     ]);
+    const totalBytes = backups.reduce((sum, item) => sum + item.sizeBytes, 0);
     return NextResponse.json({
       backups,
+      totalBytes,
+      count: backups.length,
       lastDailyBackupDay,
       tehranDay: getTehranCalendarDateIso(),
     });

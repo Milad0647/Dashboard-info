@@ -3,7 +3,11 @@ import { stat } from "fs/promises";
 import { NextResponse } from "next/server";
 import { Readable } from "stream";
 import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
-import { isSafeBackupFilename, resolveBackupFilePath } from "@/lib/backups";
+import {
+  getStoredBackupKind,
+  isSafeBackupFilename,
+  resolveBackupFilePath,
+} from "@/lib/backups";
 import { deleteStoredBackup } from "@/lib/services/stored-backup";
 
 export const runtime = "nodejs";
@@ -39,10 +43,13 @@ export async function GET(
     const info = await stat(filePath);
     const nodeStream = createReadStream(filePath);
     const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
+    const kind = getStoredBackupKind(filename);
+    const contentType =
+      kind === "db-dump" ? "application/sql" : "application/zip";
 
     return new NextResponse(webStream, {
       headers: {
-        "Content-Type": "application/zip",
+        "Content-Type": contentType,
         "Content-Length": String(info.size),
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Cache-Control": "no-store",

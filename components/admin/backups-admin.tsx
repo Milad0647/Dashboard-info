@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   Archive,
+  Database,
   Download,
   Loader2,
   RefreshCw,
@@ -23,6 +24,7 @@ import { formatPersianDateTime } from "@/lib/utils";
 interface StoredBackupItem {
   filename: string;
   campaignSlug: string;
+  kind: "campaign" | "db-dump";
   sizeBytes: number;
   createdAt: string;
 }
@@ -41,15 +43,22 @@ async function readApiError(response: Response, fallback: string): Promise<strin
   return fallback;
 }
 
+function formatFreed(bytes: number): string {
+  return formatStorageBytes(bytes);
+}
+
 export function BackupsAdmin() {
   const { campaignId, currentCampaign } = useAdminCampaign();
   const [backups, setBackups] = useState<StoredBackupItem[]>([]);
+  const [totalBytes, setTotalBytes] = useState(0);
   const [lastDailyBackupDay, setLastDailyBackupDay] = useState<string | null>(null);
   const [tehranDay, setTehranDay] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [jobStatus, setJobStatus] = useState<string | null>(null);
   const [restoreUserId, setRestoreUserId] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [olderThanDays, setOlderThanDays] = useState("7");
   const fullRestoreRef = useRef<HTMLInputElement>(null);
   const userRestoreRef = useRef<HTMLInputElement>(null);
 
@@ -63,12 +72,15 @@ export function BackupsAdmin() {
       }
       const result = (await response.json()) as {
         backups?: StoredBackupItem[];
+        totalBytes?: number;
         lastDailyBackupDay?: string | null;
         tehranDay?: string;
       };
       setBackups(result.backups ?? []);
+      setTotalBytes(result.totalBytes ?? 0);
       setLastDailyBackupDay(result.lastDailyBackupDay ?? null);
       setTehranDay(result.tehranDay ?? null);
+      setSelected(new Set());
     } catch {
       toast.error("خطا در دریافت لیست پشتیبان‌ها");
     } finally {
@@ -79,6 +91,36 @@ export function BackupsAdmin() {
   useEffect(() => {
     void loadBackups();
   }, [loadBackups]);
+
+  const allSelected = useMemo(
+    () => backups.length > 0 && selected.size === backups.length,
+    [backups.length, selected.size]
+  );
+
+  const selectedBytes = useMemo(() => {
+    let sum = 0;
+    for (const item of backups) {
+      if (selected.has(item.filename)) sum += item.sizeBytes;
+    }
+    return sum;
+  }, [backups, selected]);
+
+  const toggleSelected = (filename: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(filename)) next.delete(filename);
+      else next.add(filename);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelected(new Set());
+      return;
+    }
+    setSelected(new Set(backups.map((item) => item.filename)));
+  };
 
   const createBackup = (includeUploads: boolean) => {
     if (!campaignId) {
@@ -119,6 +161,9 @@ export function BackupsAdmin() {
   };
 
   const deleteBackup = (filename: string) => {
+    const ok = window.confirm(`این فایل حذف شود؟\n${filename}`);
+    if (!ok) return;
+
     startTransition(async () => {
       try {
         const response = await fetch(`/api/backups/${encodeURIComponent(filename)}`, {
@@ -132,6 +177,124 @@ export function BackupsAdmin() {
         await loadBackups();
       } catch {
         toast.error("حذف پشتیبان ناموفق بود");
+      }
+    });
+  };
+
+  const deleteSelected = () => {
+    if (selected.size === 0) {
+      toast.error("هیچ فایلی انتخاب نشده است");
+      return;
+    }
+    const ok = window.confirm(
+      `${selected.size} فایل انتخاب‌شده حذف شود؟ (${formatFreed(selectedBytes)})`
+    );
+    if (!ok) return;
+
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/backups/cleanup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filenames: Array.from(selected) }),
+        });
+        if (!response.ok) {
+          toast.error(await readApiError(response, "حذف دسته‌جمعی ناموفق بود"));
+          return;
+        }
+        const result = (await response.json()) as {
+          deleted?: string[];
+          failed?: string[];
+        };
+        const deletedCount = result.deleted?.length ?? 0;
+        const failedCount = result.failed?.length ?? 0;
+        if (failedCount > 0) {
+          toast.warning(`${deletedCount} حذف شد، ${failedCount} ناموفق`);
+        } else {
+          toast.success(`${deletedCount} فایل حذف شد`);
+        }
+        await loadBackups();
+      } catch {
+        toast.error("حذف دسته‌جمعی ناموفق بود");
+      }
+    });
+  };
+
+  const cleanupOlderThan = () => {
+    const days = Math.floor(Number(olderThanDays));
+    if (!Number.isFinite(days) || days < 1) {
+      toast.error("تعداد روز باید حداقل ۱ باشد");
+      return;
+    }
+    const ok = window.confirm(
+      `همه پشتیبان‌های قدیمی‌تر از ${days} روز حذف شوند؟ این کار برگشت‌ناپذیر است.`
+    );
+    if (!ok) return;
+
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/backups/cleanup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ olderThanDays: days }),
+        });
+        if (!response.ok) {
+          toast.error(await readApiError(response, "پاکسازی ناموفق بود"));
+          return;
+        }
+        const result = (await response.json()) as {
+          deleted?: string[];
+          freedBytes?: number;
+        };
+        const deletedCount = result.deleted?.length ?? 0;
+        if (deletedCount === 0) {
+          toast.message("فایل قدیمی‌تری برای حذف پیدا نشد");
+        } else {
+          toast.success(
+            `${deletedCount} فایل حذف شد` +
+              (result.freedBytes ? ` (${formatFreed(result.freedBytes)})` : "")
+          );
+        }
+        await loadBackups();
+      } catch {
+        toast.error("پاکسازی ناموفق بود");
+      }
+    });
+  };
+
+  const keepNewestOnly = () => {
+    const ok = window.confirm(
+      "فقط ۷ بکاپ اخیر هر کمپین و ۷ دامپ دیتابیس اخیر نگه داشته شود و بقیه حذف شوند؟"
+    );
+    if (!ok) return;
+
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/backups/cleanup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ keepCampaignPerSlug: 7, keepDbDumps: 7 }),
+        });
+        if (!response.ok) {
+          toast.error(await readApiError(response, "پاکسازی ناموفق بود"));
+          return;
+        }
+        const result = (await response.json()) as {
+          deleted?: string[];
+          freedBytes?: number;
+        };
+        const deletedCount = result.deleted?.length ?? 0;
+        if (deletedCount === 0) {
+          toast.message("چیزی برای حذف نبود");
+        } else {
+          toast.success(
+            `${deletedCount} فایل قدیمی حذف شد` +
+              (result.freedBytes ? ` (${formatFreed(result.freedBytes)})` : "")
+          );
+        }
+        await loadBackups();
+      } catch {
+        toast.error("پاکسازی ناموفق بود");
       }
     });
   };
@@ -193,8 +356,7 @@ export function BackupsAdmin() {
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             بکاپ شبانه خودکار (۰۰:۰۰–۰۵:۵۹ تهران) یک‌بار در روز: دامپ دیتابیس + ZIP کامل هر کمپین
-            همراه با فایل‌های رسانه. برای بازیابی: دامپ DB و/یا ZIP کامل از همین صفحه. دستی:
-            «بکاپ سریع» سبک است؛ «بکاپ کامل با رسانه» همان نوع بکاپ شبانه را فوری می‌سازد.
+            همراه با فایل‌های رسانه. بکاپ‌های قدیمی‌تر از ۷ نسخه اخیر به‌صورت خودکار پاک می‌شوند.
           </p>
           {jobStatus ? (
             <p className="mt-2 text-xs font-medium text-primary">
@@ -212,6 +374,11 @@ export function BackupsAdmin() {
               {lastDailyBackupDay ? (
                 <span dir="ltr" className="ms-1 opacity-80">
                   (آخرین: {lastDailyBackupDay})
+                </span>
+              ) : null}
+              {backups.length > 0 ? (
+                <span className="ms-2">
+                  — {backups.length} فایل، مجموع {formatStorageBytes(totalBytes)}
                 </span>
               ) : null}
             </p>
@@ -317,8 +484,44 @@ export function BackupsAdmin() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <CardTitle className="text-base">فایل‌های ذخیره‌شده روی سرور</CardTitle>
+          {!isLoading && backups.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  min={1}
+                  className="h-8 w-16"
+                  dir="ltr"
+                  value={olderThanDays}
+                  onChange={(event) => setOlderThanDays(event.target.value)}
+                  aria-label="روز"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={cleanupOlderThan}
+                >
+                  حذف قدیمی‌تر از N روز
+                </Button>
+              </div>
+              <Button variant="outline" size="sm" disabled={isPending} onClick={keepNewestOnly}>
+                نگه‌داشتن ۷ نسخه اخیر
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={isPending || selected.size === 0}
+                onClick={deleteSelected}
+              >
+                <Trash2 className="h-4 w-4" />
+                حذف انتخاب‌شده‌ها
+                {selected.size > 0 ? ` (${selected.size})` : ""}
+              </Button>
+            </div>
+          ) : null}
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -331,45 +534,80 @@ export function BackupsAdmin() {
               هنوز پشتیبانی ذخیره نشده است. دکمه «گرفتن پشتیبان کامل» را بزنید.
             </p>
           ) : (
-            <ul className="divide-y rounded-xl border">
-              {backups.map((backup) => (
-                <li
-                  key={backup.filename}
-                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <p className="truncate text-sm font-medium" dir="ltr">
-                      {backup.filename}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      کمپین: {backup.campaignSlug} —{" "}
-                      {formatPersianDateTime(backup.createdAt)} —{" "}
-                      {formatStorageBytes(backup.sizeBytes)}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={`/api/backups/${encodeURIComponent(backup.filename)}`}
-                        download={backup.filename}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  className="size-4 rounded border"
+                />
+                انتخاب همه ({backups.length} فایل — {formatStorageBytes(totalBytes)})
+              </label>
+              <ul className="divide-y rounded-xl border">
+                {backups.map((backup) => (
+                  <li
+                    key={backup.filename}
+                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                  >
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(backup.filename)}
+                        onChange={() => toggleSelected(backup.filename)}
+                        className="mt-1 size-4 shrink-0 rounded border"
+                        aria-label={`انتخاب ${backup.filename}`}
+                      />
+                      <div className="min-w-0 space-y-1">
+                        <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                          {backup.kind === "db-dump" ? (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                              <Database className="h-3 w-3" />
+                              دامپ دیتابیس
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary">
+                              <Archive className="h-3 w-3" />
+                              ZIP کمپین
+                            </span>
+                          )}
+                          <span className="truncate" dir="ltr">
+                            {backup.filename}
+                          </span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {backup.kind === "db-dump"
+                            ? "دیتابیس Postgres"
+                            : `کمپین: ${backup.campaignSlug}`}{" "}
+                          — {formatPersianDateTime(backup.createdAt)} —{" "}
+                          {formatStorageBytes(backup.sizeBytes)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <a
+                          href={`/api/backups/${encodeURIComponent(backup.filename)}`}
+                          download={backup.filename}
+                        >
+                          <Download className="h-4 w-4" />
+                          دانلود
+                        </a>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => deleteBackup(backup.filename)}
                       >
-                        <Download className="h-4 w-4" />
-                        دانلود
-                      </a>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() => deleteBackup(backup.filename)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                      حذف
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                        حذف
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </CardContent>
       </Card>

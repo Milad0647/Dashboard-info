@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "e9f3bd5cf9e00eba4d9eee660b31cf6db163ae26",
+      "committedAt": "2026-07-27T10:57:20+03:30",
+      "title": "نمایش خطاها به‌صورت مودال با توضیح و راهکار و ثبت خودکار در رصد",
+      "subject": "Show errors in modal with solutions and auto-report to Rasad"
+    },
+    {
+      "hash": "43e38d929b8781850e1aab4671c300961a4d80a7",
+      "committedAt": "2026-07-27T10:53:56+03:30",
+      "title": "نمایش پیام واضح وقتی ورود به‌خاطر تلاش‌های اشتباه موقتاً قفل می‌شود",
+      "subject": "Show clear login lockout error after too many failed attempts"
+    },
+    {
       "hash": "e1c2f7c37114b93ad068bad037cbc706d0e006cb",
       "committedAt": "2026-07-27T10:52:27+03:30",
       "title": "راست‌چین شدن تب‌ها و محتوای بخش رصد کاربران",

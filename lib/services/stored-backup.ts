@@ -4,15 +4,19 @@ import { Readable } from "stream";
 import {
   buildBackupFilename,
   getBackupsDir,
+  getStoredBackupKind,
   isSafeBackupFilename,
   resolveBackupFilePath,
+  type StoredBackupKind,
 } from "@/lib/backups";
 import { pgGetAllCampaigns, pgGetCampaignById } from "@/lib/db/repository";
 import { writeCampaignBackupZipToFile } from "@/lib/services/campaign-backup";
 
 export interface StoredBackupInfo {
   filename: string;
+  /** Campaign slug for ZIP backups; "database" for Postgres dumps. */
   campaignSlug: string;
+  kind: StoredBackupKind;
   sizeBytes: number;
   createdAt: string;
 }
@@ -29,9 +33,21 @@ export interface CreateStoredBackupResult {
 
 function parseBackupMeta(filename: string): {
   campaignSlug: string;
+  kind: StoredBackupKind;
   createdAt: string;
 } | null {
-  if (!isSafeBackupFilename(filename)) return null;
+  const kind = getStoredBackupKind(filename);
+  if (!kind) return null;
+
+  if (kind === "db-dump") {
+    const match = filename.match(/^db-dump-(\d{4}-\d{2}-\d{2})\.sql$/);
+    if (!match) return null;
+    return {
+      campaignSlug: "database",
+      kind,
+      createdAt: `${match[1]}T00:00:00.000Z`,
+    };
+  }
 
   const withoutExt = filename.replace(/\.zip$/i, "");
   const match = withoutExt.match(
@@ -45,7 +61,7 @@ function parseBackupMeta(filename: string): {
   const ss = time?.slice(4, 6) ?? "00";
   const createdAt = `${date}T${hh}:${mm}:${ss}.000Z`;
 
-  return { campaignSlug, createdAt };
+  return { campaignSlug, kind, createdAt };
 }
 
 async function ensureBackupsDir(): Promise<string> {
@@ -99,7 +115,10 @@ export async function listStoredBackups(campaignSlug?: string): Promise<StoredBa
     if (!isSafeBackupFilename(name)) continue;
     const meta = parseBackupMeta(name);
     if (!meta) continue;
-    if (campaignSlug && meta.campaignSlug !== campaignSlug) continue;
+    // Campaign-scoped callers (e.g. billboard restore) only want that campaign's ZIPs.
+    if (campaignSlug) {
+      if (meta.kind !== "campaign" || meta.campaignSlug !== campaignSlug) continue;
+    }
 
     const filePath = resolveBackupFilePath(name);
     if (!filePath) continue;
@@ -110,6 +129,7 @@ export async function listStoredBackups(campaignSlug?: string): Promise<StoredBa
       items.push({
         filename: name,
         campaignSlug: meta.campaignSlug,
+        kind: meta.kind,
         sizeBytes: info.size,
         createdAt: info.mtime.toISOString(),
       });
@@ -132,6 +152,102 @@ export async function deleteStoredBackup(filename: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export async function deleteStoredBackups(filenames: string[]): Promise<{
+  deleted: string[];
+  failed: string[];
+}> {
+  const deleted: string[] = [];
+  const failed: string[] = [];
+  for (const filename of filenames) {
+    if (!isSafeBackupFilename(filename)) {
+      failed.push(filename);
+      continue;
+    }
+    const ok = await deleteStoredBackup(filename);
+    if (ok) deleted.push(filename);
+    else failed.push(filename);
+  }
+  return { deleted, failed };
+}
+
+/**
+ * Delete stored backups older than `olderThanDays` (by file mtime).
+ * Keeps the newest files; never deletes today's db-dump when olderThanDays >= 1.
+ */
+export async function deleteStoredBackupsOlderThan(olderThanDays: number): Promise<{
+  deleted: string[];
+  failed: string[];
+  freedBytes: number;
+}> {
+  const days = Math.floor(olderThanDays);
+  if (!Number.isFinite(days) || days < 1) {
+    throw new Error("olderThanDays must be at least 1");
+  }
+
+  const cutoffMs = Date.now() - days * 24 * 60 * 60 * 1000;
+  const all = await listStoredBackups();
+  const toDelete = all.filter((item) => new Date(item.createdAt).getTime() < cutoffMs);
+
+  let freedBytes = 0;
+  const deleted: string[] = [];
+  const failed: string[] = [];
+
+  for (const item of toDelete) {
+    const ok = await deleteStoredBackup(item.filename);
+    if (ok) {
+      deleted.push(item.filename);
+      freedBytes += item.sizeBytes;
+    } else {
+      failed.push(item.filename);
+    }
+  }
+
+  return { deleted, failed, freedBytes };
+}
+
+/** Keep only the newest N campaign ZIPs per slug + newest N db dumps. */
+export async function pruneStoredBackups(options?: {
+  keepCampaignPerSlug?: number;
+  keepDbDumps?: number;
+}): Promise<{ deleted: string[]; freedBytes: number }> {
+  const keepCampaign = Math.max(1, options?.keepCampaignPerSlug ?? 7);
+  const keepDumps = Math.max(1, options?.keepDbDumps ?? 7);
+
+  const all = await listStoredBackups();
+  const bySlug = new Map<string, StoredBackupInfo[]>();
+  const dumps: StoredBackupInfo[] = [];
+
+  for (const item of all) {
+    if (item.kind === "db-dump") {
+      dumps.push(item);
+      continue;
+    }
+    const list = bySlug.get(item.campaignSlug) ?? [];
+    list.push(item);
+    bySlug.set(item.campaignSlug, list);
+  }
+
+  const toDelete: StoredBackupInfo[] = [];
+
+  for (const list of bySlug.values()) {
+    // Already sorted newest-first from listStoredBackups
+    toDelete.push(...list.slice(keepCampaign));
+  }
+  toDelete.push(...dumps.slice(keepDumps));
+
+  let freedBytes = 0;
+  const deleted: string[] = [];
+  for (const item of toDelete) {
+    const ok = await deleteStoredBackup(item.filename);
+    if (ok) {
+      deleted.push(item.filename);
+      freedBytes += item.sizeBytes;
+    }
+  }
+
+  return { deleted, freedBytes };
 }
 
 export function openStoredBackupStream(filename: string): {

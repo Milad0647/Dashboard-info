@@ -6,9 +6,22 @@ import {
   shouldMarkDailyBackupComplete,
   tryAcquireDailyBackupLock,
 } from "@/lib/services/daily-backup-state";
-import { createDailyBackupsForAllCampaigns } from "@/lib/services/stored-backup";
+import {
+  createDailyBackupsForAllCampaigns,
+  pruneStoredBackups,
+} from "@/lib/services/stored-backup";
 import { createPostgresDumpBackup } from "@/lib/services/db-dump-backup";
 import { isPostgresConfigured } from "@/lib/utils";
+
+/** Keep newest N campaign ZIPs per slug and N DB dumps after nightly run. */
+const DAILY_BACKUP_KEEP_CAMPAIGN = Math.max(
+  1,
+  Number(process.env.BACKUP_KEEP_CAMPAIGN_PER_SLUG ?? 7) || 7
+);
+const DAILY_BACKUP_KEEP_DB_DUMPS = Math.max(
+  1,
+  Number(process.env.BACKUP_KEEP_DB_DUMPS ?? 7) || 7
+);
 
 const TEHRAN_TIME_ZONE = "Asia/Tehran";
 const CHECK_INTERVAL_MS = 60_000;
@@ -102,6 +115,20 @@ export async function runDailyBackupIfDue(): Promise<void> {
       } catch (error) {
         console.warn("[daily-backup] Could not persist last-run date:", error);
       }
+    }
+
+    try {
+      const pruned = await pruneStoredBackups({
+        keepCampaignPerSlug: DAILY_BACKUP_KEEP_CAMPAIGN,
+        keepDbDumps: DAILY_BACKUP_KEEP_DB_DUMPS,
+      });
+      if (pruned.deleted.length > 0) {
+        console.info(
+          `[daily-backup] Pruned ${pruned.deleted.length} old backup(s), freed ${pruned.freedBytes} bytes`
+        );
+      }
+    } catch (error) {
+      console.warn("[daily-backup] Prune failed:", error);
     }
 
     console.info(
