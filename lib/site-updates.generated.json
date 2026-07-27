@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "f21046316eba5d656b36c854aa1ccd07cea2ec6a",
+      "committedAt": "2026-07-27T12:03:54+03:30",
+      "title": "انتخاب چند شبکه اجتماعی و لینک جدا برای هر کدام هنگام ثبت پست",
+      "subject": "Add multi-platform checkbox selection for social posts"
+    },
+    {
       "hash": "43af45cb611c192555bac6684d645a5d5996c3c7",
       "committedAt": "2026-07-27T11:56:38+03:30",
       "title": "نمایش محدودیت حجم و بررسی فوری فایل‌های رسانه‌ای هنگام آپلود",

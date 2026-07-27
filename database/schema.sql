@@ -950,3 +950,22 @@ CREATE INDEX IF NOT EXISTS idx_sms_send_reports_campaign
 ALTER TABLE social_media_posts
   ADD COLUMN IF NOT EXISTS link_entries JSONB NOT NULL DEFAULT '[]'::jsonb;
 
+-- Internal notes on user/company profiles (admin + کارفرما only; never shown to contributors)
+CREATE TABLE IF NOT EXISTS user_profile_notes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  subject_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  author_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  author_name TEXT,
+  author_role TEXT,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_profile_notes_subject
+  ON user_profile_notes(subject_user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_user_profile_notes_author
+  ON user_profile_notes(author_user_id, created_at DESC)
+  WHERE author_user_id IS NOT NULL;
+

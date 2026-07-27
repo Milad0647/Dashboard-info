@@ -597,6 +597,31 @@ export async function pgGetAuditTopClicks(limit = 15): Promise<AuditClickSummary
 }
 
 /** Historical content ownership counts (independent of audit trail). */
+export type UserContentStats = UserContentContribution & {
+  totalAreaSqm: number;
+};
+
+function mapContentContributionRow(row: Record<string, unknown>): UserContentContribution {
+  return {
+    userId: String(row.id),
+    name: String(row.name),
+    email: String(row.email),
+    role: String(row.role),
+    billboards: Number(row.billboards ?? 0),
+    posters: Number(row.posters ?? 0),
+    videos: Number(row.videos ?? 0),
+    files: Number(row.files ?? 0),
+    rawMedia: Number(row.raw_media ?? 0),
+    socialPosts: Number(row.social_posts ?? 0),
+    activities: Number(row.activities ?? 0),
+    broadcast: Number(row.broadcast ?? 0),
+    meetings: Number(row.meetings ?? 0),
+    analytics: Number(row.analytics ?? 0),
+    submissions: Number(row.submissions ?? 0),
+    total: Number(row.total ?? 0),
+  };
+}
+
 export async function pgGetUserContentContributions(): Promise<UserContentContribution[]> {
   if (!isPostgresConfigured()) return [];
 
@@ -665,24 +690,90 @@ export async function pgGetUserContentContributions(): Promise<UserContentContri
     ORDER BY p.total DESC, u.name ASC
   `;
 
-  return rows.map((row) => ({
-    userId: String(row.id),
-    name: String(row.name),
-    email: String(row.email),
-    role: String(row.role),
-    billboards: Number(row.billboards ?? 0),
-    posters: Number(row.posters ?? 0),
-    videos: Number(row.videos ?? 0),
-    files: Number(row.files ?? 0),
-    rawMedia: Number(row.raw_media ?? 0),
-    socialPosts: Number(row.social_posts ?? 0),
-    activities: Number(row.activities ?? 0),
-    broadcast: Number(row.broadcast ?? 0),
-    meetings: Number(row.meetings ?? 0),
-    analytics: Number(row.analytics ?? 0),
-    submissions: Number(row.submissions ?? 0),
-    total: Number(row.total ?? 0),
-  }));
+  return rows.map((row) => mapContentContributionRow(row as Record<string, unknown>));
+}
+
+/** Content ownership counts + billboard area for one user (zeros when empty). */
+export async function pgGetUserContentStats(userId: string): Promise<UserContentStats | null> {
+  if (!isPostgresConfigured()) return null;
+
+  const sql = getSql();
+  const rows = await sql`
+    WITH counts AS (
+      SELECT 'billboards'::text AS kind, COUNT(*)::int AS c FROM billboards WHERE owner_user_id = ${userId}::uuid
+      UNION ALL
+      SELECT 'posters', COUNT(*)::int FROM posters WHERE owner_user_id = ${userId}::uuid
+      UNION ALL
+      SELECT 'videos', COUNT(*)::int FROM videos WHERE owner_user_id = ${userId}::uuid
+      UNION ALL
+      SELECT 'files', COUNT(*)::int FROM campaign_files WHERE owner_user_id = ${userId}::uuid
+      UNION ALL
+      SELECT 'rawMedia', COUNT(*)::int FROM raw_media_uploads WHERE owner_user_id = ${userId}::uuid
+      UNION ALL
+      SELECT 'socialPosts', COUNT(*)::int FROM social_media_posts WHERE owner_user_id = ${userId}::uuid
+      UNION ALL
+      SELECT 'activities', COUNT(*)::int FROM campaign_activities WHERE owner_user_id = ${userId}::uuid
+      UNION ALL
+      SELECT 'broadcast', COUNT(*)::int FROM broadcast_reports WHERE owner_user_id = ${userId}::uuid
+      UNION ALL
+      SELECT 'meetings', COUNT(*)::int FROM campaign_meetings WHERE owner_user_id = ${userId}::uuid
+      UNION ALL
+      SELECT 'analytics', COUNT(*)::int FROM analytics_metrics WHERE owner_user_id = ${userId}::uuid
+      UNION ALL
+      SELECT 'submissions', COUNT(*)::int FROM campaign_submissions WHERE owner_user_id = ${userId}::uuid
+    ),
+    pivoted AS (
+      SELECT
+        COALESCE(SUM(c) FILTER (WHERE kind = 'billboards'), 0)::int AS billboards,
+        COALESCE(SUM(c) FILTER (WHERE kind = 'posters'), 0)::int AS posters,
+        COALESCE(SUM(c) FILTER (WHERE kind = 'videos'), 0)::int AS videos,
+        COALESCE(SUM(c) FILTER (WHERE kind = 'files'), 0)::int AS files,
+        COALESCE(SUM(c) FILTER (WHERE kind = 'rawMedia'), 0)::int AS raw_media,
+        COALESCE(SUM(c) FILTER (WHERE kind = 'socialPosts'), 0)::int AS social_posts,
+        COALESCE(SUM(c) FILTER (WHERE kind = 'activities'), 0)::int AS activities,
+        COALESCE(SUM(c) FILTER (WHERE kind = 'broadcast'), 0)::int AS broadcast,
+        COALESCE(SUM(c) FILTER (WHERE kind = 'meetings'), 0)::int AS meetings,
+        COALESCE(SUM(c) FILTER (WHERE kind = 'analytics'), 0)::int AS analytics,
+        COALESCE(SUM(c) FILTER (WHERE kind = 'submissions'), 0)::int AS submissions,
+        COALESCE(SUM(c), 0)::int AS total
+      FROM counts
+    ),
+    area AS (
+      SELECT COALESCE(SUM(area_sqm), 0)::float8 AS total_area_sqm
+      FROM billboards
+      WHERE owner_user_id = ${userId}::uuid
+    )
+    SELECT
+      u.id,
+      u.name,
+      u.email,
+      u.role,
+      p.billboards,
+      p.posters,
+      p.videos,
+      p.files,
+      p.raw_media,
+      p.social_posts,
+      p.activities,
+      p.broadcast,
+      p.meetings,
+      p.analytics,
+      p.submissions,
+      p.total,
+      a.total_area_sqm
+    FROM users u
+    CROSS JOIN pivoted p
+    CROSS JOIN area a
+    WHERE u.id = ${userId}::uuid
+    LIMIT 1
+  `;
+
+  if (!rows[0]) return null;
+  const row = rows[0] as Record<string, unknown>;
+  return {
+    ...mapContentContributionRow(row),
+    totalAreaSqm: Number(row.total_area_sqm ?? 0),
+  };
 }
 
 /** Per-user daily activity series in Asia/Tehran calendar days (excludes heartbeats). */

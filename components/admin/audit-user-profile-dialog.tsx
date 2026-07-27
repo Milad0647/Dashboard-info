@@ -26,6 +26,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { UserProfileNotesPanel } from "@/components/admin/user-profile-notes-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,6 +62,37 @@ import {
   formatPersianDurationFromSeconds,
   formatPersianNumber,
 } from "@/lib/utils";
+
+type ContentStatKey =
+  | "billboards"
+  | "totalAreaSqm"
+  | "posters"
+  | "videos"
+  | "socialPosts"
+  | "activities"
+  | "files"
+  | "rawMedia"
+  | "broadcast"
+  | "meetings"
+  | "analytics"
+  | "submissions"
+  | "total";
+
+const CONTENT_STAT_ITEMS: { key: ContentStatKey; label: string }[] = [
+  { key: "billboards", label: "تبلیغات محیطی" },
+  { key: "totalAreaSqm", label: "متراژ (م²)" },
+  { key: "posters", label: "پوستر" },
+  { key: "videos", label: "ویدیو" },
+  { key: "socialPosts", label: "شبکه اجتماعی" },
+  { key: "activities", label: "اقدام" },
+  { key: "files", label: "فایل" },
+  { key: "rawMedia", label: "رسانه خام" },
+  { key: "broadcast", label: "پخش" },
+  { key: "meetings", label: "جلسه" },
+  { key: "analytics", label: "آمار" },
+  { key: "submissions", label: "ارسال کمپین" },
+  { key: "total", label: "جمع محتوا" },
+];
 
 export type AuditProfileUser = {
   userId: string;
@@ -379,6 +411,45 @@ export function AuditUserProfileDialog({
                   icon={MousePointerClick}
                 />
               </div>
+
+              {profile.contentStats && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex flex-wrap items-center gap-2">
+                      <FileStack className="h-4 w-4 text-primary" />
+                      آمار عددی محتوا (همه کمپین‌ها)
+                      <Badge variant="outline">
+                        {formatPersianNumber(profile.contentStats.total)} محتوا
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {CONTENT_STAT_ITEMS.map((item) => {
+                        const raw = Number(profile.contentStats?.[item.key] ?? 0);
+                        return (
+                          <div
+                            key={item.key}
+                            className="rounded-lg border bg-muted/30 px-3 py-2.5"
+                          >
+                            <p className="text-[11px] text-muted-foreground">{item.label}</p>
+                            <p className="text-sm font-semibold tabular-nums">
+                              {formatPersianNumber(raw)}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {user?.userId && (
+                <UserProfileNotesPanel
+                  subjectUserId={user.userId}
+                  subjectName={displayName}
+                />
+              )}
 
               <Card>
                 <CardHeader className="pb-2">

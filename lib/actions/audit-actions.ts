@@ -9,7 +9,9 @@ import {
 import type { AuditCategory, AuditDailyPoint, AuditEvent } from "@/lib/audit/types";
 import {
   pgGetUserAuditDailySeries,
+  pgGetUserContentStats,
   pgListAuditEvents,
+  type UserContentStats,
 } from "@/lib/db/audit-repository";
 import { getTehranDayBoundsIso } from "@/lib/safe-dates";
 import { isPostgresConfigured } from "@/lib/utils";
@@ -116,6 +118,7 @@ export type UserAuditProfileResult = {
   events: AuditEvent[];
   sessions: PresenceSession[];
   summary: UserAuditDaySummary;
+  contentStats: UserContentStats | null;
   dailySeries: AuditDailyPoint[];
   topPaths: Array<{ path: string; count: number }>;
   topActions: Array<{ action: string; category: AuditCategory; count: number }>;
@@ -155,7 +158,7 @@ export async function getUserAuditProfileAction(
     return { ok: false, error: "تاریخ نامعتبر است." };
   }
 
-  const [rawDayEvents, dailySeries] = await Promise.all([
+  const [rawDayEvents, dailySeries, contentStats] = await Promise.all([
     pgListAuditEvents({
       actorUserId: trimmed,
       from: bounds.from,
@@ -164,6 +167,7 @@ export async function getUserAuditProfileAction(
       excludeHeartbeat: false,
     }),
     pgGetUserAuditDailySeries(trimmed, 14),
+    pgGetUserContentStats(trimmed),
   ]);
 
   const events = rawDayEvents.filter((event) => event.action !== "presence.heartbeat");
@@ -261,6 +265,7 @@ export async function getUserAuditProfileAction(
         onlineSeconds,
         sessionCount: sessions.length,
       },
+      contentStats,
       dailySeries,
       topPaths,
       topActions,

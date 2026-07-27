@@ -42,3 +42,8 @@ export function canScoreContent(session: AuthSession): boolean {
 export function canSendContentMessages(session: AuthSession): boolean {
   return canManageAllContent(session);
 }
+
+/** Internal profile notes on users/companies — never visible to contributors. */
+export function canManageUserProfileNotes(session: AuthSession): boolean {
+  return isFullAdmin(session) || isClientUser(session);
+}
