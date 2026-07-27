@@ -42,6 +42,7 @@ export default async function ProfilePage() {
             initialAccountManagerName={user.accountManagerName}
             initialPhone={user.phone}
             initialRegion={user.region}
+            initialCompanyType={user.companyType}
             email={user.email}
           />
         </CardContent>

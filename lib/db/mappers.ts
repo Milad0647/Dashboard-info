@@ -619,6 +619,10 @@ export function mapUserFromDb(
     region: row.region === "north" || row.region === "south" || row.region === "east" || row.region === "west"
       ? row.region
       : null,
+    companyType:
+      row.company_type === "distribution" || row.company_type === "regional_electricity"
+        ? row.company_type
+        : null,
     phone: typeof row.phone === "string" && row.phone.trim() ? row.phone.trim() : null,
     accountManagerName: row.account_manager_name ?? null,
     campaignIds: campaignAccess.map((access) => access.campaignId),

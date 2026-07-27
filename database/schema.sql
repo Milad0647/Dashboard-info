@@ -760,6 +760,12 @@ CREATE POLICY user_audit_events_app_access ON user_audit_events
 -- Phone number for SMS notifications (optional until SMS provider is configured)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
 
+-- Company type classification: distribution vs regional electricity
+ALTER TABLE users ADD COLUMN IF NOT EXISTS company_type TEXT;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_company_type_check;
+ALTER TABLE users ADD CONSTRAINT users_company_type_check
+  CHECK (company_type IS NULL OR company_type IN ('distribution', 'regional_electricity'));
+
 -- Directives (دستورکارها): admin/client publish, users acknowledge + download
 CREATE TABLE IF NOT EXISTS campaign_directives (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -811,6 +811,7 @@ export async function saveProfileAction(data: {
     province: data.province,
     city: data.city,
     region: user.region,
+    companyType: user.companyType,
     phone: data.phone?.trim() || null,
     accountManagerName: data.accountManagerName,
     campaignIds: user.campaignIds,
@@ -836,6 +837,7 @@ export async function saveUserAction(data: {
   province?: string | null;
   city?: string | null;
   region?: string | null;
+  companyType?: string | null;
   phone?: string | null;
   accountManagerName?: string | null;
   campaignIds?: string[];
@@ -880,6 +882,7 @@ export async function saveUserAction(data: {
 export async function saveUserRegionAction(data: {
   userId: string;
   region: string | null;
+  companyType?: string | null;
 }) {
   const session = await getAuthSession();
   if (!session || (!isFullAdmin(session) && !isClientUser(session))) {
@@ -887,7 +890,10 @@ export async function saveUserRegionAction(data: {
   }
   if (!isPostgresConfigured()) return { success: false, error: "Database required" };
 
-  const result = await pgExt.pgUpdateUserRegion(data.userId, data.region);
+  const result = await pgExt.pgUpdateUserClassifications(data.userId, {
+    region: data.region,
+    companyType: data.companyType ?? null,
+  });
   await revalidateExtended();
   return result;
 }

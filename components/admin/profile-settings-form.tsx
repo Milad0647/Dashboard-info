@@ -12,6 +12,8 @@ import { ProvinceCityFields } from "@/components/admin/province-city-fields";
 import { saveProfileAction } from "@/lib/actions/extended-actions";
 import { getUserRegionLabel } from "@/lib/user-regions";
 import type { UserRegion } from "@/lib/user-regions";
+import { getUserCompanyTypeLabel } from "@/lib/user-company-types";
+import type { UserCompanyType } from "@/lib/user-company-types";
 
 const schema = z.object({
   name: z.string().min(1, "نام الزامی است"),
@@ -30,6 +32,7 @@ interface ProfileSettingsFormProps {
   initialAccountManagerName?: string | null;
   initialPhone?: string | null;
   initialRegion?: UserRegion | null;
+  initialCompanyType?: UserCompanyType | null;
   email: string;
 }
 
@@ -40,6 +43,7 @@ export function ProfileSettingsForm({
   initialAccountManagerName,
   initialPhone,
   initialRegion,
+  initialCompanyType,
   email,
 }: ProfileSettingsFormProps) {
   const [isPending, startTransition] = useTransition();
@@ -122,6 +126,14 @@ export function ProfileSettingsForm({
         onCityChange={(value) => form.setValue("city", value)}
         hideCity
       />
+
+      <div className="space-y-2">
+        <Label>نوع شرکت</Label>
+        <Input value={getUserCompanyTypeLabel(initialCompanyType)} disabled />
+        <p className="text-xs text-muted-foreground">
+          این نوع را فقط مدیر یا کارفرما برای شما تعیین می‌کند.
+        </p>
+      </div>
 
       <div className="space-y-2">
         <Label>دسته‌بندی منطقه‌ای</Label>

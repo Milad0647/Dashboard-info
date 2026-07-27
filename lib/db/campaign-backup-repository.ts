@@ -353,6 +353,10 @@ async function upsertUsers(users: DbRow[]): Promise<void> {
       row.city === null || row.city === undefined ? null : String(row.city);
     const region =
       row.region === null || row.region === undefined ? null : String(row.region);
+    const companyType =
+      row.company_type === null || row.company_type === undefined
+        ? null
+        : String(row.company_type);
     const accountManagerName =
       row.account_manager_name === null || row.account_manager_name === undefined
         ? null
@@ -360,7 +364,7 @@ async function upsertUsers(users: DbRow[]): Promise<void> {
 
     await sql`
       INSERT INTO users (
-        id, email, password_hash, name, role, province, city, region,
+        id, email, password_hash, name, role, province, city, region, company_type,
         account_manager_name, created_at
       ) VALUES (
         ${id},
@@ -371,6 +375,7 @@ async function upsertUsers(users: DbRow[]): Promise<void> {
         ${province},
         ${city},
         ${region},
+        ${companyType},
         ${accountManagerName},
         ${String(row.created_at ?? new Date().toISOString())}
       )
@@ -382,6 +387,7 @@ async function upsertUsers(users: DbRow[]): Promise<void> {
         province = EXCLUDED.province,
         city = EXCLUDED.city,
         region = EXCLUDED.region,
+        company_type = EXCLUDED.company_type,
         account_manager_name = EXCLUDED.account_manager_name
     `;
   }

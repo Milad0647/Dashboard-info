@@ -169,6 +169,7 @@ export async function pgSaveUser(data: {
   province?: string | null;
   city?: string | null;
   region?: string | null;
+  companyType?: string | null;
   phone?: string | null;
   accountManagerName?: string | null;
   campaignIds?: string[];
@@ -187,10 +188,17 @@ export async function pgSaveUser(data: {
     data.region === "west"
       ? data.region
       : null;
+  const companyType =
+    data.companyType === "distribution" || data.companyType === "regional_electricity"
+      ? data.companyType
+      : null;
   const phone = data.phone?.trim() || null;
   const accountManagerName = data.accountManagerName?.trim() || null;
 
   try {
+  // Ensure column exists on older deployments that have not run db:migrate yet.
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS company_type TEXT`;
+
   if (data.id) {
     if (data.password) {
       const passwordHash = await hashPassword(data.password);
@@ -202,6 +210,7 @@ export async function pgSaveUser(data: {
           province = ${province},
           city = ${city},
           region = ${region},
+          company_type = ${companyType},
           phone = ${phone},
           account_manager_name = ${accountManagerName},
           password_hash = ${passwordHash}
@@ -216,6 +225,7 @@ export async function pgSaveUser(data: {
           province = ${province},
           city = ${city},
           region = ${region},
+          company_type = ${companyType},
           phone = ${phone},
           account_manager_name = ${accountManagerName}
         WHERE id = ${id}
@@ -227,8 +237,8 @@ export async function pgSaveUser(data: {
     }
     const passwordHash = await hashPassword(data.password);
     await sql`
-      INSERT INTO users (id, email, password_hash, name, role, province, city, region, phone, account_manager_name, created_at)
-      VALUES (${id}, ${email}, ${passwordHash}, ${data.name}, ${data.role}, ${province}, ${city}, ${region}, ${phone}, ${accountManagerName}, ${now})
+      INSERT INTO users (id, email, password_hash, name, role, province, city, region, company_type, phone, account_manager_name, created_at)
+      VALUES (${id}, ${email}, ${passwordHash}, ${data.name}, ${data.role}, ${province}, ${city}, ${region}, ${companyType}, ${phone}, ${accountManagerName}, ${now})
     `;
   }
 
@@ -267,6 +277,39 @@ export async function pgUpdateUserRegion(userId: string, region: string | null) 
       ? region
       : null;
   await sql`UPDATE users SET region = ${normalized} WHERE id = ${userId}`;
+  return { success: true as const };
+}
+
+export async function pgUpdateUserClassifications(
+  userId: string,
+  data: { region?: string | null; companyType?: string | null }
+) {
+  const sql = getSql();
+  // Ensure column exists on older deployments that have not run db:migrate yet.
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS company_type TEXT`;
+
+  const region =
+    data.region === "north" ||
+    data.region === "south" ||
+    data.region === "east" ||
+    data.region === "west"
+      ? data.region
+      : null;
+  const companyType =
+    data.companyType === "distribution" || data.companyType === "regional_electricity"
+      ? data.companyType
+      : null;
+
+  if (data.region !== undefined && data.companyType !== undefined) {
+    await sql`
+      UPDATE users SET region = ${region}, company_type = ${companyType} WHERE id = ${userId}
+    `;
+  } else if (data.region !== undefined) {
+    await sql`UPDATE users SET region = ${region} WHERE id = ${userId}`;
+  } else if (data.companyType !== undefined) {
+    await sql`UPDATE users SET company_type = ${companyType} WHERE id = ${userId}`;
+  }
+
   return { success: true as const };
 }
 

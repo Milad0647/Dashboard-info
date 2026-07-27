@@ -406,6 +406,8 @@ export interface AdminUser {
   city?: string | null;
   /** Geographic zone set by admin/client: north/south/east/west. */
   region?: import("./user-regions").UserRegion | null;
+  /** Company type set by admin/client: distribution / regional electricity. */
+  companyType?: import("./user-company-types").UserCompanyType | null;
   /** Mobile phone for SMS (optional until SMS provider is configured). */
   phone?: string | null;
   /** Account manager name set by the user in their profile. */
