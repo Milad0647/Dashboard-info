@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "b72b5aabf35bd6349a93f8059cdd309855993469",
+      "committedAt": "2026-07-27T14:47:17+03:30",
+      "title": "نمایش امتیازها فقط برای مدیر و کارفرما",
+      "subject": "Hide content scores from contributors and public viewers"
+    },
+    {
       "hash": "d1af217b1ab562157df7b0698f238f669339ae6c",
       "committedAt": "2026-07-27T14:44:47+03:30",
       "title": "امکان فعال‌سازی جداگانه آموزش هر بخش (پیش‌فرض خاموش)",

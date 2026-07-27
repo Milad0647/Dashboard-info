@@ -91,6 +91,7 @@ export function ChatFloatingWidget() {
       if (result.success) {
         setConversations(result.conversations ?? []);
         if (typeof result.unreadTotal === "number") {
+          unreadRef.current = result.unreadTotal;
           setUnread(result.unreadTotal);
           emitChatUnreadChanged(result.unreadTotal);
         }
@@ -100,12 +101,21 @@ export function ChatFloatingWidget() {
     }
   };
 
-  const applyUnreadCount = (count: number, options?: { autoOpen?: boolean }) => {
+  const applyUnreadCount = (
+    count: number,
+    options?: { autoOpen?: boolean; emit?: boolean }
+  ) => {
     const previous = unreadRef.current;
     const primed = unreadPrimedRef.current;
     unreadPrimedRef.current = true;
+    // Keep ref in sync immediately so a same-tick listener cannot double-fire buzz/auto-open.
+    unreadRef.current = count;
     setUnread(count);
-    emitChatUnreadChanged(count);
+
+    // Never emit from the CHAT_UNREAD_EVENT listener path — CustomEvent is sync and would recurse.
+    if (options?.emit !== false) {
+      emitChatUnreadChanged(count);
+    }
 
     // Skip buzz/auto-open on the first sample so stale unread does not alarm on page load.
     if (!primed) return;
@@ -143,7 +153,10 @@ export function ChatFloatingWidget() {
         if (cancelled || !result.success) return;
         applyUnreadCount(result.count ?? 0, { autoOpen: true });
       } catch {
-        if (!cancelled) setUnread(0);
+        if (!cancelled) {
+          unreadRef.current = 0;
+          setUnread(0);
+        }
       }
     };
 
@@ -155,7 +168,8 @@ export function ChatFloatingWidget() {
 
     const onUnread = (event: Event) => {
       const count = readChatUnreadFromEvent(event);
-      if (count !== null) applyUnreadCount(count, { autoOpen: true });
+      // Listen-only: do not re-emit or we recurse forever (sync CustomEvent).
+      if (count !== null) applyUnreadCount(count, { autoOpen: true, emit: false });
     };
     window.addEventListener(CHAT_UNREAD_EVENT, onUnread);
 
