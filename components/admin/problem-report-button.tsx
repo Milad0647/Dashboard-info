@@ -41,8 +41,12 @@ import {
   type ProblemReportCategory,
   type ProblemReportStatus,
 } from "@/lib/audit/problem-types";
-import { formatPersianDateTime } from "@/lib/utils";
+import { cn, formatPersianDateTime } from "@/lib/utils";
 import { emitProblemReportsUnreadChanged } from "@/lib/problem-reports-unread";
+import {
+  CHAT_WIDGET_OPEN_EVENT,
+  readChatWidgetOpenFromEvent,
+} from "@/lib/chat-widget-open";
 
 const CATEGORIES = Object.keys(PROBLEM_REPORT_CATEGORY_LABELS) as ProblemReportCategory[];
 
@@ -69,6 +73,7 @@ export function ProblemReportButton() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [myReports, setMyReports] = useState<MyProblemReport[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatWidgetOpen, setChatWidgetOpen] = useState(false);
 
   const reset = () => {
     setCategory("other");
@@ -95,6 +100,15 @@ export function ProblemReportButton() {
       void refreshUnreadBadge();
     }, 60_000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const onChatOpen = (event: Event) => {
+      const next = readChatWidgetOpenFromEvent(event);
+      if (next !== null) setChatWidgetOpen(next);
+    };
+    window.addEventListener(CHAT_WIDGET_OPEN_EVENT, onChatOpen);
+    return () => window.removeEventListener(CHAT_WIDGET_OPEN_EVENT, onChatOpen);
   }, []);
 
   const loadHistory = async (options?: { markSeen?: boolean }) => {
@@ -199,9 +213,14 @@ export function ProblemReportButton() {
         type="button"
         variant="outline"
         size="sm"
-        className="fixed bottom-[5.75rem] left-4 z-[80] gap-2 shadow-md md:bottom-[6.25rem] md:left-6"
+        className={cn(
+          "fixed bottom-[5.75rem] left-4 z-[50] gap-2 shadow-md transition-opacity md:bottom-[6.25rem] md:left-6",
+          chatWidgetOpen && "pointer-events-none opacity-0"
+        )}
         data-audit-label="گزارش مشکل"
         onClick={() => handleOpenChange(true)}
+        tabIndex={chatWidgetOpen ? -1 : undefined}
+        aria-hidden={chatWidgetOpen}
       >
         <span className="relative">
           <AlertTriangle className="h-4 w-4 text-amber-500" />

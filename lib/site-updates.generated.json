@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "f98a4b85a675331d53fc378847e7fa2e986ba71c",
+      "committedAt": "2026-07-27T14:17:43+03:30",
+      "title": "انتقال دکمه چت به پایین چپ و باز شدن خودکار با پیام جدید",
+      "subject": "Pin chat launcher to bottom-left and auto-open on new messages"
+    },
+    {
       "hash": "9c8f3a8755933c6bd0dfc32e543320299ecfe2d6",
       "committedAt": "2026-07-27T14:11:04+03:30",
       "title": "بهبود ویجت شناور چت با ظاهر حرفه‌ای پشتیبانی آنلاین",

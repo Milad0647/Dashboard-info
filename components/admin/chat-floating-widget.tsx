@@ -14,6 +14,9 @@ import {
   emitChatUnreadChanged,
   readChatUnreadFromEvent,
 } from "@/lib/chat-unread";
+import {
+  emitChatWidgetOpenChanged,
+} from "@/lib/chat-widget-open";
 import type { ChatConversationSummary } from "@/lib/chat/types";
 import { cn, formatPersianNumber } from "@/lib/utils";
 
@@ -50,7 +53,14 @@ export function ChatFloatingWidget() {
 
   useEffect(() => {
     openRef.current = open;
+    emitChatWidgetOpenChanged(open);
   }, [open]);
+
+  useEffect(() => {
+    return () => {
+      emitChatWidgetOpenChanged(false);
+    };
+  }, []);
 
   useEffect(() => {
     unreadRef.current = unread;
@@ -196,7 +206,7 @@ export function ChatFloatingWidget() {
 
   return (
     <div
-      className="fixed bottom-4 left-4 z-[55] md:bottom-6 md:left-6"
+      className="fixed bottom-4 left-4 z-[85] md:bottom-6 md:left-6"
       data-chat-floating-widget
     >
       {/* Desktop: panel anchored above the left launcher. Mobile: near-fullscreen sheet. */}
@@ -206,7 +216,7 @@ export function ChatFloatingWidget() {
           "flex flex-col overflow-hidden border border-black/5 bg-card shadow-[var(--shadow-apple-hover)] backdrop-blur-xl dark:border-white/10",
           "transition-all duration-[var(--duration-apple)] ease-[var(--ease-apple-spring)]",
           isMobileLayout
-            ? "fixed inset-x-2 z-[55] rounded-3xl"
+            ? "fixed inset-x-2 z-[85] rounded-3xl"
             : "absolute bottom-[calc(100%+12px)] left-0 h-[520px] w-[360px] rounded-[24px]",
           open
             ? "translate-y-0 scale-100 opacity-100"
