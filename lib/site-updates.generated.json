@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "fd54fcb7af722e5a6b35ed320af62587788180a0",
+      "committedAt": "2026-07-27T11:41:27+03:30",
+      "title": "امکان دانلود گزارش اکسل از صفحه رتبه‌بندی",
+      "subject": "Add Excel export to campaign leaderboard"
+    },
+    {
+      "hash": "01e840cf93febeb75ffbec87a299fc89b186ff3a",
+      "committedAt": "2026-07-27T11:36:42+03:30",
+      "title": "امکان مشاهده و پاک‌سازی بکاپ‌های قدیمی در پنل پشتیبان‌گیری",
+      "subject": "Show DB dumps and add bulk backup cleanup"
+    },
+    {
       "hash": "e9f3bd5cf9e00eba4d9eee660b31cf6db163ae26",
       "committedAt": "2026-07-27T10:57:20+03:30",
       "title": "نمایش خطاها به‌صورت مودال با توضیح و راهکار و ثبت خودکار در رصد",
