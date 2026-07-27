@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
-import { ArrowRight, MapPin, Medal, Star, Trophy, Users } from "lucide-react";
+import { ArrowRight, Download, MapPin, Medal, Star, Trophy, Users } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +32,7 @@ import {
   type ProvinceLeaderboardMetrics,
   type UserLeaderboardEntry,
 } from "@/lib/city-leaderboard";
+import { downloadLeaderboardExcel } from "@/lib/services/leaderboard-excel-export";
 import type { PublicCampaignData } from "@/lib/types";
 import { formatPersianDate, formatPersianNumber } from "@/lib/utils";
 
@@ -287,6 +289,20 @@ export function CityLeaderboardDashboard({
     []
   );
 
+  const handleExportExcel = useCallback(() => {
+    try {
+      downloadLeaderboardExcel({
+        campaignTitle: settings.title,
+        provinces,
+        users,
+        ratingUsers,
+      });
+      toast.success("گزارش Excel دانلود شد");
+    } catch {
+      toast.error("خطا در تهیه گزارش Excel");
+    }
+  }, [provinces, ratingUsers, settings.title, users]);
+
   const chartData = useMemo(
     () =>
       activeEntries.slice(0, 10).map((entry) => ({
@@ -361,7 +377,20 @@ export function CityLeaderboardDashboard({
           </Badge>
         </SectionHeader>
 
-        <LeaderboardViewToggle view={view} onChange={setView} />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <LeaderboardViewToggle view={view} onChange={setView} />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleExportExcel}
+            disabled={provinces.length === 0 && users.length === 0 && ratingUsers.length === 0}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            دانلود گزارش Excel
+          </Button>
+        </div>
 
         <p className="text-sm text-muted-foreground">
           {formatPersianDate(settings.startDate)} — {formatPersianDate(settings.endDate)}
