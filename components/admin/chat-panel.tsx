@@ -142,7 +142,8 @@ export function ChatPanel({
   const [isSending, startSendTransition] = useTransition();
   const [bootstrapping, setBootstrapping] = useState(false);
   const [widgetView, setWidgetView] = useState<"list" | "thread">("list");
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const stickToBottomRef = useRef(true);
   const lastCursorRef = useRef<{ createdAt: string; id: string } | null>(null);
   const statusSinceRef = useRef<string>(new Date().toISOString());
   const knownMessageIdsRef = useRef<Set<string>>(new Set());
@@ -180,12 +181,25 @@ export function ChatPanel({
     });
   }, [contacts, contactSearch]);
 
+  const isNearBottom = (el: HTMLDivElement, thresholdPx = 96) =>
+    el.scrollHeight - el.scrollTop - el.clientHeight <= thresholdPx;
+
   const scrollToBottom = useCallback((smooth = false) => {
-    bottomRef.current?.scrollIntoView({
-      behavior: smooth ? "smooth" : "auto",
-      block: "end",
-    });
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    stickToBottomRef.current = true;
+    if (smooth) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
   }, []);
+
+  const handleMessagesScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    stickToBottomRef.current = isNearBottom(el);
+  };
 
   const sync = useCallback(async (options?: { full?: boolean }) => {
     const conversationId = activeIdRef.current;
@@ -233,7 +247,7 @@ export function ChatPanel({
           return next;
         });
 
-        const last = (options?.full ? incoming : incoming).at(-1) ?? null;
+        const last = incoming.at(-1) ?? null;
         if (last) {
           lastCursorRef.current = { createdAt: last.createdAt, id: last.id };
         }
@@ -247,8 +261,16 @@ export function ChatPanel({
             }
           });
         }
-        requestAnimationFrame(() => scrollToBottom(!options?.full));
-      } else if (statusUpdates.length === 0 && result.serverTime) {
+
+        // Only pin to bottom on full load, or when user is already near bottom and new msgs arrive.
+        // Status-only polls must never yank scroll while reading history.
+        const shouldStick =
+          Boolean(options?.full) ||
+          (incoming.length > 0 && stickToBottomRef.current);
+        if (shouldStick) {
+          requestAnimationFrame(() => scrollToBottom(!options?.full));
+        }
+      } else if (result.serverTime) {
         statusSinceRef.current = result.serverTime;
       }
     }
@@ -263,6 +285,7 @@ export function ChatPanel({
       lastCursorRef.current = null;
       knownMessageIdsRef.current = new Set();
       statusSinceRef.current = new Date().toISOString();
+      stickToBottomRef.current = true;
       if (nextPeer) setPeer(nextPeer);
 
       try {
@@ -656,7 +679,11 @@ export function ChatPanel({
                   )}
                 </header>
 
-                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-muted/20 px-3 py-4 sm:px-4">
+                <div
+                  ref={messagesContainerRef}
+                  onScroll={handleMessagesScroll}
+                  className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-muted/20 px-3 py-4 sm:px-4"
+                >
                   {messages.length === 0 && !bootstrapping ? (
                     <p className="py-10 text-center text-sm text-muted-foreground">
                       هنوز پیامی رد و بدل نشده. اولین پیام را بفرستید.
@@ -695,7 +722,6 @@ export function ChatPanel({
                       </div>
                     ))
                   )}
-                  <div ref={bottomRef} />
                 </div>
 
                 <footer className="border-t p-3">

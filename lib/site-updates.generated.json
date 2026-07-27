@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "258a7791d1ea024b0109acdc76642656cc9231cc",
+      "committedAt": "2026-07-27T16:42:57+03:30",
+      "title": "رفع کرش چت آنلاین هنگام باز شدن ویجت پیام",
+      "subject": "Fix chat unread event infinite recursion"
+    },
+    {
       "hash": "b72b5aabf35bd6349a93f8059cdd309855993469",
       "committedAt": "2026-07-27T14:47:17+03:30",
       "title": "نمایش امتیازها فقط برای مدیر و کارفرما",
