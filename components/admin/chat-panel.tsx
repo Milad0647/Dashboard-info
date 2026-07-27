@@ -37,6 +37,7 @@ import type {
   ChatPeer,
 } from "@/lib/chat/types";
 import { CHAT_MAX_BODY_LENGTH } from "@/lib/chat/types";
+import { renderChatMessageBody } from "@/lib/chat/linkify";
 import { cn, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
 function roleLabel(role: ChatPeer["role"]): string {
@@ -428,7 +429,10 @@ export function ChatPanel({
   const showThreadPane = !isWidget || widgetView === "thread";
 
   return (
-    <div className={cn(isWidget ? "flex h-full min-h-0 flex-col" : "space-y-4")}>
+    <div
+      dir="rtl"
+      className={cn(isWidget ? "flex h-full min-h-0 flex-col" : "space-y-4")}
+    >
       {isWidget ? (
         <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
           <div className="min-w-0">
@@ -490,18 +494,19 @@ export function ChatPanel({
               "flex flex-col",
               isWidget
                 ? "min-h-0 h-full border-0"
-                : "min-h-[40vh] border-b lg:min-h-0 lg:border-b-0 lg:border-l",
+                : "min-h-[40vh] border-b lg:min-h-0 lg:border-b-0 lg:border-e",
               isWidget && widgetView === "thread" && "hidden"
             )}
           >
             <div className="border-b p-3">
               <div className="relative">
-                <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="جستجوی گفتگو…"
-                  className="rounded-xl border-transparent bg-muted/70 pr-9 shadow-none focus-visible:ring-1"
+                  className="rounded-xl border-transparent bg-muted/70 ps-9 shadow-none focus-visible:ring-1"
+                  dir="rtl"
                 />
               </div>
             </div>
@@ -528,10 +533,10 @@ export function ChatPanel({
                           <div className="relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
                             <UserRound className="h-5 w-5 text-muted-foreground" />
                             <span
-                              className={cn(
-                                "absolute bottom-0 left-0 h-2.5 w-2.5 rounded-full border-2 border-card",
-                                item.peer.isOnline ? "bg-emerald-500" : "bg-zinc-400"
-                              )}
+                            className={cn(
+                              "absolute bottom-0 end-0 h-2.5 w-2.5 rounded-full border-2 border-card",
+                              item.peer.isOnline ? "bg-emerald-500" : "bg-zinc-400"
+                            )}
                               title={item.peer.isOnline ? "آنلاین" : "آفلاین"}
                             />
                           </div>
@@ -600,7 +605,7 @@ export function ChatPanel({
                     <UserRound className="h-5 w-5 text-muted-foreground" />
                     <span
                       className={cn(
-                        "absolute bottom-0 left-0 h-2.5 w-2.5 rounded-full border-2 border-card",
+                        "absolute bottom-0 end-0 h-2.5 w-2.5 rounded-full border-2 border-card",
                         peer.isOnline ? "bg-emerald-500" : "bg-zinc-400"
                       )}
                     />
@@ -630,7 +635,8 @@ export function ChatPanel({
                       <div
                         key={message.id}
                         className={cn(
-                          "flex",
+                          "flex w-full",
+                          // RTL Telegram-style: my bubbles on the left (end), theirs on the right (start).
                           message.isMine ? "justify-end" : "justify-start"
                         )}
                       >
@@ -642,19 +648,17 @@ export function ChatPanel({
                               : "rounded-ee-md border bg-card"
                           )}
                         >
-                          <p className="whitespace-pre-wrap break-words leading-relaxed">
-                            {message.body}
-                          </p>
+                          {renderChatMessageBody(message.body, { isMine: message.isMine })}
                           <div
                             className={cn(
-                              "mt-1 flex items-center justify-end gap-1 text-[10px]",
+                              "mt-1 flex items-center justify-start gap-1 text-[10px]",
                               message.isMine
                                 ? "text-primary-foreground/80"
                                 : "text-muted-foreground"
                             )}
                           >
-                            <span>{formatPersianDateTime(message.createdAt)}</span>
                             <MessageTicks message={message} />
+                            <span>{formatPersianDateTime(message.createdAt)}</span>
                           </div>
                         </div>
                       </div>
@@ -672,7 +676,8 @@ export function ChatPanel({
                       }
                       placeholder="پیام خود را بنویسید…"
                       rows={2}
-                      className="min-h-[44px] resize-none rounded-2xl"
+                      dir="rtl"
+                      className="min-h-[44px] resize-none rounded-2xl text-right"
                       onKeyDown={(event) => {
                         if (event.key === "Enter" && !event.shiftKey) {
                           event.preventDefault();
@@ -691,7 +696,7 @@ export function ChatPanel({
                       {isSending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <SendHorizontal className="h-4 w-4" />
+                        <SendHorizontal className="h-4 w-4 -scale-x-100" />
                       )}
                     </Button>
                   </div>
@@ -738,7 +743,7 @@ export function ChatPanel({
                         <UserRound className="h-4 w-4 text-muted-foreground" />
                         <span
                           className={cn(
-                            "absolute bottom-0 left-0 h-2 w-2 rounded-full border border-card",
+                            "absolute bottom-0 end-0 h-2 w-2 rounded-full border border-card",
                             contact.isOnline ? "bg-emerald-500" : "bg-zinc-400"
                           )}
                         />

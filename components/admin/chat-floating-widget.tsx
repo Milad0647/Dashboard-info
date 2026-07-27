@@ -120,12 +120,13 @@ export function ChatFloatingWidget() {
 
   return (
     <div
-      className={cn(
-        "fixed z-[55] flex flex-col items-end gap-3",
-        // Clear the right sidebar on desktop; sit opposite the problem-report control.
-        "bottom-5 left-5 lg:bottom-6 lg:left-auto lg:right-[17.5rem]"
-      )}
-    >
+        className={cn(
+          "fixed z-[55] flex flex-col items-end gap-3",
+          // Clear the right sidebar on desktop; sit opposite the problem-report control.
+          "bottom-5 left-5 lg:bottom-6 lg:left-auto lg:right-[17.5rem]"
+        )}
+        dir="rtl"
+      >
       <div
         className={cn(
           "origin-bottom overflow-hidden rounded-[28px] border border-black/5 bg-card/92 shadow-[var(--shadow-apple-hover)] backdrop-blur-2xl transition-all duration-[var(--duration-apple)] ease-[var(--ease-apple-spring)] dark:border-white/10",

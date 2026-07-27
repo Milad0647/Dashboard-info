@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "3932a864935a7f7e8692baf1cc5a7e3b6623b1f2",
+      "committedAt": "2026-07-27T13:56:06+03:30",
+      "title": "افزودن آیکون شناور چت با طراحی اپل در همه صفحات پنل",
+      "subject": "Add Apple-style floating chat widget on all admin pages"
+    },
+    {
       "hash": "3500d2d4871888612fdd1bbc68c9c4639df38c2f",
       "committedAt": "2026-07-27T13:51:16+03:30",
       "title": "نمایش کاربران آنلاین در بالای لیست گفتگوی جدید",
