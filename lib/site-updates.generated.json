@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "b483f215136181783cf23a3f7e879e20a4566740",
+      "committedAt": "2026-07-27T13:25:12+03:30",
+      "title": "افزودن چت آنلاین بین مدیر، کارفرما و کاربران",
+      "subject": "Add live chat between staff and users"
+    },
+    {
+      "hash": "fe7dcd58b47590214f61f3a75a22a43c183b6ce9",
+      "committedAt": "2026-07-27T13:25:03+03:30",
+      "title": "افزودن یادداشت داخلی روی پروفایل کاربران در رصد و مشاهده عملکرد",
+      "subject": "Add internal profile notes for admin and employer"
+    },
+    {
       "hash": "f21046316eba5d656b36c854aa1ccd07cea2ec6a",
       "committedAt": "2026-07-27T12:03:54+03:30",
       "title": "انتخاب چند شبکه اجتماعی و لینک جدا برای هر کدام هنگام ثبت پست",
