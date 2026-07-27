@@ -17,10 +17,10 @@ import {
 } from "@/components/ui/select";
 import { MediaUpload } from "@/components/ui/media-upload";
 import {
-  getSectionTutorialsEnabledAction,
+  getSectionTutorialsEnabledMapAction,
   listTutorialsForAdminAction,
   saveSectionTutorialAction,
-  setSectionTutorialsEnabledAction,
+  setSectionTutorialEnabledAction,
 } from "@/lib/actions/tutorial-actions";
 import {
   TUTORIAL_SECTION_KEYS,
@@ -35,6 +35,12 @@ function emptyStep(): TutorialStep {
   return { title: "", body: "", imageUrl: null };
 }
 
+function emptyEnabledMap(): Record<TutorialSectionKey, boolean> {
+  return Object.fromEntries(
+    TUTORIAL_SECTION_KEYS.map((key) => [key, false])
+  ) as Record<TutorialSectionKey, boolean>;
+}
+
 export function TutorialsAdmin() {
   const [tutorials, setTutorials] = useState<SectionTutorial[]>([]);
   const [sectionKey, setSectionKey] = useState<TutorialSectionKey>("posters");
@@ -42,7 +48,9 @@ export function TutorialsAdmin() {
   const [steps, setSteps] = useState<TutorialStep[]>([emptyStep()]);
   const [version, setVersion] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [tutorialsEnabled, setTutorialsEnabled] = useState(true);
+  const [enabledMap, setEnabledMap] = useState<Record<TutorialSectionKey, boolean>>(
+    emptyEnabledMap
+  );
   const [enabledLoaded, setEnabledLoaded] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isTogglingEnabled, startToggleTransition] = useTransition();
@@ -51,11 +59,13 @@ export function TutorialsAdmin() {
     return new Map(tutorials.map((item) => [item.sectionKey, item]));
   }, [tutorials]);
 
+  const sectionEnabled = enabledMap[sectionKey] === true;
+
   const loadTutorials = async () => {
     setLoading(true);
     const [listResult, enabledResult] = await Promise.all([
       listTutorialsForAdminAction(),
-      getSectionTutorialsEnabledAction(),
+      getSectionTutorialsEnabledMapAction(),
     ]);
     if (!listResult.success) {
       toast.error(listResult.error ?? "بارگذاری آموزش‌ها ناموفق بود");
@@ -64,7 +74,7 @@ export function TutorialsAdmin() {
     }
     setTutorials(listResult.tutorials);
     if (enabledResult.success) {
-      setTutorialsEnabled(enabledResult.enabled);
+      setEnabledMap(enabledResult.enabledMap);
     }
     setEnabledLoaded(true);
     setLoading(false);
@@ -94,19 +104,19 @@ export function TutorialsAdmin() {
   };
 
   const handleToggleEnabled = (nextEnabled: boolean) => {
-    const previous = tutorialsEnabled;
-    setTutorialsEnabled(nextEnabled);
+    const previous = sectionEnabled;
+    setEnabledMap((prev) => ({ ...prev, [sectionKey]: nextEnabled }));
     startToggleTransition(async () => {
-      const result = await setSectionTutorialsEnabledAction(nextEnabled);
+      const result = await setSectionTutorialEnabledAction(sectionKey, nextEnabled);
       if (!result.success) {
-        setTutorialsEnabled(previous);
+        setEnabledMap((prev) => ({ ...prev, [sectionKey]: previous }));
         toast.error(result.error ?? "ذخیره وضعیت آموزش ناموفق بود");
         return;
       }
       toast.success(
         nextEnabled
-          ? "آموزش بخش‌ها فعال شد"
-          : "آموزش بخش‌ها موقتاً غیرفعال شد — contributor بدون آموزش می‌تواند محتوا اضافه کند"
+          ? `آموزش «${tutorialSectionLabels[sectionKey]}» فعال شد`
+          : `آموزش «${tutorialSectionLabels[sectionKey]}» غیرفعال شد`
       );
     });
   };
@@ -133,38 +143,14 @@ export function TutorialsAdmin() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">آموزش بخش‌ها</h1>
-          <p className="text-sm text-muted-foreground">
-            محتوای مودال آموزشی هر بخش را مدیریت کنید. تا وقتی آموزش نوشته نشود، contributor
-            نمی‌تواند در آن بخش محتوا اضافه کند.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3">
-          <div className="min-w-0 text-right">
-            <p className="text-sm font-medium">اجبار آموزش برای contributor</p>
-            <p className="text-xs text-muted-foreground">
-              {tutorialsEnabled
-                ? "فعال — قبل از افزودن محتوا باید آموزش را ببینند"
-                : "غیرفعال — فعلاً بدون آموزش می‌توانند محتوا اضافه کنند"}
-            </p>
-          </div>
-          <Switch
-            checked={tutorialsEnabled}
-            disabled={!enabledLoaded || isTogglingEnabled}
-            onCheckedChange={handleToggleEnabled}
-            aria-label="فعال‌سازی آموزش بخش‌ها"
-          />
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">آموزش بخش‌ها</h1>
+        <p className="text-sm text-muted-foreground">
+          محتوای مودال آموزشی هر بخش را مدیریت کنید. آموزش هر بخش را جداگانه فعال کنید؛
+          پیش‌فرض همه خاموش است. تا وقتی آموزش یک بخش فعال و نوشته نشود، contributor در آن
+          بخش بدون اجبار آموزش می‌تواند محتوا اضافه کند.
+        </p>
       </div>
-
-      {!tutorialsEnabled && (
-        <div className="rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning">
-          آموزش‌ها موقتاً غیرفعال هستند. مودال آموزشی نشان داده نمی‌شود و گیت سرور هم رد
-          می‌شود.
-        </div>
-      )}
 
       <div className="grid gap-4 rounded-xl border bg-card p-4 md:grid-cols-[240px_1fr]">
         <div className="space-y-3">
@@ -180,15 +166,40 @@ export function TutorialsAdmin() {
               {TUTORIAL_SECTION_KEYS.map((key) => {
                 const existing = tutorialMap.get(key);
                 const ready = Boolean(existing?.steps.length);
+                const enabled = enabledMap[key] === true;
                 return (
                   <SelectItem key={key} value={key}>
                     {tutorialSectionLabels[key]}
+                    {enabled ? " ●" : ""}
                     {ready ? " ✓" : " (خالی)"}
                   </SelectItem>
                 );
               })}
             </SelectContent>
           </Select>
+
+          <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-3">
+            <div className="min-w-0 text-right">
+              <p className="text-sm font-medium">اجبار آموزش این بخش</p>
+              <p className="text-xs text-muted-foreground">
+                {sectionEnabled
+                  ? "فعال — قبل از افزودن محتوا باید آموزش را ببینند"
+                  : "غیرفعال — بدون آموزش می‌توانند محتوا اضافه کنند"}
+              </p>
+            </div>
+            <Switch
+              checked={sectionEnabled}
+              disabled={!enabledLoaded || isTogglingEnabled}
+              onCheckedChange={handleToggleEnabled}
+              aria-label={`فعال‌سازی آموزش ${tutorialSectionLabels[sectionKey]}`}
+            />
+          </div>
+
+          {!sectionEnabled && (
+            <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs leading-5 text-warning">
+              آموزش این بخش خاموش است. مودال نشان داده نمی‌شود و گیت سرور هم رد می‌شود.
+            </div>
+          )}
 
           <div className="rounded-lg border bg-muted/30 p-3 text-xs leading-6 text-muted-foreground">
             <p className="flex items-center gap-1 font-medium text-foreground">

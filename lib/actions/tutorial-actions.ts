@@ -11,8 +11,9 @@ import {
   pgSaveSectionTutorial,
 } from "@/lib/db/repository-tutorials";
 import {
-  pgAreSectionTutorialsEnabled,
-  pgSetSectionTutorialsEnabled,
+  pgGetSectionTutorialsEnabledMap,
+  pgIsSectionTutorialEnabled,
+  pgSetSectionTutorialEnabled,
 } from "@/lib/db/tutorial-settings";
 import {
   isTutorialSectionKey,
@@ -39,8 +40,8 @@ export async function getTutorialStatusAction(sectionKey: string) {
   const dbError = requirePostgres();
   if (dbError) return dbError;
 
-  const tutorialsEnabled = await pgAreSectionTutorialsEnabled();
-  if (!tutorialsEnabled || isFullAdmin(session) || session.role === "client" || !session.userId) {
+  const tutorialEnabled = await pgIsSectionTutorialEnabled(sectionKey);
+  if (!tutorialEnabled || isFullAdmin(session) || session.role === "client" || !session.userId) {
     const tutorial = await pgGetSectionTutorial(sectionKey);
     return {
       success: true as const,
@@ -61,7 +62,7 @@ export async function getTutorialStatusAction(sectionKey: string) {
   return { success: true as const, bypass: false as const, status };
 }
 
-export async function getSectionTutorialsEnabledAction() {
+export async function getSectionTutorialsEnabledMapAction() {
   const session = await getAuthSession();
   if (!session || !isFullAdmin(session)) {
     return { success: false as const, error: "Unauthorized" };
@@ -70,20 +71,26 @@ export async function getSectionTutorialsEnabledAction() {
   const dbError = requirePostgres();
   if (dbError) return dbError;
 
-  const enabled = await pgAreSectionTutorialsEnabled();
-  return { success: true as const, enabled };
+  const enabledMap = await pgGetSectionTutorialsEnabledMap();
+  return { success: true as const, enabledMap };
 }
 
-export async function setSectionTutorialsEnabledAction(enabled: boolean) {
+export async function setSectionTutorialEnabledAction(
+  sectionKey: string,
+  enabled: boolean
+) {
   const session = await getAuthSession();
   if (!session || !isFullAdmin(session)) {
     return { success: false as const, error: "Unauthorized" };
+  }
+  if (!isTutorialSectionKey(sectionKey)) {
+    return { success: false as const, error: "بخش نامعتبر است" };
   }
 
   const dbError = requirePostgres();
   if (dbError) return dbError;
 
-  const result = await pgSetSectionTutorialsEnabled(enabled);
+  const result = await pgSetSectionTutorialEnabled(sectionKey, enabled);
   if (result.success) {
     revalidatePath("/admin/tutorials");
   }
