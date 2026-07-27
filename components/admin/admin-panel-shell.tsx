@@ -11,6 +11,7 @@ import {
 } from "@/components/admin/admin-campaign-provider";
 import { AuditTracker } from "@/components/admin/audit-tracker";
 import { ChatPresenceBeacon } from "@/components/admin/chat-presence-beacon";
+import { ChatFloatingWidget } from "@/components/admin/chat-floating-widget";
 import { DirectiveAckGate } from "@/components/admin/directive-ack-gate";
 import { ErrorModalProvider } from "@/components/admin/error-modal-provider";
 import { ProblemReportButton } from "@/components/admin/problem-report-button";
@@ -93,6 +94,9 @@ function PanelChrome({
       <AdminElanhaButton />
       <Suspense fallback={null}>
         <ProblemReportButton />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ChatFloatingWidget />
       </Suspense>
       <Suspense fallback={null}>
         <DirectiveAckGate />

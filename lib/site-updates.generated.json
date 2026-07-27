@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "3500d2d4871888612fdd1bbc68c9c4639df38c2f",
+      "committedAt": "2026-07-27T13:51:16+03:30",
+      "title": "نمایش کاربران آنلاین در بالای لیست گفتگوی جدید",
+      "subject": "Sort online contacts first in new chat dialog"
+    },
+    {
       "hash": "b483f215136181783cf23a3f7e879e20a4566740",
       "committedAt": "2026-07-27T13:25:12+03:30",
       "title": "افزودن چت آنلاین بین مدیر، کارفرما و کاربران",

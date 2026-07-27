@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import {
   Check,
   CheckCheck,
+  ChevronRight,
   Loader2,
   MessageCircle,
   Plus,
   Search,
   SendHorizontal,
   UserRound,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -106,17 +108,24 @@ export function ChatPanel({
   initialConversations = [],
   initialUnreadTotal = 0,
   canStartWithAnyone = false,
+  variant = "page",
+  onClose,
 }: {
   initialConversations?: ChatConversationSummary[];
   initialUnreadTotal?: number;
   canStartWithAnyone?: boolean;
+  variant?: "page" | "widget";
+  onClose?: () => void;
 }) {
+  const isWidget = variant === "widget";
   const [conversations, setConversations] = useState(initialConversations);
   const [activeId, setActiveId] = useState<string | null>(
-    initialConversations[0]?.id ?? null
+    isWidget ? null : (initialConversations[0]?.id ?? null)
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [peer, setPeer] = useState<ChatPeer | null>(initialConversations[0]?.peer ?? null);
+  const [peer, setPeer] = useState<ChatPeer | null>(
+    isWidget ? null : (initialConversations[0]?.peer ?? null)
+  );
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [contactsOpen, setContactsOpen] = useState(false);
@@ -125,6 +134,7 @@ export function ChatPanel({
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [isSending, startSendTransition] = useTransition();
   const [bootstrapping, setBootstrapping] = useState(false);
+  const [widgetView, setWidgetView] = useState<"list" | "thread">("list");
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const lastCursorRef = useRef<{ createdAt: string; id: string } | null>(null);
   const statusSinceRef = useRef<string>(new Date().toISOString());
@@ -241,6 +251,7 @@ export function ChatPanel({
     async (conversationId: string, nextPeer?: ChatPeer) => {
       setActiveId(conversationId);
       activeIdRef.current = conversationId;
+      if (isWidget) setWidgetView("thread");
       setBootstrapping(true);
       lastCursorRef.current = null;
       knownMessageIdsRef.current = new Set();
@@ -277,10 +288,33 @@ export function ChatPanel({
         setBootstrapping(false);
       }
     },
-    [scrollToBottom]
+    [isWidget, scrollToBottom]
   );
 
+  const backToList = () => {
+    setWidgetView("list");
+    setActiveId(null);
+    activeIdRef.current = null;
+    setPeer(null);
+    setMessages([]);
+    lastCursorRef.current = null;
+    void syncChatAction({
+      conversationId: null,
+      afterCreatedAt: null,
+      afterId: null,
+      statusSince: statusSinceRef.current,
+    }).then((result) => {
+      if (result.success && result.conversations) {
+        setConversations(result.conversations);
+      }
+      if (result.success && typeof result.unreadTotal === "number") {
+        emitChatUnreadChanged(result.unreadTotal);
+      }
+    });
+  };
+
   useEffect(() => {
+    if (isWidget) return;
     if (!activeId) return;
     void openConversation(activeId, peer ?? undefined);
     // Intentionally only on mount when we have an initial conversation.
@@ -390,209 +424,287 @@ export function ChatPanel({
     });
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">چت</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            گفتگوی آنلاین بین مدیر / کارفرما و کاربران — با وضعیت رسیده و خوانده‌شده
-          </p>
-        </div>
-        <Button type="button" onClick={() => void openContacts()} className="gap-2">
-          <Plus className="h-4 w-4" />
-          گفتگوی جدید
-        </Button>
-      </div>
+  const showListPane = !isWidget || widgetView === "list";
+  const showThreadPane = !isWidget || widgetView === "thread";
 
-      <div className="grid min-h-[70vh] overflow-hidden rounded-2xl border bg-card lg:grid-cols-[320px_1fr]">
-        <aside className="flex min-h-[40vh] flex-col border-b lg:min-h-0 lg:border-b-0 lg:border-l">
-          <div className="border-b p-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="جستجوی گفتگو…"
-                className="pr-9"
-              />
-            </div>
+  return (
+    <div className={cn(isWidget ? "flex h-full min-h-0 flex-col" : "space-y-4")}>
+      {isWidget ? (
+        <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
+          <div className="min-w-0">
+            <p className="truncate text-[15px] font-semibold tracking-tight">پیام‌ها</p>
+            <p className="truncate text-[11px] text-muted-foreground">گفتگوی آنلاین</p>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            {filteredConversations.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-sm text-muted-foreground">
-                <MessageCircle className="h-8 w-8 opacity-40" />
-                هنوز گفتگویی نیست. با «گفتگوی جدید» شروع کنید.
-              </div>
-            ) : (
-              <ul className="divide-y">
-                {filteredConversations.map((item) => {
-                  const isActive = item.id === activeId;
-                  return (
-                    <li key={item.id}>
-                      <button
-                        type="button"
-                        onClick={() => void openConversation(item.id, item.peer)}
-                        className={cn(
-                          "flex w-full items-start gap-3 px-3 py-3 text-right transition-colors",
-                          isActive ? "bg-primary/10" : "hover:bg-muted/60"
-                        )}
-                      >
-                        <div className="relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-                          <UserRound className="h-5 w-5 text-muted-foreground" />
-                          <span
-                            className={cn(
-                              "absolute bottom-0 left-0 h-2.5 w-2.5 rounded-full border-2 border-card",
-                              item.peer.isOnline ? "bg-emerald-500" : "bg-zinc-400"
-                            )}
-                            title={item.peer.isOnline ? "آنلاین" : "آفلاین"}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="truncate font-medium">{item.peer.name}</p>
-                            {item.lastMessageAt && (
-                              <span className="shrink-0 text-[10px] text-muted-foreground">
-                                {formatPersianDateTime(item.lastMessageAt)}
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-0.5 flex items-center justify-between gap-2">
-                            <p className="truncate text-xs text-muted-foreground">
-                              {item.lastMessagePreview || roleLabel(item.peer.role) || "—"}
-                            </p>
-                            {item.unreadCount > 0 && (
-                              <span className="shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground tabular-nums">
-                                {formatPersianNumber(item.unreadCount)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+          <div className="flex items-center gap-1.5">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-9 w-9 rounded-full"
+              onClick={() => void openContacts()}
+              aria-label="گفتگوی جدید"
+              title="گفتگوی جدید"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            {onClose && (
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 rounded-full"
+                onClick={onClose}
+                aria-label="بستن"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             )}
           </div>
-        </aside>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">چت</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              گفتگوی آنلاین بین مدیر / کارفرما و کاربران — با وضعیت رسیده و خوانده‌شده
+            </p>
+          </div>
+          <Button type="button" onClick={() => void openContacts()} className="gap-2">
+            <Plus className="h-4 w-4" />
+            گفتگوی جدید
+          </Button>
+        </div>
+      )}
 
-        <section className="flex min-h-[50vh] flex-col lg:min-h-0">
-          {!activeId || !peer ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center text-muted-foreground">
-              <MessageCircle className="h-12 w-12 opacity-30" />
-              <p>یک گفتگو را انتخاب کنید یا گفتگوی جدید بسازید.</p>
-              {!canStartWithAnyone && (
-                <p className="text-xs">می‌توانید با مدیر سیستم یا کارفرما گفتگو کنید.</p>
-              )}
+      <div
+        className={cn(
+          "grid overflow-hidden bg-card",
+          isWidget
+            ? "min-h-0 flex-1 grid-cols-1 rounded-none border-0"
+            : "min-h-[70vh] rounded-2xl border lg:grid-cols-[320px_1fr]"
+        )}
+      >
+        {showListPane && (
+          <aside
+            className={cn(
+              "flex flex-col",
+              isWidget
+                ? "min-h-0 h-full border-0"
+                : "min-h-[40vh] border-b lg:min-h-0 lg:border-b-0 lg:border-l",
+              isWidget && widgetView === "thread" && "hidden"
+            )}
+          >
+            <div className="border-b p-3">
+              <div className="relative">
+                <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="جستجوی گفتگو…"
+                  className="rounded-xl border-transparent bg-muted/70 pr-9 shadow-none focus-visible:ring-1"
+                />
+              </div>
             </div>
-          ) : (
-            <>
-              <header className="flex items-center gap-3 border-b px-4 py-3">
-                <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                  <UserRound className="h-5 w-5 text-muted-foreground" />
-                  <span
-                    className={cn(
-                      "absolute bottom-0 left-0 h-2.5 w-2.5 rounded-full border-2 border-card",
-                      peer.isOnline ? "bg-emerald-500" : "bg-zinc-400"
-                    )}
-                  />
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {filteredConversations.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-sm text-muted-foreground">
+                  <MessageCircle className="h-8 w-8 opacity-40" />
+                  هنوز گفتگویی نیست. با «گفتگوی جدید» شروع کنید.
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">{peer.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {peer.isOnline
-                      ? "آنلاین"
-                      : peer.lastSeenAt
-                        ? `آخرین بازدید: ${formatPersianDateTime(peer.lastSeenAt)}`
-                        : roleLabel(peer.role) || "آفلاین"}
-                  </p>
-                </div>
-                {bootstrapping && (
-                  <Loader2 className="ms-auto h-4 w-4 animate-spin text-muted-foreground" />
-                )}
-              </header>
-
-              <div className="flex-1 space-y-2 overflow-y-auto bg-muted/20 px-3 py-4 sm:px-4">
-                {messages.length === 0 && !bootstrapping ? (
-                  <p className="py-10 text-center text-sm text-muted-foreground">
-                    هنوز پیامی رد و بدل نشده. اولین پیام را بفرستید.
-                  </p>
-                ) : (
-                  messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={cn(
-                        "flex",
-                        message.isMine ? "justify-end" : "justify-start"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm sm:max-w-[70%]",
-                          message.isMine
-                            ? "rounded-es-md bg-primary text-primary-foreground"
-                            : "rounded-ee-md border bg-card"
-                        )}
-                      >
-                        <p className="whitespace-pre-wrap break-words leading-relaxed">
-                          {message.body}
-                        </p>
-                        <div
+              ) : (
+                <ul className="divide-y divide-border/60">
+                  {filteredConversations.map((item) => {
+                    const isActive = item.id === activeId;
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => void openConversation(item.id, item.peer)}
                           className={cn(
-                            "mt-1 flex items-center justify-end gap-1 text-[10px]",
-                            message.isMine
-                              ? "text-primary-foreground/80"
-                              : "text-muted-foreground"
+                            "flex w-full items-start gap-3 px-3 py-3 text-right transition-colors duration-[var(--duration-apple-fast)] ease-[var(--ease-apple-soft)]",
+                            isActive ? "bg-primary/10" : "hover:bg-muted/60"
                           )}
                         >
-                          <span>{formatPersianDateTime(message.createdAt)}</span>
-                          <MessageTicks message={message} />
+                          <div className="relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                            <UserRound className="h-5 w-5 text-muted-foreground" />
+                            <span
+                              className={cn(
+                                "absolute bottom-0 left-0 h-2.5 w-2.5 rounded-full border-2 border-card",
+                                item.peer.isOnline ? "bg-emerald-500" : "bg-zinc-400"
+                              )}
+                              title={item.peer.isOnline ? "آنلاین" : "آفلاین"}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="truncate font-medium">{item.peer.name}</p>
+                              {item.lastMessageAt && (
+                                <span className="shrink-0 text-[10px] text-muted-foreground">
+                                  {formatPersianDateTime(item.lastMessageAt)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-0.5 flex items-center justify-between gap-2">
+                              <p className="truncate text-xs text-muted-foreground">
+                                {item.lastMessagePreview || roleLabel(item.peer.role) || "—"}
+                              </p>
+                              {item.unreadCount > 0 && (
+                                <span className="shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground tabular-nums">
+                                  {formatPersianNumber(item.unreadCount)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </aside>
+        )}
+
+        {showThreadPane && (
+          <section
+            className={cn(
+              "flex flex-col",
+              isWidget ? "min-h-0 h-full" : "min-h-[50vh] lg:min-h-0",
+              isWidget && widgetView === "list" && "hidden"
+            )}
+          >
+            {!activeId || !peer ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center text-muted-foreground">
+                <MessageCircle className="h-12 w-12 opacity-30" />
+                <p>یک گفتگو را انتخاب کنید یا گفتگوی جدید بسازید.</p>
+                {!canStartWithAnyone && (
+                  <p className="text-xs">می‌توانید با مدیر سیستم یا کارفرما گفتگو کنید.</p>
+                )}
+              </div>
+            ) : (
+              <>
+                <header className="flex items-center gap-2 border-b px-3 py-2.5 sm:px-4">
+                  {isWidget && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-9 w-9 shrink-0 rounded-full"
+                      onClick={backToList}
+                      aria-label="بازگشت"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  )}
+                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <UserRound className="h-5 w-5 text-muted-foreground" />
+                    <span
+                      className={cn(
+                        "absolute bottom-0 left-0 h-2.5 w-2.5 rounded-full border-2 border-card",
+                        peer.isOnline ? "bg-emerald-500" : "bg-zinc-400"
+                      )}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{peer.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {peer.isOnline
+                        ? "آنلاین"
+                        : peer.lastSeenAt
+                          ? `آخرین بازدید: ${formatPersianDateTime(peer.lastSeenAt)}`
+                          : roleLabel(peer.role) || "آفلاین"}
+                    </p>
+                  </div>
+                  {bootstrapping && (
+                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+                  )}
+                </header>
+
+                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-muted/20 px-3 py-4 sm:px-4">
+                  {messages.length === 0 && !bootstrapping ? (
+                    <p className="py-10 text-center text-sm text-muted-foreground">
+                      هنوز پیامی رد و بدل نشده. اولین پیام را بفرستید.
+                    </p>
+                  ) : (
+                    messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={cn(
+                          "flex",
+                          message.isMine ? "justify-end" : "justify-start"
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm sm:max-w-[70%]",
+                            message.isMine
+                              ? "rounded-es-md bg-primary text-primary-foreground"
+                              : "rounded-ee-md border bg-card"
+                          )}
+                        >
+                          <p className="whitespace-pre-wrap break-words leading-relaxed">
+                            {message.body}
+                          </p>
+                          <div
+                            className={cn(
+                              "mt-1 flex items-center justify-end gap-1 text-[10px]",
+                              message.isMine
+                                ? "text-primary-foreground/80"
+                                : "text-muted-foreground"
+                            )}
+                          >
+                            <span>{formatPersianDateTime(message.createdAt)}</span>
+                            <MessageTicks message={message} />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
-                <div ref={bottomRef} />
-              </div>
-
-              <footer className="border-t p-3">
-                <div className="flex items-end gap-2">
-                  <Textarea
-                    value={draft}
-                    onChange={(event) => setDraft(event.target.value.slice(0, CHAT_MAX_BODY_LENGTH))}
-                    placeholder="پیام خود را بنویسید…"
-                    rows={2}
-                    className="min-h-[44px] resize-none"
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" && !event.shiftKey) {
-                        event.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    className="h-11 w-11 shrink-0"
-                    disabled={isSending || !draft.trim()}
-                    onClick={handleSend}
-                    aria-label="ارسال"
-                  >
-                    {isSending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <SendHorizontal className="h-4 w-4" />
-                    )}
-                  </Button>
+                    ))
+                  )}
+                  <div ref={bottomRef} />
                 </div>
-                <p className="mt-1 text-[10px] text-muted-foreground">
-                  Enter برای ارسال · Shift+Enter خط جدید
-                </p>
-              </footer>
-            </>
-          )}
-        </section>
+
+                <footer className="border-t p-3">
+                  <div className="flex items-end gap-2">
+                    <Textarea
+                      value={draft}
+                      onChange={(event) =>
+                        setDraft(event.target.value.slice(0, CHAT_MAX_BODY_LENGTH))
+                      }
+                      placeholder="پیام خود را بنویسید…"
+                      rows={2}
+                      className="min-h-[44px] resize-none rounded-2xl"
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                          event.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="h-11 w-11 shrink-0 rounded-full"
+                      disabled={isSending || !draft.trim()}
+                      onClick={handleSend}
+                      aria-label="ارسال"
+                    >
+                      {isSending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <SendHorizontal className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  {!isWidget && (
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Enter برای ارسال · Shift+Enter خط جدید
+                    </p>
+                  )}
+                </footer>
+              </>
+            )}
+          </section>
+        )}
       </div>
 
       <Dialog open={contactsOpen} onOpenChange={setContactsOpen}>
