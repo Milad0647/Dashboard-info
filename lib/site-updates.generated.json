@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "473f8cccf9a056a4cb122deb1599479134351dbc",
+      "committedAt": "2026-07-27T16:45:51+03:30",
+      "title": "رفع پرش اسکرول چت هنگام خواندن پیام‌های قبلی",
+      "subject": "Keep chat scroll position while reading history"
+    },
+    {
       "hash": "258a7791d1ea024b0109acdc76642656cc9231cc",
       "committedAt": "2026-07-27T16:42:57+03:30",
       "title": "رفع کرش چت آنلاین هنگام باز شدن ویجت پیام",
