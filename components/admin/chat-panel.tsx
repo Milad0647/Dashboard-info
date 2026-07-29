@@ -8,13 +8,25 @@ import {
   Loader2,
   MessageCircle,
   Minus,
+  Pencil,
   Plus,
   Search,
   SendHorizontal,
+  Trash2,
   UserRound,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,6 +37,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  deleteChatMessageAction,
+  editChatMessageAction,
   listChatContactsAction,
   markChatConversationSeenAction,
   openChatWithPeerAction,
@@ -140,8 +154,12 @@ export function ChatPanel({
   const [contactSearch, setContactSearch] = useState("");
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [isSending, startSendTransition] = useTransition();
+  const [isMutatingMessage, startMessageMutation] = useTransition();
   const [bootstrapping, setBootstrapping] = useState(false);
   const [widgetView, setWidgetView] = useState<"list" | "thread">("list");
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const lastCursorRef = useRef<{ createdAt: string; id: string } | null>(null);
@@ -454,6 +472,53 @@ export function ChatPanel({
     });
   };
 
+  const beginEditMessage = (message: ChatMessage) => {
+    if (!message.isMine || message.isDeleted) return;
+    setEditingMessageId(message.id);
+    setEditDraft(message.body);
+  };
+
+  const cancelEditMessage = () => {
+    setEditingMessageId(null);
+    setEditDraft("");
+  };
+
+  const saveEditMessage = () => {
+    const messageId = editingMessageId;
+    const body = editDraft.trim();
+    if (!messageId || !body || isMutatingMessage) return;
+
+    startMessageMutation(async () => {
+      const result = await editChatMessageAction({ messageId, body });
+      if (!result.success || !result.message) {
+        toast.error(result.error ?? "ویرایش پیام ناموفق بود");
+        return;
+      }
+      setMessages((prev) => applyStatusUpdates(prev, [result.message!]));
+      cancelEditMessage();
+      void sync({ full: false });
+      toast.success("پیام ویرایش شد");
+    });
+  };
+
+  const confirmDeleteMessage = () => {
+    const messageId = deleteTargetId;
+    if (!messageId || isMutatingMessage) return;
+
+    startMessageMutation(async () => {
+      const result = await deleteChatMessageAction({ messageId });
+      if (!result.success || !result.message) {
+        toast.error(result.error ?? "حذف پیام ناموفق بود");
+        return;
+      }
+      setMessages((prev) => applyStatusUpdates(prev, [result.message!]));
+      setDeleteTargetId(null);
+      if (editingMessageId === messageId) cancelEditMessage();
+      void sync({ full: false });
+      toast.success("پیام برای هر دو طرف حذف شد");
+    });
+  };
+
   const showListPane = !isWidget || widgetView === "list";
   const showThreadPane = !isWidget || widgetView === "thread";
 
@@ -689,11 +754,13 @@ export function ChatPanel({
                       هنوز پیامی رد و بدل نشده. اولین پیام را بفرستید.
                     </p>
                   ) : (
-                    messages.map((message) => (
+                    messages.map((message) => {
+                      const isEditing = editingMessageId === message.id;
+                      return (
                       <div
                         key={message.id}
                         className={cn(
-                          "flex w-full",
+                          "group flex w-full",
                           // RTL Telegram-style: my bubbles on the left (end), theirs on the right (start).
                           message.isMine ? "justify-end" : "justify-start"
                         )}
@@ -701,26 +768,108 @@ export function ChatPanel({
                         <div
                           className={cn(
                             "max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm sm:max-w-[70%]",
-                            message.isMine
-                              ? "rounded-es-md bg-primary text-primary-foreground"
-                              : "rounded-ee-md border bg-card"
+                            message.isDeleted
+                              ? message.isMine
+                                ? "rounded-es-md bg-primary/70 text-primary-foreground/80"
+                                : "rounded-ee-md border border-dashed bg-muted/40 text-muted-foreground"
+                              : message.isMine
+                                ? "rounded-es-md bg-primary text-primary-foreground"
+                                : "rounded-ee-md border bg-card"
                           )}
                         >
-                          {renderChatMessageBody(message.body, { isMine: message.isMine })}
+                          {message.isDeleted ? (
+                            <p className="italic opacity-90">این پیام حذف شد</p>
+                          ) : isEditing ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                value={editDraft}
+                                onChange={(event) =>
+                                  setEditDraft(event.target.value.slice(0, CHAT_MAX_BODY_LENGTH))
+                                }
+                                rows={3}
+                                dir="rtl"
+                                autoFocus
+                                className="min-h-[72px] resize-none rounded-xl border-primary-foreground/30 bg-primary-foreground/10 text-right text-sm text-primary-foreground placeholder:text-primary-foreground/60"
+                                onKeyDown={(event) => {
+                                  if (event.key === "Escape") {
+                                    event.preventDefault();
+                                    cancelEditMessage();
+                                  }
+                                  if (event.key === "Enter" && !event.shiftKey) {
+                                    event.preventDefault();
+                                    saveEditMessage();
+                                  }
+                                }}
+                              />
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 rounded-full px-2 text-primary-foreground hover:bg-primary-foreground/15"
+                                  onClick={cancelEditMessage}
+                                  disabled={isMutatingMessage}
+                                >
+                                  انصراف
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  className="h-7 rounded-full bg-primary-foreground px-3 text-primary hover:bg-primary-foreground/90"
+                                  onClick={saveEditMessage}
+                                  disabled={isMutatingMessage || !editDraft.trim()}
+                                >
+                                  {isMutatingMessage ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    "ذخیره"
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            renderChatMessageBody(message.body, { isMine: message.isMine })
+                          )}
                           <div
                             className={cn(
-                              "mt-1 flex items-center justify-start gap-1 text-[10px]",
+                              "mt-1 flex items-center gap-1 text-[10px]",
                               message.isMine
-                                ? "text-primary-foreground/80"
-                                : "text-muted-foreground"
+                                ? "justify-between text-primary-foreground/80"
+                                : "justify-start text-muted-foreground"
                             )}
                           >
-                            <MessageTicks message={message} />
-                            <span>{formatPersianDateTime(message.createdAt)}</span>
+                            <div className="flex items-center gap-1">
+                              <MessageTicks message={message} />
+                              <span>{formatPersianDateTime(message.createdAt)}</span>
+                              {message.editedAt && !message.isDeleted ? (
+                                <span className="opacity-80">· ویرایش‌شده</span>
+                              ) : null}
+                            </div>
+                            {message.isMine && !message.isDeleted && !isEditing ? (
+                              <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  className="rounded p-0.5 hover:bg-primary-foreground/15"
+                                  aria-label="ویرایش پیام"
+                                  onClick={() => beginEditMessage(message)}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="rounded p-0.5 hover:bg-primary-foreground/15"
+                                  aria-label="حذف پیام"
+                                  onClick={() => setDeleteTargetId(message.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
 
@@ -819,6 +968,39 @@ export function ChatPanel({
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={Boolean(deleteTargetId)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTargetId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف پیام</AlertDialogTitle>
+            <AlertDialogDescription>
+              این پیام برای هر دو طرف حذف می‌شود و قابل بازگشت نیست.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isMutatingMessage}>انصراف</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isMutatingMessage}
+              onClick={(event) => {
+                event.preventDefault();
+                confirmDeleteMessage();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isMutatingMessage ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "حذف برای همه"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

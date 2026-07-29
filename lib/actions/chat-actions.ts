@@ -18,6 +18,8 @@ import {
 } from "@/lib/chat/types";
 import {
   pgCountUnreadChatMessages,
+  pgEditChatMessage,
+  pgGetChatMessageForSender,
   pgGetConversationForParticipant,
   pgGetOrCreateConversation,
   pgGetPeerByKey,
@@ -30,6 +32,7 @@ import {
   pgListMessageStatusUpdates,
   pgMarkMessagesDelivered,
   pgMarkMessagesSeen,
+  pgSoftDeleteChatMessage,
   pgUpsertChatPresence,
 } from "@/lib/db/chat-repository";
 import { pgGetUserById } from "@/lib/db/repository-extended";
@@ -278,6 +281,101 @@ export async function sendChatMessageAction(input: {
       conversationId,
       peerKey: conversation.peerKey,
       offlineNotify: !peerOnline,
+    },
+  });
+
+  return { success: true, message };
+}
+
+export async function editChatMessageAction(input: {
+  messageId: string;
+  body: string;
+}): Promise<{ success: boolean; message?: ChatMessage; error?: string }> {
+  const session = await requireChatSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!isPostgresConfigured()) {
+    return { success: false, error: "چت فقط با دیتابیس فعال است" };
+  }
+
+  const myKey = participantKeyFromSession(session);
+  const messageId = input.messageId?.trim() ?? "";
+  const body = input.body?.trim() ?? "";
+
+  if (!messageId) return { success: false, error: "شناسه پیام نامعتبر است" };
+  if (body.length < CHAT_MIN_BODY_LENGTH) {
+    return { success: false, error: "متن پیام خالی است" };
+  }
+  if (body.length > CHAT_MAX_BODY_LENGTH) {
+    return { success: false, error: `متن پیام حداکثر ${CHAT_MAX_BODY_LENGTH} کاراکتر است` };
+  }
+
+  const existing = await pgGetChatMessageForSender({ messageId, senderKey: myKey });
+  if (!existing) return { success: false, error: "پیام یافت نشد یا متعلق به شما نیست" };
+  if (existing.deletedAt) return { success: false, error: "پیام حذف‌شده قابل ویرایش نیست" };
+
+  const conversation = await pgGetConversationForParticipant({
+    conversationId: existing.conversationId,
+    myKey,
+  });
+  if (!conversation) return { success: false, error: "گفتگو یافت نشد" };
+
+  const message = await pgEditChatMessage({
+    messageId,
+    senderKey: myKey,
+    body: body.slice(0, CHAT_MAX_BODY_LENGTH),
+  });
+  if (!message) return { success: false, error: "ویرایش پیام ناموفق بود" };
+
+  await logAuditForSession(session, {
+    category: "admin",
+    action: "chat.message.edit",
+    entityType: "chat_message",
+    entityId: message.id,
+    label: message.senderName ?? undefined,
+    metadata: {
+      conversationId: existing.conversationId,
+      peerKey: conversation.peerKey,
+    },
+  });
+
+  return { success: true, message };
+}
+
+export async function deleteChatMessageAction(input: {
+  messageId: string;
+}): Promise<{ success: boolean; message?: ChatMessage; error?: string }> {
+  const session = await requireChatSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!isPostgresConfigured()) {
+    return { success: false, error: "چت فقط با دیتابیس فعال است" };
+  }
+
+  const myKey = participantKeyFromSession(session);
+  const messageId = input.messageId?.trim() ?? "";
+  if (!messageId) return { success: false, error: "شناسه پیام نامعتبر است" };
+
+  const existing = await pgGetChatMessageForSender({ messageId, senderKey: myKey });
+  if (!existing) return { success: false, error: "پیام یافت نشد یا متعلق به شما نیست" };
+  if (existing.deletedAt) return { success: false, error: "پیام قبلاً حذف شده است" };
+
+  const conversation = await pgGetConversationForParticipant({
+    conversationId: existing.conversationId,
+    myKey,
+  });
+  if (!conversation) return { success: false, error: "گفتگو یافت نشد" };
+
+  const message = await pgSoftDeleteChatMessage({ messageId, senderKey: myKey });
+  if (!message) return { success: false, error: "حذف پیام ناموفق بود" };
+
+  await logAuditForSession(session, {
+    category: "admin",
+    action: "chat.message.delete",
+    entityType: "chat_message",
+    entityId: message.id,
+    label: message.senderName ?? undefined,
+    metadata: {
+      conversationId: existing.conversationId,
+      peerKey: conversation.peerKey,
     },
   });
 

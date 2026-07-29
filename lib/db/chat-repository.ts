@@ -49,9 +49,14 @@ export async function ensureChatTables(): Promise<void> {
           body TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           delivered_at TIMESTAMPTZ,
-          seen_at TIMESTAMPTZ
+          seen_at TIMESTAMPTZ,
+          edited_at TIMESTAMPTZ,
+          deleted_at TIMESTAMPTZ
         )
       `;
+      // Existing installs created chat_messages before edit/delete columns existed.
+      await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ`;
+      await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`;
       await sql`
         CREATE TABLE IF NOT EXISTS chat_presence (
           participant_key TEXT PRIMARY KEY,
@@ -80,7 +85,17 @@ export async function ensureChatTables(): Promise<void> {
       await sql`
         CREATE INDEX IF NOT EXISTS idx_chat_messages_unseen
           ON chat_messages(conversation_id, created_at ASC)
-          WHERE seen_at IS NULL
+          WHERE seen_at IS NULL AND deleted_at IS NULL
+      `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_edited
+          ON chat_messages(conversation_id, edited_at DESC)
+          WHERE edited_at IS NOT NULL
+      `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_deleted
+          ON chat_messages(conversation_id, deleted_at DESC)
+          WHERE deleted_at IS NOT NULL
       `;
       await sql`
         CREATE INDEX IF NOT EXISTS idx_chat_presence_seen
@@ -107,6 +122,9 @@ function mapMessageRow(
 ): ChatMessage {
   const deliveredAt = row.delivered_at ? new Date(String(row.delivered_at)).toISOString() : null;
   const seenAt = row.seen_at ? new Date(String(row.seen_at)).toISOString() : null;
+  const editedAt = row.edited_at ? new Date(String(row.edited_at)).toISOString() : null;
+  const deletedAt = row.deleted_at ? new Date(String(row.deleted_at)).toISOString() : null;
+  const isDeleted = Boolean(deletedAt);
   const senderKey = String(row.sender_key);
   return {
     id: String(row.id),
@@ -114,13 +132,49 @@ function mapMessageRow(
     senderKey,
     senderUserId: row.sender_user_id ? String(row.sender_user_id) : null,
     senderName: row.sender_name ? String(row.sender_name) : null,
-    body: String(row.body ?? ""),
+    // Hide original text from clients once deleted for everyone.
+    body: isDeleted ? "" : String(row.body ?? ""),
     createdAt: new Date(String(row.created_at)).toISOString(),
     deliveredAt,
     seenAt,
+    editedAt,
+    deletedAt,
+    isDeleted,
     status: chatMessageStatus({ deliveredAt, seenAt }),
     isMine: senderKey === myKey,
   };
+}
+
+async function refreshConversationLastMessage(conversationId: string): Promise<void> {
+  const sql = getSql();
+  const latest = await sql`
+    SELECT sender_key, body, created_at
+    FROM chat_messages
+    WHERE conversation_id = ${conversationId}::uuid
+      AND deleted_at IS NULL
+    ORDER BY created_at DESC, id DESC
+    LIMIT 1
+  `;
+  if (!latest[0]) {
+    await sql`
+      UPDATE chat_conversations SET
+        last_message_at = NULL,
+        last_message_preview = NULL,
+        last_message_sender_key = NULL,
+        updated_at = now()
+      WHERE id = ${conversationId}::uuid
+    `;
+    return;
+  }
+  const preview = String(latest[0].body ?? "").trim().slice(0, 120);
+  await sql`
+    UPDATE chat_conversations SET
+      last_message_at = ${new Date(String(latest[0].created_at))},
+      last_message_preview = ${preview},
+      last_message_sender_key = ${String(latest[0].sender_key)},
+      updated_at = now()
+    WHERE id = ${conversationId}::uuid
+  `;
 }
 
 async function loadPeerMap(
@@ -421,6 +475,7 @@ export async function pgListConversationsForParticipant(
         WHERE m.conversation_id = c.id
           AND m.sender_key <> ${myKey}
           AND m.seen_at IS NULL
+          AND m.deleted_at IS NULL
       ) AS unread_count
     FROM chat_conversations c
     WHERE c.participant_a_key = ${myKey}
@@ -516,6 +571,7 @@ export async function pgMarkMessagesDelivered(input: {
     WHERE conversation_id = ${input.conversationId}::uuid
       AND sender_key <> ${input.recipientKey}
       AND delivered_at IS NULL
+      AND deleted_at IS NULL
     RETURNING id
   `;
   return rows.length;
@@ -536,6 +592,7 @@ export async function pgMarkMessagesSeen(input: {
     WHERE conversation_id = ${input.conversationId}::uuid
       AND sender_key <> ${input.recipientKey}
       AND seen_at IS NULL
+      AND deleted_at IS NULL
     RETURNING id
   `;
   return rows.length;
@@ -552,6 +609,7 @@ export async function pgCountUnreadChatMessages(myKey: string): Promise<number> 
     WHERE (c.participant_a_key = ${myKey} OR c.participant_b_key = ${myKey})
       AND m.sender_key <> ${myKey}
       AND m.seen_at IS NULL
+      AND m.deleted_at IS NULL
   `;
   return Number(rows[0]?.count ?? 0);
 }
@@ -668,12 +726,95 @@ export async function pgListMessageStatusUpdates(input: {
     SELECT *
     FROM chat_messages
     WHERE conversation_id = ${input.conversationId}::uuid
-      AND sender_key = ${input.myKey}
       AND (
-        (delivered_at IS NOT NULL AND delivered_at > ${since})
-        OR (seen_at IS NOT NULL AND seen_at > ${since})
+        (
+          sender_key = ${input.myKey}
+          AND (
+            (delivered_at IS NOT NULL AND delivered_at > ${since})
+            OR (seen_at IS NOT NULL AND seen_at > ${since})
+          )
+        )
+        OR (edited_at IS NOT NULL AND edited_at > ${since})
+        OR (deleted_at IS NOT NULL AND deleted_at > ${since})
       )
     ORDER BY created_at ASC, id ASC
   `;
   return rows.map((row) => mapMessageRow(row as Record<string, unknown>, input.myKey));
+}
+
+export async function pgGetChatMessageForSender(input: {
+  messageId: string;
+  senderKey: string;
+}): Promise<{
+  id: string;
+  conversationId: string;
+  body: string;
+  deletedAt: string | null;
+} | null> {
+  if (!isPostgresConfigured()) return null;
+  await ensureChatTables();
+  const sql = getSql();
+  const rows = await sql`
+    SELECT id, conversation_id, body, deleted_at
+    FROM chat_messages
+    WHERE id = ${input.messageId}::uuid
+      AND sender_key = ${input.senderKey}
+    LIMIT 1
+  `;
+  if (!rows[0]) return null;
+  return {
+    id: String(rows[0].id),
+    conversationId: String(rows[0].conversation_id),
+    body: String(rows[0].body ?? ""),
+    deletedAt: rows[0].deleted_at ? new Date(String(rows[0].deleted_at)).toISOString() : null,
+  };
+}
+
+export async function pgEditChatMessage(input: {
+  messageId: string;
+  senderKey: string;
+  body: string;
+}): Promise<ChatMessage | null> {
+  if (!isPostgresConfigured()) return null;
+  await ensureChatTables();
+  const sql = getSql();
+  const rows = await sql`
+    UPDATE chat_messages
+    SET
+      body = ${input.body},
+      edited_at = now()
+    WHERE id = ${input.messageId}::uuid
+      AND sender_key = ${input.senderKey}
+      AND deleted_at IS NULL
+    RETURNING *
+  `;
+  if (!rows[0]) return null;
+
+  const conversationId = String(rows[0].conversation_id);
+  await refreshConversationLastMessage(conversationId);
+  return mapMessageRow(rows[0] as Record<string, unknown>, input.senderKey);
+}
+
+export async function pgSoftDeleteChatMessage(input: {
+  messageId: string;
+  senderKey: string;
+}): Promise<ChatMessage | null> {
+  if (!isPostgresConfigured()) return null;
+  await ensureChatTables();
+  const sql = getSql();
+  const rows = await sql`
+    UPDATE chat_messages
+    SET
+      deleted_at = now(),
+      body = ''
+    WHERE id = ${input.messageId}::uuid
+      AND sender_key = ${input.senderKey}
+      AND deleted_at IS NULL
+    RETURNING *
+  `;
+  if (!rows[0]) return null;
+
+  const conversationId = String(rows[0].conversation_id);
+  await refreshConversationLastMessage(conversationId);
+  return mapMessageRow(rows[0] as Record<string, unknown>, input.senderKey);
 }

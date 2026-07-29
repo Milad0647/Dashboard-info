@@ -12,6 +12,9 @@ export interface ChatMessage {
   createdAt: string;
   deliveredAt: string | null;
   seenAt: string | null;
+  editedAt: string | null;
+  deletedAt: string | null;
+  isDeleted: boolean;
   /** Status from the sender's perspective for their own messages. */
   status: ChatMessageStatus;
   isMine: boolean;

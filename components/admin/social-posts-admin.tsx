@@ -57,6 +57,7 @@ import {
   isSitePublication,
   MAX_SOCIAL_POST_LINK_ENTRIES,
   normalizeSocialPostLinkEntries,
+  parseSocialPostLinkEntriesForEditor,
   SOCIAL_PLATFORM_OPTIONS,
   sumSocialPostLinkEntryViews,
 } from "@/lib/social-posts";
@@ -256,14 +257,23 @@ export function SocialPostsAdmin({
     setHighlightFields(fields);
     setPlanLabels(normalizePlanLabels(post.planLabels, post.planLabel));
     setEditOwnerUserId(post.ownerUserId ?? null);
-    const groupEntries = normalizeSocialPostLinkEntries(post.linkEntries);
-    const groupMode = groupEntries.length > 0;
     const platforms = platformsFromPost(post);
+    const editorGroupEntries = parseSocialPostLinkEntriesForEditor(post.linkEntries);
+    const rawLinkEntriesCount = post.linkEntries?.length ?? 0;
+    const useGroupLinksUI = rawLinkEntriesCount > 0 || platforms.length > 1;
+
     setSelectedPlatforms(platforms);
-    setIsGroupDistribution(groupMode || platforms.length > 1);
+    setIsGroupDistribution(useGroupLinksUI);
     setLinkEntries(
-      groupMode
-        ? groupEntries
+      useGroupLinksUI
+        ? editorGroupEntries.length > 0
+          ? editorGroupEntries
+          : platforms.map((platform, index) => ({
+              id: crypto.randomUUID(),
+              link: index === 0 ? post.link ?? "" : "",
+              views: index === 0 ? post.views ?? 0 : 0,
+              platform,
+            }))
         : [
             {
               id: crypto.randomUUID(),
@@ -996,7 +1006,7 @@ export function SocialPostsAdmin({
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Label className={cn(highlightLink && "text-destructive")}>
-                    لینک شبکه‌های انتخاب‌شده ({formatPersianNumber(filledLinkEntries.length)} لینک)
+                    لینک شبکه‌های انتخاب‌شده ({formatPersianNumber(linkEntries.length)} لینک)
                   </Label>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">

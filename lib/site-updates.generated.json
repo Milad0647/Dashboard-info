@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "dbf3c19f601fa18e078c29d4c19b6f6bfc0ec732",
+      "committedAt": "2026-07-28T11:15:42+03:30",
+      "title": "تغییر عنوان تب مرورگر پنل مدیریت",
+      "subject": "Set admin panel browser title to پنل مدیریت"
+    },
+    {
       "hash": "473f8cccf9a056a4cb122deb1599479134351dbc",
       "committedAt": "2026-07-27T16:45:51+03:30",
       "title": "رفع پرش اسکرول چت هنگام خواندن پیام‌های قبلی",
