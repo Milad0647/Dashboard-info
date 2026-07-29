@@ -7,10 +7,13 @@ import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
+import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
-import { getSocialPostLinkEntryPlatforms } from "@/lib/social-posts";
+import { Music } from "lucide-react";
+import { getSocialPostLinkEntryPlatforms, resolveSocialPostCardMedia } from "@/lib/social-posts";
 import type { SocialMediaPost, SocialPlatform } from "@/lib/types";
 import { cn, formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
+import { isDirectAudioUrl, isDirectVideoUrl } from "@/lib/media-utils";
 
 interface AdminSocialPostCompactCardProps {
   post: SocialMediaPost;
@@ -31,7 +34,7 @@ export function AdminSocialPostCompactCard({
   canScore = false,
   onScoreSaved,
 }: AdminSocialPostCompactCardProps) {
-  const coverUrl = post.coverImageUrl ?? post.mediaUrl ?? null;
+  const { mediaUrl, coverImageUrl } = resolveSocialPostCardMedia(post);
   const entryPlatforms = getSocialPostLinkEntryPlatforms(post.linkEntries);
   const platformBadges =
     entryPlatforms.length > 0
@@ -39,6 +42,12 @@ export function AdminSocialPostCompactCard({
       : post.platform !== "site"
         ? [post.platform as SocialPlatform]
         : [];
+
+  const isAudio =
+    Boolean(mediaUrl) && (post.contentType === "audio" || isDirectAudioUrl(mediaUrl as string));
+  const isVideo =
+    Boolean(mediaUrl) &&
+    (post.contentType === "video" || post.contentType === "reel" || isDirectVideoUrl(mediaUrl as string));
 
   return (
     <div className="apple-lift group relative w-full overflow-hidden rounded-xl border bg-card text-right hover:border-primary/50">
@@ -50,8 +59,34 @@ export function AdminSocialPostCompactCard({
         )}
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
-          {coverUrl ? (
-            <MediaThumbnail src={coverUrl} alt={post.title} kind="poster" sizes="200px" objectFit="cover" />
+          {isAudio ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted px-3 py-4">
+              <Music className="h-8 w-8 text-muted-foreground" />
+            </div>
+          ) : isVideo && mediaUrl ? (
+            <VideoThumbnail
+              videoUrl={mediaUrl}
+              thumbnailUrl={coverImageUrl}
+              alt={post.title}
+              sizes="200px"
+              className="object-cover"
+            />
+          ) : mediaUrl ? (
+            <MediaThumbnail
+              src={mediaUrl}
+              alt={post.title}
+              sizes="200px"
+              objectFit="cover"
+              className="apple-media-zoom"
+            />
+          ) : coverImageUrl ? (
+            <MediaThumbnail
+              src={coverImageUrl}
+              alt={post.title}
+              sizes="200px"
+              objectFit="cover"
+              className="apple-media-zoom"
+            />
           ) : (
             <div className="flex h-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
               {post.title}

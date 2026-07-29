@@ -544,6 +544,16 @@ export interface SocialPostLinkEntry {
   views: number;
   /** Optional per-link platform when the same content is posted to multiple networks. */
   platform?: SocialPlatform;
+  /**
+   * Optional media for this specific link entry.
+   * When present, cards and public rendering prefer this media over post-level media.
+   */
+  mediaUrl?: string | null;
+  /**
+   * Optional cover/thumbnail for videos inside this link entry.
+   * Stored separately because it is typically a lightweight image derived from the video.
+   */
+  coverImageUrl?: string | null;
 }
 
 export interface SocialMediaPost extends Ownable {

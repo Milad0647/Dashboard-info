@@ -270,7 +270,11 @@ function getSocialChecks(post: SocialMediaPost): CheckedField[] {
     },
     {
       key: "media",
-      ok: Boolean(post.coverImageUrl?.trim() || post.mediaUrl?.trim()),
+      ok: Boolean(
+        post.coverImageUrl?.trim() ||
+          post.mediaUrl?.trim() ||
+          post.linkEntries?.some((entry) => entry.mediaUrl?.trim() || entry.coverImageUrl?.trim())
+      ),
     },
     { key: "description", ok: !isBlank(post.description) },
   ];

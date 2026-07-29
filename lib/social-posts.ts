@@ -46,7 +46,15 @@ export function createEmptySocialPostLinkEntry(
     link: "",
     views: 0,
     ...(platform ? { platform } : {}),
+    mediaUrl: null,
+    coverImageUrl: null,
   };
+}
+
+function parseOptionalTrimmedString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 export function parseSocialPostLinkEntries(value: unknown): SocialPostLinkEntry[] {
@@ -62,30 +70,39 @@ export function parseSocialPostLinkEntries(value: unknown): SocialPostLinkEntry[
       : value;
   if (!Array.isArray(raw)) return [];
 
-  return raw
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
-      const record = item as Record<string, unknown>;
-      const link = typeof record.link === "string" ? record.link.trim() : "";
-      const viewsRaw = record.views;
-      const views =
-        typeof viewsRaw === "number"
-          ? viewsRaw
-          : typeof viewsRaw === "string"
-            ? Number(viewsRaw)
-            : 0;
-      const id = typeof record.id === "string" && record.id ? record.id : crypto.randomUUID();
-      if (!link) return null;
-      const platform = isSocialPlatform(record.platform) ? record.platform : undefined;
-      return {
-        id,
-        link,
-        views: Number.isFinite(views) && views >= 0 ? Math.floor(views) : 0,
-        ...(platform ? { platform } : {}),
-      };
-    })
-    .filter((item): item is SocialPostLinkEntry => Boolean(item))
-    .slice(0, MAX_SOCIAL_POST_LINK_ENTRIES);
+  const result: SocialPostLinkEntry[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const record = item as Record<string, unknown>;
+    const link = typeof record.link === "string" ? record.link.trim() : "";
+    if (!link) continue;
+
+    const viewsRaw = record.views;
+    const views =
+      typeof viewsRaw === "number"
+        ? viewsRaw
+        : typeof viewsRaw === "string"
+          ? Number(viewsRaw)
+          : 0;
+
+    const id = typeof record.id === "string" && record.id ? record.id : crypto.randomUUID();
+    const platform = isSocialPlatform(record.platform) ? record.platform : undefined;
+    const mediaUrl = parseOptionalTrimmedString(record.mediaUrl);
+    const coverImageUrl = parseOptionalTrimmedString(record.coverImageUrl);
+
+    result.push({
+      id,
+      link,
+      views: Number.isFinite(views) && views >= 0 ? Math.floor(views) : 0,
+      ...(platform ? { platform } : {}),
+      ...(mediaUrl ? { mediaUrl } : {}),
+      ...(coverImageUrl ? { coverImageUrl } : {}),
+    });
+
+    if (result.length >= MAX_SOCIAL_POST_LINK_ENTRIES) break;
+  }
+
+  return result;
 }
 
 export function normalizeSocialPostLinkEntries(
@@ -114,32 +131,39 @@ export function parseSocialPostLinkEntriesForEditor(
 
   if (!Array.isArray(raw)) return [];
 
-  return raw
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
-      const record = item as Record<string, unknown>;
+  const result: SocialPostLinkEntry[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const record = item as Record<string, unknown>;
 
-      const link = typeof record.link === "string" ? record.link.trim() : "";
-      const viewsRaw = record.views;
-      const views =
-        typeof viewsRaw === "number"
-          ? viewsRaw
-          : typeof viewsRaw === "string"
-            ? Number(viewsRaw)
-            : 0;
+    const link = typeof record.link === "string" ? record.link.trim() : "";
 
-      const id = typeof record.id === "string" && record.id ? record.id : crypto.randomUUID();
-      const platform = isSocialPlatform(record.platform) ? record.platform : undefined;
+    const viewsRaw = record.views;
+    const views =
+      typeof viewsRaw === "number"
+        ? viewsRaw
+        : typeof viewsRaw === "string"
+          ? Number(viewsRaw)
+          : 0;
 
-      return {
-        id,
-        link,
-        views: Number.isFinite(views) && views >= 0 ? Math.floor(views) : 0,
-        ...(platform ? { platform } : {}),
-      } satisfies SocialPostLinkEntry;
-    })
-    .filter((item): item is SocialPostLinkEntry => Boolean(item))
-    .slice(0, MAX_SOCIAL_POST_LINK_ENTRIES);
+    const id = typeof record.id === "string" && record.id ? record.id : crypto.randomUUID();
+    const platform = isSocialPlatform(record.platform) ? record.platform : undefined;
+    const mediaUrl = parseOptionalTrimmedString(record.mediaUrl);
+    const coverImageUrl = parseOptionalTrimmedString(record.coverImageUrl);
+
+    result.push({
+      id,
+      link,
+      views: Number.isFinite(views) && views >= 0 ? Math.floor(views) : 0,
+      ...(platform ? { platform } : {}),
+      ...(mediaUrl ? { mediaUrl } : {}),
+      ...(coverImageUrl ? { coverImageUrl } : {}),
+    } satisfies SocialPostLinkEntry);
+
+    if (result.length >= MAX_SOCIAL_POST_LINK_ENTRIES) break;
+  }
+
+  return result;
 }
 
 export function sumSocialPostLinkEntryViews(entries: SocialPostLinkEntry[]): number {
@@ -158,4 +182,38 @@ export function getSocialPostLinkEntryPlatforms(
     result.push(entry.platform);
   }
   return result;
+}
+
+/**
+ * Pick which media a card should render for a social post.
+ * - Prefer media from the primary (post.platform) link entry when available.
+ * - Otherwise prefer the first entry that has media.
+ * - Fallback to post-level media.
+ */
+export function resolveSocialPostCardMedia(post: SocialMediaPost): {
+  mediaUrl: string | null;
+  coverImageUrl: string | null;
+} {
+  const entries = post.linkEntries ?? [];
+  if (entries.length === 0) {
+    return { mediaUrl: post.mediaUrl ?? null, coverImageUrl: post.coverImageUrl ?? null };
+  }
+
+  if (post.platform !== "site") {
+    const matched = entries.find((entry) => entry.platform === post.platform);
+    if (matched && (matched.mediaUrl?.trim() || matched.coverImageUrl?.trim())) {
+      return {
+        mediaUrl: matched.mediaUrl ?? post.mediaUrl ?? null,
+        coverImageUrl: matched.coverImageUrl ?? post.coverImageUrl ?? null,
+      };
+    }
+  }
+
+  const firstWithMedia = entries.find((entry) => Boolean(entry.mediaUrl?.trim() || entry.coverImageUrl?.trim()));
+  const selected = firstWithMedia ?? entries[0];
+
+  return {
+    mediaUrl: selected.mediaUrl ?? post.mediaUrl ?? null,
+    coverImageUrl: selected.coverImageUrl ?? post.coverImageUrl ?? null,
+  };
 }

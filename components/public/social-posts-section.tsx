@@ -32,6 +32,7 @@ import { PublicContentCard } from "@/components/public/public-content-card";
 import { PublicContentDetailDialog } from "@/components/public/public-content-detail-dialog";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { useContentScoreAccess } from "@/lib/context/content-score-context";
+import { resolveSocialPostCardMedia } from "@/lib/social-posts";
 
 interface SocialPostsSectionProps {
   posts: SocialMediaPost[];
@@ -39,27 +40,17 @@ interface SocialPostsSectionProps {
 }
 
 function SocialPostCover({ post }: { post: SocialMediaPost }) {
-  if (post.coverImageUrl) {
-    return (
-      <ImageZoom
-        src={post.coverImageUrl}
-        alt={post.title}
-        className="h-full w-full"
-        imgClassName="object-cover apple-media-zoom"
-        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 220px"
-      />
-    );
-  }
+  const { mediaUrl, coverImageUrl } = resolveSocialPostCardMedia(post);
 
   const isAudio =
-    post.contentType === "audio" || (Boolean(post.mediaUrl) && isDirectAudioUrl(post.mediaUrl!));
+    Boolean(mediaUrl) && (post.contentType === "audio" || isDirectAudioUrl(mediaUrl as string));
 
-  if (isAudio && post.mediaUrl) {
+  if (isAudio && mediaUrl) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted px-3 py-4">
         <Music className="h-8 w-8 text-muted-foreground" />
         <audio
-          src={resolveAbsoluteMediaUrl(post.mediaUrl)}
+          src={resolveAbsoluteMediaUrl(mediaUrl)}
           controls
           preload="none"
           className="w-full max-w-full"
@@ -69,20 +60,33 @@ function SocialPostCover({ post }: { post: SocialMediaPost }) {
     );
   }
 
-  if (post.mediaUrl && (post.contentType === "video" || isDirectVideoUrl(post.mediaUrl))) {
+  if (mediaUrl && (post.contentType === "video" || isDirectVideoUrl(mediaUrl))) {
     return (
       <VideoThumbnail
-        videoUrl={post.mediaUrl}
+        videoUrl={mediaUrl}
+        thumbnailUrl={coverImageUrl}
         alt={post.title}
         className="object-cover apple-media-zoom"
       />
     );
   }
 
-  if (post.mediaUrl) {
+  if (mediaUrl) {
     return (
       <ImageZoom
-        src={post.mediaUrl}
+        src={mediaUrl}
+        alt={post.title}
+        className="h-full w-full"
+        imgClassName="object-cover apple-media-zoom"
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 220px"
+      />
+    );
+  }
+
+  if (coverImageUrl) {
+    return (
+      <ImageZoom
+        src={coverImageUrl}
         alt={post.title}
         className="h-full w-full"
         imgClassName="object-cover apple-media-zoom"

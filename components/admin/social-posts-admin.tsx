@@ -53,6 +53,7 @@ import { videoNeedsAutoCover } from "@/lib/client/video-cover";
 import {
   createEmptySocialPostLinkEntry,
   getSocialPostLinkEntryPlatforms,
+  resolveSocialPostCardMedia,
   isGroupSocialPost,
   isSitePublication,
   MAX_SOCIAL_POST_LINK_ENTRIES,
@@ -124,6 +125,10 @@ export function SocialPostsAdmin({
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewPost, setPreviewPost] = useState<SocialMediaPost | null>(null);
+  const previewCardMedia = useMemo(
+    () => (previewPost ? resolveSocialPostCardMedia(previewPost) : null),
+    [previewPost]
+  );
   const [planLabels, setPlanLabels] = useState<string[]>([]);
   const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(null);
   const [highlightFields, setHighlightFields] = useState<EditSuggestionMissingField[]>([]);
@@ -316,6 +321,11 @@ export function SocialPostsAdmin({
   const watchedDescription = form.watch("description");
   const watchedCover = form.watch("coverImageUrl");
   const watchedMedia = form.watch("mediaUrl");
+  const watchedContentType = form.watch("contentType");
+  const groupEntriesHaveMedia = useMemo(
+    () => linkEntries.some((entry) => Boolean(entry.mediaUrl?.trim() || entry.coverImageUrl?.trim())),
+    [linkEntries]
+  );
   const groupViewsTotal = useMemo(
     () => sumSocialPostLinkEntryViews(linkEntries),
     [linkEntries]
@@ -333,7 +343,10 @@ export function SocialPostsAdmin({
   const highlightDescription =
     highlightFields.includes("description") && !watchedDescription?.trim();
   const highlightMedia =
-    highlightFields.includes("media") && !watchedCover?.trim() && !watchedMedia?.trim();
+    highlightFields.includes("media") &&
+    !watchedCover?.trim() &&
+    !watchedMedia?.trim() &&
+    !groupEntriesHaveMedia;
 
   const syncPrimaryPlatform = (platforms: SocialPlatform[]) => {
     const primary = platforms[0] ?? "instagram";
@@ -342,7 +355,7 @@ export function SocialPostsAdmin({
 
   const updateLinkEntry = (
     id: string,
-    patch: Partial<Pick<SocialPostLinkEntry, "link" | "views" | "platform">>
+    patch: Partial<Pick<SocialPostLinkEntry, "link" | "views" | "platform" | "mediaUrl" | "coverImageUrl">>
   ) => {
     setLinkEntries((prev) =>
       prev.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry))
@@ -787,7 +800,15 @@ export function SocialPostsAdmin({
         onOpenChange={(open) => !open && setPreviewPost(null)}
         title={previewPost?.title ?? "نمایش پست"}
         description={previewPost?.description}
-        imageUrl={previewPost?.mediaUrl || previewPost?.coverImageUrl}
+        imageUrl={
+          previewCardMedia && previewPost
+            ? previewPost.contentType === "video" || previewPost.contentType === "reel"
+              ? previewCardMedia.coverImageUrl
+              : previewPost.contentType === "audio"
+                ? previewCardMedia.coverImageUrl
+                : previewCardMedia.mediaUrl || previewCardMedia.coverImageUrl
+            : null
+        }
         meta={
           previewPost ? (
             <p className="text-xs text-muted-foreground">
@@ -1019,62 +1040,106 @@ export function SocialPostsAdmin({
                 </div>
                 <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border p-2">
                   {linkEntries.map((entry, index) => (
-                    <div
-                      key={entry.id}
-                      className="grid grid-cols-[minmax(0,1fr)_6.5rem_auto] items-end gap-2 rounded-md border bg-muted/30 p-2"
-                    >
-                      <div className="space-y-1">
-                        <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          {entry.platform ? (
-                            <>
-                              <SocialPlatformIcon
-                                platform={entry.platform}
-                                size="sm"
-                                className="h-4 w-4 rounded"
-                              />
-                              {getSocialPlatformLabel(entry.platform)}
-                            </>
-                          ) : (
-                            <>لینک {index + 1}</>
-                          )}
-                        </Label>
-                        <Input
-                          dir="ltr"
-                          value={entry.link}
-                          placeholder="https://..."
-                          className={cn(
-                            highlightLink &&
-                              !entry.link.trim() &&
-                              "border-destructive focus-visible:ring-destructive"
-                          )}
-                          onChange={(event) =>
-                            updateLinkEntry(entry.id, { link: event.target.value })
-                          }
-                        />
+                    <div key={entry.id} className="space-y-2 rounded-md border bg-muted/30 p-2">
+                      <div className="grid grid-cols-[minmax(0,1fr)_6.5rem_auto] items-end gap-2">
+                        <div className="space-y-1">
+                          <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            {entry.platform ? (
+                              <>
+                                <SocialPlatformIcon
+                                  platform={entry.platform}
+                                  size="sm"
+                                  className="h-4 w-4 rounded"
+                                />
+                                {getSocialPlatformLabel(entry.platform)}
+                              </>
+                            ) : (
+                              <>لینک {index + 1}</>
+                            )}
+                          </Label>
+                          <Input
+                            dir="ltr"
+                            value={entry.link}
+                            placeholder="https://..."
+                            className={cn(
+                              highlightLink &&
+                                !entry.link.trim() &&
+                                "border-destructive focus-visible:ring-destructive"
+                            )}
+                            onChange={(event) =>
+                              updateLinkEntry(entry.id, { link: event.target.value })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">بازدید</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={entry.views}
+                            onChange={(event) =>
+                              updateLinkEntry(entry.id, {
+                                views: Math.max(0, Number(event.target.value) || 0),
+                              })
+                            }
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="mb-0.5"
+                          onClick={() => removeLinkEntry(entry.id)}
+                          title="حذف"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">بازدید</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={entry.views}
-                          onChange={(event) =>
+
+                      {watchedContentType === "audio" ? (
+                        <MediaUpload
+                          label="رسانه (صوت)"
+                          value={entry.mediaUrl ?? ""}
+                          onChange={(value) => updateLinkEntry(entry.id, { mediaUrl: value })}
+                          kind="audio"
+                          uploadKind="audio"
+                          accept="audio/*"
+                          fileOnly
+                          dropzone={false}
+                          showPreview={false}
+                        />
+                      ) : watchedContentType === "video" || watchedContentType === "reel" ? (
+                        <MediaUpload
+                          label="رسانه (ویدیو)"
+                          value={entry.mediaUrl ?? ""}
+                          onChange={(value) =>
                             updateLinkEntry(entry.id, {
-                              views: Math.max(0, Number(event.target.value) || 0),
+                              mediaUrl: value,
+                              coverImageUrl: value ? entry.coverImageUrl ?? null : null,
                             })
                           }
+                          kind="video"
+                          fileOnly
+                          accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+                          maxFileSizeBytes={100 * 1024 * 1024}
+                          coverImageUrl={entry.coverImageUrl ?? null}
+                          onAutoCoverGenerated={(coverUrl) =>
+                            updateLinkEntry(entry.id, { coverImageUrl: coverUrl })
+                          }
+                          dropzone={false}
+                          showPreview={false}
                         />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="mb-0.5"
-                        onClick={() => removeLinkEntry(entry.id)}
-                        title="حذف"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      ) : (
+                        <MediaUpload
+                          label="رسانه (تصویر)"
+                          value={entry.mediaUrl ?? ""}
+                          onChange={(value) => updateLinkEntry(entry.id, { mediaUrl: value })}
+                          kind="image"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          dropzone={false}
+                          showPreview={false}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

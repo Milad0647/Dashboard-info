@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "84feb76f34f3e7fc9b9f5850540d7f1b0538442e",
+      "committedAt": "2026-07-29T12:40:14+03:30",
+      "title": "نمایش درست شبکه‌های انتخاب‌شده کنار لینک‌های پخش گروهی و امکان ویرایش/حذف پیام‌ها در پنل چت",
+      "subject": "Add chat message edit/delete and improve social group links"
+    },
+    {
       "hash": "dbf3c19f601fa18e078c29d4c19b6f6bfc0ec732",
       "committedAt": "2026-07-28T11:15:42+03:30",
       "title": "تغییر عنوان تب مرورگر پنل مدیریت",
