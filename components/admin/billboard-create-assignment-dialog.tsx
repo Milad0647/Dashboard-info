@@ -125,6 +125,8 @@ export function BillboardCreateAssignmentDialog({
   const [province, setProvince] = useState("");
   const [city, setCity] = useState("");
   const [category, setCategory] = useState<BillboardCategory>("billboard");
+  const [locationType, setLocationType] = useState("highway");
+  const [usesApprovedDesign, setUsesApprovedDesign] = useState(true);
   const [axis, setAxis] = useState("");
   const [areaSqm, setAreaSqm] = useState("");
   const [address, setAddress] = useState("");
@@ -139,6 +141,16 @@ export function BillboardCreateAssignmentDialog({
   const [planLabels, setPlanLabels] = useState<string[]>([]);
   const [editScore, setEditScore] = useState<number | null | undefined>(null);
   const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(null);
+  const [extraStructures, setExtraStructures] = useState<
+    Array<{
+      id: string;
+      category: BillboardCategory;
+      locationType: string;
+      areaSqm: string;
+      axis: string;
+      address: string;
+    }>
+  >([]);
 
   const isEditing = Boolean(editingBillboard);
 
@@ -167,6 +179,8 @@ export function BillboardCreateAssignmentDialog({
         setProvince(resolvedProvince);
         setCity(resolvedCity);
         setCategory(matchBillboardCategoryKey(editingBillboard.category) ?? "billboard");
+        setLocationType(editingBillboard.locationType ?? "highway");
+        setUsesApprovedDesign(Boolean(editingBillboard.usesApprovedDesign));
         setAxis(editingBillboard.title);
         setAreaSqm(parseAreaSqmFromBillboard(editingBillboard));
         setAddress(parseAddressFromBillboard(editingBillboard));
@@ -174,6 +188,7 @@ export function BillboardCreateAssignmentDialog({
         setPlanLabels(normalizePlanLabels(editingBillboard.planLabels, editingBillboard.planLabel));
         setEditScore(editingBillboard.score);
         setEditOwnerUserId(editingBillboard.ownerUserId ?? null);
+        setExtraStructures([]);
         setCoords({
           latitude: editingBillboard.latitude ?? center.lat,
           longitude: editingBillboard.longitude ?? center.lng,
@@ -208,6 +223,8 @@ export function BillboardCreateAssignmentDialog({
       setProvince(resolved.province);
       setCity(resolved.city);
       setCategory("billboard");
+      setLocationType("highway");
+      setUsesApprovedDesign(true);
       setAxis("");
       setAreaSqm("");
       setAddress("");
@@ -215,6 +232,7 @@ export function BillboardCreateAssignmentDialog({
       setPlanLabels([]);
       setEditScore(null);
       setEditOwnerUserId(null);
+      setExtraStructures([]);
       setCoords({ latitude: center.lat, longitude: center.lng });
       setMapCenter({ lat: center.lat, lng: center.lng, revision: Date.now() });
       setPeriods([createDisplayPeriod()]);
@@ -252,45 +270,90 @@ export function BillboardCreateAssignmentDialog({
     }
 
     startTransition(async () => {
-      const formData = new FormData();
-      formData.append("campaignId", campaignId);
-      if (editingBillboard?.id) formData.append("billboardId", editingBillboard.id);
-      formData.append("category", category);
-      formData.append("axis", axis.trim());
-      formData.append("address", address.trim());
-      formData.append("area_sqm", areaSqm.trim());
-      formData.append("latitude", String(coords.latitude));
-      formData.append("longitude", String(coords.longitude));
+      const buildFormData = (structure: {
+        category: BillboardCategory;
+        locationType: string;
+        areaSqm: string;
+        axis: string;
+        address: string;
+        billboardId?: string;
+      }) => {
+        const formData = new FormData();
+        formData.append("campaignId", campaignId);
+        if (structure.billboardId) formData.append("billboardId", structure.billboardId);
+        formData.append("category", structure.category);
+        formData.append("locationType", structure.locationType);
+        formData.append("usesApprovedDesign", usesApprovedDesign ? "true" : "false");
+        formData.append("axis", structure.axis.trim());
+        formData.append("address", structure.address.trim());
+        formData.append("area_sqm", structure.areaSqm.trim());
+        formData.append("latitude", String(coords.latitude));
+        formData.append("longitude", String(coords.longitude));
 
-      const resolvedProvince = province || contributorProfile?.province?.trim() || "";
-      const resolvedCity = city || contributorProfile?.city?.trim() || "";
-      if (resolvedProvince) formData.append("province", resolvedProvince);
-      if (resolvedCity) formData.append("city", resolvedCity);
-      if (notes.trim()) formData.append("notes", notes.trim());
-      formData.append("published", "true");
-      formData.append("status", "published");
-      for (const label of planLabels) {
-        formData.append("planLabels", label);
+        const resolvedProvince = province || contributorProfile?.province?.trim() || "";
+        const resolvedCity = city || contributorProfile?.city?.trim() || "";
+        if (resolvedProvince) formData.append("province", resolvedProvince);
+        if (resolvedCity) formData.append("city", resolvedCity);
+        if (notes.trim()) formData.append("notes", notes.trim());
+        formData.append("published", "true");
+        formData.append("status", "published");
+        for (const label of planLabels) {
+          formData.append("planLabels", label);
+        }
+        if (planLabels[0]) formData.append("planLabel", planLabels[0]);
+        if (canTransferOwnership && editOwnerUserId) {
+          formData.append("ownerUserId", editOwnerUserId);
+        }
+
+        formData.append("periods", JSON.stringify(buildPeriodsFormPayload(periods)));
+        appendPeriodFilesToFormData(formData, periods);
+        return formData;
+      };
+
+      const payloads = [
+        {
+          category,
+          locationType,
+          areaSqm,
+          axis,
+          address,
+          billboardId: editingBillboard?.id,
+        },
+        ...(!isEditing
+          ? extraStructures.map((row) => ({
+              category: row.category,
+              locationType: row.locationType,
+              areaSqm: row.areaSqm,
+              axis: row.axis.trim() || axis,
+              address: row.address.trim() || address,
+            }))
+          : []),
+      ];
+
+      for (const [index, payload] of payloads.entries()) {
+        const response = await fetch("/api/billboard/create", {
+          method: "POST",
+          body: buildFormData(payload),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          toast.error(
+            result.error ??
+              (payloads.length > 1
+                ? `ثبت سازه ${index + 1} ناموفق بود`
+                : "ثبت تبلیغات محیطی ناموفق بود")
+          );
+          return;
+        }
       }
-      if (planLabels[0]) formData.append("planLabel", planLabels[0]);
-      if (canTransferOwnership && editOwnerUserId) {
-        formData.append("ownerUserId", editOwnerUserId);
-      }
 
-      formData.append("periods", JSON.stringify(buildPeriodsFormPayload(periods)));
-      appendPeriodFilesToFormData(formData, periods);
-
-      const response = await fetch("/api/billboard/create", {
-        method: "POST",
-        body: formData,
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        toast.error(result.error ?? "ثبت تبلیغات محیطی ناموفق بود");
-        return;
-      }
-
-      toast.success(isEditing ? "تبلیغات محیطی ویرایش شد" : "تبلیغات محیطی جدید ثبت شد");
+      toast.success(
+        isEditing
+          ? "تبلیغات محیطی ویرایش شد"
+          : payloads.length > 1
+            ? `${payloads.length} سازه به‌صورت مستقل ثبت شد`
+            : "تبلیغات محیطی جدید ثبت شد"
+      );
       onOpenChange(false);
       onCreated?.();
     });
@@ -324,6 +387,41 @@ export function BillboardCreateAssignmentDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>نوع محل *</Label>
+              <Select value={locationType} onValueChange={setLocationType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="انتخاب محل" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="highway">بزرگراه</SelectItem>
+                  <SelectItem value="boulevard">بلوار</SelectItem>
+                  <SelectItem value="main_street">خیابان اصلی</SelectItem>
+                  <SelectItem value="square">میدان</SelectItem>
+                  <SelectItem value="metro">مترو</SelectItem>
+                  <SelectItem value="bus_station">ایستگاه اتوبوس</SelectItem>
+                  <SelectItem value="other">سایر</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>طرح مصوب</Label>
+              <Select
+                value={usesApprovedDesign ? "true" : "false"}
+                onValueChange={(value) => setUsesApprovedDesign(value === "true")}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">استفاده از طرح مصوب</SelectItem>
+                  <SelectItem value="false">بدون طرح مصوب</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div
@@ -365,6 +463,139 @@ export function BillboardCreateAssignmentDialog({
               onChange={(event) => setAreaSqm(event.target.value)}
             />
           </div>
+
+          {!isEditing && (
+            <div className="space-y-3 rounded-lg border border-dashed p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium">ثبت گروهی سازه‌ها</p>
+                  <p className="text-xs text-muted-foreground">
+                    موضوع، فاز، طرح و دوره‌ها مشترک‌اند؛ هر سازه جدا ذخیره و امتیازدهی می‌شود.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setExtraStructures((prev) => [
+                      ...prev,
+                      {
+                        id: crypto.randomUUID(),
+                        category: "straboard",
+                        locationType: "boulevard",
+                        areaSqm: "",
+                        axis: "",
+                        address: "",
+                      },
+                    ])
+                  }
+                >
+                  افزودن سازه
+                </Button>
+              </div>
+              {extraStructures.map((row, index) => (
+                <div key={row.id} className="space-y-2 rounded-md border bg-muted/20 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium">سازه {index + 2}</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setExtraStructures((prev) => prev.filter((item) => item.id !== row.id))
+                      }
+                    >
+                      حذف
+                    </Button>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Select
+                      value={row.category}
+                      onValueChange={(value) =>
+                        setExtraStructures((prev) =>
+                          prev.map((item) =>
+                            item.id === row.id
+                              ? { ...item, category: value as BillboardCategory }
+                              : item
+                          )
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BILLBOARD_CATEGORIES.map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {billboardCategoryLabels[item]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={row.locationType}
+                      onValueChange={(value) =>
+                        setExtraStructures((prev) =>
+                          prev.map((item) =>
+                            item.id === row.id ? { ...item, locationType: value } : item
+                          )
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="highway">بزرگراه</SelectItem>
+                        <SelectItem value="boulevard">بلوار</SelectItem>
+                        <SelectItem value="main_street">خیابان اصلی</SelectItem>
+                        <SelectItem value="square">میدان</SelectItem>
+                        <SelectItem value="metro">مترو</SelectItem>
+                        <SelectItem value="bus_station">ایستگاه اتوبوس</SelectItem>
+                        <SelectItem value="other">سایر</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder="محور / عنوان"
+                      value={row.axis}
+                      onChange={(event) =>
+                        setExtraStructures((prev) =>
+                          prev.map((item) =>
+                            item.id === row.id ? { ...item, axis: event.target.value } : item
+                          )
+                        )
+                      }
+                    />
+                    <Input
+                      type="number"
+                      placeholder="متراژ"
+                      value={row.areaSqm}
+                      onChange={(event) =>
+                        setExtraStructures((prev) =>
+                          prev.map((item) =>
+                            item.id === row.id ? { ...item, areaSqm: event.target.value } : item
+                          )
+                        )
+                      }
+                    />
+                    <Input
+                      className="sm:col-span-2"
+                      placeholder="آدرس (اختیاری — پیش‌فرض از سازه اول)"
+                      value={row.address}
+                      onChange={(event) =>
+                        setExtraStructures((prev) =>
+                          prev.map((item) =>
+                            item.id === row.id ? { ...item, address: event.target.value } : item
+                          )
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label

@@ -405,6 +405,41 @@ export function PerformanceAdmin({
 
                 <Card>
                   <CardHeader className="pb-2">
+                    <CardTitle className="text-base">امتیاز بخش‌ها</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {[
+                        { label: "امتیاز اکران محیطی", value: selectedEntry.billboardScore },
+                        { label: "امتیاز تولید پوستر", value: selectedEntry.posterScore },
+                        { label: "امتیاز تولید ویدئو", value: selectedEntry.videoScore },
+                        { label: "امتیاز نشر و بازنشر", value: selectedEntry.socialScore },
+                        {
+                          label: "امتیاز نهایی شرکت",
+                          value:
+                            selectedEntry.billboardScore +
+                            selectedEntry.posterScore +
+                            selectedEntry.videoScore +
+                            selectedEntry.socialScore,
+                        },
+                        { label: "رتبه کشوری", value: selectedEntry.rank },
+                      ].map((item) => (
+                        <div
+                          key={item.label}
+                          className="rounded-lg border bg-muted/30 px-3 py-2.5"
+                        >
+                          <p className="text-[11px] text-muted-foreground">{item.label}</p>
+                          <p className="text-sm font-semibold tabular-nums">
+                            {formatPersianNumber(item.value)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
                     <CardTitle className="text-base">آمار عددی این کمپین</CardTitle>
                   </CardHeader>
                   <CardContent>

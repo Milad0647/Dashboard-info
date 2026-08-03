@@ -52,6 +52,11 @@ export interface ProvinceLeaderboardMetrics {
   score: number;
   /** Sum of Ownable.score values across content items. */
   ratingScore: number;
+  /** Section content scores (for company profile cards). */
+  billboardScore: number;
+  posterScore: number;
+  videoScore: number;
+  socialScore: number;
   /** Sum of billboard areaSqm values. */
   totalAreaSqm: number;
 }
@@ -133,8 +138,25 @@ function emptyMetrics(): ProvinceLeaderboardMetrics {
     totalUploads: 0,
     score: 0,
     ratingScore: 0,
+    billboardScore: 0,
+    posterScore: 0,
+    videoScore: 0,
+    socialScore: 0,
     totalAreaSqm: 0,
   };
+}
+
+function addSectionScore(
+  current: ProvinceLeaderboardMetrics,
+  field: MetricField,
+  itemScore: number
+) {
+  if (field === "billboards") current.billboardScore += itemScore;
+  else if (field === "posters") current.posterScore += itemScore;
+  else if (field === "videos") current.videoScore += itemScore;
+  else if (field === "socialPosts" || field === "sitePublications") {
+    current.socialScore += itemScore;
+  }
 }
 
 function countsAsTodayUpload<T extends Ownable & { createdAt?: string | null }>(
@@ -163,6 +185,7 @@ function addItem<T extends Ownable & { createdAt?: string | null; province?: str
   current.score += SCORE_WEIGHTS[field];
   if (typeof item.score === "number" && Number.isFinite(item.score)) {
     current.ratingScore += item.score;
+    addSectionScore(current, field, item.score);
   }
 
   if (field === "billboards") {
@@ -229,6 +252,7 @@ function addUserItem<T extends Ownable & { createdAt?: string | null; province?:
   current.score += SCORE_WEIGHTS[field];
   if (typeof item.score === "number" && Number.isFinite(item.score)) {
     current.ratingScore += item.score;
+    addSectionScore(current, field, item.score);
   }
 
   if (field === "billboards") {
@@ -287,6 +311,10 @@ export function buildProvinceLeaderboard(data: LeaderboardSourceData): ProvinceL
       totalUploads: metrics.totalUploads,
       score: metrics.score,
       ratingScore: metrics.ratingScore,
+      billboardScore: metrics.billboardScore,
+      posterScore: metrics.posterScore,
+      videoScore: metrics.videoScore,
+      socialScore: metrics.socialScore,
       totalAreaSqm: metrics.totalAreaSqm,
       rank: 0,
     }))
@@ -317,6 +345,10 @@ export function buildUserLeaderboard(data: LeaderboardSourceData): UserLeaderboa
       totalUploads: metrics.totalUploads,
       score: metrics.score,
       ratingScore: metrics.ratingScore,
+      billboardScore: metrics.billboardScore,
+      posterScore: metrics.posterScore,
+      videoScore: metrics.videoScore,
+      socialScore: metrics.socialScore,
       totalAreaSqm: metrics.totalAreaSqm,
       rank: 0,
     }))

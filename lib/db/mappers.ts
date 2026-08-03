@@ -27,6 +27,7 @@ import type {
 import type { ContributorPermissions } from "@/lib/contributor-permissions";
 import { normalizeAnalyticsConfig } from "@/lib/analytics-config";
 import { normalizeScoringRules } from "@/lib/scoring/normalize-scoring-rules";
+import { normalizeScoringPolicy } from "@/lib/scoring/scoring-policy";
 import {
   contentPlansFromTopics,
   normalizeContentTopics,
@@ -146,6 +147,11 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
         ? JSON.parse(row.scoring_rules)
         : row.scoring_rules
     ),
+    scoringPolicy: normalizeScoringPolicy(
+      typeof row.scoring_policy === "string"
+        ? JSON.parse(row.scoring_policy)
+        : row.scoring_policy
+    ),
     adminOwnerLabel: row.admin_owner_label ?? "توانیر",
     contentTopics: normalizeContentTopics(row.content_plans),
     contentPlans: contentPlansFromTopics(normalizeContentTopics(row.content_plans)),
@@ -239,6 +245,13 @@ export function mapBillboardFromDb(row: any): Billboard {
     externalId: row.external_id ?? null,
     category: row.category ?? null,
     areaSqm: row.area_sqm != null ? Number(row.area_sqm) : null,
+    locationType: row.location_type ?? null,
+    usesApprovedDesign: Boolean(row.uses_approved_design),
+    contentHash: row.content_hash ?? null,
+    rawScore:
+      row.raw_score != null && row.raw_score !== "" && Number.isFinite(Number(row.raw_score))
+        ? Number(row.raw_score)
+        : null,
     status: row.status,
     tags: row.tags ?? [],
     notes: row.notes,

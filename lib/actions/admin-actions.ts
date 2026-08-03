@@ -203,7 +203,25 @@ export async function saveBillboardAction(data: Partial<Billboard> & { id?: stri
     data.id
   );
   if (tutorialDenied) return tutorialDenied;
-  const result = await saveBillboard(await withOwnerScope(auth, data));
+  const scoped = await withOwnerScope(auth, data);
+  const ownerId = scoped.ownerUserId ?? auth.userId;
+  if (ownerId && (scoped.campaignId || data.campaignId)) {
+    const { findDuplicateBillboard } = await import("@/lib/scoring/daily-cap-and-duplicates");
+    const dup = await findDuplicateBillboard({
+      campaignId: scoped.campaignId ?? data.campaignId ?? "",
+      ownerUserId: ownerId,
+      category: scoped.category ?? data.category,
+      location: scoped.location ?? data.location,
+      city: scoped.city ?? data.city,
+      latitude: scoped.latitude ?? data.latitude,
+      longitude: scoped.longitude ?? data.longitude,
+      date: scoped.date ?? data.date,
+      contentHash: scoped.contentHash ?? data.contentHash,
+      excludeId: data.id ?? null,
+    });
+    if (dup.duplicate) return { success: false as const, error: dup.reason };
+  }
+  const result = await saveBillboard(scoped);
   await auditContentChange({
     isUpdate: Boolean(data.id),
     entityType: "billboard",
@@ -268,7 +286,30 @@ export async function savePosterAction(data: Partial<Poster> & { id?: string }) 
   }
   const tutorialDenied = await assertTutorialForPossibleCreate("posters", "posters", data.id);
   if (tutorialDenied) return tutorialDenied;
-  const result = await savePoster(await withOwnerScope(auth, data));
+  const scoped = await withOwnerScope(auth, data);
+  if (!data.id) {
+    const { assertDailyCapForCreate, findDuplicatePosterOrVideo } = await import(
+      "@/lib/scoring/daily-cap-and-duplicates"
+    );
+    const cap = await assertDailyCapForCreate({
+      campaignId: scoped.campaignId ?? data.campaignId ?? "",
+      ownerUserId: scoped.ownerUserId ?? auth.userId,
+      section: "poster",
+    });
+    if (!cap.ok) return { success: false as const, error: cap.error };
+    const ownerId = scoped.ownerUserId ?? auth.userId;
+    if (ownerId) {
+      const dup = await findDuplicatePosterOrVideo({
+        campaignId: scoped.campaignId ?? data.campaignId ?? "",
+        ownerUserId: ownerId,
+        section: "poster",
+        title: scoped.title ?? data.title ?? "",
+        contentHash: (scoped as { contentHash?: string | null }).contentHash ?? null,
+      });
+      if (dup.duplicate) return { success: false as const, error: dup.reason };
+    }
+  }
+  const result = await savePoster(scoped);
   await auditContentChange({
     isUpdate: Boolean(data.id),
     entityType: "poster",
@@ -338,7 +379,30 @@ export async function saveVideoAction(data: Partial<Video> & { id?: string }) {
   }
   const tutorialDenied = await assertTutorialForPossibleCreate("videos", "videos", data.id);
   if (tutorialDenied) return tutorialDenied;
-  const result = await saveVideo(await withOwnerScope(auth, data));
+  const scoped = await withOwnerScope(auth, data);
+  if (!data.id) {
+    const { assertDailyCapForCreate, findDuplicatePosterOrVideo } = await import(
+      "@/lib/scoring/daily-cap-and-duplicates"
+    );
+    const cap = await assertDailyCapForCreate({
+      campaignId: scoped.campaignId ?? data.campaignId ?? "",
+      ownerUserId: scoped.ownerUserId ?? auth.userId,
+      section: "video",
+    });
+    if (!cap.ok) return { success: false as const, error: cap.error };
+    const ownerId = scoped.ownerUserId ?? auth.userId;
+    if (ownerId) {
+      const dup = await findDuplicatePosterOrVideo({
+        campaignId: scoped.campaignId ?? data.campaignId ?? "",
+        ownerUserId: ownerId,
+        section: "video",
+        title: scoped.title ?? data.title ?? "",
+        contentHash: (scoped as { contentHash?: string | null }).contentHash ?? null,
+      });
+      if (dup.duplicate) return { success: false as const, error: dup.reason };
+    }
+  }
+  const result = await saveVideo(scoped);
   await auditContentChange({
     isUpdate: Boolean(data.id),
     entityType: "video",

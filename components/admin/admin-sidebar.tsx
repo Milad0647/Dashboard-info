@@ -89,7 +89,7 @@ const allNavItems: {
   { href: "/admin/settings", label: "تنظیمات کمپین", icon: Settings, adminOrClientOnly: true },
   {
     href: "/admin/scoring",
-    label: "قوانین امتیازدهی خودکار",
+    label: "قوانین امتیازدهی",
     icon: ListChecks,
     adminOrClientOnly: true,
   },

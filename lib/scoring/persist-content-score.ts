@@ -16,6 +16,10 @@ import {
   sumFinalScore,
 } from "@/lib/scoring/compute-content-score";
 import { getRulesForContentType } from "@/lib/scoring/normalize-scoring-rules";
+import {
+  normalizeScoringPolicy,
+  type CampaignScoringPolicy,
+} from "@/lib/scoring/scoring-policy";
 import type {
   CampaignScoringRules,
   ScoreableContentType,
@@ -53,15 +57,25 @@ function asRecord(item: object): Record<string, unknown> {
   return item as Record<string, unknown>;
 }
 
-async function loadCampaignScoringRules(
-  campaignId: string
-): Promise<CampaignScoringRules> {
+async function loadCampaignScoringBundle(campaignId: string): Promise<{
+  scoringRules: CampaignScoringRules;
+  scoringPolicy: CampaignScoringPolicy;
+}> {
   const sql = getSql();
   const rows = await sql`
     SELECT * FROM campaign_settings WHERE id = ${campaignId} LIMIT 1
   `;
-  if (!rows[0]) return {};
-  return mapSettingsFromDb(rows[0]).scoringRules ?? {};
+  if (!rows[0]) {
+    return {
+      scoringRules: {},
+      scoringPolicy: normalizeScoringPolicy(null),
+    };
+  }
+  const settings = mapSettingsFromDb(rows[0]);
+  return {
+    scoringRules: settings.scoringRules ?? {},
+    scoringPolicy: settings.scoringPolicy ?? normalizeScoringPolicy(null),
+  };
 }
 
 async function loadContentItem(
@@ -140,28 +154,42 @@ async function updateScoreColumns(
   contentId: string,
   autoScore: number,
   manualScore: number,
-  finalScore: number
+  finalScore: number,
+  rawScore?: number | null
 ): Promise<void> {
   const sql = getSql();
   const now = new Date().toISOString();
   const table = SCORE_TABLE_BY_TYPE[contentType];
+  const raw = rawScore ?? autoScore;
 
   if (table === "billboards") {
     await sql`
       UPDATE billboards
-      SET auto_score = ${autoScore}, manual_score = ${manualScore}, score = ${finalScore}, updated_at = ${now}
+      SET auto_score = ${autoScore},
+          manual_score = ${manualScore},
+          score = ${finalScore},
+          raw_score = ${raw},
+          updated_at = ${now}
       WHERE id = ${contentId} AND campaign_id = ${campaignId}
     `;
   } else if (table === "posters") {
     await sql`
       UPDATE posters
-      SET auto_score = ${autoScore}, manual_score = ${manualScore}, score = ${finalScore}, updated_at = ${now}
+      SET auto_score = ${autoScore},
+          manual_score = ${manualScore},
+          score = ${finalScore},
+          raw_score = ${raw},
+          updated_at = ${now}
       WHERE id = ${contentId} AND campaign_id = ${campaignId}
     `;
   } else if (table === "videos") {
     await sql`
       UPDATE videos
-      SET auto_score = ${autoScore}, manual_score = ${manualScore}, score = ${finalScore}, updated_at = ${now}
+      SET auto_score = ${autoScore},
+          manual_score = ${manualScore},
+          score = ${finalScore},
+          raw_score = ${raw},
+          updated_at = ${now}
       WHERE id = ${contentId} AND campaign_id = ${campaignId}
     `;
   } else if (table === "campaign_files") {
@@ -179,7 +207,11 @@ async function updateScoreColumns(
   } else if (table === "social_media_posts") {
     await sql`
       UPDATE social_media_posts
-      SET auto_score = ${autoScore}, manual_score = ${manualScore}, score = ${finalScore}, updated_at = ${now}
+      SET auto_score = ${autoScore},
+          manual_score = ${manualScore},
+          score = ${finalScore},
+          raw_score = ${raw},
+          updated_at = ${now}
       WHERE id = ${contentId} AND campaign_id = ${campaignId}
     `;
   } else if (table === "campaign_activities") {
@@ -216,10 +248,12 @@ export async function applyAutoScoreToItem(input: {
   /** When true, wipe manual bonus (used after rule apply). */
   resetManual?: boolean;
   scoringRules?: CampaignScoringRules;
+  scoringPolicy?: CampaignScoringPolicy;
 }): Promise<{
   success: boolean;
   autoScore?: number;
   manualScore?: number;
+  rawScore?: number;
   score?: number;
   error?: string;
 }> {
@@ -227,15 +261,24 @@ export async function applyAutoScoreToItem(input: {
     return { success: false, error: "امتیاز خودکار فقط روی دیتابیس فعال است" };
   }
 
-  const scoringRules =
-    input.scoringRules ?? (await loadCampaignScoringRules(input.campaignId));
+  const bundle =
+    input.scoringRules && input.scoringPolicy
+      ? { scoringRules: input.scoringRules, scoringPolicy: input.scoringPolicy }
+      : await loadCampaignScoringBundle(input.campaignId);
+  const scoringRules = input.scoringRules ?? bundle.scoringRules;
+  const scoringPolicy = input.scoringPolicy ?? bundle.scoringPolicy;
   const rules: ScoringRule[] = getRulesForContentType(scoringRules, input.contentType);
   const item = await loadContentItem(input.contentType, input.campaignId, input.contentId);
   if (!item) {
     return { success: false, error: "محتوا یافت نشد" };
   }
 
-  const { autoScore } = computeContentScore(input.contentType, item, rules);
+  const { autoScore, rawScore } = computeContentScore(
+    input.contentType,
+    item,
+    rules,
+    scoringPolicy
+  );
   const manualScore = input.resetManual ? 0 : readManualScore(item);
   const finalScore = sumFinalScore(autoScore, manualScore);
 
@@ -245,10 +288,11 @@ export async function applyAutoScoreToItem(input: {
     input.contentId,
     autoScore,
     manualScore,
-    finalScore
+    finalScore,
+    rawScore
   );
 
-  return { success: true, autoScore, manualScore, score: finalScore };
+  return { success: true, autoScore, manualScore, rawScore, score: finalScore };
 }
 
 /** Resolve social row to the correct scoreable type from platform. */
@@ -340,14 +384,16 @@ async function listIdsForType(
 export async function recalculateCampaignScores(input: {
   campaignId: string;
   scoringRules?: CampaignScoringRules;
+  scoringPolicy?: CampaignScoringPolicy;
   resetManual?: boolean;
 }): Promise<{ success: boolean; updated: number; error?: string }> {
   if (!isPostgresConfigured()) {
     return { success: false, updated: 0, error: "امتیاز خودکار فقط روی دیتابیس فعال است" };
   }
 
-  const scoringRules =
-    input.scoringRules ?? (await loadCampaignScoringRules(input.campaignId));
+  const bundle = await loadCampaignScoringBundle(input.campaignId);
+  const scoringRules = input.scoringRules ?? bundle.scoringRules;
+  const scoringPolicy = input.scoringPolicy ?? bundle.scoringPolicy;
   const resetManual = input.resetManual ?? true;
   let updated = 0;
 
@@ -360,6 +406,7 @@ export async function recalculateCampaignScores(input: {
         contentId,
         resetManual,
         scoringRules,
+        scoringPolicy,
       });
       if (result.success) updated += 1;
     }
@@ -386,6 +433,25 @@ export async function saveCampaignScoringRules(
   return { success: true };
 }
 
+export async function saveCampaignScoringPolicy(
+  campaignId: string,
+  scoringPolicy: CampaignScoringPolicy
+): Promise<{ success: boolean; error?: string }> {
+  if (!isPostgresConfigured()) {
+    return { success: false, error: "ذخیره سیاست امتیاز فقط روی دیتابیس فعال است" };
+  }
+  const sql = getSql();
+  const now = new Date().toISOString();
+  const normalized = normalizeScoringPolicy(scoringPolicy);
+  await sql`
+    UPDATE campaign_settings
+    SET scoring_policy = ${sql.json(JSON.parse(JSON.stringify(normalized)))},
+        updated_at = ${now}
+    WHERE id = ${campaignId}
+  `;
+  return { success: true };
+}
+
 export async function setManualScore(input: {
   campaignId: string;
   contentType: ScoreableContentType;
@@ -405,9 +471,14 @@ export async function setManualScore(input: {
   const item = await loadContentItem(input.contentType, input.campaignId, input.contentId);
   if (!item) return { success: false, error: "محتوا یافت نشد" };
 
-  const scoringRules = await loadCampaignScoringRules(input.campaignId);
-  const rules = getRulesForContentType(scoringRules, input.contentType);
-  const { autoScore } = computeContentScore(input.contentType, item, rules);
+  const bundle = await loadCampaignScoringBundle(input.campaignId);
+  const rules = getRulesForContentType(bundle.scoringRules, input.contentType);
+  const { autoScore, rawScore } = computeContentScore(
+    input.contentType,
+    item,
+    rules,
+    bundle.scoringPolicy
+  );
   const manualScore =
     input.manualScore == null || !Number.isFinite(input.manualScore) ? 0 : input.manualScore;
   const finalScore = sumFinalScore(autoScore, manualScore);
@@ -418,7 +489,8 @@ export async function setManualScore(input: {
     input.contentId,
     autoScore,
     manualScore,
-    finalScore
+    finalScore,
+    rawScore
   );
 
   return { success: true, autoScore, manualScore, score: finalScore };

@@ -436,7 +436,8 @@ export async function pgSaveBillboard(data: Partial<Billboard> & { id?: string }
     INSERT INTO billboards (
       id, campaign_id, title, description, province, city, location, date,
       thumbnail_url, image_url, external_url, latitude, longitude, source, external_id,
-      category, area_sqm, status, tags, notes, published, sort_order, owner_user_id, plan_label, plan_labels, score,
+      category, area_sqm, location_type, uses_approved_design, content_hash,
+      status, tags, notes, published, sort_order, owner_user_id, plan_label, plan_labels, score,
       created_at, updated_at
     ) VALUES (
       ${id},
@@ -456,6 +457,9 @@ export async function pgSaveBillboard(data: Partial<Billboard> & { id?: string }
       ${data.externalId ?? null},
       ${data.category ?? null},
       ${data.areaSqm ?? null},
+      ${data.locationType ?? null},
+      ${data.usesApprovedDesign ?? false},
+      ${data.contentHash ?? null},
       ${data.status ?? "published"},
       ${sql.array(data.tags ?? [])},
       ${data.notes ?? null},
@@ -484,6 +488,9 @@ export async function pgSaveBillboard(data: Partial<Billboard> & { id?: string }
       external_id = EXCLUDED.external_id,
       category = EXCLUDED.category,
       area_sqm = EXCLUDED.area_sqm,
+      location_type = EXCLUDED.location_type,
+      uses_approved_design = EXCLUDED.uses_approved_design,
+      content_hash = COALESCE(EXCLUDED.content_hash, billboards.content_hash),
       status = EXCLUDED.status,
       tags = EXCLUDED.tags,
       notes = EXCLUDED.notes,

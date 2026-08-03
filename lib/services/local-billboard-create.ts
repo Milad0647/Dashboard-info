@@ -16,6 +16,9 @@ export interface CreateLocalBillboardInput {
   province?: string | null;
   city?: string | null;
   category?: BillboardCategory | string | null;
+  locationType?: string | null;
+  usesApprovedDesign?: boolean;
+  contentHash?: string | null;
   notes?: string | null;
   published?: boolean;
   status?: string;
@@ -147,6 +150,9 @@ export async function saveLocalBillboard(params: CreateLocalBillboardInput): Pro
     longitude: params.longitude,
     category: params.category ?? null,
     areaSqm: params.areaSqm ?? null,
+    locationType: params.locationType ?? null,
+    usesApprovedDesign: params.usesApprovedDesign ?? false,
+    contentHash: params.contentHash ?? null,
     source: "manual",
     status: (params.status as "draft" | "published" | "completed") ?? "draft",
     tags,

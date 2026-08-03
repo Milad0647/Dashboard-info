@@ -115,6 +115,8 @@ export interface CampaignSettings {
   billboardConfig: BillboardConfig;
   /** Field-based auto scoring rules per content type. */
   scoringRules?: CampaignScoringRules;
+  /** Multiplicative / section scoring policy (billboard formula, daily caps, phase, …). */
+  scoringPolicy?: import("./scoring/scoring-policy").CampaignScoringPolicy;
   /** Campaign content plan names configured by admin (e.g. مهتاب، سامان). Legacy flat list. */
   contentPlans?: string[];
   /** Hierarchical topics with optional subtopics (موضوع / زیرموضوع). */
@@ -238,6 +240,14 @@ export interface Billboard extends Ownable {
   externalId?: string | null;
   category?: string | null;
   areaSqm?: number | null;
+  /** Location class for scoring (highway, boulevard, metro, …). */
+  locationType?: string | null;
+  /** Whether the display uses an approved campaign design. */
+  usesApprovedDesign?: boolean;
+  /** Hash of documentation image / file for duplicate detection. */
+  contentHash?: string | null;
+  /** Raw billboard score before phase/entitlement multipliers. */
+  rawScore?: number | null;
   status: ItemStatus;
   tags: string[];
   notes?: string | null;

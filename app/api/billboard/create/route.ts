@@ -125,6 +125,11 @@ export async function POST(request: Request) {
   const address = String(formData.get("address") ?? "").trim() || undefined;
   const areaSqmRaw = String(formData.get("area_sqm") ?? "").trim();
   const areaSqm = areaSqmRaw ? Number(areaSqmRaw) : undefined;
+  const locationType = String(formData.get("locationType") ?? "").trim() || null;
+  const usesApprovedDesign =
+    String(formData.get("usesApprovedDesign") ?? "").trim() === "true" ||
+    String(formData.get("usesApprovedDesign") ?? "").trim() === "1";
+  const contentHash = String(formData.get("contentHash") ?? "").trim() || null;
   const notes = String(formData.get("notes") ?? "").trim() || null;
   const planLabel = String(formData.get("planLabel") ?? "").trim() || null;
   const planLabels = formData
@@ -159,6 +164,9 @@ export async function POST(request: Request) {
       province,
       city,
       category: category as BillboardCategory | null,
+      locationType,
+      usesApprovedDesign,
+      contentHash,
       notes,
       // Always publish so contributor uploads appear on the public campaign page.
       published: true,
@@ -169,6 +177,7 @@ export async function POST(request: Request) {
       ownerUserId,
     });
 
+    // Ranking updates immediately after upload; approval/publish path also recalculates via save hooks.
     revalidatePath("/admin/billboards");
     revalidatePath("/admin");
     revalidatePath("/");
