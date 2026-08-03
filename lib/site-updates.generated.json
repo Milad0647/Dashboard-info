@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "c6a93463fc11e56f2b87afed414fc7abb29ec769",
+      "committedAt": "2026-08-03T14:43:56+03:30",
+      "title": "رفع خطای عملیات بعد از به‌روزرسانی سایت با راهنمای رفرش",
+      "subject": "Fix Server Action mismatch after deploys"
+    },
+    {
       "hash": "1b8fc70a0f6da15a7a3bef293d6f0f413d700782",
       "committedAt": "2026-08-03T13:51:00+03:30",
       "title": "امکان تنظیم کامل امتیازدهی اکران، پوستر و ویدیو از پنل مدیریت",
