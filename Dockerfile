@@ -13,6 +13,10 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p public
+# Stable Server Action encryption across rebuilds/instances (base64 AES-16/24/32).
+# Must be set at build time so action IDs decrypt consistently after deploy.
+ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+ENV NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
 # DATABASE_URL is injected at runtime by Compose; db host is unavailable during image build
 RUN DATABASE_URL= npm run build
 

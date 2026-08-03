@@ -122,6 +122,16 @@ const RULES: ErrorRule[] = [
     category: "validation",
   },
   {
+    match:
+      /Server Action|failed-to-find-server-action|was not found on the server|Failed to find Server Action/i,
+    title: "نسخهٔ صفحه قدیمی است",
+    problem:
+      "نسخهٔ بازشده در مرورگر با نسخهٔ فعلی سرور هم‌خوان نیست (معمولاً بعد از به‌روزرسانی سایت).",
+    solution:
+      "صفحه را با Ctrl+Shift+R (یا Cmd+Shift+R در مک) کامل رفرش کنید، یا از دکمه «بارگذاری مجدد» استفاده کنید تا نسخهٔ جدید بارگذاری شود.",
+    category: "runtime",
+  },
+  {
     match: /Cannot read|undefined|null is not|TypeError|ReferenceError|SyntaxError|خطای زمان اجرا|Promise/i,
     title: "خطای سیستمی",
     problem: "یک خطای غیرمنتظره در اجرای صفحه رخ داده است.",

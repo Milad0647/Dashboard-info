@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "1b8fc70a0f6da15a7a3bef293d6f0f413d700782",
+      "committedAt": "2026-08-03T13:51:00+03:30",
+      "title": "امکان تنظیم کامل امتیازدهی اکران، پوستر و ویدیو از پنل مدیریت",
+      "subject": "Add campaign scoring policy with multiplicative billboard formula"
+    },
+    {
       "hash": "c2f1169937bdf2a86d4157d6de4ae61fcefae535",
       "committedAt": "2026-07-29T13:24:10+03:30",
       "title": "انتخاب شبکه اجتماعی برای هر لینک و حذف لیست شبکه‌ها از بالای فرم پست",

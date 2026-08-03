@@ -92,8 +92,21 @@ export function ErrorModalProvider() {
           </section>
         </div>
 
-        <DialogFooter className="border-t px-6 py-4 sm:justify-start">
-          <Button type="button" onClick={() => setOpen(false)}>
+        <DialogFooter className="border-t px-6 py-4 sm:justify-start gap-2">
+          {info?.message &&
+          /Server Action|failed-to-find-server-action|was not found on the server/i.test(
+            info.message
+          ) ? (
+            <Button
+              type="button"
+              onClick={() => {
+                window.location.reload();
+              }}
+            >
+              بارگذاری مجدد
+            </Button>
+          ) : null}
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
             متوجه شدم
           </Button>
         </DialogFooter>
