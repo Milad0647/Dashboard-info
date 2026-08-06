@@ -137,9 +137,18 @@ function computeFromFieldRules(
 
   const breakdown: ScoreBreakdownEntry[] = [];
   let autoScore = 0;
+  /** Numeric/date bands are mutually exclusive: first matching range per field wins. */
+  const matchedRangeFields = new Set<string>();
 
   for (const rule of rules) {
-    const matched = ruleMatches(contentType, item, rule);
+    let matched = ruleMatches(contentType, item, rule);
+    if (matched && rule.kind === "range") {
+      if (matchedRangeFields.has(rule.field)) {
+        matched = false;
+      } else {
+        matchedRangeFields.add(rule.field);
+      }
+    }
     const points = matched ? rule.points : 0;
     if (matched) autoScore += rule.points;
     breakdown.push({

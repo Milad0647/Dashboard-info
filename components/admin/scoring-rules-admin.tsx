@@ -67,6 +67,20 @@ function findRangeRule(rules: ScoringRule[]): ScoringRule | undefined {
   return rules.find((r) => r.kind === "range");
 }
 
+function rangeRulesOf(rules: ScoringRule[]): ScoringRule[] {
+  return rules.filter((r) => r.kind === "range");
+}
+
+/** Sensible starter bands for billboard area (m²). */
+function defaultAreaRangeRules(fieldKey: string): ScoringRule[] {
+  return [
+    { id: generateId(), field: fieldKey, kind: "range", min: undefined, max: 11.999, points: 2 },
+    { id: generateId(), field: fieldKey, kind: "range", min: 12, max: 24, points: 4 },
+    { id: generateId(), field: fieldKey, kind: "range", min: 24.001, max: 48, points: 6 },
+    { id: generateId(), field: fieldKey, kind: "range", min: 48.001, max: undefined, points: 8 },
+  ];
+}
+
 interface ScoringRulesAdminProps {
   initialSettings: CampaignSettings;
   posterCategories?: MediaCategory[];
@@ -142,7 +156,24 @@ export function ScoringRulesAdmin({
         points: 0,
       }));
       updateRules([...activeRules, ...optionRules]);
+    } else if (fieldKey === "areaSqm" && fieldDef.kinds.includes("range")) {
+      // Billboard area: seed multiple numeric bands with different points.
+      updateRules([...activeRules, ...defaultAreaRangeRules(fieldKey)]);
     } else if (fieldDef.kinds.includes("range") && !fieldDef.kinds.includes("filled")) {
+      updateRules([
+        ...activeRules,
+        {
+          id: generateId(),
+          field: fieldKey,
+          kind: "range",
+          points: 1,
+        },
+      ]);
+    } else if (
+      fieldDef.valueType === "number" &&
+      fieldDef.kinds.includes("range")
+    ) {
+      // Numeric fields default to range bands so multiple score tiers can be set.
       updateRules([
         ...activeRules,
         {
@@ -244,25 +275,41 @@ export function ScoringRulesAdmin({
     replaceFieldRules(fieldKey, next);
   };
 
-  const setRangePatch = (
+  const patchRangeRule = (
     fieldKey: string,
+    ruleId: string,
     patch: Partial<Pick<ScoringRule, "min" | "max" | "points">>
   ) => {
     const fieldRules = rulesForField(activeRules, fieldKey);
-    const existing = findRangeRule(fieldRules);
-    const others = fieldRules.filter((r) => r.kind !== "range");
+    replaceFieldRules(
+      fieldKey,
+      fieldRules.map((rule) => (rule.id === ruleId ? { ...rule, ...patch } : rule))
+    );
+  };
+
+  const addRangeRule = (fieldKey: string) => {
+    const fieldRules = rulesForField(activeRules, fieldKey);
     replaceFieldRules(fieldKey, [
-      ...others,
-      existing
-        ? { ...existing, ...patch }
-        : {
-            id: generateId(),
-            field: fieldKey,
-            kind: "range",
-            points: 1,
-            ...patch,
-          },
+      ...fieldRules,
+      {
+        id: generateId(),
+        field: fieldKey,
+        kind: "range",
+        points: 1,
+      },
     ]);
+  };
+
+  const removeRangeRule = (fieldKey: string, ruleId: string) => {
+    const fieldRules = rulesForField(activeRules, fieldKey);
+    const next = fieldRules.filter((r) => r.id !== ruleId);
+    if (next.length === 0) {
+      replaceFieldRules(fieldKey, [
+        { id: generateId(), field: fieldKey, kind: "range", points: 1 },
+      ]);
+      return;
+    }
+    replaceFieldRules(fieldKey, next);
   };
 
   const setRuleKindMode = (fieldKey: string, kind: ScoringRuleKind) => {
@@ -292,6 +339,10 @@ export function ScoringRulesAdmin({
           points: prevPoints,
         },
       ]);
+      return;
+    }
+    if (fieldKey === "areaSqm") {
+      replaceFieldRules(fieldKey, defaultAreaRangeRules(fieldKey));
       return;
     }
     replaceFieldRules(fieldKey, [
@@ -345,8 +396,15 @@ export function ScoringRulesAdmin({
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
           فیلد را انتخاب کنید و امتیاز بدهید. برای فیلدهای انتخابی (مثل دسته‌بندی محتوا، دسته سازه و
-          موضوع) به هر گزینه امتیاز جدا بدهید؛ برای فیلدهای متنی فقط بر اساس پر بودن امتیاز می‌گیرد.
-          امتیاز نهایی کارت = خودکار + دستی.
+          موضوع) به هر گزینه امتیاز جدا بدهید؛ برای متراژ و سایر فیلدهای عددی می‌توانید چند بازه با
+          امتیازهای مختلف تعریف کنید. امتیاز نهایی کارت = خودکار + دستی.
+          {activeType === "billboard" ? (
+            <>
+              {" "}
+              توجه: وقتی سیاست امتیازدهی بالا فعال باشد، امتیاز اکران از فرمول ضربی (شامل بازه‌های
+              متراژ همان بخش) محاسبه می‌شود و این قوانین فیلدی برای بیلبورد اعمال نمی‌شوند.
+            </>
+          ) : null}
         </p>
 
         <div>
@@ -386,18 +444,19 @@ export function ScoringRulesAdmin({
             const fieldRules = rulesForField(activeRules, fieldKey);
             const hasOptions = fieldHasOptions(fieldDef);
             const filledRule = findFilledRule(fieldRules);
-            const rangeRule = findRangeRule(fieldRules);
+            const rangeRules = rangeRulesOf(fieldRules);
             const equalsTextRules = fieldRules.filter((r) => r.kind === "equals");
             const activeKind: ScoringRuleKind = hasOptions
               ? "equals"
               : filledRule
                 ? "filled"
-                : rangeRule
+                : rangeRules.length > 0
                   ? "range"
                   : equalsTextRules.length > 0
                     ? "equals"
                     : fieldDef?.kinds[0] ?? "filled";
             const allowedKinds = fieldDef?.kinds ?? ["filled"];
+            const isNumericRange = fieldDef?.valueType === "number" || fieldDef?.valueType === "date";
 
             return (
               <div
@@ -593,61 +652,95 @@ export function ScoringRulesAdmin({
                     )}
 
                     {activeKind === "range" && (
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div>
-                          <Label className="text-xs">حداقل</Label>
-                          <Input
-                            type={fieldDef?.valueType === "date" ? "date" : "number"}
-                            value={rangeRule?.min ?? ""}
-                            onChange={(event) =>
-                              setRangePatch(fieldKey, {
-                                min:
-                                  fieldDef?.valueType === "date"
-                                    ? event.target.value
-                                    : event.target.value === ""
-                                      ? undefined
-                                      : Number(event.target.value),
-                              })
-                            }
-                            dir="ltr"
-                            className="text-left"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">حداکثر</Label>
-                          <Input
-                            type={fieldDef?.valueType === "date" ? "date" : "number"}
-                            value={rangeRule?.max ?? ""}
-                            onChange={(event) =>
-                              setRangePatch(fieldKey, {
-                                max:
-                                  fieldDef?.valueType === "date"
-                                    ? event.target.value
-                                    : event.target.value === ""
-                                      ? undefined
-                                      : Number(event.target.value),
-                              })
-                            }
-                            dir="ltr"
-                            className="text-left"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">امتیاز</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            step="any"
-                            value={rangeRule?.points ?? 0}
-                            onChange={(event) =>
-                              setRangePatch(fieldKey, {
-                                points: Math.max(0, Number(event.target.value) || 0),
-                              })
-                            }
-                            dir="ltr"
-                            className="text-left"
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          {fieldKey === "areaSqm"
+                            ? "برای هر طیف متراژ (متر مربع) یک بازه و امتیاز جدا تعریف کنید. فقط اولین بازهٔ منطبق اعمال می‌شود؛ بازه‌ها را بدون هم‌پوشانی تنظیم کنید."
+                            : isNumericRange
+                              ? "چند بازه عددی با امتیازهای مختلف تعریف کنید. فقط اولین بازهٔ منطبق برای هر محتوا اعمال می‌شود."
+                              : "اگر مقدار در این بازه باشد، امتیاز اعمال می‌شود."}
+                        </p>
+                        {rangeRules.map((rule) => (
+                          <div
+                            key={rule.id}
+                            className="grid gap-2 sm:grid-cols-[1fr_1fr_6rem_auto] items-end rounded-md border bg-background/60 px-3 py-2"
+                          >
+                            <div>
+                              <Label className="text-xs">حداقل</Label>
+                              <Input
+                                type={fieldDef?.valueType === "date" ? "date" : "number"}
+                                value={rule.min ?? ""}
+                                placeholder="بدون حد"
+                                onChange={(event) =>
+                                  patchRangeRule(fieldKey, rule.id, {
+                                    min:
+                                      fieldDef?.valueType === "date"
+                                        ? event.target.value
+                                        : event.target.value === ""
+                                          ? undefined
+                                          : Number(event.target.value),
+                                  })
+                                }
+                                dir="ltr"
+                                className="text-left"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">حداکثر</Label>
+                              <Input
+                                type={fieldDef?.valueType === "date" ? "date" : "number"}
+                                value={rule.max ?? ""}
+                                placeholder="بدون حد"
+                                onChange={(event) =>
+                                  patchRangeRule(fieldKey, rule.id, {
+                                    max:
+                                      fieldDef?.valueType === "date"
+                                        ? event.target.value
+                                        : event.target.value === ""
+                                          ? undefined
+                                          : Number(event.target.value),
+                                  })
+                                }
+                                dir="ltr"
+                                className="text-left"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">امتیاز</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                step="any"
+                                value={rule.points}
+                                onChange={(event) =>
+                                  patchRangeRule(fieldKey, rule.id, {
+                                    points: Math.max(0, Number(event.target.value) || 0),
+                                  })
+                                }
+                                dir="ltr"
+                                className="text-left"
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() => removeRangeRule(fieldKey, rule.id)}
+                              aria-label="حذف بازه"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => addRangeRule(fieldKey)}
+                        >
+                          <Plus className="h-4 w-4 ml-1" />
+                          افزودن بازه دیگر
+                        </Button>
                       </div>
                     )}
                   </div>

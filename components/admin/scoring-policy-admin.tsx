@@ -394,7 +394,14 @@ export function ScoringPolicyAdmin({ initialSettings }: ScoringPolicyAdminProps)
             </div>
 
             <div className="space-y-2 rounded-lg border p-3">
-              <p className="text-sm font-medium">بازه‌های متراژ</p>
+              <div>
+                <p className="text-sm font-medium">بازه‌های متراژ (ضریب)</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  برای هر طیف متراژ تابلو (متر مربع) ضریب جداگانه تعیین کنید؛ مثلاً کمتر از ۱۲ → ۲،
+                  ۱۲ تا ۲۴ → ۴. حدود خالی یعنی بدون حد پایین/بالا. فقط اولین بازهٔ منطبق در فرمول
+                  ضرب می‌شود.
+                </p>
+              </div>
               {policy.areaRanges.map((row, index) => (
                 <div
                   key={row.id}
@@ -417,6 +424,7 @@ export function ScoringPolicyAdmin({ initialSettings }: ScoringPolicyAdminProps)
                       type="number"
                       dir="ltr"
                       className="text-left"
+                      placeholder="—"
                       value={row.min ?? ""}
                       onChange={(e) => {
                         const areaRanges = [...policy.areaRanges];
@@ -434,6 +442,7 @@ export function ScoringPolicyAdmin({ initialSettings }: ScoringPolicyAdminProps)
                       type="number"
                       dir="ltr"
                       className="text-left"
+                      placeholder="—"
                       value={row.max ?? ""}
                       onChange={(e) => {
                         const areaRanges = [...policy.areaRanges];
@@ -478,24 +487,45 @@ export function ScoringPolicyAdmin({ initialSettings }: ScoringPolicyAdminProps)
                   </Button>
                 </div>
               ))}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const row: ScoringAreaRange = {
-                    id: generateId(),
-                    label: "بازه جدید",
-                    min: null,
-                    max: null,
-                    coefficient: 1,
-                  };
-                  patch({ areaRanges: [...policy.areaRanges, row] });
-                }}
-              >
-                <Plus className="h-4 w-4 ml-1" />
-                افزودن بازه
-              </Button>
+              <div className="flex flex-wrap items-end gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const row: ScoringAreaRange = {
+                      id: generateId(),
+                      label: "بازه جدید",
+                      min: null,
+                      max: null,
+                      coefficient: 1,
+                    };
+                    patch({ areaRanges: [...policy.areaRanges, row] });
+                  }}
+                >
+                  <Plus className="h-4 w-4 ml-1" />
+                  افزودن بازه متراژ
+                </Button>
+                <div className="max-w-[10rem]">
+                  <Label className="text-xs">ضریب پیش‌فرض متراژ</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="any"
+                    dir="ltr"
+                    className="text-left"
+                    value={policy.defaultAreaCoefficient}
+                    onChange={(e) =>
+                      patch({
+                        defaultAreaCoefficient: Math.max(0, Number(e.target.value) || 0),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                اگر متراژ خالی باشد یا در هیچ بازه‌ای نباشد، ضریب پیش‌فرض استفاده می‌شود.
+              </p>
             </div>
           </div>
         )}
