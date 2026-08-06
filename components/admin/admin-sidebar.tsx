@@ -112,6 +112,7 @@ const allNavItems: {
   { href: "/admin/press-publications", label: "مجله و روزنامه", icon: FileText, permissionKey: "activities" },
   { href: "/admin/activities", label: "اقدامات", icon: Sparkles, permissionKey: "activities" },
   { href: "/admin/elanha", label: "اعلان‌ها", icon: Bell, adminOrClientOnly: true },
+  { href: "/admin/returned-content", label: "محتواهای برگشتی", icon: ClipboardCheck, alwaysVisible: true },
   { href: "/admin/messages", label: "پیام‌های من", icon: MessageSquare, alwaysVisible: true },
   { href: "/admin/directives", label: "دستورکارها", icon: ClipboardCheck, alwaysVisible: true },
   {

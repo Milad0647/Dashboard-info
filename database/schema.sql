@@ -913,9 +913,18 @@ CREATE TABLE IF NOT EXISTS content_messages (
   sender_name TEXT,
   sender_role TEXT,
   body TEXT NOT NULL,
+  parent_message_id UUID REFERENCES content_messages(id) ON DELETE CASCADE,
+  follow_up_status TEXT NOT NULL DEFAULT 'open'
+    CHECK (follow_up_status IN ('open', 'awaiting_user', 'user_replied', 'resolved')),
   seen_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE content_messages
+  ADD COLUMN IF NOT EXISTS parent_message_id UUID REFERENCES content_messages(id) ON DELETE CASCADE;
+
+ALTER TABLE content_messages
+  ADD COLUMN IF NOT EXISTS follow_up_status TEXT NOT NULL DEFAULT 'open';
 
 CREATE INDEX IF NOT EXISTS idx_content_messages_recipient
   ON content_messages(recipient_user_id, created_at DESC);
@@ -933,6 +942,42 @@ CREATE INDEX IF NOT EXISTS idx_content_messages_content
 CREATE INDEX IF NOT EXISTS idx_content_messages_sender
   ON content_messages(sender_user_id, created_at DESC)
   WHERE sender_user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_content_messages_parent
+  ON content_messages(parent_message_id, created_at ASC)
+  WHERE parent_message_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS content_reviews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id UUID NOT NULL REFERENCES campaign_settings(id) ON DELETE CASCADE,
+  content_type TEXT NOT NULL
+    CHECK (content_type IN (
+      'billboard',
+      'poster',
+      'video',
+      'activity',
+      'social_post',
+      'site_publication'
+    )),
+  content_id UUID NOT NULL,
+  status TEXT NOT NULL
+    CHECK (status IN ('needs_revision', 'resubmitted', 'approved'))
+    DEFAULT 'needs_revision',
+  rejection_reason TEXT,
+  rejected_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  rejected_at TIMESTAMPTZ,
+  resubmitted_at TIMESTAMPTZ,
+  resolved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (campaign_id, content_type, content_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_reviews_campaign_status
+  ON content_reviews(campaign_id, status, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_content_reviews_content
+  ON content_reviews(content_type, content_id, updated_at DESC);
 
 -- Manual SMS / message send reports (documentation of bulk messaging)
 CREATE TABLE IF NOT EXISTS sms_send_reports (

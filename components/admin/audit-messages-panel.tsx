@@ -32,6 +32,15 @@ function MessageRow({ message }: { message: AdminContentMessageListItem }) {
   const senderLabel = message.senderName?.trim() || "مدیر سیستم";
   const senderRole = message.senderRole ? getAuditRoleLabel(message.senderRole) : null;
 
+  const followUpLabel =
+    message.followUpStatus === "awaiting_user"
+      ? "در انتظار پاسخ"
+      : message.followUpStatus === "user_replied"
+        ? "پاسخ کاربر ثبت شد"
+        : message.followUpStatus === "resolved"
+          ? "بسته‌شده"
+          : "باز";
+
   return (
     <article
       className={`rounded-xl border p-4 ${
@@ -53,6 +62,9 @@ function MessageRow({ message }: { message: AdminContentMessageListItem }) {
                 خوانده‌شده
               </Badge>
             )}
+            <Badge variant="secondary" className="text-[10px]">
+              {followUpLabel}
+            </Badge>
           </div>
           <h3 className="font-medium leading-snug">{message.contentTitle || "بدون عنوان"}</h3>
           <div className="space-y-0.5 text-xs text-muted-foreground">
@@ -81,6 +93,18 @@ function MessageRow({ message }: { message: AdminContentMessageListItem }) {
         </Button>
       </div>
       <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{message.body}</p>
+      {message.replies && message.replies.length > 0 && (
+        <div className="mt-3 space-y-2 rounded-lg border bg-muted/40 p-3">
+          {message.replies.map((reply) => (
+            <div key={reply.id} className="rounded-md bg-background p-2 text-sm">
+              <p className="text-xs text-muted-foreground">
+                {reply.senderName ?? "کاربر"} · {formatPersianDateTime(reply.createdAt)}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap">{reply.body}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </article>
   );
 }

@@ -13,6 +13,14 @@ import { VideoModal } from "@/components/media/video-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -20,7 +28,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
+import {
+  approveContentAction,
+  rejectContentForRevisionAction,
+} from "@/lib/actions/content-review-actions";
 import {
   getNotificationReadsAction,
   markNotificationsSeenAction,
@@ -41,6 +54,7 @@ import {
   type NotificationView,
 } from "@/lib/notification-feed";
 import { resolveDisplayVersion } from "@/lib/media-utils";
+import type { ContentReview } from "@/lib/content-review/types";
 import type {
   Billboard,
   CampaignActivity,
@@ -94,6 +108,8 @@ interface NotificationsAdminProps {
   socialPosts: SocialMediaPost[];
   posterVersions?: PosterVersion[];
   videoVersions?: VideoVersion[];
+  contentReviews?: ContentReview[];
+  canManageReviews?: boolean;
 }
 
 function NotificationCard({
@@ -107,6 +123,11 @@ function NotificationCard({
   showConfirm,
   confirming,
   onConfirm,
+  canManageReviews,
+  reviewStatus,
+  onApprove,
+  onReject,
+  reviewPending,
   onScoreSaved,
 }: {
   item: NotificationFeedItem;
@@ -119,8 +140,22 @@ function NotificationCard({
   showConfirm?: boolean;
   confirming?: boolean;
   onConfirm?: () => void;
+  canManageReviews?: boolean;
+  reviewStatus?: "needs_revision" | "resubmitted" | "approved" | null;
+  onApprove?: () => void;
+  onReject?: () => void;
+  reviewPending?: boolean;
   onScoreSaved?: (score: number | null) => void;
 }) {
+  const reviewStatusLabel =
+    reviewStatus === "needs_revision"
+      ? "برگشت برای ویرایش"
+      : reviewStatus === "resubmitted"
+        ? "ارسال‌مجدد"
+        : reviewStatus === "approved"
+          ? "تاییدشده"
+          : null;
+
   return (
     <div className="apple-lift group flex flex-col overflow-hidden rounded-xl border bg-card hover:border-primary/50">
       <div className="flex items-center gap-2 border-b px-3 py-2">
@@ -161,6 +196,11 @@ function NotificationCard({
             ) : (
               <Badge variant="overlay" className="text-[10px]">
                 امتیاز {formatPersianNumber(item.score)}
+              </Badge>
+            )}
+            {reviewStatusLabel && (
+              <Badge variant="overlay" className="text-[10px]">
+                {reviewStatusLabel}
               </Badge>
             )}
           </div>
@@ -223,6 +263,30 @@ function NotificationCard({
               compact
             />
           )}
+          {canManageReviews && onApprove && onReject ? (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="flex-1"
+                disabled={reviewPending}
+                onClick={onApprove}
+              >
+                تایید محتوا
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="flex-1"
+                disabled={reviewPending}
+                onClick={onReject}
+              >
+                رد با دلیل
+              </Button>
+            </>
+          ) : null}
           <Button type="button" variant="ghost" size="icon" className="shrink-0" asChild>
             <Link href={item.adminPath} title="ویرایش در پنل">
               <ExternalLink className="h-4 w-4" />
@@ -245,6 +309,8 @@ export function NotificationsAdmin({
   socialPosts,
   posterVersions = [],
   videoVersions = [],
+  contentReviews = [],
+  canManageReviews = false,
 }: NotificationsAdminProps) {
   const router = useRouter();
   const [view, setView] = useState<NotificationFilterView>("new");
@@ -259,6 +325,9 @@ export function NotificationsAdmin({
   const [readsLoaded, setReadsLoaded] = useState(false);
   const [confirmingKey, setConfirmingKey] = useState<string | null>(null);
   const [previewItem, setPreviewItem] = useState<NotificationFeedItem | null>(null);
+  const [reviewPendingKey, setReviewPendingKey] = useState<string | null>(null);
+  const [rejectingItem, setRejectingItem] = useState<NotificationFeedItem | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [page, setPage] = useState(1);
   const [isPending, startTransition] = useTransition();
 
@@ -366,6 +435,14 @@ export function NotificationsAdmin({
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [visibleItems]);
 
+  const reviewByKey = useMemo(() => {
+    const map = new Map<string, ContentReview>();
+    for (const review of contentReviews) {
+      map.set(`${review.contentType}:${review.contentId}`, review);
+    }
+    return map;
+  }, [contentReviews]);
+
   const allVisibleSelected =
     visibleItems.length > 0 && visibleItems.every((item) => selectedKeys.has(item.key));
 
@@ -433,6 +510,61 @@ export function NotificationsAdmin({
         return next;
       });
       toast.success("مشاهده تأیید شد");
+    });
+  };
+
+  const approveItem = (item: NotificationFeedItem) => {
+    if (!canManageReviews) return;
+    setReviewPendingKey(item.key);
+    startTransition(async () => {
+      const result = await approveContentAction({
+        campaignId,
+        contentType: item.contentType,
+        contentId: item.contentId,
+        notificationKey: item.key,
+      });
+      setReviewPendingKey(null);
+      if (!result.success) {
+        toast.error(result.error ?? "تایید محتوا ناموفق بود");
+        return;
+      }
+      setSeenKeys((prev) => new Set([...prev, item.key]));
+      toast.success("محتوا تایید شد");
+      router.refresh();
+    });
+  };
+
+  const openRejectDialog = (item: NotificationFeedItem) => {
+    setRejectingItem(item);
+    setRejectionReason("");
+  };
+
+  const submitReject = () => {
+    if (!rejectingItem) return;
+    const reason = rejectionReason.trim();
+    if (reason.length < 3) {
+      toast.error("دلیل رد حداقل ۳ کاراکتر باشد");
+      return;
+    }
+    setReviewPendingKey(rejectingItem.key);
+    startTransition(async () => {
+      const result = await rejectContentForRevisionAction({
+        campaignId,
+        contentType: rejectingItem.contentType,
+        contentId: rejectingItem.contentId,
+        rejectionReason: reason,
+        notificationKey: rejectingItem.key,
+      });
+      setReviewPendingKey(null);
+      if (!result.success) {
+        toast.error(result.error ?? "رد محتوا ناموفق بود");
+        return;
+      }
+      setSeenKeys((prev) => new Set([...prev, rejectingItem.key]));
+      setRejectingItem(null);
+      setRejectionReason("");
+      toast.success("محتوا برای ویرایش برگشت داده شد");
+      router.refresh();
     });
   };
 
@@ -579,6 +711,11 @@ export function NotificationsAdmin({
                     showConfirm={view === "new" || view === "unscored"}
                     confirming={confirmingKey === item.key}
                     onConfirm={() => handleConfirmItem(item.key)}
+                    canManageReviews={canManageReviews}
+                    reviewStatus={reviewByKey.get(`${item.contentType}:${item.contentId}`)?.status ?? null}
+                    onApprove={() => approveItem(item)}
+                    onReject={() => openRejectDialog(item)}
+                    reviewPending={reviewPendingKey === item.key}
                     onScoreSaved={(score) => {
                       setScoreOverrides((prev) => ({ ...prev, [item.key]: score }));
                     }}
@@ -708,6 +845,31 @@ export function NotificationsAdmin({
           }
         />
       )}
+      <Dialog open={Boolean(rejectingItem)} onOpenChange={(open) => !open && setRejectingItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>رد محتوا و برگشت برای ویرایش</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="rejection-reason">دلیل رد</Label>
+            <Textarea
+              id="rejection-reason"
+              value={rejectionReason}
+              onChange={(event) => setRejectionReason(event.target.value)}
+              placeholder="دلیل دقیق رد یا اصلاح موردنیاز را بنویسید..."
+              rows={5}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectingItem(null)} disabled={isPending}>
+              انصراف
+            </Button>
+            <Button variant="destructive" onClick={submitReject} disabled={isPending}>
+              ثبت رد
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

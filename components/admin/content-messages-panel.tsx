@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   listMyContentMessagesAction,
   markMyContentMessagesSeenAction,
+  replyContentMessageAction,
   type ContentMessageListItem,
 } from "@/lib/actions/content-message-actions";
 import { emitContentMessagesUnreadChanged } from "@/lib/content-messages-unread";
@@ -18,10 +19,25 @@ import { adminHref, formatPersianDateTime } from "@/lib/utils";
 function MessageCard({
   message,
   showRecipientHint,
+  canReply,
+  replying,
+  onReply,
 }: {
   message: ContentMessageListItem;
   showRecipientHint?: boolean;
+  canReply?: boolean;
+  replying?: boolean;
+  onReply?: (messageId: string, body: string) => void;
 }) {
+  const [reply, setReply] = useState("");
+  const followUpLabel =
+    message.followUpStatus === "awaiting_user"
+      ? "در انتظار پاسخ کاربر"
+      : message.followUpStatus === "user_replied"
+        ? "کاربر پاسخ داده"
+        : message.followUpStatus === "resolved"
+          ? "بسته‌شده"
+          : "باز";
   return (
     <article
       className={`rounded-xl border p-4 ${
@@ -34,6 +50,11 @@ function MessageCard({
             <Badge variant="outline" className="text-[10px]">
               {message.contentTypeLabel}
             </Badge>
+            {showRecipientHint && (
+              <Badge variant="secondary" className="text-[10px]">
+                {followUpLabel}
+              </Badge>
+            )}
             {message.isUnread && !showRecipientHint && (
               <Badge variant="default" className="text-[10px]">
                 جدید
@@ -55,6 +76,45 @@ function MessageCard({
         </Button>
       </div>
       <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{message.body}</p>
+      {message.replies && message.replies.length > 0 && (
+        <div className="mt-3 space-y-2 rounded-lg border bg-muted/40 p-3">
+          {message.replies.map((replyItem) => (
+            <div key={replyItem.id} className="rounded-md bg-background p-2 text-sm">
+              <p className="text-xs text-muted-foreground">
+                {replyItem.senderName ?? "کاربر"} · {formatPersianDateTime(replyItem.createdAt)}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap">{replyItem.body}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {canReply && onReply && (
+        <div className="mt-3 space-y-2">
+          <textarea
+            className="w-full rounded-md border bg-background p-2 text-sm"
+            rows={3}
+            value={reply}
+            onChange={(event) => setReply(event.target.value)}
+            placeholder="پاسخ شما به مدیر/کارفرما..."
+          />
+          <Button
+            type="button"
+            size="sm"
+            disabled={replying}
+            onClick={() => {
+              const text = reply.trim();
+              if (text.length < 3) {
+                toast.error("متن پاسخ حداقل ۳ کاراکتر باشد");
+                return;
+              }
+              onReply(message.id, text);
+              setReply("");
+            }}
+          >
+            ارسال پاسخ
+          </Button>
+        </div>
+      )}
     </article>
   );
 }
@@ -73,6 +133,7 @@ export function ContentMessagesPanel({
   const [received, setReceived] = useState(initialReceived);
   const [sent, setSent] = useState(initialSent);
   const [canSendMessages, setCanSendMessages] = useState(canSend);
+  const [replyingMessageId, setReplyingMessageId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const unreadCount = received.filter((item) => item.isUnread).length;
   const defaultTab = unreadCount > 0 || !canSend ? "inbox" : "sent";
@@ -91,6 +152,20 @@ export function ContentMessagesPanel({
       emitContentMessagesUnreadChanged(nextUnread);
     });
   }, [campaignId]);
+
+  const handleReply = (messageId: string, body: string) => {
+    setReplyingMessageId(messageId);
+    startTransition(async () => {
+      const result = await replyContentMessageAction({ parentMessageId: messageId, body });
+      setReplyingMessageId(null);
+      if (!result.success) {
+        toast.error(result.error ?? "ارسال پاسخ ناموفق بود");
+        return;
+      }
+      toast.success("پاسخ ارسال شد");
+      refresh();
+    });
+  };
 
   useEffect(() => {
     refresh();
@@ -150,7 +225,15 @@ export function ContentMessagesPanel({
               پیامی برای شما ثبت نشده است.
             </div>
           ) : (
-            received.map((message) => <MessageCard key={message.id} message={message} />)
+            received.map((message) => (
+              <MessageCard
+                key={message.id}
+                message={message}
+                canReply={!message.parentMessageId}
+                replying={isPending && replyingMessageId === message.id}
+                onReply={handleReply}
+              />
+            ))
           )}
         </TabsContent>
 

@@ -16,11 +16,13 @@ import {
   pgCountUnreadContentMessages,
   pgInsertContentMessage,
   pgListAllContentMessages,
+  pgListRepliesForRootMessages,
   pgListMessagesForContent,
   pgListReceivedContentMessages,
   pgListSentContentMessages,
   pgLookupContentOwner,
   pgMarkContentMessagesSeen,
+  pgUpdateContentMessageFollowUpStatus,
   type ContentMessageWithRecipient,
 } from "@/lib/db/content-messages-repository";
 import { pgGetUserById } from "@/lib/db/repository-extended";
@@ -32,6 +34,7 @@ export type ContentMessageListItem = ContentMessage & {
   contentTypeLabel: string;
   adminPath: string;
   isUnread: boolean;
+  replies?: ContentMessageListItem[];
 };
 
 export type AdminContentMessageListItem = ContentMessageListItem & {
@@ -124,6 +127,8 @@ export async function sendContentMessageAction(
     senderName,
     senderRole: session.role ?? (session.type === "env_admin" ? "admin" : null),
     body: body.slice(0, 2000),
+    parentMessageId: null,
+    followUpStatus: "awaiting_user",
   });
 
   if (!created) {
@@ -182,9 +187,92 @@ export async function listMyContentMessagesAction(input?: {
         campaignId,
       })
     ).map(toListItem);
+
+    const roots = sent.filter((item) => !item.parentMessageId);
+    if (roots.length > 0) {
+      const replies = (await pgListRepliesForRootMessages(roots.map((item) => item.id))).map(toListItem);
+      if (replies.length > 0) {
+        const repliesByRoot = new Map<string, ContentMessageListItem[]>();
+        for (const reply of replies) {
+          if (!reply.parentMessageId) continue;
+          const list = repliesByRoot.get(reply.parentMessageId) ?? [];
+          list.push(reply);
+          repliesByRoot.set(reply.parentMessageId, list);
+        }
+        sent = roots.map((item) => ({
+          ...item,
+          replies: repliesByRoot.get(item.id) ?? [],
+        }));
+      } else {
+        sent = roots;
+      }
+    } else {
+      sent = [];
+    }
   }
 
   return { success: true, received, sent, canSend };
+}
+
+export async function replyContentMessageAction(input: {
+  parentMessageId: string;
+  body: string;
+}): Promise<{ success: boolean; error?: string; message?: ContentMessageListItem }> {
+  const session = await getAuthSession();
+  if (!session?.userId) {
+    return { success: false, error: "برای پاسخ باید وارد شوید" };
+  }
+  if (!isPostgresConfigured()) {
+    return { success: false, error: "ارسال پاسخ فقط با دیتابیس فعال است" };
+  }
+
+  const parentId = input.parentMessageId?.trim() || "";
+  const body = input.body?.trim() || "";
+  if (!parentId) return { success: false, error: "شناسه پیام نامعتبر است" };
+  if (body.length < 3) return { success: false, error: "متن پاسخ حداقل ۳ کاراکتر باشد" };
+  if (body.length > 2000) return { success: false, error: "متن پاسخ حداکثر ۲۰۰۰ کاراکتر است" };
+
+  const received = await pgListReceivedContentMessages({ recipientUserId: session.userId, limit: 400 });
+  const parent = received.find((item) => item.id === parentId && !item.parentMessageId);
+  if (!parent) return { success: false, error: "پیام مرجع یافت نشد یا دسترسی ندارید" };
+  if (!parent.senderUserId) {
+    return { success: false, error: "امکان پاسخ مستقیم به این پیام وجود ندارد" };
+  }
+
+  const senderName = session.name ?? null;
+  const created = await pgInsertContentMessage({
+    campaignId: parent.campaignId,
+    contentType: parent.contentType,
+    contentId: parent.contentId,
+    contentTitle: parent.contentTitle || "بدون عنوان",
+    recipientUserId: parent.senderUserId,
+    senderUserId: session.userId,
+    senderName,
+    senderRole: session.role ?? null,
+    body,
+    parentMessageId: parent.id,
+    followUpStatus: "user_replied",
+  });
+  if (!created) return { success: false, error: "ثبت پاسخ ناموفق بود" };
+
+  await pgUpdateContentMessageFollowUpStatus({
+    rootMessageId: parent.id,
+    status: "user_replied",
+  });
+
+  await logAuditForSession(session, {
+    category: "content",
+    action: "content.message.reply",
+    entityType: "content_message",
+    entityId: created.id,
+    campaignId: created.campaignId,
+    label: created.contentTitle,
+    metadata: { parentMessageId: parent.id, contentType: created.contentType, contentId: created.contentId },
+  });
+
+  revalidatePath("/admin/messages");
+  revalidatePath("/admin/audit");
+  return { success: true, message: toListItem(created) };
 }
 
 export async function getMyUnreadContentMessageCountAction(): Promise<{
@@ -270,5 +358,20 @@ export async function listAllContentMessagesAction(input?: {
     })
   ).map(toAdminListItem);
 
-  return { success: true, messages };
+  const roots = messages.filter((item) => !item.parentMessageId);
+  const replies = messages.filter((item) => Boolean(item.parentMessageId));
+  if (replies.length > 0) {
+    const repliesByRoot = new Map<string, AdminContentMessageListItem[]>();
+    for (const reply of replies) {
+      if (!reply.parentMessageId) continue;
+      const list = repliesByRoot.get(reply.parentMessageId) ?? [];
+      list.push(reply);
+      repliesByRoot.set(reply.parentMessageId, list);
+    }
+    for (const root of roots) {
+      root.replies = repliesByRoot.get(root.id) ?? [];
+    }
+  }
+
+  return { success: true, messages: roots };
 }

@@ -1,6 +1,7 @@
 import type { ScoreableContentType } from "@/lib/types";
 
 export type ContentMessageContentType = ScoreableContentType;
+export type ContentMessageFollowUpStatus = "open" | "awaiting_user" | "user_replied" | "resolved";
 
 export interface ContentMessage {
   id: string;
@@ -13,6 +14,8 @@ export interface ContentMessage {
   senderName: string | null;
   senderRole: string | null;
   body: string;
+  parentMessageId: string | null;
+  followUpStatus: ContentMessageFollowUpStatus;
   seenAt: string | null;
   createdAt: string;
 }

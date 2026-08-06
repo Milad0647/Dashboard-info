@@ -18,6 +18,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  distDir: ".next-build",
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname),
   // Keep yazl outside the bundler so streaming ZIP works reliably at runtime.

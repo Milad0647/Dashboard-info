@@ -2,6 +2,7 @@ import { getSql } from "@/lib/db/client";
 import { SCORE_TABLE_BY_TYPE } from "@/lib/scoring/persist-content-score";
 import {
   CONTENT_MESSAGE_CONTENT_TYPES,
+  type ContentMessageFollowUpStatus,
   type ContentMessage,
   type ContentMessageContentType,
 } from "@/lib/content-messages/types";
@@ -40,9 +41,20 @@ export async function ensureContentMessagesTable(): Promise<void> {
           sender_name TEXT,
           sender_role TEXT,
           body TEXT NOT NULL,
+          parent_message_id UUID REFERENCES content_messages(id) ON DELETE CASCADE,
+          follow_up_status TEXT NOT NULL DEFAULT 'open'
+            CHECK (follow_up_status IN ('open', 'awaiting_user', 'user_replied', 'resolved')),
           seen_at TIMESTAMPTZ,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
+      `;
+      await sql`
+        ALTER TABLE content_messages
+        ADD COLUMN IF NOT EXISTS parent_message_id UUID REFERENCES content_messages(id) ON DELETE CASCADE
+      `;
+      await sql`
+        ALTER TABLE content_messages
+        ADD COLUMN IF NOT EXISTS follow_up_status TEXT NOT NULL DEFAULT 'open'
       `;
       await sql`
         CREATE INDEX IF NOT EXISTS idx_content_messages_recipient
@@ -66,6 +78,11 @@ export async function ensureContentMessagesTable(): Promise<void> {
           ON content_messages(sender_user_id, created_at DESC)
           WHERE sender_user_id IS NOT NULL
       `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS idx_content_messages_parent
+          ON content_messages(parent_message_id, created_at ASC)
+          WHERE parent_message_id IS NOT NULL
+      `;
     })().catch((error) => {
       contentMessagesTableReady = null;
       throw error;
@@ -86,6 +103,13 @@ function mapRow(row: Record<string, unknown>): ContentMessage {
     senderName: row.sender_name ? String(row.sender_name) : null,
     senderRole: row.sender_role ? String(row.sender_role) : null,
     body: String(row.body ?? ""),
+    parentMessageId: row.parent_message_id ? String(row.parent_message_id) : null,
+    followUpStatus:
+      row.follow_up_status === "awaiting_user" ||
+      row.follow_up_status === "user_replied" ||
+      row.follow_up_status === "resolved"
+        ? row.follow_up_status
+        : "open",
     seenAt: row.seen_at ? new Date(String(row.seen_at)).toISOString() : null,
     createdAt: new Date(String(row.created_at)).toISOString(),
   };
@@ -140,6 +164,8 @@ export async function pgInsertContentMessage(input: {
   senderName?: string | null;
   senderRole?: string | null;
   body: string;
+  parentMessageId?: string | null;
+  followUpStatus?: ContentMessageFollowUpStatus;
 }): Promise<ContentMessage | null> {
   if (!isPostgresConfigured()) return null;
   await ensureContentMessagesTable();
@@ -155,7 +181,9 @@ export async function pgInsertContentMessage(input: {
       sender_user_id,
       sender_name,
       sender_role,
-      body
+      body,
+      parent_message_id,
+      follow_up_status
     ) VALUES (
       ${input.campaignId}::uuid,
       ${input.contentType},
@@ -165,7 +193,9 @@ export async function pgInsertContentMessage(input: {
       ${input.senderUserId ?? null},
       ${input.senderName ?? null},
       ${input.senderRole ?? null},
-      ${input.body}
+      ${input.body},
+      ${input.parentMessageId ?? null},
+      ${input.followUpStatus ?? "open"}
     )
     RETURNING *
   `;
@@ -295,6 +325,59 @@ export async function pgListMessagesForContent(input: {
   `;
 
   return rows.map((row) => mapRow(row as Record<string, unknown>));
+}
+
+export async function pgListRepliesForRootMessages(rootIds: string[]): Promise<ContentMessage[]> {
+  if (!isPostgresConfigured() || rootIds.length === 0) return [];
+  await ensureContentMessagesTable();
+  const sql = getSql();
+  const ids = rootIds.map((id) => id.trim()).filter(Boolean);
+  if (!ids.length) return [];
+  const rows = await sql`
+    SELECT *
+    FROM content_messages
+    WHERE parent_message_id = ANY(${ids}::uuid[])
+    ORDER BY created_at ASC
+  `;
+  return rows.map((row) => mapRow(row as Record<string, unknown>));
+}
+
+export async function pgUpdateContentMessageFollowUpStatus(input: {
+  rootMessageId: string;
+  status: ContentMessageFollowUpStatus;
+}): Promise<boolean> {
+  if (!isPostgresConfigured()) return false;
+  await ensureContentMessagesTable();
+  const sql = getSql();
+  const rows = await sql`
+    UPDATE content_messages
+    SET follow_up_status = ${input.status}
+    WHERE id = ${input.rootMessageId}::uuid
+      AND parent_message_id IS NULL
+    RETURNING id
+  `;
+  return Boolean(rows[0]?.id);
+}
+
+export async function pgUpdateFollowUpStatusForContent(input: {
+  campaignId: string;
+  contentType: ContentMessageContentType;
+  contentId: string;
+  status: ContentMessageFollowUpStatus;
+}): Promise<number> {
+  if (!isPostgresConfigured()) return 0;
+  await ensureContentMessagesTable();
+  const sql = getSql();
+  const rows = await sql`
+    UPDATE content_messages
+    SET follow_up_status = ${input.status}
+    WHERE campaign_id = ${input.campaignId}::uuid
+      AND content_type = ${input.contentType}
+      AND content_id = ${input.contentId}::uuid
+      AND parent_message_id IS NULL
+    RETURNING id
+  `;
+  return rows.length;
 }
 
 export type ContentMessageWithRecipient = ContentMessage & {
