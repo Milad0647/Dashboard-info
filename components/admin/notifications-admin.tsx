@@ -52,6 +52,8 @@ import type {
 } from "@/lib/types";
 import { formatPersianDate, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
+const NOTIFICATIONS_PAGE_SIZE = 50;
+
 function getNotificationDescription(
   item: NotificationFeedItem,
   sources: {
@@ -257,6 +259,7 @@ export function NotificationsAdmin({
   const [readsLoaded, setReadsLoaded] = useState(false);
   const [confirmingKey, setConfirmingKey] = useState<string | null>(null);
   const [previewItem, setPreviewItem] = useState<NotificationFeedItem | null>(null);
+  const [page, setPage] = useState(1);
   const [isPending, startTransition] = useTransition();
 
   const previewDescription = useMemo(() => {
@@ -339,25 +342,47 @@ export function NotificationsAdmin({
     return items.filter((item) => (view === "seen" ? seenKeys.has(item.key) : !seenKeys.has(item.key)));
   }, [feed, range, province, ownerName, planLabel, view, seenKeys]);
 
+  const paginationResetKey = `${view}:${range}:${sort}:${province}:${ownerName}:${planLabel}`;
+
+  useEffect(() => {
+    setPage(1);
+  }, [paginationResetKey]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / NOTIFICATIONS_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+
+  const visibleItems = useMemo(() => {
+    const start = (currentPage - 1) * NOTIFICATIONS_PAGE_SIZE;
+    return filtered.slice(start, start + NOTIFICATIONS_PAGE_SIZE);
+  }, [filtered, currentPage]);
+
   const grouped = useMemo(() => {
     const map = new Map<string, NotificationFeedItem[]>();
-    for (const item of filtered) {
+    for (const item of visibleItems) {
       const list = map.get(item.date) ?? [];
       list.push(item);
       map.set(item.date, list);
     }
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filtered]);
+  }, [visibleItems]);
 
-  const allFilteredSelected =
-    filtered.length > 0 && filtered.every((item) => selectedKeys.has(item.key));
+  const allVisibleSelected =
+    visibleItems.length > 0 && visibleItems.every((item) => selectedKeys.has(item.key));
 
   const toggleSelectAll = () => {
-    if (allFilteredSelected) {
-      setSelectedKeys(new Set());
+    if (allVisibleSelected) {
+      setSelectedKeys((prev) => {
+        const next = new Set(prev);
+        for (const item of visibleItems) next.delete(item.key);
+        return next;
+      });
       return;
     }
-    setSelectedKeys(new Set(filtered.map((item) => item.key)));
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      for (const item of visibleItems) next.add(item.key);
+      return next;
+    });
   };
 
   const toggleSelect = (key: string) => {
@@ -497,9 +522,9 @@ export function NotificationsAdmin({
             </SelectContent>
           </Select>
         )}
-        {filtered.length > 0 && (
+        {visibleItems.length > 0 && (
           <Button variant="outline" onClick={toggleSelectAll}>
-            {allFilteredSelected ? "لغو انتخاب همه" : "انتخاب همه"}
+            {allVisibleSelected ? "لغو انتخاب همه" : "انتخاب همه در این صفحه"}
           </Button>
         )}
         {selectedKeys.size > 0 && (
@@ -517,6 +542,9 @@ export function NotificationsAdmin({
               ? "دیده‌شده‌ها"
               : "امتیاز نداده‌ها"}
           : {formatPersianNumber(filtered.length)}
+          {filtered.length > NOTIFICATIONS_PAGE_SIZE
+            ? ` — نمایش ${formatPersianNumber(visibleItems.length)} مورد در صفحه ${formatPersianNumber(currentPage)} از ${formatPersianNumber(totalPages)}`
+            : null}
           {view === "new" && " — موارد فقط با تأیید صریح به‌عنوان دیده‌شده ثبت می‌شوند."}
           {view === "unscored" && canScore && " — روی هر کارت می‌توانید امتیاز بدهید."}
         </p>
@@ -524,7 +552,7 @@ export function NotificationsAdmin({
 
       {!readsLoaded ? (
         <div className="rounded-xl border py-12 text-center text-muted-foreground">در حال بارگذاری...</div>
-      ) : grouped.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="rounded-xl border py-12 text-center text-muted-foreground">
           {view === "new"
             ? "اعلان جدیدی در این فیلتر وجود ندارد."
@@ -559,6 +587,30 @@ export function NotificationsAdmin({
               </div>
             </div>
           ))}
+
+          {totalPages > 1 ? (
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={currentPage <= 1}
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              >
+                صفحه قبل
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                صفحه {formatPersianNumber(currentPage)} از {formatPersianNumber(totalPages)}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              >
+                صفحه بعد
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
 
