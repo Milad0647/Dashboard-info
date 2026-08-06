@@ -10,6 +10,7 @@ import {
   resolveAbsoluteMediaUrl,
   resolveVideoThumbnail,
 } from "@/lib/media-utils";
+import { redirectIfUnauthorized } from "@/lib/client/auth-session";
 
 const COVER_SEEK_SECONDS = 3;
 const COVER_MAX_WIDTH = 720;
@@ -155,6 +156,10 @@ async function uploadImageBlob(blob: Blob, fileName: string): Promise<string> {
     method: "POST",
     body: formData,
   });
+
+  if (redirectIfUnauthorized(response)) {
+    throw new Error("نشست منقضی شده");
+  }
 
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { error?: string } | null;

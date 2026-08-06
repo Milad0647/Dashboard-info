@@ -1,3 +1,5 @@
+import { getSessionTtlMs } from "@/lib/auth/session";
+
 const SESSION_COOKIE = "admin_session";
 const LEGACY_MOCK_COOKIE = "mock_admin";
 
@@ -30,7 +32,8 @@ export {
   verifyAdminSessionToken,
 } from "@/lib/auth/session";
 
-export function getAdminSessionCookieOptions(maxAge = 60 * 60 * 24) {
+/** Cookie lifetime matches signed token TTL (default: 1 week). */
+export function getAdminSessionCookieOptions(maxAge = Math.floor(getSessionTtlMs() / 1000)) {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

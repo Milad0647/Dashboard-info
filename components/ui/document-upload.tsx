@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn, formatPersianNumber } from "@/lib/utils";
+import { redirectIfUnauthorized } from "@/lib/client/auth-session";
 import { FileText, Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -151,6 +152,8 @@ export function DocumentUpload({
         method: "POST",
         body: formData,
       });
+
+      if (redirectIfUnauthorized(response)) return;
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { error?: string } | null;

@@ -15,6 +15,7 @@ import {
   type ContributorPermissions,
 } from "@/lib/contributor-permissions";
 import type { CampaignSettings } from "@/lib/types";
+import { redirectIfUnauthorized } from "@/lib/client/auth-session";
 
 const permissionKeys = Object.keys(contributorPermissionLabels) as ContributorPermissionKey[];
 
@@ -60,6 +61,8 @@ export function UsersImportPanel({ campaigns, onImported }: UsersImportPanelProp
         method: "POST",
         body: formData,
       });
+
+      if (redirectIfUnauthorized(response)) return;
 
       const result = await response.json();
       if (!response.ok) {

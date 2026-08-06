@@ -18,6 +18,7 @@ import {
   captureAndUploadVideoCoverFromUrl,
   videoNeedsAutoCover,
 } from "@/lib/client/video-cover";
+import { redirectIfUnauthorized } from "@/lib/client/auth-session";
 import { Loader2, Trash2, Upload } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -252,6 +253,8 @@ export function MediaUpload({
         method: "POST",
         body: formData,
       });
+
+      if (redirectIfUnauthorized(response)) return;
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { error?: string } | null;

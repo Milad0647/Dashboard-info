@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfUnauthorized } from "@/lib/client/auth-session";
+
 export type BackupJobPollResult = {
   status: "queued" | "running" | "done" | "failed";
   error?: string;
@@ -16,6 +18,9 @@ async function readJob(jobId: string): Promise<BackupJobPollResult> {
   const response = await fetch(`/api/backups?jobId=${encodeURIComponent(jobId)}`, {
     cache: "no-store",
   });
+  if (redirectIfUnauthorized(response)) {
+    throw new Error("نشست منقضی شده");
+  }
   const body = (await response.json().catch(() => ({}))) as {
     error?: string;
     job?: BackupJobPollResult & { result?: BackupJobPollResult["result"] };
@@ -44,6 +49,10 @@ export async function startAndWaitForBackup(input: {
       userId: input.userId,
     }),
   });
+
+  if (redirectIfUnauthorized(startResponse)) {
+    throw new Error("نشست منقضی شده");
+  }
 
   const startBody = (await startResponse.json().catch(() => ({}))) as {
     error?: string;

@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatStorageBytes } from "@/lib/raw-media-storage";
 import { startAndWaitForBackup } from "@/lib/client/backup-job";
+import { redirectIfUnauthorized } from "@/lib/client/auth-session";
 import { formatPersianDateTime } from "@/lib/utils";
 
 interface StoredBackupItem {
@@ -30,13 +31,15 @@ interface StoredBackupItem {
 }
 
 async function readApiError(response: Response, fallback: string): Promise<string> {
+  if (redirectIfUnauthorized(response)) {
+    return "نشست شما منقضی شده؛ دوباره وارد شوید";
+  }
   try {
     const result = (await response.json()) as { error?: string };
     if (result.error?.trim()) return result.error;
   } catch {
     // Non-JSON body
   }
-  if (response.status === 401) return "نشست شما منقضی شده؛ دوباره وارد شوید";
   if (response.status === 504 || response.status === 502) {
     return "سرور پاسخ نداد؛ حجم بکاپ زیاد است یا سرور مشغول است";
   }

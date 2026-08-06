@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { resolveErrorInfo } from "@/lib/error-solutions";
 import { emitUiError } from "@/lib/ui-error-bus";
+import { redirectToLoginForExpiredSession } from "@/lib/client/auth-session";
 
 const MAX_LABEL_LENGTH = 120;
 const MAX_ERROR_LABEL_LENGTH = 200;
@@ -61,6 +62,11 @@ function reportUiError(
   metadata?: Record<string, unknown>,
   options?: { openModal?: boolean }
 ) {
+  if (/^unauthorized$/i.test(rawMessage.trim()) || /نشست شما منقضی/i.test(rawMessage)) {
+    redirectToLoginForExpiredSession();
+    return;
+  }
+
   const info = resolveErrorInfo(rawMessage);
   const label = info.message.slice(0, MAX_ERROR_LABEL_LENGTH);
   if (!label) return;

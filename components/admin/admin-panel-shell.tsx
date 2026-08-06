@@ -15,6 +15,7 @@ import { ChatFloatingWidget } from "@/components/admin/chat-floating-widget";
 import { DirectiveAckGate } from "@/components/admin/directive-ack-gate";
 import { ErrorModalProvider } from "@/components/admin/error-modal-provider";
 import { ProblemReportButton } from "@/components/admin/problem-report-button";
+import { SessionExpiryGuard } from "@/components/admin/session-expiry-guard";
 import { ScrollToTopButton } from "@/components/ui/scroll-to-top-button";
 import type { CampaignSettings } from "@/lib/types";
 
@@ -81,6 +82,7 @@ function PanelChrome({
 }) {
   return (
     <div className="min-h-screen bg-background">
+      <SessionExpiryGuard />
       {withTracker ? (
         <Suspense fallback={null}>
           <AuditTracker />

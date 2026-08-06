@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "cf406834691c5f356f18ed003f27b540ef920f9e",
+      "committedAt": "2026-08-03T15:35:20+03:30",
+      "title": "رفع پوشش منوی سمت راست روی پنجره‌های باز مثل گزارش رصد",
+      "subject": "Raise dialog z-index above admin sidebar"
+    },
+    {
       "hash": "c6a93463fc11e56f2b87afed414fc7abb29ec769",
       "committedAt": "2026-08-03T14:43:56+03:30",
       "title": "رفع خطای عملیات بعد از به‌روزرسانی سایت با راهنمای رفرش",

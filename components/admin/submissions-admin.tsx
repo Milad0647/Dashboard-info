@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { updateSubmissionAction, deleteSubmissionAction } from "@/lib/actions/admin-actions";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import type { CampaignSubmission } from "@/lib/types";
+import { redirectIfUnauthorized } from "@/lib/client/auth-session";
 import { formatPersianDate, formatPersianNumber, getStatusLabel, maskEmail, maskPhone } from "@/lib/utils";
 
 interface SubmissionsAdminProps {
@@ -117,6 +118,8 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
         method: "POST",
         body: formData,
       });
+
+      if (redirectIfUnauthorized(response)) return;
 
       const body = (await response.json().catch(() => null)) as {
         success?: boolean;

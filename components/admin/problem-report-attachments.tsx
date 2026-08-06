@@ -10,6 +10,7 @@ import {
   type ProblemReportAttachmentKind,
 } from "@/lib/audit/problem-types";
 import { cn, formatPersianNumber } from "@/lib/utils";
+import { redirectIfUnauthorized } from "@/lib/client/auth-session";
 
 const ACCEPT =
   "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov";
@@ -89,6 +90,8 @@ export function ProblemReportAttachmentsField({
           method: "POST",
           body: formData,
         });
+
+        if (redirectIfUnauthorized(response)) return;
 
         if (!response.ok) {
           const body = (await response.json().catch(() => null)) as { error?: string } | null;

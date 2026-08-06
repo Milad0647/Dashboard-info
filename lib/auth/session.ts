@@ -1,7 +1,8 @@
 import { getAuthSecret } from "@/lib/auth/secret";
 import type { AuthSession, SessionRole } from "@/lib/types";
 
-const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+/** Keep signed session tokens valid for one week after login. */
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function signPayloadAsync(payload: string): Promise<string> {
   const key = await crypto.subtle.importKey(

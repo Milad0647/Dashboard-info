@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { redirectIfUnauthorized } from "@/lib/client/auth-session";
 import {
   AdminContentFilterBar,
   collectAdminFilterUsers,
@@ -346,6 +347,8 @@ export function ActivitiesAdmin({
           method: "POST",
           body: formData,
         });
+
+        if (redirectIfUnauthorized(response)) return;
 
         if (!response.ok) {
           const body = (await response.json().catch(() => null)) as { error?: string } | null;
