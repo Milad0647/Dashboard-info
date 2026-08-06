@@ -468,11 +468,6 @@ export function SocialPostsAdmin({
         form.setValue("title", result.title.trim());
       }
 
-      const currentDescription = form.getValues("description")?.trim() ?? "";
-      if (!currentDescription && result.description?.trim()) {
-        form.setValue("description", result.description.trim());
-      }
-
       const currentCover = form.getValues("coverImageUrl")?.trim() ?? "";
       if (!currentCover && result.coverImageUrl?.trim()) {
         form.setValue("coverImageUrl", result.coverImageUrl.trim());

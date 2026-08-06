@@ -264,11 +264,6 @@ export function PressPublicationsAdmin({
         form.setValue("title", result.title.trim());
       }
 
-      const currentDescription = form.getValues("description")?.trim() ?? "";
-      if (!currentDescription && result.description?.trim()) {
-        form.setValue("description", result.description.trim());
-      }
-
       if (result.coverImageUrl?.trim()) {
         const coverUrl = result.coverImageUrl.trim();
         const hasCoverImage = mediaItems.some(

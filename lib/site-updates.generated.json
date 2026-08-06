@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "b691df52e67413873a4f7b562a7b6e0793a402d5",
+      "committedAt": "2026-08-06T12:46:06+03:30",
+      "title": "امکان فیلتر و رتبه‌بندی بر اساس موضوع در صفحه رتبه‌بندی",
+      "subject": "Add topic filter to campaign leaderboard"
+    },
+    {
+      "hash": "7b3ffafd617e2778369edc0ac7cecf5387857101",
+      "committedAt": "2026-08-06T12:41:05+03:30",
+      "title": "تمدید نشست ورود به یک هفته و خروج خودکار هنگام انقضا",
+      "subject": "Extend auth session to 1 week and kick out on expiry"
+    },
+    {
       "hash": "cf406834691c5f356f18ed003f27b540ef920f9e",
       "committedAt": "2026-08-03T15:35:20+03:30",
       "title": "رفع پوشش منوی سمت راست روی پنجره‌های باز مثل گزارش رصد",

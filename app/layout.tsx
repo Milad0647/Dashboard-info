@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
-import { Vazirmatn } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemedToaster } from "@/components/themed-toaster";
 import "./globals.css";
 
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic"],
+/** Bundled locally so `next build` does not require Google Fonts DNS. */
+const vazirmatn = localFont({
+  src: "./fonts/vazirmatn-arabic-400.woff2",
   variable: "--font-sans",
+  display: "swap",
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -28,7 +31,6 @@ const themeInitScript = `
       root.style.colorScheme = "dark";
     } else {
       root.classList.remove("dark");
-      root.style.colorScheme = "light";
     }
   } catch (e) {}
 })();
@@ -51,4 +53,3 @@ export default function RootLayout({
     </html>
   );
 }
-
