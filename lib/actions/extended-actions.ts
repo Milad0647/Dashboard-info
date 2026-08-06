@@ -19,7 +19,15 @@ import { hashPassword } from "@/lib/auth/password";
 import { generateAccessCodePassword } from "@/lib/auth/generate-access-code";
 import * as pgExt from "@/lib/db/repository-extended";
 import type { MeetingDecisionPayload, MeetingTaskPayload } from "@/lib/db/repository-extended";
-import type { BroadcastReport, CampaignActivity, CampaignMeeting, SmsSendReport, SocialMediaPost, SocialPlatformStat } from "@/lib/types";
+import type {
+  BroadcastReport,
+  CampaignActivity,
+  CampaignMeeting,
+  SmsSendReport,
+  SocialMediaPost,
+  SocialPlatformStat,
+  SocialPostPlatform,
+} from "@/lib/types";
 import { isGroupSocialPost, isSitePublication } from "@/lib/social-posts";
 import { isPostgresConfigured } from "@/lib/utils";
 import { resolveSaveOwnerUserId } from "@/lib/admin-content-owner";
@@ -35,6 +43,12 @@ import type { TutorialSectionKey } from "@/lib/section-tutorials";
 function validateTitlePayload(data: { title?: unknown }) {
   const error = getContentTitleValidationError(data.title);
   return error ? { success: false as const, error } : null;
+}
+
+function socialPostPermissionKey(
+  platform?: SocialPostPlatform | null
+): "socialPosts" | "sitePublications" {
+  return platform === "site" ? "sitePublications" : "socialPosts";
 }
 
 function activityTutorialKey(
@@ -94,7 +108,7 @@ export async function saveSocialPostAction(data: Partial<SocialMediaPost> & { id
 
   if (!isFullAdmin(session) && data.campaignId) {
     const permissions = await pgExt.pgGetUserPermissionsForCampaign(session.userId!, data.campaignId);
-    if (!hasContributorPermission(permissions, "socialPosts")) {
+    if (!hasContributorPermission(permissions, socialPostPermissionKey(data.platform))) {
       return { success: false, error: "دسترسی ندارید" };
     }
   }
@@ -110,9 +124,7 @@ export async function saveSocialPostAction(data: Partial<SocialMediaPost> & { id
     if (denied) return denied;
   }
 
-  const tutorialKey = isSitePublication({ platform: data.platform ?? "other" })
-    ? "sitePublications"
-    : "socialPosts";
+  const tutorialKey = data.platform === "site" ? "sitePublications" : "socialPosts";
   const tutorialDenied = await assertTutorialForPossibleCreate(
     tutorialKey,
     "social_media_posts",
@@ -196,7 +208,7 @@ export async function refreshSocialPostMetricsAction(postId: string) {
 
   if (!isFullAdmin(session) && existing.campaignId) {
     const permissions = await pgExt.pgGetUserPermissionsForCampaign(session.userId!, existing.campaignId);
-    if (!hasContributorPermission(permissions, "socialPosts")) {
+    if (!hasContributorPermission(permissions, socialPostPermissionKey(existing.platform))) {
       return { success: false as const, error: "دسترسی ندارید" };
     }
   }
