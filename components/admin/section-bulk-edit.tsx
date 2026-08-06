@@ -118,22 +118,19 @@ export function BulkItemShell({
           selected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
         )}
       >
-        <div className="pointer-events-none">{children}</div>
+        <div>{children}</div>
       </div>
       <button
         type="button"
         aria-label="انتخاب برای ویرایش گروهی"
         onClick={onToggle}
-        className="absolute inset-0 z-20 rounded-xl"
-      />
-      <span
         className={cn(
-          "pointer-events-none absolute top-2 right-2 z-30 flex h-6 w-6 items-center justify-center rounded-md border bg-background/95 shadow-sm",
-          selected ? "border-primary text-primary" : "border-muted-foreground/40 text-muted-foreground"
+          "absolute top-2 right-2 z-30 flex h-6 w-6 items-center justify-center rounded-md border bg-background/95 shadow-sm transition-colors",
+          selected ? "border-primary text-primary" : "border-muted-foreground/40 text-muted-foreground hover:bg-muted"
         )}
       >
         {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-      </span>
+      </button>
     </div>
   );
 }
