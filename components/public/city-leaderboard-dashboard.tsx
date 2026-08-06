@@ -2,11 +2,22 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
-import { ArrowRight, Download, MapPin, Medal, Star, Trophy, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Download,
+  MapPin,
+  Medal,
+  Star,
+  Tag,
+  Trophy,
+  Users,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import {
   CampaignHeaderAuth,
@@ -26,12 +37,14 @@ import {
   collectLeaderboardBillboards,
   collectLeaderboardContentByMetric,
   collectUserContentItems,
+  filterLeaderboardSourceByTopics,
   getProvinceRankBadge,
   type LeaderboardMetricLabel,
   type ProvinceLeaderboardEntry,
   type ProvinceLeaderboardMetrics,
   type UserLeaderboardEntry,
 } from "@/lib/city-leaderboard";
+import { formatPlanLabelDisplay } from "@/lib/content-topics";
 import { downloadLeaderboardExcel } from "@/lib/services/leaderboard-excel-export";
 import type { PublicCampaignData } from "@/lib/types";
 import { formatPersianDate, formatPersianNumber } from "@/lib/utils";
@@ -236,44 +249,73 @@ export function CityLeaderboardDashboard({
 }: CityLeaderboardDashboardProps) {
   const { settings } = data;
   const [view, setView] = useState<LeaderboardView>("province");
+  const [planLabels, setPlanLabels] = useState<string[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserLeaderboardEntry | null>(null);
   const [billboardScope, setBillboardScope] = useState<ModalScope | null>(null);
   const [contentScope, setContentScope] = useState<ContentModalScope | null>(null);
 
-  const provinces = useMemo(() => buildProvinceLeaderboard(data), [data]);
-  const users = useMemo(() => buildUserLeaderboard(data), [data]);
-  const ratingUsers = useMemo(() => buildUserRatingLeaderboard(data), [data]);
-  const contributors = useMemo(() => buildProvinceContributorLeaderboard(data), [data]);
+  const topicOptions = settings.contentPlans ?? [];
+  const availableTopicOptions = useMemo(
+    () =>
+      topicOptions
+        .filter((plan) => !planLabels.includes(plan))
+        .map((plan) => ({
+          value: plan,
+          label: formatPlanLabelDisplay(plan),
+          keywords: plan,
+        })),
+    [planLabels, topicOptions]
+  );
+
+  const scopedData = useMemo(
+    () => filterLeaderboardSourceByTopics(data, planLabels),
+    [data, planLabels]
+  );
+
+  const provinces = useMemo(() => buildProvinceLeaderboard(scopedData), [scopedData]);
+  const users = useMemo(() => buildUserLeaderboard(scopedData), [scopedData]);
+  const ratingUsers = useMemo(() => buildUserRatingLeaderboard(scopedData), [scopedData]);
+  const contributors = useMemo(
+    () => buildProvinceContributorLeaderboard(scopedData),
+    [scopedData]
+  );
 
   const activeEntries = view === "province" ? provinces : view === "rating" ? ratingUsers : users;
   const isProvinceView = view === "province";
   const isUserLikeView = view === "user" || view === "rating";
+  const topicFilterActive = planLabels.length > 0;
+
+  const togglePlanLabel = useCallback((label: string) => {
+    setPlanLabels((current) =>
+      current.includes(label) ? current.filter((item) => item !== label) : [...current, label]
+    );
+  }, []);
 
   const selectedUserItems = useMemo(
-    () => (selectedUser ? collectUserContentItems(data, selectedUser.userKey) : []),
-    [data, selectedUser]
+    () => (selectedUser ? collectUserContentItems(scopedData, selectedUser.userKey) : []),
+    [scopedData, selectedUser]
   );
 
   const scopedBillboards = useMemo(
     () =>
       billboardScope
-        ? collectLeaderboardBillboards(data, {
+        ? collectLeaderboardBillboards(scopedData, {
             provinceKey: billboardScope.provinceKey,
             userKey: billboardScope.userKey,
           })
         : [],
-    [billboardScope, data]
+    [billboardScope, scopedData]
   );
 
   const scopedContentItems = useMemo(
     () =>
       contentScope
-        ? collectLeaderboardContentByMetric(data, contentScope.metricLabel, {
+        ? collectLeaderboardContentByMetric(scopedData, contentScope.metricLabel, {
             provinceKey: contentScope.provinceKey,
             userKey: contentScope.userKey,
           })
         : [],
-    [contentScope, data]
+    [contentScope, scopedData]
   );
 
   const openContentModal = useCallback(
@@ -392,16 +434,77 @@ export function CityLeaderboardDashboard({
           </Button>
         </div>
 
+        {topicOptions.length > 0 && (
+          <div className="space-y-2 rounded-xl border bg-muted/20 p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <Tag className="h-4 w-4 text-primary" />
+                فیلتر موضوع
+              </div>
+              <div className="min-w-[200px] flex-1 sm:max-w-xs">
+                <SearchableSelect
+                  key={planLabels.join("|")}
+                  value=""
+                  onValueChange={(value) => {
+                    if (!planLabels.includes(value)) togglePlanLabel(value);
+                  }}
+                  options={availableTopicOptions}
+                  placeholder="افزودن موضوع"
+                  searchPlaceholder="جستجوی موضوع..."
+                  clearAfterSelect
+                  emptyText="موضوعی برای افزودن نیست"
+                />
+              </div>
+              {topicFilterActive && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setPlanLabels([])}
+                >
+                  پاک کردن موضوع‌ها
+                </Button>
+              )}
+            </div>
+            {topicFilterActive && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">رتبه‌بندی فقط برای:</span>
+                {planLabels.map((label) => (
+                  <Badge key={label} variant="secondary" className="gap-1 pl-1">
+                    {formatPlanLabelDisplay(label)}
+                    <button
+                      type="button"
+                      className="rounded-sm p-0.5 hover:bg-muted"
+                      onClick={() => togglePlanLabel(label)}
+                      aria-label={`حذف ${label}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <p className="text-sm text-muted-foreground">
           {formatPersianDate(settings.startDate)} — {formatPersianDate(settings.endDate)}
+          {topicFilterActive && (
+            <>
+              {" "}
+              · فیلتر موضوع فعال
+            </>
+          )}
         </p>
 
         {activeEntries.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
-              {isProvinceView
-                ? "هنوز داده‌ای برای مقایسه استان‌ها ثبت نشده است."
-                : "هنوز داده‌ای برای مقایسه کاربران ثبت نشده است."}
+              {topicFilterActive
+                ? "برای موضوع‌های انتخاب‌شده هنوز محتوایی ثبت نشده است."
+                : isProvinceView
+                  ? "هنوز داده‌ای برای مقایسه استان‌ها ثبت نشده است."
+                  : "هنوز داده‌ای برای مقایسه کاربران ثبت نشده است."}
             </CardContent>
           </Card>
         ) : (

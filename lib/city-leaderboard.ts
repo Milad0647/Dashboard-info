@@ -1,3 +1,4 @@
+import { matchesAnyPlanLabelFilter } from "@/lib/content-topics";
 import { normalizeImportedProvince } from "@/lib/iran-locations";
 import { countsAsTodayBillboardUpload } from "@/lib/billboards";
 import {
@@ -287,6 +288,31 @@ function collectLeaderboardItems(
     add(data.pressPublications, "activities");
   }
   if (data.sections.files) add(data.files, "files");
+}
+
+/** Narrow leaderboard source to items matching any selected topic (empty = all). */
+export function filterLeaderboardSourceByTopics(
+  data: LeaderboardSourceData,
+  planLabels: string[]
+): LeaderboardSourceData {
+  if (planLabels.length === 0) return data;
+
+  const match = <T extends Ownable>(items: T[]): T[] =>
+    items.filter((item) =>
+      matchesAnyPlanLabelFilter(item.planLabels, item.planLabel, planLabels)
+    );
+
+  return {
+    ...data,
+    billboards: match(data.billboards),
+    posters: match(data.posters),
+    videos: match(data.videos),
+    socialPosts: match(data.socialPosts),
+    sitePublications: match(data.sitePublications),
+    activities: match(data.activities),
+    pressPublications: match(data.pressPublications),
+    files: match(data.files),
+  };
 }
 
 export function buildProvinceLeaderboard(data: LeaderboardSourceData): ProvinceLeaderboardEntry[] {
