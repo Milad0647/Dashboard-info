@@ -1,6 +1,54 @@
 {
   "entries": [
     {
+      "hash": "90818fe4b2e5e5051d32d0ce12cd588beed0ad69",
+      "committedAt": "2026-08-06T13:08:07+03:30",
+      "title": "نمایش همه فایل‌های آپلودشده در پیش‌نمایش اقدامات",
+      "subject": "Show all uploaded activity media in preview"
+    },
+    {
+      "hash": "f40c7ecf8d7975c2ccf2dbddc413ee273434d117",
+      "committedAt": "2026-08-06T13:07:57+03:30",
+      "title": "امکان مشاهده کارت‌ها قبل از انتخاب در ویرایش گروهی",
+      "subject": "Allow preview click in bulk edit cards"
+    },
+    {
+      "hash": "9286384adac3eaf38f3b9b2b10f130ca4050fe30",
+      "committedAt": "2026-08-06T13:06:53+03:30",
+      "title": "یکسان‌سازی نمایش گزینه پیام به فرستنده در بخش پوسترها",
+      "subject": "Unify poster sender-comment action visibility"
+    },
+    {
+      "hash": "6f831bfe4f51f2471eab18c8f47628c9ce60b53e",
+      "committedAt": "2026-08-06T13:03:07+03:30",
+      "title": "رفع مشکل ذخیره ویرایش در بخش انتشار در سایت برای کاربران مجاز",
+      "subject": "Fix site publication permission checks"
+    },
+    {
+      "hash": "38a7dac84f2beb2b93ba4766ff619e4d0a34c789",
+      "committedAt": "2026-08-06T13:01:07+03:30",
+      "title": "افزودن فیلتر نوع شرکت به بخش‌های دارای فیلتر",
+      "subject": "Document company type content filter"
+    },
+    {
+      "hash": "ef03ca5ebf85c79d9bccc1421ebe2b07096a50a6",
+      "committedAt": "2026-08-06T12:58:36+03:30",
+      "title": "امکان پخش ویدیو مستقیم از روی کارت در همه بخش‌های ادمین",
+      "subject": "Wire inline video playback into admin cards"
+    },
+    {
+      "hash": "b6c7ce7b18b7564855f6560894c7ae122380547d",
+      "committedAt": "2026-08-06T12:57:20+03:30",
+      "title": "امکان پخش ویدیو مستقیم از روی کارت در پنل ادمین",
+      "subject": "Play admin card videos inline without opening"
+    },
+    {
+      "hash": "ec0e43d26a79e1b56799153582fef104f7ea2528",
+      "committedAt": "2026-08-06T12:57:18+03:30",
+      "title": "اصلاح انتخاب و نمایش تاریخ دستورکارها",
+      "subject": "Fix Persian date picker alignment and directive date validation"
+    },
+    {
       "hash": "022294f11955057a476f3174667f7daf232939d7",
       "committedAt": "2026-08-06T12:51:43+03:30",
       "title": "حذف متن پیش‌فرض از فیلدهای توضیح و انتشار سایت",
