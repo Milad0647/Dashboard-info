@@ -1,13 +1,12 @@
 "use client";
 
-import { Play } from "lucide-react";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
-import { VideoThumbnail } from "@/components/media/video-thumbnail";
+import { InlineVideoPlayer } from "@/components/media/inline-video-player";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { Video, VideoVersion } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -37,37 +36,33 @@ export function AdminVideoCompactCard({
 
   return (
     <div className="apple-lift group relative w-full overflow-hidden rounded-xl border bg-card text-right hover:border-primary/50">
+      <div className="relative aspect-video w-full overflow-hidden bg-muted">
+        {displayVersion ? (
+          <InlineVideoPlayer
+            videoUrl={displayVersion.videoUrl}
+            thumbnailUrl={displayVersion.thumbnailUrl}
+            alt={video.title}
+            objectFit="contain"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-[10px] text-muted-foreground">
+            بدون ویدیو
+          </div>
+        )}
+      </div>
+
       <button
         type="button"
         onClick={onClick}
         className={cn(
-          "w-full text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          "w-full space-y-1 p-2 text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         )}
       >
-        <div className="relative aspect-video w-full overflow-hidden bg-muted">
-          {displayVersion ? (
-            <VideoThumbnail
-              videoUrl={displayVersion.videoUrl}
-              thumbnailUrl={displayVersion.thumbnailUrl}
-              alt={video.title}
-              className="object-contain"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-[10px] text-muted-foreground">بدون ویدیو</div>
-          )}
-          <div className="apple-overlay absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/35">
-            <Play className="h-8 w-8 text-white" />
-          </div>
-        </div>
-        <div className="space-y-1 p-2">
-          <p className="truncate text-xs font-medium">{video.title}</p>
-          <AdminPlanLabelsBadges planLabels={video.planLabels} planLabel={video.planLabel} />
-          <AdminCreatedAtText createdAt={video.createdAt} />
-          <AdminOwnerBadge ownerUserId={video.ownerUserId} ownerName={video.ownerName} />
-          {!displayVersion && (
-            <p className="text-[10px] text-muted-foreground">بدون ویدیو</p>
-          )}
-        </div>
+        <p className="truncate text-xs font-medium">{video.title}</p>
+        <AdminPlanLabelsBadges planLabels={video.planLabels} planLabel={video.planLabel} />
+        <AdminCreatedAtText createdAt={video.createdAt} />
+        <AdminOwnerBadge ownerUserId={video.ownerUserId} ownerName={video.ownerName} />
+        {!displayVersion && <p className="text-[10px] text-muted-foreground">بدون ویدیو</p>}
       </button>
 
       {(canScore || onView || onEdit || onDelete) && (

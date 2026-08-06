@@ -7,7 +7,7 @@ import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
-import { VideoThumbnail } from "@/components/media/video-thumbnail";
+import { InlineVideoPlayer } from "@/components/media/inline-video-player";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import { Music } from "lucide-react";
 import { getSocialPostLinkEntryPlatforms, resolveSocialPostCardMedia } from "@/lib/social-posts";
@@ -51,77 +51,76 @@ export function AdminSocialPostCompactCard({
 
   return (
     <div className="apple-lift group relative w-full overflow-hidden rounded-xl border bg-card text-right hover:border-primary/50">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+        {isAudio ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted px-3 py-4">
+            <Music className="h-8 w-8 text-muted-foreground" />
+          </div>
+        ) : isVideo && mediaUrl ? (
+          <InlineVideoPlayer
+            videoUrl={mediaUrl}
+            thumbnailUrl={coverImageUrl}
+            alt={post.title}
+            sizes="200px"
+            objectFit="cover"
+          />
+        ) : mediaUrl ? (
+          <MediaThumbnail
+            src={mediaUrl}
+            alt={post.title}
+            sizes="200px"
+            objectFit="cover"
+            className="apple-media-zoom"
+          />
+        ) : coverImageUrl ? (
+          <MediaThumbnail
+            src={coverImageUrl}
+            alt={post.title}
+            sizes="200px"
+            objectFit="cover"
+            className="apple-media-zoom"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
+            {post.title}
+          </div>
+        )}
+        <div className="pointer-events-none absolute top-1.5 right-1.5 z-20 flex flex-wrap gap-1 justify-end">
+          {platformBadges.map((platform) => (
+            <Badge key={platform} variant="overlay" className="gap-1 text-[10px] px-1.5 py-0">
+              <SocialPlatformIcon
+                platform={platform}
+                size="sm"
+                className="h-3.5 w-3.5 rounded"
+              />
+              {getSocialPlatformLabel(platform)}
+            </Badge>
+          ))}
+          {post.platform === "site" ? (
+            <Badge variant="overlay" className="gap-1 text-[10px] px-1.5 py-0">
+              {getStatusLabel(post.platform)}
+            </Badge>
+          ) : null}
+        </div>
+      </div>
+
       <button
         type="button"
         onClick={onClick}
         className={cn(
-          "w-full text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          "w-full space-y-1 p-2 text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         )}
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
-          {isAudio ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted px-3 py-4">
-              <Music className="h-8 w-8 text-muted-foreground" />
-            </div>
-          ) : isVideo && mediaUrl ? (
-            <VideoThumbnail
-              videoUrl={mediaUrl}
-              thumbnailUrl={coverImageUrl}
-              alt={post.title}
-              sizes="200px"
-              className="object-cover"
-            />
-          ) : mediaUrl ? (
-            <MediaThumbnail
-              src={mediaUrl}
-              alt={post.title}
-              sizes="200px"
-              objectFit="cover"
-              className="apple-media-zoom"
-            />
-          ) : coverImageUrl ? (
-            <MediaThumbnail
-              src={coverImageUrl}
-              alt={post.title}
-              sizes="200px"
-              objectFit="cover"
-              className="apple-media-zoom"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
-              {post.title}
-            </div>
-          )}
-          <div className="absolute top-1.5 right-1.5 flex flex-wrap gap-1 justify-end">
-            {platformBadges.map((platform) => (
-              <Badge key={platform} variant="overlay" className="gap-1 text-[10px] px-1.5 py-0">
-                <SocialPlatformIcon
-                  platform={platform}
-                  size="sm"
-                  className="h-3.5 w-3.5 rounded"
-                />
-                {getSocialPlatformLabel(platform)}
-              </Badge>
-            ))}
-            {post.platform === "site" ? (
-              <Badge variant="overlay" className="gap-1 text-[10px] px-1.5 py-0">
-                {getStatusLabel(post.platform)}
-              </Badge>
-            ) : null}
-          </div>
-        </div>
-        <div className="space-y-1 p-2">
-          <p className="truncate text-xs font-medium">{post.title}</p>
-          <AdminPlanLabelsBadges planLabels={post.planLabels} planLabel={post.planLabel} />
-          <p className="truncate text-[10px] text-muted-foreground">
-            {formatPersianDate(post.publishedDate)} · {formatPersianNumber(post.views)} بازدید
-            {post.linkEntries && post.linkEntries.length > 0
-              ? ` · پخش گروهی (${formatPersianNumber(post.linkEntries.length)})`
-              : ""}
-          </p>
-          <AdminCreatedAtText createdAt={post.createdAt} />
-          <AdminOwnerBadge ownerUserId={post.ownerUserId} ownerName={post.ownerName} />
-        </div>
+        <p className="truncate text-xs font-medium">{post.title}</p>
+        <AdminPlanLabelsBadges planLabels={post.planLabels} planLabel={post.planLabel} />
+        <p className="truncate text-[10px] text-muted-foreground">
+          {formatPersianDate(post.publishedDate)} · {formatPersianNumber(post.views)} بازدید
+          {post.linkEntries && post.linkEntries.length > 0
+            ? ` · پخش گروهی (${formatPersianNumber(post.linkEntries.length)})`
+            : ""}
+        </p>
+        <AdminCreatedAtText createdAt={post.createdAt} />
+        <AdminOwnerBadge ownerUserId={post.ownerUserId} ownerName={post.ownerName} />
       </button>
 
       {(canScore || onView || onEdit || onDelete) && (

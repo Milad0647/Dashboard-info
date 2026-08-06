@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import { Play } from "lucide-react";
 import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import {
@@ -10,6 +10,8 @@ import {
   resolveVideoEmbedUrl,
 } from "@/lib/media-utils";
 import { cn } from "@/lib/utils";
+
+const INLINE_VIDEO_PLAY_EVENT = "dashboard:inline-video-play";
 
 interface InlineVideoPlayerProps {
   videoUrl: string;
@@ -26,6 +28,7 @@ interface InlineVideoPlayerProps {
 /**
  * Card-friendly video: cover + play until clicked, then inline playback.
  * Does not load the video file until the user presses play.
+ * Starting one card pauses/collapses other inline players on the page.
  */
 export function InlineVideoPlayer({
   videoUrl,
@@ -36,6 +39,7 @@ export function InlineVideoPlayer({
   sizes,
   showPlayOverlay = true,
 }: InlineVideoPlayerProps) {
+  const playerId = useId();
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -48,6 +52,17 @@ export function InlineVideoPlayer({
   useEffect(() => {
     setPlaying(false);
   }, [videoUrl]);
+
+  useEffect(() => {
+    const onOtherPlay = (event: Event) => {
+      const detail = (event as CustomEvent<string>).detail;
+      if (detail && detail !== playerId) {
+        setPlaying(false);
+      }
+    };
+    window.addEventListener(INLINE_VIDEO_PLAY_EVENT, onOtherPlay);
+    return () => window.removeEventListener(INLINE_VIDEO_PLAY_EVENT, onOtherPlay);
+  }, [playerId]);
 
   useEffect(() => {
     if (!playing || !playAsFile) return;
@@ -66,6 +81,7 @@ export function InlineVideoPlayer({
   const handlePlay = (event: MouseEvent) => {
     stop(event);
     if (!canPlay) return;
+    window.dispatchEvent(new CustomEvent(INLINE_VIDEO_PLAY_EVENT, { detail: playerId }));
     setPlaying(true);
   };
 
