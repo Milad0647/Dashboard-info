@@ -32,6 +32,7 @@ import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { adminCreatedAtDetail } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
+import { ActivityMediaGallery } from "@/components/public/activity-media-dialog";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
 import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
@@ -590,10 +591,8 @@ export function ActivitiesAdmin({
         onOpenChange={(open) => !open && setPreviewActivity(null)}
         title={previewActivity?.title ?? "نمایش اقدام"}
         description={previewActivity?.description}
-        imageUrl={
-          previewActivity?.imageUrl ||
-          previewActivity?.mediaItems?.find((item) => item.url)?.url ||
-          null
+        mediaPreview={
+          previewActivity ? <ActivityMediaGallery activity={previewActivity} /> : null
         }
         meta={
           previewActivity ? (
@@ -608,18 +607,6 @@ export function ActivitiesAdmin({
                 { label: "تاریخ", value: formatPersianDate(previewActivity.activityDate) },
                 adminCreatedAtDetail(previewActivity.createdAt),
                 { label: "مکان", value: previewActivity.location || "—" },
-                {
-                  label: "رسانه‌ها",
-                  value: previewActivity.mediaItems?.length
-                    ? `${previewActivity.mediaItems.length} مورد`
-                    : "—",
-                },
-                {
-                  label: "فایل‌های پیوست",
-                  value: previewActivity.attachments?.length
-                    ? `${previewActivity.attachments.length} مورد`
-                    : "—",
-                },
                 {
                   label: "برچسب‌ها",
                   value: previewActivity.planLabels?.length ? previewActivity.planLabels.join("، ") : "—",

@@ -20,6 +20,8 @@ interface AdminContentPreviewDialogProps {
   title: string;
   description?: string | null;
   imageUrl?: string | null;
+  /** When set, replaces the default single-image preview (e.g. multi-media gallery). */
+  mediaPreview?: React.ReactNode;
   meta?: React.ReactNode;
   details?: Array<{ label: string; value?: React.ReactNode | null }>;
   onEdit?: () => void;
@@ -36,6 +38,7 @@ export function AdminContentPreviewDialog({
   title,
   description,
   imageUrl,
+  mediaPreview,
   meta,
   details = [],
   onEdit,
@@ -55,7 +58,9 @@ export function AdminContentPreviewDialog({
         </DialogHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-6 py-4">
-          {imageUrl ? (
+          {mediaPreview ? (
+            mediaPreview
+          ) : imageUrl ? (
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted">
               <ImageZoom
                 src={imageUrl}

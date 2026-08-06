@@ -165,9 +165,21 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
 
 import type { ActivityAttachment, ActivityMediaItem, BillboardDisplayPeriod } from "@/lib/types";
 
+function coerceJsonArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function parseActivityMediaItems(value: unknown): ActivityMediaItem[] {
-  if (!Array.isArray(value)) return [];
-  return value
+  return coerceJsonArray(value)
     .map((item) => {
       if (!item || typeof item !== "object") return null;
       const record = item as Record<string, unknown>;
@@ -188,8 +200,7 @@ function parseActivityMediaItems(value: unknown): ActivityMediaItem[] {
 }
 
 function parseActivityAttachments(value: unknown): ActivityAttachment[] {
-  if (!Array.isArray(value)) return [];
-  return value
+  return coerceJsonArray(value)
     .map((item) => {
       if (!item || typeof item !== "object") return null;
       const record = item as Record<string, unknown>;

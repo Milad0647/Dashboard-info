@@ -28,6 +28,7 @@ import { AdminActivityCompactCard } from "@/components/admin/admin-activity-comp
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { adminCreatedAtDetail } from "@/components/admin/admin-created-at";
 import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
+import { ActivityMediaGallery } from "@/components/public/activity-media-dialog";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
 import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import {
@@ -445,10 +446,8 @@ export function PressPublicationsAdmin({
         onOpenChange={(nextOpen) => !nextOpen && setPreviewActivity(null)}
         title={previewActivity?.title ?? "نمایش انتشار مطبوعاتی"}
         description={previewActivity?.description}
-        imageUrl={
-          previewActivity?.imageUrl ||
-          previewActivity?.mediaItems?.find((item) => item.url)?.url ||
-          null
+        mediaPreview={
+          previewActivity ? <ActivityMediaGallery activity={previewActivity} /> : null
         }
         meta={
           previewActivity ? (
@@ -463,12 +462,6 @@ export function PressPublicationsAdmin({
             ? [
                 { label: "تاریخ", value: formatPersianDate(previewActivity.activityDate) },
                 adminCreatedAtDetail(previewActivity.createdAt),
-                {
-                  label: "رسانه‌ها",
-                  value: previewActivity.mediaItems?.length
-                    ? `${previewActivity.mediaItems.length} مورد`
-                    : "—",
-                },
                 {
                   label: "لینک",
                   value: previewActivity.link ? (
