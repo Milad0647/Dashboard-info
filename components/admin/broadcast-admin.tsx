@@ -31,8 +31,8 @@ import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { DocumentUpload } from "@/components/ui/document-upload";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { ImageZoom } from "@/components/ui/image-zoom";
+import { InlineVideoPlayer } from "@/components/media/inline-video-player";
 import { VideoModal } from "@/components/media/video-modal";
-import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { deleteBroadcastReportAction, saveBroadcastReportAction } from "@/lib/actions/extended-actions";
 import {
@@ -325,18 +325,13 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-md bg-muted">
                     {type === "media" && fileKind === "video" ? (
-                      <>
-                        <VideoThumbnail
-                          videoUrl={report.pdfUrl}
-                          thumbnailUrl={report.summaryData.coverImageUrl}
-                          alt={report.title}
-                          className="object-cover"
-                          sizes="96px"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/25">
-                          <Play className="h-5 w-5 text-white" />
-                        </div>
-                      </>
+                      <InlineVideoPlayer
+                        videoUrl={report.pdfUrl}
+                        thumbnailUrl={report.summaryData.coverImageUrl}
+                        alt={report.title}
+                        objectFit="cover"
+                        sizes="96px"
+                      />
                     ) : type === "media" && fileKind === "image" ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img

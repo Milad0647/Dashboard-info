@@ -61,37 +61,43 @@ import type {
   DirectiveSystemAction,
 } from "@/lib/types";
 import { USER_REGIONS, getUserRegionLabel, type UserRegion } from "@/lib/user-regions";
+import { todayISO } from "@/lib/jalali";
 import { cn, formatPersianDate, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
-const schema = z.object({
-  title: z.string().min(1).max(CONTENT_TITLE_MAX_LENGTH, CONTENT_TITLE_MAX_LENGTH_MESSAGE),
-  body: z.string().min(1, "متن دستورکار الزامی است"),
-  priority: z.enum(["normal", "urgent"]),
-  startDate: z.string().min(1, "تاریخ شروع الزامی است"),
-  endDate: z.string().min(1, "تاریخ پایان الزامی است"),
-  audienceType: z.enum(["all", "region", "users"]),
-  audienceRegion: z.enum(["north", "south", "east", "west"]).nullable().optional(),
-  actionType: z.enum(["none", "custom_url", "system"]),
-  actionLabel: z.string().optional(),
-  actionUrl: z.string().optional(),
-  systemAction: z
-    .enum([
-      "profile",
-      "posters",
-      "videos",
-      "files",
-      "raw_media",
-      "billboards",
-      "activities",
-      "submissions",
-      "social_posts",
-      "meetings",
-      "broadcast",
-      "problem_reports",
-    ])
-    .nullable()
-    .optional(),
-});
+const schema = z
+  .object({
+    title: z.string().min(1).max(CONTENT_TITLE_MAX_LENGTH, CONTENT_TITLE_MAX_LENGTH_MESSAGE),
+    body: z.string().min(1, "متن دستورکار الزامی است"),
+    priority: z.enum(["normal", "urgent"]),
+    startDate: z.string().min(1, "تاریخ شروع الزامی است"),
+    endDate: z.string().min(1, "تاریخ پایان الزامی است"),
+    audienceType: z.enum(["all", "region", "users"]),
+    audienceRegion: z.enum(["north", "south", "east", "west"]).nullable().optional(),
+    actionType: z.enum(["none", "custom_url", "system"]),
+    actionLabel: z.string().optional(),
+    actionUrl: z.string().optional(),
+    systemAction: z
+      .enum([
+        "profile",
+        "posters",
+        "videos",
+        "files",
+        "raw_media",
+        "billboards",
+        "activities",
+        "submissions",
+        "social_posts",
+        "meetings",
+        "broadcast",
+        "problem_reports",
+      ])
+      .nullable()
+      .optional(),
+  })
+  .refine((data) => data.startDate <= data.endDate, {
+    message: "تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد",
+    path: ["endDate"],
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -304,8 +310,8 @@ export function DirectivesAdmin({
       title: "",
       body: "",
       priority: "normal",
-      startDate: "",
-      endDate: "",
+      startDate: todayISO(),
+      endDate: todayISO(),
       audienceType: "all",
       audienceRegion: null,
       actionType: "none",
@@ -339,12 +345,13 @@ export function DirectivesAdmin({
     setSelectedUserIds([]);
     setAttachments([]);
     setLetterUpload({ url: "", fileName: "", fileSize: 0, mimeType: "" });
+    const today = todayISO();
     form.reset({
       title: "",
       body: "",
       priority: "normal",
-      startDate: "",
-      endDate: "",
+      startDate: today,
+      endDate: today,
       audienceType: "all",
       audienceRegion: null,
       actionType: "none",
@@ -374,12 +381,16 @@ export function DirectivesAdmin({
       }))
     );
     setSelectedUserIds([]);
+    const today = todayISO();
+    const startDate = item.startDate || today;
+    const endDate = item.endDate || item.dueDate || startDate;
     form.reset({
       title: item.title,
       body: item.body,
       priority: item.priority,
-      startDate: item.startDate ?? "",
-      endDate: item.endDate ?? item.dueDate ?? "",
+      startDate,
+      // If stored range was inverted (bad picker/legacy), keep start and lift end.
+      endDate: endDate < startDate ? startDate : endDate,
       audienceType: item.audienceType,
       audienceRegion: item.audienceRegion,
       actionType: item.actionType ?? "none",

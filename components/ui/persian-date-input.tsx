@@ -10,6 +10,7 @@ import {
   isoToJalaali,
   jalaaliMonthLength,
   jalaaliToISO,
+  jalaaliWeekdaySat0,
   todayISO,
 } from "@/lib/jalali";
 import { cn, formatPersianNumber } from "@/lib/utils";
@@ -39,9 +40,15 @@ export function PersianDateInput({
   const [viewMonth, setViewMonth] = useState(selected.jm);
 
   const displayLabel = useMemo(() => {
-    if (allowEmpty && !hasValue) return placeholder;
+    // Never show "today" for an empty value — that made users think a date was selected.
+    if (!hasValue) return placeholder;
     return `${formatPersianNumber(selected.jd)} ${getPersianMonthName(selected.jm)} ${formatPersianNumber(selected.jy)}`;
-  }, [allowEmpty, hasValue, placeholder, selected.jd, selected.jm, selected.jy]);
+  }, [hasValue, placeholder, selected.jd, selected.jm, selected.jy]);
+
+  const startWeekday = useMemo(
+    () => jalaaliWeekdaySat0(viewYear, viewMonth, 1),
+    [viewYear, viewMonth]
+  );
 
   const dayOptions = useMemo(
     () => Array.from({ length: jalaaliMonthLength(viewYear, viewMonth) }, (_, index) => index + 1),
@@ -71,47 +78,69 @@ export function PersianDateInput({
     setViewMonth((month) => month + 1);
   };
 
+  const openPicker = () => {
+    setViewYear(selected.jy);
+    setViewMonth(selected.jm);
+    setOpen((current) => !current);
+  };
+
   return (
     <div id={id} ref={containerRef} className="relative">
       <Button
         type="button"
         variant="outline"
         className="w-full justify-between font-normal"
-        onClick={() => {
-          setViewYear(selected.jy);
-          setViewMonth(selected.jm);
-          setOpen((current) => !current);
-        }}
+        onClick={openPicker}
       >
-        <span className={!hasValue && allowEmpty ? "text-muted-foreground" : undefined}>
-          {displayLabel}
-        </span>
+        <span className={!hasValue ? "text-muted-foreground" : undefined}>{displayLabel}</span>
         <CalendarDays className="h-4 w-4 text-muted-foreground" />
       </Button>
 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute top-full z-50 mt-2 w-full min-w-[280px] rounded-xl border bg-card p-3 shadow-lg">
-            <div className="mb-3 flex items-center justify-between">
-              <Button type="button" variant="ghost" size="icon" onClick={goToPreviousMonth}>
+          <div
+            dir="rtl"
+            className="absolute top-full z-50 mt-2 w-full min-w-[280px] rounded-xl border bg-card p-3 shadow-lg"
+          >
+            <div className="mb-3 flex items-center justify-between gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="ماه قبل"
+                aria-label="ماه قبل"
+                onClick={goToPreviousMonth}
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <div className="text-sm font-medium">
                 {getPersianMonthName(viewMonth)} {formatPersianNumber(viewYear)}
               </div>
-              <Button type="button" variant="ghost" size="icon" onClick={goToNextMonth}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="ماه بعد"
+                aria-label="ماه بعد"
+                onClick={goToNextMonth}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
             </div>
 
             <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
               {["ش", "ی", "د", "س", "چ", "پ", "ج"].map((label) => (
-                <span key={label} className="py-1">{label}</span>
+                <span key={label} className="py-1">
+                  {label}
+                </span>
               ))}
             </div>
 
             <div className="mt-1 grid grid-cols-7 gap-1">
+              {Array.from({ length: startWeekday }).map((_, index) => (
+                <span key={`pad-${index}`} className="py-2" aria-hidden />
+              ))}
               {dayOptions.map((day) => {
                 const isSelected =
                   hasValue &&
@@ -135,20 +164,34 @@ export function PersianDateInput({
               })}
             </div>
 
-            {allowEmpty && hasValue && (
+            <div className="mt-2 flex gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 size="sm"
-                className="mt-2 w-full text-xs"
+                className="flex-1 text-xs"
                 onClick={() => {
-                  onChange("");
+                  onChange(todayISO());
                   setOpen(false);
                 }}
               >
-                پاک کردن تاریخ
+                امروز
               </Button>
-            )}
+              {allowEmpty && hasValue && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={() => {
+                    onChange("");
+                    setOpen(false);
+                  }}
+                >
+                  پاک کردن
+                </Button>
+              )}
+            </div>
           </div>
         </>
       )}

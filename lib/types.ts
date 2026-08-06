@@ -161,6 +161,7 @@ export interface Ownable {
   ownerEmail?: string | null;
   ownerProvince?: string | null;
   ownerCity?: string | null;
+  ownerCompanyType?: import("./user-company-types").UserCompanyType | null;
   /** Legacy single topic — prefer planLabels. */
   planLabel?: string | null;
   /** Multiple topic/subtopic tokens (e.g. "مهتاب" or "مهتاب|هفته اول"). */
@@ -771,6 +772,7 @@ export interface DataOwnerGroup<T> {
   ownerUserId: string | null;
   ownerProvince?: string | null;
   ownerCity?: string | null;
+  ownerCompanyType?: import("./user-company-types").UserCompanyType | null;
   items: T[];
 }
 

@@ -81,7 +81,10 @@ export interface IntegrationBillboardMappingOptions {
 function resolveIntegrationOwnerFields(
   external: IntegrationBillboard,
   matchedUser: AdminUser | null | undefined
-): Pick<Billboard, "ownerUserId" | "ownerName" | "ownerEmail" | "ownerProvince" | "ownerCity"> {
+): Pick<
+  Billboard,
+  "ownerUserId" | "ownerName" | "ownerEmail" | "ownerProvince" | "ownerCity" | "ownerCompanyType"
+> {
   const owner = external.owner ?? null;
 
   if (!owner && !matchedUser) {
@@ -91,6 +94,7 @@ function resolveIntegrationOwnerFields(
       ownerEmail: null,
       ownerProvince: null,
       ownerCity: null,
+      ownerCompanyType: null,
     };
   }
 
@@ -103,6 +107,7 @@ function resolveIntegrationOwnerFields(
     ownerProvince:
       owner?.province?.trim() || matchedUser?.province?.trim() || external.province?.trim() || null,
     ownerCity: owner?.city?.trim() || matchedUser?.city?.trim() || external.city?.trim() || null,
+    ownerCompanyType: matchedUser?.companyType ?? null,
   };
 }
 

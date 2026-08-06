@@ -6,6 +6,7 @@ export interface OwnerFilterOption {
   label: string;
   province?: string | null;
   city?: string | null;
+  companyType?: import("./user-company-types").UserCompanyType | null;
 }
 
 function addOwnerOption(
@@ -16,6 +17,7 @@ function addOwnerOption(
   const location = {
     province: item.ownerProvince?.trim() || null,
     city: item.ownerCity?.trim() || null,
+    companyType: item.ownerCompanyType ?? null,
   };
 
   if (item.ownerUserId) {
@@ -25,6 +27,7 @@ function addOwnerOption(
       label,
       province: location.province ?? existing?.province ?? null,
       city: location.city ?? existing?.city ?? null,
+      companyType: location.companyType ?? existing?.companyType ?? null,
     });
     return;
   }
@@ -37,6 +40,7 @@ function addOwnerOption(
       label,
       province: location.province ?? existing?.province ?? null,
       city: location.city ?? existing?.city ?? null,
+      companyType: location.companyType ?? existing?.companyType ?? null,
     });
   }
 }
@@ -49,6 +53,7 @@ function collectFromGroups<T extends Ownable>(groups: DataOwnerGroup<T>[], map: 
       label: group.ownerLabel,
       province: group.ownerProvince?.trim() || null,
       city: group.ownerCity?.trim() || null,
+      companyType: group.ownerCompanyType ?? null,
     });
     for (const item of group.items) {
       addOwnerOption(map, item);

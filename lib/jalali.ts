@@ -155,6 +155,37 @@ export function todayISO(): string {
   return isoFromGregorian(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
 
+/**
+ * Calendar date (YYYY-MM-DD) from a JS Date.
+ * Uses UTC parts because postgres.js parses DATE as UTC midnight.
+ */
+export function dateOnlyFromJsDate(value: Date): string {
+  return isoFromGregorian(
+    value.getUTCFullYear(),
+    value.getUTCMonth() + 1,
+    value.getUTCDate()
+  );
+}
+
+/** Extract YYYY-MM-DD from DATE / ISO / Date values. */
+export function toDateOnlyString(value: unknown): string | null {
+  if (value == null || value === "") return null;
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return dateOnlyFromJsDate(value);
+  }
+  const raw = String(value).trim();
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match?.[1] ?? null;
+}
+
+/** Saturday=0 … Friday=6 (Persian week start). */
+export function jalaaliWeekdaySat0(jy: number, jm: number, jd: number): number {
+  const { gy, gm, gd } = toGregorian(jy, jm, jd);
+  const sundayBased = new Date(gy, gm - 1, gd).getDay();
+  return (sundayBased + 1) % 7;
+}
+
 export function getPersianMonthName(jm: number): string {
   return PERSIAN_MONTHS[jm - 1] ?? "";
 }

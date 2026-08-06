@@ -11,12 +11,11 @@ import type {
 } from "@/lib/types";
 import { isDirectiveActionType, isDirectiveSystemAction } from "@/lib/directive-cta";
 import type { UserRegion } from "@/lib/user-regions";
+import { toDateOnlyString } from "@/lib/jalali";
 import { generateId } from "@/lib/utils";
 
 function toDateString(value: unknown): string | null {
-  if (value == null || value === "") return null;
-  if (value instanceof Date) return value.toISOString().split("T")[0];
-  return String(value).split("T")[0] || null;
+  return toDateOnlyString(value);
 }
 
 function toIsoString(value: unknown): string | null {

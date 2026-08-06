@@ -165,13 +165,15 @@ export async function saveDirectiveAction(input: {
   const titleError = getContentTitleValidationError(input.title);
   if (titleError) return { success: false as const, error: titleError };
 
-  if (!input.startDate?.trim()) {
+  const startDate = input.startDate?.trim().match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? "";
+  const endDate = input.endDate?.trim().match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? "";
+  if (!startDate) {
     return { success: false as const, error: "تاریخ شروع الزامی است" };
   }
-  if (!input.endDate?.trim()) {
+  if (!endDate) {
     return { success: false as const, error: "تاریخ پایان الزامی است" };
   }
-  if (input.startDate.trim() > input.endDate.trim()) {
+  if (startDate > endDate) {
     return { success: false as const, error: "تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد" };
   }
 
@@ -233,6 +235,8 @@ export async function saveDirectiveAction(input: {
 
   const cleaned = stripFileAccessTokensDeep({
     ...input,
+    startDate,
+    endDate,
     body: input.body?.trim() ?? "",
     attachments: input.attachments ?? [],
     actionType,

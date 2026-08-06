@@ -4,14 +4,18 @@ import { normalizeStoredUserEmail } from "@/lib/auth/user-login";
 import { matchesDateFilter } from "@/lib/campaign-content-filter";
 import { matchesPlanLabelFilter } from "@/lib/content-topics";
 
+import type { UserCompanyType } from "@/lib/user-company-types";
+
 export const OWNER_LOCATION_ALL = "all";
 export const OWNER_USER_ALL = "all";
 export const OWNER_DATE_ALL = "all";
 export const OWNER_PLAN_ALL = "all";
+export const OWNER_COMPANY_TYPE_ALL = "all";
 export const OWNER_TOP_SCORED = "top_scored";
 
 export type CampaignDatePreset = "all" | "today" | "this_week" | "this_month" | "custom";
 export type CampaignContentSort = "default" | "newest" | "oldest" | "top_scored";
+export type OwnerCompanyTypeFilter = "all" | UserCompanyType;
 
 export interface CampaignDateFilter {
   datePreset: CampaignDatePreset;
@@ -25,6 +29,8 @@ export interface OwnerLocationFilter extends CampaignDateFilter {
   userKey: string;
   /** Empty array means all plan labels. */
   planLabels: string[];
+  /** Filter by owner company type. */
+  companyType: OwnerCompanyTypeFilter;
   /** Free-text search across content title / description / location fields. */
   searchQuery: string;
   sortOrder: CampaignContentSort;
@@ -35,6 +41,7 @@ export const DEFAULT_OWNER_LOCATION_FILTER: OwnerLocationFilter = {
   city: OWNER_LOCATION_ALL,
   userKey: OWNER_USER_ALL,
   planLabels: [],
+  companyType: OWNER_COMPANY_TYPE_ALL,
   searchQuery: "",
   datePreset: OWNER_DATE_ALL,
   dateFrom: "",
@@ -54,8 +61,17 @@ export function isOwnerPlanFilterActive(filter: OwnerLocationFilter): boolean {
   return filter.planLabels.length > 0;
 }
 
+export function isOwnerCompanyTypeFilterActive(filter: OwnerLocationFilter): boolean {
+  return filter.companyType !== OWNER_COMPANY_TYPE_ALL;
+}
+
 export function isOwnerFilterActive(filter: OwnerLocationFilter): boolean {
-  return isOwnerLocationFilterActive(filter) || isOwnerUserFilterActive(filter) || isOwnerPlanFilterActive(filter);
+  return (
+    isOwnerLocationFilterActive(filter) ||
+    isOwnerUserFilterActive(filter) ||
+    isOwnerPlanFilterActive(filter) ||
+    isOwnerCompanyTypeFilterActive(filter)
+  );
 }
 
 export function isSearchFilterActive(filter: OwnerLocationFilter): boolean {
@@ -143,6 +159,11 @@ function matchesOwnerUser(item: Ownable, filter: OwnerLocationFilter): boolean {
   return false;
 }
 
+function matchesOwnerCompanyType(item: Ownable, filter: OwnerLocationFilter): boolean {
+  if (filter.companyType === OWNER_COMPANY_TYPE_ALL) return true;
+  return item.ownerCompanyType === filter.companyType;
+}
+
 function resolveItemProvince(item: Ownable): string | null {
   const ownerProvince = item.ownerProvince?.trim();
   if (ownerProvince) return ownerProvince;
@@ -171,6 +192,7 @@ export function matchesOwnerLocation(
   if (!matchesContentSearch(item, filter)) return false;
   if (!matchesPlanLabel(item, filter)) return false;
   if (!matchesOwnerUser(item, filter)) return false;
+  if (!matchesOwnerCompanyType(item, filter)) return false;
 
   if (filter.province === OWNER_LOCATION_ALL) {
     return matchesDateFilter(item, filter, getItemDate);

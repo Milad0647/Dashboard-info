@@ -35,12 +35,10 @@ import {
 } from "@/lib/content-topics";
 import { truncateMeetingSummary } from "@/lib/meeting-preview";
 import { parseSocialPostLinkEntries } from "@/lib/social-posts";
+import { toDateOnlyString } from "@/lib/jalali";
 
 function toDateString(value: unknown): string {
-  if (value instanceof Date) {
-    return value.toISOString().split("T")[0];
-  }
-  return String(value ?? "").split("T")[0];
+  return toDateOnlyString(value) ?? "";
 }
 
 function toIsoString(value: unknown): string {
@@ -75,6 +73,10 @@ function mapOwnerFromDb(row: any): Ownable {
     ownerName: row.owner_name ?? null,
     ownerProvince: row.owner_province ?? null,
     ownerCity: row.owner_city ?? null,
+    ownerCompanyType:
+      row.owner_company_type === "distribution" || row.owner_company_type === "regional_electricity"
+        ? row.owner_company_type
+        : null,
     planLabel: planLabels[0] ?? row.plan_label ?? null,
     planLabels,
     score,

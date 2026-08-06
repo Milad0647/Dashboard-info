@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "022294f11955057a476f3174667f7daf232939d7",
+      "committedAt": "2026-08-06T12:51:43+03:30",
+      "title": "حذف متن پیش‌فرض از فیلدهای توضیح و انتشار سایت",
+      "subject": "Remove default description text from forms and metadata"
+    },
+    {
       "hash": "b691df52e67413873a4f7b562a7b6e0793a402d5",
       "committedAt": "2026-08-06T12:46:06+03:30",
       "title": "امکان فیلتر و رتبه‌بندی بر اساس موضوع در صفحه رتبه‌بندی",

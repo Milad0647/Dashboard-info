@@ -139,7 +139,7 @@ export function BillboardsAdmin({
     () => filteredBillboards.filter((billboard) => !isApiBillboard(billboard)),
     [filteredBillboards]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${categoryFilter}:${viewMode}`;
+  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.companyType}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${categoryFilter}:${viewMode}`;
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     manualBillboards.length,
     paginationResetKey

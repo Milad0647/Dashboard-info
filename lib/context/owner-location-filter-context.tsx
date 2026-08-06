@@ -5,8 +5,10 @@ import type { OwnerFilterOption } from "@/lib/owner-users";
 import {
   collectOwnerLocations,
   DEFAULT_OWNER_LOCATION_FILTER,
+  OWNER_COMPANY_TYPE_ALL,
   OWNER_LOCATION_ALL,
   OWNER_USER_ALL,
+  type OwnerCompanyTypeFilter,
   type OwnerLocationFilter,
 } from "@/lib/owner-location-filter";
 import type { DataOwnerGroup, Ownable } from "@/lib/types";
@@ -22,6 +24,7 @@ interface OwnerLocationFilterContextValue {
   setProvince: (province: string) => void;
   setCity: (city: string) => void;
   setUserKey: (userKey: string) => void;
+  setCompanyType: (companyType: OwnerCompanyTypeFilter) => void;
   setDatePreset: (preset: CampaignDatePreset) => void;
   setDateFrom: (dateFrom: string) => void;
   setDateTo: (dateTo: string) => void;
@@ -45,9 +48,15 @@ interface OwnerLocationFilterProviderProps {
   plans?: string[];
 }
 
-function userMatchesLocation(user: OwnerFilterOption, province: string, city: string): boolean {
+function userMatchesLocation(
+  user: OwnerFilterOption,
+  province: string,
+  city: string,
+  companyType: OwnerCompanyTypeFilter
+): boolean {
   if (province !== OWNER_LOCATION_ALL && user.province !== province) return false;
   if (city !== OWNER_LOCATION_ALL && user.city !== city) return false;
+  if (companyType !== OWNER_COMPANY_TYPE_ALL && user.companyType !== companyType) return false;
   return true;
 }
 
@@ -67,8 +76,11 @@ export function OwnerLocationFilterProvider({
   }, [filter.province, locations.citiesByProvince]);
 
   const visibleUsers = useMemo(
-    () => users.filter((user) => userMatchesLocation(user, filter.province, filter.city)),
-    [users, filter.province, filter.city]
+    () =>
+      users.filter((user) =>
+        userMatchesLocation(user, filter.province, filter.city, filter.companyType)
+      ),
+    [users, filter.province, filter.city, filter.companyType]
   );
 
   const value = useMemo<OwnerLocationFilterContextValue>(
@@ -79,7 +91,9 @@ export function OwnerLocationFilterProvider({
           const nextUserKey =
             current.userKey !== OWNER_USER_ALL &&
             !users.some(
-              (user) => user.key === current.userKey && userMatchesLocation(user, province, OWNER_LOCATION_ALL)
+              (user) =>
+                user.key === current.userKey &&
+                userMatchesLocation(user, province, OWNER_LOCATION_ALL, current.companyType)
             )
               ? OWNER_USER_ALL
               : current.userKey;
@@ -97,7 +111,8 @@ export function OwnerLocationFilterProvider({
             current.userKey !== OWNER_USER_ALL &&
             !users.some(
               (user) =>
-                user.key === current.userKey && userMatchesLocation(user, current.province, city)
+                user.key === current.userKey &&
+                userMatchesLocation(user, current.province, city, current.companyType)
             )
               ? OWNER_USER_ALL
               : current.userKey;
@@ -121,8 +136,23 @@ export function OwnerLocationFilterProvider({
           userKey,
           province: user?.province?.trim() || current.province,
           city: user?.city?.trim() || current.city,
+          companyType: user?.companyType ?? current.companyType,
         }));
       },
+      setCompanyType: (companyType) =>
+        setFilter((current) => {
+          const nextUserKey =
+            current.userKey !== OWNER_USER_ALL &&
+            !users.some(
+              (user) =>
+                user.key === current.userKey &&
+                userMatchesLocation(user, current.province, current.city, companyType)
+            )
+              ? OWNER_USER_ALL
+              : current.userKey;
+
+          return { ...current, companyType, userKey: nextUserKey };
+        }),
       setDatePreset: (datePreset) => setFilter((current) => ({ ...current, datePreset })),
       setDateFrom: (dateFrom) => setFilter((current) => ({ ...current, dateFrom })),
       setDateTo: (dateTo) => setFilter((current) => ({ ...current, dateTo })),
@@ -163,6 +193,7 @@ export function useOwnerLocationFilter(): OwnerLocationFilterContextValue {
       setProvince: () => undefined,
       setCity: () => undefined,
       setUserKey: () => undefined,
+      setCompanyType: () => undefined,
       setDatePreset: () => undefined,
       setDateFrom: () => undefined,
       setDateTo: () => undefined,

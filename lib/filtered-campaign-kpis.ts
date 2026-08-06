@@ -3,6 +3,7 @@ import { getBillboardUploadActivityDate } from "@/lib/billboards";
 import { resolveDateFilterRange, isCampaignContentFilterActive } from "@/lib/campaign-content-filter";
 import {
   filterItemsByOwnerLocation,
+  OWNER_COMPANY_TYPE_ALL,
   OWNER_DATE_ALL,
   OWNER_LOCATION_ALL,
   OWNER_USER_ALL,
@@ -11,6 +12,7 @@ import {
 import type { OwnerFilterOption } from "@/lib/owner-users";
 import { formatPersianDate } from "@/lib/utils";
 import { formatPlanLabelDisplay } from "@/lib/content-topics";
+import { getUserCompanyTypeLabel } from "@/lib/user-company-types";
 import type { KpiTodayDeltas } from "@/lib/kpi-today-deltas";
 
 const DATE_PRESET_LABELS: Record<string, string> = {
@@ -28,6 +30,10 @@ export function getOwnerFilterLabel(
 
   if (filter.userKey !== OWNER_USER_ALL) {
     parts.push(users.find((user) => user.key === filter.userKey)?.label ?? "شرکت");
+  }
+
+  if (filter.companyType !== OWNER_COMPANY_TYPE_ALL) {
+    parts.push(getUserCompanyTypeLabel(filter.companyType));
   }
 
   if (filter.province !== OWNER_LOCATION_ALL) {

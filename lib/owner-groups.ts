@@ -35,6 +35,7 @@ export function groupByOwner<T extends Ownable>(
       ownerUserId,
       ownerProvince: ownerUserId ? (item.ownerProvince ?? null) : null,
       ownerCity: ownerUserId ? (item.ownerCity ?? null) : null,
+      ownerCompanyType: ownerUserId ? (item.ownerCompanyType ?? null) : null,
       items: [item],
     });
   }
@@ -91,6 +92,7 @@ export function groupByOwnerPreservingOrder<T extends Ownable>(
       ownerUserId,
       ownerProvince: ownerUserId ? (item.ownerProvince ?? null) : null,
       ownerCity: ownerUserId ? (item.ownerCity ?? null) : null,
+      ownerCompanyType: ownerUserId ? (item.ownerCompanyType ?? null) : null,
       items: [item],
     });
   }

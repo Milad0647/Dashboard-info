@@ -24,7 +24,12 @@ import {
   OWNER_USER_ALL,
   type CampaignContentSort,
   type CampaignDatePreset,
+  type OwnerCompanyTypeFilter,
 } from "@/lib/owner-location-filter";
+import {
+  USER_COMPANY_TYPES,
+  getUserCompanyTypeLabel,
+} from "@/lib/user-company-types";
 
 export function OwnerLocationFilterBar() {
   const {
@@ -32,6 +37,7 @@ export function OwnerLocationFilterBar() {
     setProvince,
     setCity,
     setUserKey,
+    setCompanyType,
     setDatePreset,
     setDateFrom,
     setDateTo,
@@ -66,6 +72,14 @@ export function OwnerLocationFilterBar() {
       value: user.key,
       label: user.label,
       keywords: `${user.province ?? ""} ${user.city ?? ""}`,
+    })),
+  ];
+
+  const companyTypeOptions = [
+    { value: "all", label: "همه انواع شرکت" },
+    ...USER_COMPANY_TYPES.map((companyType) => ({
+      value: companyType,
+      label: getUserCompanyTypeLabel(companyType),
     })),
   ];
 
@@ -137,6 +151,14 @@ export function OwnerLocationFilterBar() {
             leadingIcon={<Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />}
           />
         )}
+
+        <SearchableSelect
+          value={filter.companyType}
+          onValueChange={(value) => setCompanyType(value as OwnerCompanyTypeFilter)}
+          options={companyTypeOptions}
+          placeholder="نوع شرکت"
+          searchPlaceholder="جستجوی نوع شرکت..."
+        />
 
         <SearchableSelect
           value={filter.province}

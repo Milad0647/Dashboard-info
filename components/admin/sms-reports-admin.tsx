@@ -18,7 +18,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import {
   AdminContentFilterBar,
+  collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
+  matchesAdminContentFilter,
   sortAdminContentItems,
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
@@ -96,10 +98,15 @@ export function SmsReportsAdmin({ campaignId, initialReports }: SmsReportsAdminP
   const [isPending, startTransition] = useTransition();
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("smsReports");
+  const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
   const sortedRows = useMemo(
     () =>
-      sortAdminContentItems(rows, contentFilter.sortOrder, (item) => item.sendDate || item.updatedAt || item.createdAt),
-    [rows, contentFilter.sortOrder]
+      sortAdminContentItems(
+        rows.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+        contentFilter.sortOrder,
+        (item) => item.sendDate || item.updatedAt || item.createdAt
+      ),
+    [rows, contentFilter]
   );
 
   const form = useForm<FormValues>({
@@ -236,7 +243,7 @@ export function SmsReportsAdmin({ campaignId, initialReports }: SmsReportsAdminP
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={[]}
+        users={filterUsers}
         plans={[]}
       />
 

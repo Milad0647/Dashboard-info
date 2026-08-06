@@ -1,21 +1,29 @@
 "use client";
 
-import { ArrowUpDown, Filter, RotateCcw, Sparkles, UserRound, X } from "lucide-react";
+import { ArrowUpDown, Building2, Filter, RotateCcw, Sparkles, UserRound, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { Ownable } from "@/lib/types";
 import { formatPlanLabelDisplay, matchesAnyPlanLabelFilter } from "@/lib/content-topics";
+import {
+  USER_COMPANY_TYPES,
+  getUserCompanyTypeLabel,
+  type UserCompanyType,
+} from "@/lib/user-company-types";
 
 export const ADMIN_FILTER_ALL = "all";
 
 export type AdminCreativeFilter = "all" | "creative" | "standard";
 export type AdminContentSort = "newest" | "oldest" | "title" | "default" | "category";
+export type AdminCompanyTypeFilter = "all" | UserCompanyType;
 
 export interface AdminContentFilterState {
   userKey: string;
   /** Empty array means all plan labels. */
   planLabels: string[];
+  /** Filter by owner company type (distribution / regional_electricity). */
+  companyType: AdminCompanyTypeFilter;
   /** Only used when the section enables the creative filter (activities). */
   creative: AdminCreativeFilter;
   sortOrder: AdminContentSort;
@@ -24,6 +32,7 @@ export interface AdminContentFilterState {
 export const DEFAULT_ADMIN_CONTENT_FILTER: AdminContentFilterState = {
   userKey: ADMIN_FILTER_ALL,
   planLabels: [],
+  companyType: ADMIN_FILTER_ALL,
   creative: ADMIN_FILTER_ALL,
   sortOrder: "newest",
 };
@@ -64,6 +73,10 @@ export function matchesAdminContentFilter<T extends CreativeFilterable>(
   if (filter.userKey !== ADMIN_FILTER_ALL) {
     const key = item.ownerUserId ?? item.ownerEmail ?? "";
     if (key !== filter.userKey) return false;
+  }
+
+  if (filter.companyType !== ADMIN_FILTER_ALL) {
+    if (item.ownerCompanyType !== filter.companyType) return false;
   }
 
   if (!matchesAnyPlanLabelFilter(item.planLabels, item.planLabel, filter.planLabels)) {
@@ -152,6 +165,7 @@ export function AdminContentFilterBar({
   const active =
     filter.userKey !== ADMIN_FILTER_ALL ||
     filter.planLabels.length > 0 ||
+    filter.companyType !== ADMIN_FILTER_ALL ||
     filter.sortOrder !== DEFAULT_ADMIN_CONTENT_FILTER.sortOrder ||
     (showCreativeFilter && filter.creative !== ADMIN_FILTER_ALL) ||
     (hasCategoryFilter && categoryValue !== ADMIN_FILTER_ALL);
@@ -169,6 +183,14 @@ export function AdminContentFilterBar({
   const userOptions = [
     { value: ADMIN_FILTER_ALL, label: "همه کاربران" },
     ...users.map((user) => ({ value: user.key, label: user.label })),
+  ];
+
+  const companyTypeOptions = [
+    { value: ADMIN_FILTER_ALL, label: "همه انواع شرکت" },
+    ...USER_COMPANY_TYPES.map((companyType) => ({
+      value: companyType,
+      label: getUserCompanyTypeLabel(companyType),
+    })),
   ];
 
   const planOptions = plans
@@ -214,6 +236,18 @@ export function AdminContentFilterBar({
             leadingIcon={<UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />}
           />
         )}
+
+        <SearchableSelect
+          value={filter.companyType}
+          onValueChange={(companyType) =>
+            onChange({ ...filter, companyType: companyType as AdminCompanyTypeFilter })
+          }
+          options={companyTypeOptions}
+          placeholder="نوع شرکت"
+          searchPlaceholder="جستجوی نوع شرکت..."
+          className="w-full sm:w-56"
+          leadingIcon={<Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />}
+        />
 
         {plans.length > 0 && (
           <SearchableSelect

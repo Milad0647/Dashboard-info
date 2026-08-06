@@ -426,7 +426,7 @@ export async function pgDeleteUsers(ids: string[]) {
 export async function pgGetSocialPostById(id: string): Promise<SocialMediaPost | null> {
   const sql = getSql();
   const rows = await sql`
-    SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+    SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
     FROM social_media_posts sp
     LEFT JOIN users u ON u.id = sp.owner_user_id
     WHERE sp.id = ${id}
@@ -439,7 +439,7 @@ export async function pgGetSocialPostById(id: string): Promise<SocialMediaPost |
 export async function pgListRefreshableSocialPosts(limit = 300): Promise<SocialMediaPost[]> {
   const sql = getSql();
   const rows = await sql`
-    SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+    SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
     FROM social_media_posts sp
     LEFT JOIN users u ON u.id = sp.owner_user_id
     WHERE COALESCE(TRIM(sp.link), '') <> ''
@@ -458,7 +458,7 @@ export async function pgListRefreshableSocialPosts(limit = 300): Promise<SocialM
 export async function pgListRefreshablePressActivities(limit = 300): Promise<CampaignActivity[]> {
   const sql = getSql();
   const rows = await sql`
-    SELECT ca.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+    SELECT ca.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
     FROM campaign_activities ca
     LEFT JOIN users u ON u.id = ca.owner_user_id
     WHERE ca.activity_type IN ('magazine', 'newspaper')
@@ -477,14 +477,14 @@ export async function pgGetSocialPosts(
   const rows =
     ownerUserId === undefined
       ? await sql`
-          SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+          SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
           FROM social_media_posts sp
           LEFT JOIN users u ON u.id = sp.owner_user_id
           WHERE sp.campaign_id = ${campaignId}
           ORDER BY sp.sort_order, sp.published_date DESC
         `
       : await sql`
-          SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+          SELECT sp.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
           FROM social_media_posts sp
           LEFT JOIN users u ON u.id = sp.owner_user_id
           WHERE sp.campaign_id = ${campaignId}
@@ -581,7 +581,7 @@ export async function pgDeleteSocialPost(id: string) {
 export async function pgGetSocialPlatformStatById(id: string): Promise<SocialPlatformStat | null> {
   const sql = getSql();
   const rows = await sql`
-    SELECT sps.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+    SELECT sps.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
     FROM social_platform_stats sps
     LEFT JOIN users u ON u.id = sps.owner_user_id
     WHERE sps.id = ${id}
@@ -598,14 +598,14 @@ export async function pgGetSocialPlatformStats(
   const rows =
     ownerUserId === undefined
       ? await sql`
-          SELECT sps.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+          SELECT sps.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
           FROM social_platform_stats sps
           LEFT JOIN users u ON u.id = sps.owner_user_id
           WHERE sps.campaign_id = ${campaignId}
           ORDER BY sps.sort_order, sps.platform
         `
       : await sql`
-          SELECT sps.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+          SELECT sps.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
           FROM social_platform_stats sps
           LEFT JOIN users u ON u.id = sps.owner_user_id
           WHERE sps.campaign_id = ${campaignId}
@@ -691,14 +691,14 @@ export async function pgGetBroadcastReports(
   const rows =
     ownerUserId === undefined
       ? await sql`
-          SELECT br.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+          SELECT br.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
           FROM broadcast_reports br
           LEFT JOIN users u ON u.id = br.owner_user_id
           WHERE br.campaign_id = ${campaignId}
           ORDER BY br.sort_order, br.report_date DESC
         `
       : await sql`
-          SELECT br.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+          SELECT br.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
           FROM broadcast_reports br
           LEFT JOIN users u ON u.id = br.owner_user_id
           WHERE br.campaign_id = ${campaignId}
@@ -777,14 +777,14 @@ export async function pgGetSmsSendReports(
   const rows =
     ownerUserId === undefined
       ? await sql`
-          SELECT sr.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+          SELECT sr.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
           FROM sms_send_reports sr
           LEFT JOIN users u ON u.id = sr.owner_user_id
           WHERE sr.campaign_id = ${campaignId}
           ORDER BY sr.sort_order, sr.send_date DESC
         `
       : await sql`
-          SELECT sr.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+          SELECT sr.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
           FROM sms_send_reports sr
           LEFT JOIN users u ON u.id = sr.owner_user_id
           WHERE sr.campaign_id = ${campaignId}
@@ -864,14 +864,14 @@ export async function pgGetCampaignActivities(
   const rows =
     ownerUserId === undefined
       ? await sql`
-          SELECT ca.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+          SELECT ca.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
           FROM campaign_activities ca
           LEFT JOIN users u ON u.id = ca.owner_user_id
           WHERE ca.campaign_id = ${campaignId}
           ORDER BY ca.activity_date DESC, ca.sort_order
         `
       : await sql`
-          SELECT ca.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+          SELECT ca.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
           FROM campaign_activities ca
           LEFT JOIN users u ON u.id = ca.owner_user_id
           WHERE ca.campaign_id = ${campaignId}
@@ -1032,7 +1032,7 @@ export async function pgGetPublicMeetingPreviews(campaignId: string): Promise<Me
         m.discussion_summary,
         m.sort_order,
         m.owner_user_id,
-        u.name AS owner_name, u.province AS owner_province, u.city AS owner_city,
+        u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type,
         (cs.meetings_view_password_hash IS NOT NULL AND LENGTH(cs.meetings_view_password_hash) > 0) AS has_password
       FROM campaign_meetings m
       INNER JOIN campaign_settings cs ON cs.id = m.campaign_id
@@ -1530,7 +1530,7 @@ export async function pgGetMeetingsWithTasks(
     const publishedFilter = publishedOnly ? sql`AND m.published = true` : sql``;
 
     const meetingRows = await sql`
-      SELECT m.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city
+      SELECT m.*, u.name AS owner_name, u.province AS owner_province, u.city AS owner_city, u.company_type AS owner_company_type
       FROM campaign_meetings m
       LEFT JOIN users u ON u.id = m.owner_user_id
       WHERE m.campaign_id = ${campaignId}

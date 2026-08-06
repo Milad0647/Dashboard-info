@@ -26,7 +26,7 @@ import {
   useSectionBulkEdit,
 } from "@/components/admin/section-bulk-edit";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
-import { VideoThumbnail } from "@/components/media/video-thumbnail";
+import { InlineVideoPlayer } from "@/components/media/inline-video-player";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -520,10 +520,10 @@ export function RawMediaAdmin({
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
                       {item.mediaKind === "video" ? (
-                        <VideoThumbnail
+                        <InlineVideoPlayer
                           videoUrl={item.fileUrl}
                           alt={item.title}
-                          className="object-cover"
+                          objectFit="cover"
                           sizes="(max-width: 768px) 100vw, 50vw"
                         />
                       ) : (
