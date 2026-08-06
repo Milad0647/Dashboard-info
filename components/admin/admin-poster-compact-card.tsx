@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
@@ -19,6 +20,7 @@ interface AdminPosterCompactCardProps {
   onView?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  messageAction?: ReactNode;
   canScore?: boolean;
   onScoreSaved?: (score: number | null) => void;
 }
@@ -30,6 +32,7 @@ export function AdminPosterCompactCard({
   onView,
   onEdit,
   onDelete,
+  messageAction,
   canScore = false,
   onScoreSaved,
 }: AdminPosterCompactCardProps) {
@@ -68,9 +71,9 @@ export function AdminPosterCompactCard({
         </div>
       </button>
 
-      {(canScore || onView || onEdit || onDelete) && (
+      {(canScore || onView || onEdit || onDelete || messageAction) && (
         <div className="flex items-end gap-2 px-2 pb-2">
-          {(onView || onEdit || onDelete) && (
+          {(onView || onEdit || onDelete || messageAction) && (
             <AdminItemActions
               compact
               className="shrink-0"
@@ -79,6 +82,7 @@ export function AdminPosterCompactCard({
               onDelete={onDelete}
             />
           )}
+          {messageAction}
           {canScore && (
             <div className="min-w-0 flex-1">
               <ContentScoreControl

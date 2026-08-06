@@ -289,6 +289,20 @@ export function PostersAdmin({
                 onView={() => setPreviewPoster(poster)}
                 onEdit={() => openEditor(poster.id)}
                 onDelete={() => handleDelete(poster)}
+                messageAction={
+                  (canTransferOwnership || isFullAdmin) ? (
+                    <SendContentMessageButton
+                      compact
+                      target={{
+                        campaignId,
+                        contentType: "poster",
+                        contentId: poster.id,
+                        contentTitle: poster.title,
+                        ownerName: poster.ownerName,
+                      }}
+                    />
+                  ) : undefined
+                }
                 canScore={canScore}
                 onScoreSaved={(score) => {
                   setPosters((prev) =>
@@ -326,11 +340,24 @@ export function PostersAdmin({
                   </div>
                 </div>
                 {!bulk.bulkMode && (
-                  <AdminItemActions
-                    onView={() => setPreviewPoster(poster)}
-                    onEdit={() => openEditor(poster.id)}
-                    onDelete={() => handleDelete(poster)}
-                  />
+                  <div className="flex items-center gap-2">
+                    {(canTransferOwnership || isFullAdmin) && (
+                      <SendContentMessageButton
+                        target={{
+                          campaignId,
+                          contentType: "poster",
+                          contentId: poster.id,
+                          contentTitle: poster.title,
+                          ownerName: poster.ownerName,
+                        }}
+                      />
+                    )}
+                    <AdminItemActions
+                      onView={() => setPreviewPoster(poster)}
+                      onEdit={() => openEditor(poster.id)}
+                      onDelete={() => handleDelete(poster)}
+                    />
+                  </div>
                 )}
               </div>
             );
