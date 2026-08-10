@@ -14,7 +14,7 @@ import {
   type ContentMessageListItem,
 } from "@/lib/actions/content-message-actions";
 import { emitContentMessagesUnreadChanged } from "@/lib/content-messages-unread";
-import { adminHref, formatPersianDateTime } from "@/lib/utils";
+import { formatPersianDateTime } from "@/lib/utils";
 
 function MessageCard({
   message,
@@ -69,7 +69,7 @@ function MessageCard({
           </p>
         </div>
         <Button type="button" variant="ghost" size="sm" className="gap-1.5 shrink-0" asChild>
-          <Link href={adminHref(message.adminPath, message.campaignId)} prefetch={false}>
+          <Link href={message.adminPath} prefetch={false}>
             <ExternalLink className="h-3.5 w-3.5" />
             مشاهده کارت
           </Link>

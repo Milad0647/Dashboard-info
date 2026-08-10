@@ -21,7 +21,7 @@ import {
 } from "@/lib/actions/content-message-actions";
 import { getAuditRoleLabel } from "@/lib/audit/labels";
 import type { AuditUserPresence } from "@/lib/audit/types";
-import { adminHref, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
+import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
 function resolveUserLabel(name?: string | null, email?: string | null) {
   return name?.trim() || email?.trim() || "ناشناس";
@@ -86,7 +86,7 @@ function MessageRow({ message }: { message: AdminContentMessageListItem }) {
           </div>
         </div>
         <Button type="button" variant="ghost" size="sm" className="gap-1.5 shrink-0" asChild>
-          <Link href={adminHref(message.adminPath, message.campaignId)} prefetch={false}>
+          <Link href={message.adminPath} prefetch={false}>
             <ExternalLink className="h-3.5 w-3.5" />
             مشاهده کارت
           </Link>

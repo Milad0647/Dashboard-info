@@ -118,7 +118,13 @@ export function slugify(text: string): string {
 }
 
 export function adminHref(path: string, campaignId: string) {
-  return `${path}?campaign=${campaignId}`;
+  const qIndex = path.indexOf("?");
+  const pathname = qIndex >= 0 ? path.slice(0, qIndex) : path;
+  const existing = qIndex >= 0 ? path.slice(qIndex + 1) : "";
+  const params = new URLSearchParams(existing);
+  params.set("campaign", campaignId);
+  const query = params.toString();
+  return query ? `${pathname}?${query}` : pathname;
 }
 
 export function getStatusLabel(status: string): string {
