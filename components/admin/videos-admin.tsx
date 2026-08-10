@@ -10,6 +10,8 @@ import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { GenerateMissingVideoCoversButton } from "@/components/admin/generate-missing-video-covers-button";
 import {
   AdminContentFilterBar,
+  adminContentFilterResetKey,
+  collectAdminFilterLocations,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
@@ -117,6 +119,7 @@ export function VideosAdmin({
   }, [versions]);
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(videos), [videos]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(videos), [videos]);
   const filteredVideos = useMemo(
     () =>
       sortAdminContentItems(
@@ -125,7 +128,7 @@ export function VideosAdmin({
       ),
     [videos, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.companyType}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${viewMode}`;
+  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredVideos.length,
     paginationResetKey
@@ -281,6 +284,7 @@ export function VideosAdmin({
         onChange={setContentFilter}
         users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        locations={filterLocations}
       />
 
       <SectionBulkEditBar

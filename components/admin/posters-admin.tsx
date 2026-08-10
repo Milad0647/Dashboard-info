@@ -10,6 +10,8 @@ import { SendContentMessageButton } from "@/components/admin/send-content-messag
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import {
   AdminContentFilterBar,
+  adminContentFilterResetKey,
+  collectAdminFilterLocations,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
@@ -114,6 +116,7 @@ export function PostersAdmin({
   }, [versions]);
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(posters), [posters]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(posters), [posters]);
   const filteredPosters = useMemo(
     () =>
       sortAdminContentItems(
@@ -122,7 +125,7 @@ export function PostersAdmin({
       ),
     [posters, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.companyType}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${viewMode}`;
+  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredPosters.length,
     paginationResetKey
@@ -245,6 +248,7 @@ export function PostersAdmin({
         onChange={setContentFilter}
         users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        locations={filterLocations}
       />
 
       <SectionBulkEditBar

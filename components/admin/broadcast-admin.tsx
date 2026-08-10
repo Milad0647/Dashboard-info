@@ -29,7 +29,10 @@ import {
 import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import {
   AdminContentFilterBar,
+  collectAdminFilterLocations,
+  collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
+  matchesAdminContentFilter,
   sortAdminContentItems,
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
@@ -148,10 +151,16 @@ export function BroadcastAdmin({
   const [isPending, startTransition] = useTransition();
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("broadcast");
+  const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(rows), [rows]);
   const sortedRows = useMemo(
     () =>
-      sortAdminContentItems(rows, contentFilter.sortOrder, (item) => item.reportDate || item.updatedAt || item.createdAt),
-    [rows, contentFilter.sortOrder]
+      sortAdminContentItems(
+        rows.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+        contentFilter.sortOrder,
+        (item) => item.reportDate || item.updatedAt || item.createdAt
+      ),
+    [rows, contentFilter]
   );
 
   const form = useForm<FormValues>({
@@ -312,8 +321,9 @@ export function BroadcastAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={[]}
+        users={filterUsers}
         plans={[]}
+        locations={filterLocations}
       />
 
       {sortedRows.length === 0 ? (

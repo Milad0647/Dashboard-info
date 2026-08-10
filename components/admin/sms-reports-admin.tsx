@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import {
   AdminContentFilterBar,
+  collectAdminFilterLocations,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
@@ -99,6 +100,7 @@ export function SmsReportsAdmin({ campaignId, initialReports }: SmsReportsAdminP
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("smsReports");
   const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(rows), [rows]);
   const sortedRows = useMemo(
     () =>
       sortAdminContentItems(
@@ -245,6 +247,7 @@ export function SmsReportsAdmin({ campaignId, initialReports }: SmsReportsAdminP
         onChange={setContentFilter}
         users={filterUsers}
         plans={[]}
+        locations={filterLocations}
       />
 
       {sortedRows.length === 0 ? (

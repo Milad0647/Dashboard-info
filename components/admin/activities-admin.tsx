@@ -21,6 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { redirectIfUnauthorized } from "@/lib/client/auth-session";
 import {
   AdminContentFilterBar,
+  adminContentFilterResetKey,
+  collectAdminFilterLocations,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
@@ -150,6 +152,7 @@ export function ActivitiesAdmin({
   const [isPending, startTransition] = useTransition();
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(rows), [rows]);
   const filteredRows = useMemo(
     () =>
       sortAdminContentItems(
@@ -159,7 +162,7 @@ export function ActivitiesAdmin({
       ),
     [rows, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.companyType}:${contentFilter.planLabels.join(",")}:${contentFilter.creative}:${contentFilter.sortOrder}:${viewMode}`;
+  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredRows.length,
     paginationResetKey
@@ -482,6 +485,7 @@ export function ActivitiesAdmin({
         onChange={setContentFilter}
         users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        locations={filterLocations}
         showCreativeFilter
       />
 

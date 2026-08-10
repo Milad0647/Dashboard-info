@@ -11,6 +11,8 @@ import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import {
   AdminContentFilterBar,
+  adminContentFilterResetKey,
+  collectAdminFilterLocations,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
@@ -102,6 +104,7 @@ export function FilesAdmin({
   const [isPending, startTransition] = useTransition();
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(files), [files]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(files), [files]);
   const filteredFiles = useMemo(
     () =>
       sortAdminContentItems(
@@ -110,7 +113,7 @@ export function FilesAdmin({
       ),
     [files, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.companyType}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${viewMode}`;
+  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredFiles.length,
     paginationResetKey
@@ -312,6 +315,7 @@ export function FilesAdmin({
         onChange={setContentFilter}
         users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        locations={filterLocations}
       />
 
       <SectionBulkEditBar

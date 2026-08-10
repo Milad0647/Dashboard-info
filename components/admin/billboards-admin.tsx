@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   ADMIN_FILTER_ALL,
   AdminContentFilterBar,
+  adminContentFilterResetKey,
+  collectAdminFilterLocations,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
@@ -115,6 +117,7 @@ export function BillboardsAdmin({
   }, [initialBillboards]);
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(billboards), [billboards]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(billboards), [billboards]);
   const filteredBillboards = useMemo(() => {
     const filtered = billboards.filter((item) => {
       if (!matchesAdminContentFilter(item, contentFilter)) return false;
@@ -139,7 +142,7 @@ export function BillboardsAdmin({
     () => filteredBillboards.filter((billboard) => !isApiBillboard(billboard)),
     [filteredBillboards]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.companyType}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${categoryFilter}:${viewMode}`;
+  const paginationResetKey = adminContentFilterResetKey(contentFilter, categoryFilter, viewMode);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     manualBillboards.length,
     paginationResetKey
@@ -261,6 +264,7 @@ export function BillboardsAdmin({
         onChange={setContentFilter}
         users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        locations={filterLocations}
         categoryOptions={billboardCategoryOptions}
         categoryValue={categoryFilter}
         onCategoryChange={setCategoryFilter}

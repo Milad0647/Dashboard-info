@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AdminContentFilterBar,
+  adminContentFilterResetKey,
+  collectAdminFilterLocations,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
@@ -116,6 +118,7 @@ export function PressPublicationsAdmin({
   const [isPending, startTransition] = useTransition();
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(rows), [rows]);
   const filteredRows = useMemo(
     () =>
       sortAdminContentItems(
@@ -125,7 +128,7 @@ export function PressPublicationsAdmin({
       ),
     [rows, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.companyType}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}`;
+  const paginationResetKey = adminContentFilterResetKey(contentFilter);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredRows.length,
     paginationResetKey
@@ -403,6 +406,7 @@ export function PressPublicationsAdmin({
         onChange={setContentFilter}
         users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        locations={filterLocations}
       />
 
       <SectionBulkEditBar

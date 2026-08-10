@@ -7,6 +7,8 @@ import { AdminCompactAddCard } from "@/components/admin/admin-compact-add-card";
 import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import {
   AdminContentFilterBar,
+  adminContentFilterResetKey,
+  collectAdminFilterLocations,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
@@ -116,6 +118,7 @@ export function RawMediaAdmin({
     return buildRawMediaStorageSummary(items.filter((item) => item.id !== editingId));
   }, [editingId, items, storage]);
   const filterUsers = useMemo(() => collectAdminFilterUsers(items), [items]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(items), [items]);
   const filteredItems = useMemo(
     () =>
       sortAdminContentItems(
@@ -124,7 +127,7 @@ export function RawMediaAdmin({
       ),
     [items, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}:${viewMode}`;
+  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredItems.length,
     paginationResetKey
@@ -414,6 +417,7 @@ export function RawMediaAdmin({
         onChange={setContentFilter}
         users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        locations={filterLocations}
       />
 
       <SectionBulkEditBar

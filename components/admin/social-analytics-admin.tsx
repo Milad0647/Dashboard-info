@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import {
   AdminContentFilterBar,
+  collectAdminFilterLocations,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
@@ -98,6 +99,7 @@ export function SocialAnalyticsAdmin({
   }, [initialStats]);
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(rows), [rows]);
   const filteredRows = useMemo(
     () =>
       sortAdminContentItems(
@@ -202,6 +204,7 @@ export function SocialAnalyticsAdmin({
         onChange={setContentFilter}
         users={isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        locations={filterLocations}
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">

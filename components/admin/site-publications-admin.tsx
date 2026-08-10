@@ -18,6 +18,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   AdminContentFilterBar,
+  adminContentFilterResetKey,
+  collectAdminFilterLocations,
   collectAdminFilterUsers,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
@@ -113,6 +115,7 @@ export function SitePublicationsAdmin({
   const [isPending, startTransition] = useTransition();
 
   const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
+  const filterLocations = useMemo(() => collectAdminFilterLocations(rows), [rows]);
   const filteredRows = useMemo(
     () =>
       sortAdminContentItems(
@@ -122,7 +125,7 @@ export function SitePublicationsAdmin({
       ),
     [rows, contentFilter]
   );
-  const paginationResetKey = `${contentFilter.userKey}:${contentFilter.companyType}:${contentFilter.planLabels.join(",")}:${contentFilter.sortOrder}`;
+  const paginationResetKey = adminContentFilterResetKey(contentFilter);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredRows.length,
     paginationResetKey
@@ -452,6 +455,7 @@ export function SitePublicationsAdmin({
         onChange={setContentFilter}
         users={canTransferOwnership || isFullAdmin ? filterUsers : []}
         plans={contentPlans}
+        locations={filterLocations}
       />
 
       <SectionBulkEditBar
