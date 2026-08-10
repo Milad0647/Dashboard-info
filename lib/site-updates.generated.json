@@ -1,6 +1,24 @@
 {
   "entries": [
     {
+      "hash": "790b2a8c04c6cc6bafe1b1f09196595df6b9a2c0",
+      "committedAt": "2026-08-10T11:08:33+03:30",
+      "title": "افزودن منطقه مرکز به دسته‌بندی شرکت‌ها",
+      "subject": "Add center region to company geographic categories"
+    },
+    {
+      "hash": "d61da1dd8e4fd3b20f032853840cbd52e5ae174c",
+      "committedAt": "2026-08-10T11:07:03+03:30",
+      "title": "با باز کردن پیام اصلاح، همان محتوا برای ویرایش باز می‌شود",
+      "subject": "Fix message card deep-link to open specific content"
+    },
+    {
+      "hash": "0cce608f9ab358b1792d356e859762bf6e6b7f26",
+      "committedAt": "2026-08-10T11:03:29+03:30",
+      "title": "رفع مشکل دسترسی به دکمه ذخیره هنگام انتخاب موضوع در آپلود راش",
+      "subject": "Fix save button obscured in raw media upload dialog"
+    },
+    {
       "hash": "244f37ffc87b5319a3b3c0cec92d3c281770023e",
       "committedAt": "2026-08-10T11:00:48+03:30",
       "title": "حذف هاله مشکی از تصاویر پس‌زمینه صفحه ورود",

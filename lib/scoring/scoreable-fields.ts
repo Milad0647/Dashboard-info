@@ -268,6 +268,16 @@ function buildScoreableFields(
         kinds: ["filled", "equals"],
         options: ACTIVITY_TYPE_OPTIONS,
       },
+      {
+        key: "mediaScope",
+        label: "سطح پوشش (سراسری / محلی)",
+        valueType: "select",
+        kinds: ["filled", "equals"],
+        options: [
+          { value: "national", label: "سراسری" },
+          { value: "local", label: "محلی" },
+        ],
+      },
       { key: "activityDate", label: "تاریخ", valueType: "date", kinds: ["filled", "range"] },
       { key: "location", label: "مکان", valueType: "text", kinds: ["filled"] },
       { key: "link", label: "لینک", valueType: "text", kinds: ["filled"] },
@@ -290,6 +300,16 @@ function buildScoreableFields(
     broadcast: [
       { key: "title", label: "عنوان", valueType: "text", kinds: ["filled"] },
       { key: "reportDate", label: "تاریخ گزارش", valueType: "date", kinds: ["filled", "range"] },
+      {
+        key: "mediaScope",
+        label: "سطح پوشش (سراسری / محلی)",
+        valueType: "select",
+        kinds: ["filled", "equals"],
+        options: [
+          { value: "national", label: "سراسری" },
+          { value: "local", label: "محلی" },
+        ],
+      },
       { key: "pdfUrl", label: "فایل PDF/ویدیو", valueType: "media", kinds: ["filled"] },
       { key: "fileName", label: "نام فایل", valueType: "text", kinds: ["filled"] },
       planLabels,

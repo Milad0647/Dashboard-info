@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getAdminData } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
+import { canScoreContent } from "@/lib/auth/access";
+import { getAuthSession } from "@/lib/auth/get-session";
 import { requireContributorAccess } from "@/lib/auth/require-contributor-access";
 import { BroadcastAdmin } from "@/components/admin/broadcast-admin";
 
@@ -13,6 +15,14 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
   const { campaignId } = await resolveAdminCampaignId(params.campaign);
   if (!campaignId) redirect("/admin/campaigns");
   await requireContributorAccess(campaignId, "broadcast");
+  const session = await getAuthSession();
+  const canScore = Boolean(session && canScoreContent(session));
   const data = await getAdminData(campaignId, ["broadcastReports"]);
-  return <BroadcastAdmin campaignId={campaignId} initialReports={data.broadcastReports ?? []} />;
+  return (
+    <BroadcastAdmin
+      campaignId={campaignId}
+      initialReports={data.broadcastReports ?? []}
+      canScore={canScore}
+    />
+  );
 }

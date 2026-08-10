@@ -16,6 +16,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AdminBroadcastAddCard,
   AdminBroadcastCompactCard,
 } from "@/components/admin/admin-broadcast-compact-card";
@@ -28,6 +35,7 @@ import {
 } from "@/components/admin/admin-content-filter-bar";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
+import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { DocumentUpload } from "@/components/ui/document-upload";
 import { MediaUpload } from "@/components/ui/media-upload";
 import { ImageZoom } from "@/components/ui/image-zoom";
@@ -45,6 +53,7 @@ import { useAdminEditDeepLink } from "@/lib/hooks/use-admin-edit-deep-link";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { todayISO } from "@/lib/jalali";
+import { MEDIA_REPUBLISH_SCOPE_OPTIONS } from "@/lib/scoring/scoring-policy";
 import type { BroadcastReport, VideoVersion } from "@/lib/types";
 import { cn, formatPersianDate } from "@/lib/utils";
 
@@ -55,6 +64,7 @@ const schema = z.object({
   title: z.string().min(1).max(CONTENT_TITLE_MAX_LENGTH, CONTENT_TITLE_MAX_LENGTH_MESSAGE),
   reportDate: z.string(),
   mediaType: z.enum(["pdf", "media"]),
+  mediaScope: z.enum(["national", "local"]),
   pdfUrl: z.string().min(1),
   fileName: z.string().min(1),
   coverImageUrl: z.string().optional(),
@@ -66,6 +76,7 @@ type FormValues = z.infer<typeof schema>;
 interface BroadcastAdminProps {
   campaignId: string;
   initialReports: BroadcastReport[];
+  canScore?: boolean;
 }
 
 function emptyFormValues(): FormValues {
@@ -73,6 +84,7 @@ function emptyFormValues(): FormValues {
     title: "",
     reportDate: todayISO(),
     mediaType: "pdf",
+    mediaScope: "national",
     pdfUrl: "",
     fileName: "",
     coverImageUrl: "",
@@ -80,11 +92,17 @@ function emptyFormValues(): FormValues {
   };
 }
 
+function resolveMediaScope(report: BroadcastReport): "national" | "local" {
+  const raw = report.mediaScope ?? report.summaryData.mediaScope;
+  return raw === "local" ? "local" : "national";
+}
+
 function reportToFormValues(report: BroadcastReport): FormValues {
   return {
     title: report.title,
     reportDate: report.reportDate,
     mediaType: resolveBroadcastMediaType(report),
+    mediaScope: resolveMediaScope(report),
     pdfUrl: report.pdfUrl,
     fileName: report.fileName,
     coverImageUrl: report.summaryData.coverImageUrl ?? "",
@@ -117,7 +135,11 @@ function detectFormFileKind(url: string, fileName: string): BroadcastFileKind {
   );
 }
 
-export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminProps) {
+export function BroadcastAdmin({
+  campaignId,
+  initialReports,
+  canScore = false,
+}: BroadcastAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("broadcast");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -215,6 +237,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
       const summaryData = {
         notes: data.notes,
         mediaType: data.mediaType,
+        mediaScope: data.mediaScope,
         ...(fileKind === "video" && data.coverImageUrl?.trim()
           ? { coverImageUrl: data.coverImageUrl.trim() }
           : {}),
@@ -229,6 +252,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
         fileName: data.fileName,
         published: true,
         summaryData,
+        mediaScope: data.mediaScope,
       };
 
       const result = await saveBroadcastReportAction(payload);
@@ -247,6 +271,7 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
         pdfUrl: data.pdfUrl,
         fileName: data.fileName,
         summaryData,
+        mediaScope: data.mediaScope,
         published: true,
         sortOrder: 0,
         createdAt: new Date().toISOString(),
@@ -546,6 +571,49 @@ export function BroadcastAdmin({ campaignId, initialReports }: BroadcastAdminPro
                 </p>
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label>سطح پوشش رسانه</Label>
+              <Select
+                value={form.watch("mediaScope")}
+                onValueChange={(value) =>
+                  form.setValue("mediaScope", value as "national" | "local", {
+                    shouldDirty: true,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="انتخاب سطح پوشش" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEDIA_REPUBLISH_SCOPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.key} value={option.key}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                سراسری و محلی امتیاز جداگانه در قوانین «باز نشر در رسانه‌ها» دارند.
+              </p>
+            </div>
+
+            {editingId && (
+              <ContentScoreControl
+                campaignId={campaignId}
+                contentType="broadcast"
+                contentId={editingId}
+                score={rows.find((row) => row.id === editingId)?.score}
+                autoScore={rows.find((row) => row.id === editingId)?.autoScore}
+                manualScore={rows.find((row) => row.id === editingId)?.manualScore}
+                canScore={canScore}
+                onScoreSaved={(score) =>
+                  setRows((prev) =>
+                    prev.map((row) => (row.id === editingId ? { ...row, score } : row))
+                  )
+                }
+              />
+            )}
 
             <div className="space-y-2">
               <Label>یادداشت (اختیاری)</Label>

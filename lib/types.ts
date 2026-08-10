@@ -115,7 +115,7 @@ export interface CampaignSettings {
   billboardConfig: BillboardConfig;
   /** Field-based auto scoring rules per content type. */
   scoringRules?: CampaignScoringRules;
-  /** Multiplicative / section scoring policy (billboard formula, daily caps, phase, …). */
+  /** Additive / entitlement scoring policy (billboard formula, daily caps, phase, …). */
   scoringPolicy?: import("./scoring/scoring-policy").CampaignScoringPolicy;
   /** Campaign content plan names configured by admin (e.g. مهتاب، سامان). Legacy flat list. */
   contentPlans?: string[];
@@ -247,7 +247,7 @@ export interface Billboard extends Ownable {
   usesApprovedDesign?: boolean;
   /** Hash of documentation image / file for duplicate detection. */
   contentHash?: string | null;
-  /** Raw billboard score before phase/entitlement multipliers. */
+  /** Raw billboard score before phase addition / entitlement multiply. */
   rawScore?: number | null;
   status: ItemStatus;
   tags: string[];
@@ -415,7 +415,7 @@ export interface AdminUser {
   role: AdminRole;
   province?: string | null;
   city?: string | null;
-  /** Geographic zone set by admin/client: north/south/east/west. */
+  /** Geographic zone set by admin/client: north/south/east/west/center. */
   region?: import("./user-regions").UserRegion | null;
   /** Company type set by admin/client: distribution / regional electricity. */
   companyType?: import("./user-company-types").UserCompanyType | null;
@@ -623,6 +623,8 @@ export interface BroadcastReportSummary {
   mediaType?: "pdf" | "media" | "video";
   /** Optional auto/custom cover when media is a video */
   coverImageUrl?: string;
+  /** Coverage scope for scoring: national (سراسری) or local (محلی). */
+  mediaScope?: "national" | "local" | string | null;
   statusBreakdown?: BroadcastStatusRow[];
   cityBreakdown?: BroadcastCityRow[];
   billboards?: BroadcastBillboardRow[];
@@ -638,6 +640,8 @@ export interface BroadcastReport extends Ownable {
   pdfUrl: string;
   fileName: string;
   summaryData: BroadcastReportSummary;
+  /** Convenience mirror of summaryData.mediaScope for scoring / forms. */
+  mediaScope?: "national" | "local" | string | null;
   published: boolean;
   sortOrder: number;
   createdAt: string;
@@ -693,6 +697,8 @@ export interface CampaignActivity extends Ownable {
   description?: string | null;
   /** Marked as a creative field activity for review/filtering. */
   isCreative: boolean;
+  /** Coverage scope for press republication scoring (national / local). */
+  mediaScope?: "national" | "local" | string | null;
   published: boolean;
   sortOrder: number;
   createdAt: string;

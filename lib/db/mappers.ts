@@ -449,6 +449,11 @@ export function mapBroadcastReportFromDb(row: any): BroadcastReport {
       ? JSON.parse(row.summary_data)
       : (row.summary_data ?? {});
 
+  const mediaScope =
+    typeof summary?.mediaScope === "string" && summary.mediaScope.trim()
+      ? summary.mediaScope.trim()
+      : null;
+
   return {
     id: row.id,
     campaignId: row.campaign_id,
@@ -458,6 +463,7 @@ export function mapBroadcastReportFromDb(row: any): BroadcastReport {
     pdfUrl: row.pdf_url,
     fileName: row.file_name,
     summaryData: summary,
+    mediaScope,
     published: row.published ?? false,
     sortOrder: row.sort_order ?? 0,
     createdAt: toIsoString(row.created_at),
@@ -514,6 +520,10 @@ export function mapCampaignActivityFromDb(row: any): CampaignActivity {
     attachments: parseActivityAttachments(row.attachments),
     description: row.description ?? null,
     isCreative: Boolean(row.is_creative),
+    mediaScope:
+      typeof row.media_scope === "string" && row.media_scope.trim()
+        ? row.media_scope.trim()
+        : null,
     published: row.published ?? false,
     sortOrder: row.sort_order ?? 0,
     createdAt: toIsoString(row.created_at),

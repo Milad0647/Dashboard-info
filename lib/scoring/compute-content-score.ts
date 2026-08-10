@@ -7,13 +7,14 @@ import { getScoreableField } from "@/lib/scoring/scoreable-fields";
 import {
   computeBillboardPolicyScore,
   computeFlatSectionScore,
+  computeMediaRepublishScore,
   computeSocialAudienceScore,
   type CampaignScoringPolicy,
 } from "@/lib/scoring/scoring-policy";
 
 export interface ComputeContentScoreResult {
   autoScore: number;
-  /** Score before company multipliers (phase / entitlement). */
+  /** Score before company phase addition / entitlement multiply. */
   rawScore: number;
   breakdown: ScoreBreakdownEntry[];
 }
@@ -264,6 +265,53 @@ export function computeContentScore(
             },
           ],
         };
+      }
+    }
+
+    if (contentType === "broadcast") {
+      if (policy.mediaRepublishRows.length > 0) {
+        const scope =
+          (typeof item.mediaScope === "string" && item.mediaScope.trim()) ||
+          (item.summaryData &&
+          typeof item.summaryData === "object" &&
+          typeof (item.summaryData as { mediaScope?: unknown }).mediaScope === "string"
+            ? String((item.summaryData as { mediaScope: string }).mediaScope).trim()
+            : "");
+        const points = computeMediaRepublishScore(scope || null, policy);
+        return {
+          autoScore: points,
+          rawScore: points,
+          breakdown: [
+            {
+              ruleId: "policy.mediaRepublish",
+              field: "mediaScope",
+              points,
+              matched: points > 0,
+            },
+          ],
+        };
+      }
+    }
+
+    if (contentType === "activity") {
+      if (policy.mediaRepublishRows.length > 0) {
+        const scope =
+          typeof item.mediaScope === "string" ? item.mediaScope.trim() : "";
+        if (scope) {
+          const points = computeMediaRepublishScore(scope, policy);
+          return {
+            autoScore: points,
+            rawScore: points,
+            breakdown: [
+              {
+                ruleId: "policy.mediaRepublish",
+                field: "mediaScope",
+                points,
+                matched: points > 0,
+              },
+            ],
+          };
+        }
       }
     }
   }

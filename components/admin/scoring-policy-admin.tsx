@@ -17,6 +17,7 @@ import {
   type ScoringAudienceRange,
   type ScoringCoeffRow,
   type ScoringCompanyCoeff,
+  type ScoringMediaRepublishRow,
 } from "@/lib/scoring/scoring-policy";
 import type { CampaignSettings } from "@/lib/types";
 import { generateId, formatPersianNumber } from "@/lib/utils";
@@ -285,8 +286,8 @@ export function ScoringPolicyAdmin({ initialSettings }: ScoringPolicyAdminProps)
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          فرمول اکران: ضریب موضوع × طرح مصوب × ارزش رسانه × محل × متراژ. سپس در صورت نیاز × ضریب فاز
-          و برخورداری. همه مقادیر از همین پنل قابل تنظیم‌اند.
+          فرمول اکران: ضریب موضوع + طرح مصوب + ارزش رسانه + محل + متراژ (+ امتیاز فاز در صورت اعمال).
+          سپس فقط × ضریب برخورداری. همه مقادیر از همین پنل قابل تنظیم‌اند.
         </p>
         <div className="flex flex-wrap gap-2">
           {tabs.map((item) => (
@@ -306,11 +307,11 @@ export function ScoringPolicyAdmin({ initialSettings }: ScoringPolicyAdminProps)
         {tab === "billboard" && (
           <div className="space-y-4">
             <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
-              <p className="font-medium">پیش‌نمایش نمونه (قرار همدلی × طرح مصوب × بیلبورد × بزرگراه × ۱۲–۲۴م)</p>
+              <p className="font-medium">پیش‌نمایش نمونه (قرار همدلی + طرح مصوب + بیلبورد + بزرگراه + ۱۲–۲۴م)</p>
               <p dir="ltr" className="text-left font-mono text-xs">
-                {preview.topic} × {preview.approvedDesign} × {preview.mediaValue} × {preview.location} ×{" "}
+                {preview.topic} + {preview.approvedDesign} + {preview.mediaValue} + {preview.location} +{" "}
                 {preview.area} = {preview.raw}
-                {preview.phase !== 1 || preview.entitlement !== 1
+                {preview.phase !== 0 || preview.entitlement !== 1
                   ? ` → نهایی ${preview.final}`
                   : ""}
               </p>
@@ -397,9 +398,9 @@ export function ScoringPolicyAdmin({ initialSettings }: ScoringPolicyAdminProps)
               <div>
                 <p className="text-sm font-medium">بازه‌های متراژ (ضریب)</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  برای هر طیف متراژ تابلو (متر مربع) ضریب جداگانه تعیین کنید؛ مثلاً کمتر از ۱۲ → ۲،
+                  برای هر طیف متراژ تابلو (متر مربع) امتیاز جداگانه تعیین کنید؛ مثلاً کمتر از ۱۲ → ۲،
                   ۱۲ تا ۲۴ → ۴. حدود خالی یعنی بدون حد پایین/بالا. فقط اولین بازهٔ منطبق در فرمول
-                  ضرب می‌شود.
+                  جمع می‌شود.
                 </p>
               </div>
               {policy.areaRanges.map((row, index) => (
@@ -626,117 +627,211 @@ export function ScoringPolicyAdmin({ initialSettings }: ScoringPolicyAdminProps)
         )}
 
         {tab === "social" && (
-          <div className="space-y-3 rounded-lg border p-3">
-            <p className="text-sm font-medium">نشر و بازنشر بر اساس تعداد مخاطب</p>
-            <p className="text-xs text-muted-foreground">
-              تا وقتی جدول پر نشود، امتیاز این بخش از سیاست اعمال نمی‌شود (قوانین فیلدی قدیمی همچنان
-              می‌توانند استفاده شوند).
-            </p>
-            {policy.socialAudienceRanges.map((row, index) => (
-              <div
-                key={row.id}
-                className="grid gap-2 sm:grid-cols-[1fr_5rem_5rem_5rem_auto] items-end"
-              >
-                <div>
-                  <Label className="text-xs">عنوان</Label>
-                  <Input
-                    value={row.label}
-                    onChange={(e) => {
-                      const socialAudienceRanges = [...policy.socialAudienceRanges];
-                      socialAudienceRanges[index] = { ...row, label: e.target.value };
-                      patch({ socialAudienceRanges });
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">حداقل</Label>
-                  <Input
-                    type="number"
-                    dir="ltr"
-                    className="text-left"
-                    value={row.minAudience ?? ""}
-                    onChange={(e) => {
-                      const socialAudienceRanges = [...policy.socialAudienceRanges];
-                      socialAudienceRanges[index] = {
-                        ...row,
-                        minAudience: e.target.value === "" ? null : Number(e.target.value),
-                      };
-                      patch({ socialAudienceRanges });
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">حداکثر</Label>
-                  <Input
-                    type="number"
-                    dir="ltr"
-                    className="text-left"
-                    value={row.maxAudience ?? ""}
-                    onChange={(e) => {
-                      const socialAudienceRanges = [...policy.socialAudienceRanges];
-                      socialAudienceRanges[index] = {
-                        ...row,
-                        maxAudience: e.target.value === "" ? null : Number(e.target.value),
-                      };
-                      patch({ socialAudienceRanges });
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">امتیاز</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="any"
-                    dir="ltr"
-                    className="text-left"
-                    value={row.points}
-                    onChange={(e) => {
-                      const socialAudienceRanges = [...policy.socialAudienceRanges];
-                      socialAudienceRanges[index] = {
-                        ...row,
-                        points: Math.max(0, Number(e.target.value) || 0),
-                      };
-                      patch({ socialAudienceRanges });
-                    }}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() =>
-                    patch({
-                      socialAudienceRanges: policy.socialAudienceRanges.filter(
-                        (r) => r.id !== row.id
-                      ),
-                    })
-                  }
+          <div className="space-y-4">
+            <div className="space-y-3 rounded-lg border p-3">
+              <p className="text-sm font-medium">باز نشر در رسانه‌ها</p>
+              <p className="text-xs text-muted-foreground">
+                امتیاز پخش خبر در روزنامه و صداوسیما بر اساس سطح پوشش (سراسری / محلی). ردیف‌ها قابل
+                افزودن، ویرایش و حذف‌اند؛ کلید باید با مقدار انتخاب‌شده در فرم محتوا یکی باشد
+                (مثلاً national یا local).
+              </p>
+              {policy.mediaRepublishRows.map((row, index) => (
+                <div
+                  key={row.id}
+                  className="grid gap-2 sm:grid-cols-[8rem_1fr_5rem_auto] items-end"
                 >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const row: ScoringAudienceRange = {
-                  id: generateId(),
-                  label: "بازه مخاطب",
-                  minAudience: null,
-                  maxAudience: null,
-                  points: 0,
-                };
-                patch({
-                  socialAudienceRanges: [...policy.socialAudienceRanges, row],
-                });
-              }}
-            >
-              <Plus className="h-4 w-4 ml-1" />
-              افزودن بازه مخاطب
-            </Button>
+                  <div>
+                    <Label className="text-xs">کلید</Label>
+                    <Input
+                      value={row.key}
+                      dir="ltr"
+                      className="text-left"
+                      placeholder="national"
+                      onChange={(e) => {
+                        const mediaRepublishRows = [...policy.mediaRepublishRows];
+                        mediaRepublishRows[index] = { ...row, key: e.target.value };
+                        patch({ mediaRepublishRows });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">عنوان</Label>
+                    <Input
+                      value={row.label}
+                      onChange={(e) => {
+                        const mediaRepublishRows = [...policy.mediaRepublishRows];
+                        mediaRepublishRows[index] = { ...row, label: e.target.value };
+                        patch({ mediaRepublishRows });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">امتیاز</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="any"
+                      dir="ltr"
+                      className="text-left"
+                      value={row.points}
+                      onChange={(e) => {
+                        const mediaRepublishRows = [...policy.mediaRepublishRows];
+                        mediaRepublishRows[index] = {
+                          ...row,
+                          points: Math.max(0, Number(e.target.value) || 0),
+                        };
+                        patch({ mediaRepublishRows });
+                      }}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      patch({
+                        mediaRepublishRows: policy.mediaRepublishRows.filter((r) => r.id !== row.id),
+                      })
+                    }
+                    aria-label="حذف"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const row: ScoringMediaRepublishRow = {
+                    id: generateId(),
+                    key: "",
+                    label: "ردیف جدید",
+                    points: 0,
+                  };
+                  patch({
+                    mediaRepublishRows: [...policy.mediaRepublishRows, row],
+                  });
+                }}
+              >
+                <Plus className="h-4 w-4 ml-1" />
+                افزودن ردیف
+              </Button>
+            </div>
+
+            <div className="space-y-3 rounded-lg border p-3">
+              <p className="text-sm font-medium">نشر و بازنشر بر اساس تعداد مخاطب</p>
+              <p className="text-xs text-muted-foreground">
+                تا وقتی جدول پر نشود، امتیاز این بخش از سیاست اعمال نمی‌شود (قوانین فیلدی قدیمی همچنان
+                می‌توانند استفاده شوند).
+              </p>
+              {policy.socialAudienceRanges.map((row, index) => (
+                <div
+                  key={row.id}
+                  className="grid gap-2 sm:grid-cols-[1fr_5rem_5rem_5rem_auto] items-end"
+                >
+                  <div>
+                    <Label className="text-xs">عنوان</Label>
+                    <Input
+                      value={row.label}
+                      onChange={(e) => {
+                        const socialAudienceRanges = [...policy.socialAudienceRanges];
+                        socialAudienceRanges[index] = { ...row, label: e.target.value };
+                        patch({ socialAudienceRanges });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">حداقل</Label>
+                    <Input
+                      type="number"
+                      dir="ltr"
+                      className="text-left"
+                      value={row.minAudience ?? ""}
+                      onChange={(e) => {
+                        const socialAudienceRanges = [...policy.socialAudienceRanges];
+                        socialAudienceRanges[index] = {
+                          ...row,
+                          minAudience: e.target.value === "" ? null : Number(e.target.value),
+                        };
+                        patch({ socialAudienceRanges });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">حداکثر</Label>
+                    <Input
+                      type="number"
+                      dir="ltr"
+                      className="text-left"
+                      value={row.maxAudience ?? ""}
+                      onChange={(e) => {
+                        const socialAudienceRanges = [...policy.socialAudienceRanges];
+                        socialAudienceRanges[index] = {
+                          ...row,
+                          maxAudience: e.target.value === "" ? null : Number(e.target.value),
+                        };
+                        patch({ socialAudienceRanges });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">امتیاز</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="any"
+                      dir="ltr"
+                      className="text-left"
+                      value={row.points}
+                      onChange={(e) => {
+                        const socialAudienceRanges = [...policy.socialAudienceRanges];
+                        socialAudienceRanges[index] = {
+                          ...row,
+                          points: Math.max(0, Number(e.target.value) || 0),
+                        };
+                        patch({ socialAudienceRanges });
+                      }}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      patch({
+                        socialAudienceRanges: policy.socialAudienceRanges.filter(
+                          (r) => r.id !== row.id
+                        ),
+                      })
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const row: ScoringAudienceRange = {
+                    id: generateId(),
+                    label: "بازه مخاطب",
+                    minAudience: null,
+                    maxAudience: null,
+                    points: 0,
+                  };
+                  patch({
+                    socialAudienceRanges: [...policy.socialAudienceRanges, row],
+                  });
+                }}
+              >
+                <Plus className="h-4 w-4 ml-1" />
+                افزودن بازه مخاطب
+              </Button>
+            </div>
           </div>
         )}
 
@@ -744,7 +839,7 @@ export function ScoringPolicyAdmin({ initialSettings }: ScoringPolicyAdminProps)
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label className="text-xs">ضریب پیش‌فرض فاز</Label>
+                <Label className="text-xs">امتیاز پیش‌فرض فاز</Label>
                 <Input
                   type="number"
                   min={0}
@@ -777,18 +872,19 @@ export function ScoringPolicyAdmin({ initialSettings }: ScoringPolicyAdminProps)
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              فعلاً هر دو ضریب فقط روی بخش اکران محیطی اعمال می‌شوند (
+              فاز به جمع امتیاز اکران اضافه می‌شود؛ برخورداری تنها ضریبی است که در امتیاز ضرب
+              می‌شود. فعلاً هر دو فقط روی بخش اکران محیطی اعمال می‌شوند (
               {policy.phaseAppliesTo.join("، ")} / {policy.entitlementAppliesTo.join("، ")}).
             </p>
             <CompanyCoeffTable
-              title="ضریب پوشش فازها (هر شرکت)"
-              hint="با تغییر این جدول، امتیاز اکران شرکت‌ها مجدداً محاسبه می‌شود."
+              title="امتیاز پوشش فازها (هر شرکت)"
+              hint="این مقدار به جمع امتیاز اکران اضافه می‌شود."
               rows={policy.phaseCoefficients}
               onChange={(phaseCoefficients) => patch({ phaseCoefficients })}
             />
             <CompanyCoeffTable
               title="ضریب برخورداری شرکت"
-              hint="جدول را بعداً با مقادیر رسمی پر کنید؛ تا آن زمان ضریب پیش‌فرض استفاده می‌شود."
+              hint="تنها ضریب ضربی فرمول؛ جدول را با مقادیر رسمی پر کنید؛ تا آن زمان ضریب پیش‌فرض استفاده می‌شود."
               rows={policy.entitlementCoefficients}
               onChange={(entitlementCoefficients) => patch({ entitlementCoefficients })}
             />

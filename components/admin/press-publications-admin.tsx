@@ -56,8 +56,10 @@ import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { todayISO } from "@/lib/jalali";
 import { isPressPublication } from "@/lib/press-publications";
+import { MEDIA_REPUBLISH_SCOPE_OPTIONS } from "@/lib/scoring/scoring-policy";
 import { cn, formatPersianDate } from "@/lib/utils";
 import type { ActivityMediaItem, AdminUser, CampaignActivity } from "@/lib/types";
+import { ContentScoreControl } from "@/components/admin/content-score-control";
 
 const ACTIVITY_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 const MAX_MEDIA_ITEMS = 10;
@@ -68,6 +70,7 @@ const schema = z.object({
     .min(1, "عنوان الزامی است")
     .max(CONTENT_TITLE_MAX_LENGTH, CONTENT_TITLE_MAX_LENGTH_MESSAGE),
   activityType: z.enum(["magazine", "newspaper"]),
+  mediaScope: z.enum(["national", "local"]),
   activityDate: z.string(),
   location: z.string().optional(),
   link: z
@@ -135,7 +138,8 @@ export function PressPublicationsAdmin({
     resolver: zodResolver(schema),
     defaultValues: {
       title: "",
-      activityType: "magazine",
+      activityType: "magazine" as const,
+      mediaScope: "national" as const,
       activityDate: todayISO(),
       location: "",
       link: "",
@@ -155,6 +159,7 @@ export function PressPublicationsAdmin({
       form.reset({
         title: activity.title,
         activityType: activity.activityType === "newspaper" ? "newspaper" : "magazine",
+        mediaScope: activity.mediaScope === "local" ? "local" : "national",
         activityDate: activity.activityDate,
         location: activity.location,
         link: activity.link ?? "",
@@ -198,6 +203,7 @@ export function PressPublicationsAdmin({
       form.reset({
         title: "",
         activityType: "magazine",
+        mediaScope: "national",
         activityDate: todayISO(),
         location: "",
         link: "",
@@ -215,6 +221,7 @@ export function PressPublicationsAdmin({
     form.reset({
       title: activity.title,
       activityType: activity.activityType === "newspaper" ? "newspaper" : "magazine",
+      mediaScope: activity.mediaScope === "local" ? "local" : "national",
       activityDate: activity.activityDate,
       location: activity.location,
       link: activity.link ?? "",
@@ -324,6 +331,7 @@ export function PressPublicationsAdmin({
         attachments: [],
         description: data.description || null,
         isCreative: false,
+        mediaScope: data.mediaScope,
         published: true,
         planLabels,
         planLabel: planLabels[0] ?? null,
@@ -355,6 +363,7 @@ export function PressPublicationsAdmin({
         attachments: [],
         description: data.description || null,
         isCreative: false,
+        mediaScope: data.mediaScope,
         published: true,
         planLabels,
         planLabel: planLabels[0] ?? null,
@@ -543,6 +552,26 @@ export function PressPublicationsAdmin({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>سطح پوشش رسانه</Label>
+              <Select
+                value={form.watch("mediaScope")}
+                onValueChange={(value) =>
+                  form.setValue("mediaScope", value as "national" | "local")
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="انتخاب سطح پوشش" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEDIA_REPUBLISH_SCOPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.key} value={option.key}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className={cn(highlightDate && "rounded-lg border border-destructive bg-destructive/5 p-3")}>
               <PersianDateField control={form.control} name="activityDate" label="تاریخ" />
             </div>
@@ -675,6 +704,22 @@ export function PressPublicationsAdmin({
               values={planLabels}
               onChangeMultiple={setPlanLabels}
             />
+            {editingId && (
+              <ContentScoreControl
+                campaignId={campaignId}
+                contentType="activity"
+                contentId={editingId}
+                score={rows.find((row) => row.id === editingId)?.score}
+                autoScore={rows.find((row) => row.id === editingId)?.autoScore}
+                manualScore={rows.find((row) => row.id === editingId)?.manualScore}
+                canScore={canScore}
+                onScoreSaved={(score) =>
+                  setRows((prev) =>
+                    prev.map((row) => (row.id === editingId ? { ...row, score } : row))
+                  )
+                }
+              />
+            )}
             {canTransferOwnership && (
               <ContentOwnerSelect
                 users={users}
