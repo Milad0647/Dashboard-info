@@ -4,7 +4,7 @@ import { FolderKanban, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DashboardCompletenessCards } from "@/components/admin/dashboard-completeness-cards";
+import { AdminDashboardFilteredStats } from "@/components/admin/admin-dashboard-filtered-stats";
 import { DashboardDirectivesPanel } from "@/components/admin/dashboard-directives-panel";
 import { EditSuggestionsPanel } from "@/components/admin/edit-suggestions-panel";
 import { getAdminData, getAllUsers } from "@/lib/data-access/admin";
@@ -13,7 +13,7 @@ import { DASHBOARD_STAT_DEFINITIONS } from "@/lib/admin-dashboard-stats";
 import { resolveAdminBillboards } from "@/lib/billboards";
 import type { Billboard, CampaignSettings } from "@/lib/types";
 import { CampaignTools } from "@/components/admin/campaign-tools";
-import { canManageDirectives } from "@/lib/auth/access";
+import { canManageAllContent, canManageDirectives, isClientUser } from "@/lib/auth/access";
 import { getAuthSession, getOwnerFilter, isFullAdmin } from "@/lib/auth/get-session";
 import {
   defaultContributorPermissions,
@@ -22,16 +22,9 @@ import {
 } from "@/lib/contributor-permissions";
 import { pgListDirectivesForUserInbox } from "@/lib/db/repository-directives";
 import { pgGetUserPermissionsForCampaign } from "@/lib/db/repository-extended";
-import {
-  buildCategoryCompleteness,
-  buildEditSuggestions,
-  type CategoryCompletenessSummary,
-  type EditSuggestionContentType,
-} from "@/lib/edit-suggestions";
+import { buildEditSuggestions } from "@/lib/edit-suggestions";
 import { withFileAccessTokensDeep } from "@/lib/uploads";
-import { formatPersianNumber, adminHref, isPostgresConfigured } from "@/lib/utils";
-import { buildBillboardCategoryStats } from "@/lib/billboard-categories";
-import { BillboardCategoryChart } from "@/components/charts/billboard-category-chart";
+import { adminHref, isPostgresConfigured } from "@/lib/utils";
 
 interface AdminDashboardProps {
   searchParams: Promise<{ campaign?: string }>;
@@ -41,6 +34,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
   const params = await searchParams;
   const session = await getAuthSession();
   const canManageAll = Boolean(session && isFullAdmin(session));
+  const canOverseeAllContent = Boolean(session && canManageAllContent(session));
   const { campaignId } = await resolveAdminCampaignId(params.campaign);
 
   if (!campaignId) {
@@ -75,7 +69,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
 
   const features = data.settings.features;
   let contributorPermissions: ContributorPermissions | null = null;
-  if (!canManageAll && session?.userId) {
+  if (!canOverseeAllContent && session?.userId) {
     contributorPermissions =
       (await pgGetUserPermissionsForCampaign(session.userId, campaignId)) ??
       defaultContributorPermissions();
@@ -91,10 +85,9 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
       )
     : [];
 
-  const completenessByType = new Map<EditSuggestionContentType, CategoryCompletenessSummary>();
   const completenessInput = {
     campaignId,
-    ownerUserId: canManageAll ? undefined : session?.userId,
+    ownerUserId: canOverseeAllContent ? undefined : session?.userId,
     posters: data.posters,
     posterVersions: data.posterVersions,
     videos: data.videos,
@@ -107,9 +100,6 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
     meetings: data.meetings ?? [],
     activities: data.activities ?? [],
   };
-  for (const summary of buildCategoryCompleteness(completenessInput)) {
-    completenessByType.set(summary.contentType, summary);
-  }
 
   const editSuggestions = session?.userId
     ? buildEditSuggestions({
@@ -118,31 +108,16 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
       })
     : [];
 
-  const stats = DASHBOARD_STAT_DEFINITIONS.filter((definition) =>
-    canManageAll
+  const visibleStatHrefs = DASHBOARD_STAT_DEFINITIONS.filter((definition) =>
+    canOverseeAllContent
       ? features[definition.featureKey]
       : hasContributorPermission(contributorPermissions, definition.permissionKey)
-  ).map((definition) => {
-    const contentType = definition.completenessContentType;
-    return {
-      label: definition.label,
-      value: definition.getCount(data, billboards),
-      href: adminHref(definition.href, campaignId),
-      icon: definition.icon,
-      completeness: contentType ? completenessByType.get(contentType) : undefined,
-      showOwnerHint: !canManageAll,
-    };
-  });
+  ).map((definition) => definition.href);
 
-  const showBillboardCategoryChart = canManageAll
+  const showBillboardCategoryChart = canOverseeAllContent
     ? features.billboards
     : hasContributorPermission(contributorPermissions, "billboards");
-  const billboardCategoryStats = showBillboardCategoryChart
-    ? buildBillboardCategoryStats(billboards)
-    : [];
-
-  const pendingSubmissions = data.submissions.filter((s) => s.status === "pending").length;
-  const showSubmissionsAlert = canManageAll
+  const showSubmissionsAlert = canOverseeAllContent
     ? features.submissions
     : hasContributorPermission(contributorPermissions, "submissions");
   const editSuggestionsStorageKey = session?.userId
@@ -150,6 +125,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
     : `edit-suggestions:${campaignId}`;
 
   const canManageDirectivesForUser = Boolean(session && canManageDirectives(session));
+  const showUserFilter = canOverseeAllContent;
   const inboxDirectives =
     session?.userId && isPostgresConfigured()
       ? withFileAccessTokensDeep(
@@ -163,7 +139,9 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
         <div>
           <h1 className="text-2xl font-bold">داشبورد</h1>
           <p className="text-muted-foreground text-sm">
-            {canManageAll ? data.settings.title : `${data.settings.title} — آمار آپلودهای شما`}
+            {canOverseeAllContent
+              ? data.settings.title
+              : `${data.settings.title} — آمار آپلودهای شما`}
           </p>
         </div>
         {canManageAll && (
@@ -207,7 +185,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
             <Badge status={data.settings.status}>
               {data.settings.status === "live" ? "زنده" : "پایان‌یافته"}
             </Badge>
-            {canManageAll && (
+            {(canManageAll || Boolean(session && isClientUser(session))) && (
               <Link href={`/campaign/${data.settings.slug}`} target="_blank">
                 <Badge variant="outline" className="cursor-pointer">
                   مشاهده صفحه عمومی
@@ -218,40 +196,41 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
         </CardContent>
       </Card>
 
-      {stats.length > 0 ? (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-emerald-700">کامل = سبز</span>
-            <span className="rounded-full bg-amber-400/20 px-2 py-1 text-amber-800">ناقص جزئی = زرد</span>
-            <span className="rounded-full bg-red-500/15 px-2 py-1 text-red-700">ناقص کامل = قرمز</span>
-          </div>
-          <DashboardCompletenessCards cards={stats} />
-        </div>
+      {visibleStatHrefs.length > 0 ? (
+        <AdminDashboardFilteredStats
+          campaignId={campaignId}
+          contentPlans={data.settings.contentPlans ?? []}
+          users={showUserFilter ? users : []}
+          showUserFilter={showUserFilter}
+          showOwnerHint={!canOverseeAllContent}
+          completenessOwnerUserId={
+            canOverseeAllContent ? undefined : session?.userId ?? undefined
+          }
+          billboards={billboards}
+          posters={data.posters}
+          posterVersions={data.posterVersions}
+          videos={data.videos}
+          videoVersions={data.videoVersions}
+          files={data.files ?? []}
+          rawMedia={data.rawMedia ?? []}
+          submissions={data.submissions}
+          analytics={data.analytics}
+          socialPosts={data.socialPosts ?? []}
+          socialPlatformStats={data.socialPlatformStats ?? []}
+          broadcastReports={data.broadcastReports ?? []}
+          meetings={data.meetings ?? []}
+          activities={data.activities ?? []}
+          smsReports={data.smsReports ?? []}
+          visibleHrefs={visibleStatHrefs}
+          showBillboardCategoryChart={showBillboardCategoryChart}
+          showSubmissionsAlert={showSubmissionsAlert}
+        />
       ) : (
         <Card>
           <CardContent className="p-6 text-sm text-muted-foreground">
-            {canManageAll
+            {canOverseeAllContent
               ? "هیچ بخشی برای این کمپین فعال نیست. از تنظیمات کمپین بخش‌های مورد نظر را فعال کنید."
               : "هیچ بخشی برای شما در این کمپین فعال نیست. با مدیر تماس بگیرید."}
-          </CardContent>
-        </Card>
-      )}
-
-      {billboardCategoryStats.length > 0 && (
-        <BillboardCategoryChart data={billboardCategoryStats} />
-      )}
-
-      {showSubmissionsAlert && pendingSubmissions > 0 && (
-        <Card className="border-warning/30 bg-warning/10">
-          <CardContent className="p-4 flex items-center justify-between">
-            <p className="text-sm">
-              {formatPersianNumber(pendingSubmissions)} ارسال در انتظار بررسی
-            </p>
-            <Link href={adminHref("/admin/submissions", campaignId)}>
-              <Badge variant="warning" className="cursor-pointer">
-                مشاهده
-              </Badge>
-            </Link>
           </CardContent>
         </Card>
       )}

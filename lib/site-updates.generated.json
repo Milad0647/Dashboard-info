@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "8c25ee193a423d3ccf3da7b219a598ecb5b6e5c3",
+      "committedAt": "2026-08-10T11:14:47+03:30",
+      "title": "افزودن فیلتر جستجو، استان، شهر و تاریخ به همه بخش‌های داشبورد مدیر",
+      "subject": "Add live-campaign filters to all admin content sections"
+    },
+    {
+      "hash": "3fd01c4df2ffdec729569d928afc5d96fb3324ab",
+      "committedAt": "2026-08-10T11:14:04+03:30",
+      "title": "اصلاح فرمول امتیاز اکران به جمع عوامل و ضرب فقط ضریب برخورداری",
+      "subject": "Switch billboard scoring from multiply to add"
+    },
+    {
       "hash": "2f5281c4466c6c234579a9a6f0cd1d73a34b31b7",
       "committedAt": "2026-08-10T11:10:05+03:30",
       "title": "امکان امتیازدهی باز نشر در صداوسیما و روزنامه‌ها با سطح سراسری و محلی",
