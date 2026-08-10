@@ -34,6 +34,22 @@ export interface ScoringAudienceRange {
   points: number;
 }
 
+/** Fixed points for media republication (IRIB / press) by coverage scope. */
+export interface ScoringMediaRepublishRow {
+  id: string;
+  /** Stable key used on content forms (e.g. national, local). */
+  key: string;
+  label: string;
+  points: number;
+}
+
+export const MEDIA_REPUBLISH_SCOPE_OPTIONS = [
+  { key: "national", label: "سراسری" },
+  { key: "local", label: "محلی" },
+] as const;
+
+export type MediaRepublishScope = (typeof MEDIA_REPUBLISH_SCOPE_OPTIONS)[number]["key"];
+
 /** Per-company multipliers (phase coverage / entitlement). */
 export interface ScoringCompanyCoeff {
   id: string;
@@ -43,7 +59,7 @@ export interface ScoringCompanyCoeff {
   coefficient: number;
 }
 
-export type ScoringSectionKey = "billboard" | "poster" | "video" | "social";
+export type ScoringSectionKey = "billboard" | "poster" | "video" | "social" | "broadcast";
 
 /**
  * Campaign-level scoring policy — editable from /admin/scoring, never hardcoded in UI logic.
@@ -69,11 +85,15 @@ export interface CampaignScoringPolicy {
   video: ScoringSectionFlat;
   /** Social publish/repost by audience — empty until table is provided. */
   socialAudienceRanges: ScoringAudienceRange[];
-  /** Phase coverage multipliers per company; applied only to sections in phaseAppliesTo. */
+  /** IRIB / press republication points by coverage scope (national / local / custom). */
+  mediaRepublishRows: ScoringMediaRepublishRow[];
+  /**
+   * Phase coverage points per company; added into the billboard sum when section is in phaseAppliesTo.
+   */
   phaseCoefficients: ScoringCompanyCoeff[];
   defaultPhaseCoefficient: number;
   phaseAppliesTo: ScoringSectionKey[];
-  /** Entitlement multipliers; applied only to sections in entitlementAppliesTo. */
+  /** Entitlement multiplier; applied only to sections in entitlementAppliesTo. */
   entitlementCoefficients: ScoringCompanyCoeff[];
   defaultEntitlementCoefficient: number;
   entitlementAppliesTo: ScoringSectionKey[];
@@ -158,8 +178,22 @@ export function createDefaultScoringPolicy(): CampaignScoringPolicy {
     poster: { pointsPerItem: 2, dailyMaxItems: 5 },
     video: { pointsPerItem: 5, dailyMaxItems: 5 },
     socialAudienceRanges: [],
+    mediaRepublishRows: [
+      {
+        id: generateId(),
+        key: "national",
+        label: "پخش خبر و محتوا در روزنامه‌ها و صداوسیمای سراسری",
+        points: 15,
+      },
+      {
+        id: generateId(),
+        key: "local",
+        label: "پخش خبر و محتوا در روزنامه‌ها و صداوسیمای محلی",
+        points: 10,
+      },
+    ],
     phaseCoefficients: [],
-    defaultPhaseCoefficient: 1,
+    defaultPhaseCoefficient: 0,
     phaseAppliesTo: ["billboard"],
     entitlementCoefficients: [],
     defaultEntitlementCoefficient: 1,
@@ -239,6 +273,25 @@ function normalizeAudienceRanges(raw: unknown): ScoringAudienceRange[] {
   return rows;
 }
 
+function normalizeMediaRepublishRows(raw: unknown): ScoringMediaRepublishRow[] {
+  if (!Array.isArray(raw)) return [];
+  const rows: ScoringMediaRepublishRow[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const obj = item as Record<string, unknown>;
+    const key = typeof obj.key === "string" ? obj.key.trim() : "";
+    const label = typeof obj.label === "string" ? obj.label.trim() : key;
+    if (!key && !label) continue;
+    rows.push({
+      id: typeof obj.id === "string" && obj.id.trim() ? obj.id.trim() : generateId(),
+      key: key || label,
+      label: label || key,
+      points: Math.max(0, asFiniteNumber(obj.points, 0)),
+    });
+  }
+  return rows;
+}
+
 function normalizeCompanyCoeffs(raw: unknown): ScoringCompanyCoeff[] {
   if (!Array.isArray(raw)) return [];
   const rows: ScoringCompanyCoeff[] = [];
@@ -258,7 +311,7 @@ function normalizeCompanyCoeffs(raw: unknown): ScoringCompanyCoeff[] {
 }
 
 function normalizeSectionKeys(raw: unknown, fallback: ScoringSectionKey[]): ScoringSectionKey[] {
-  const allowed: ScoringSectionKey[] = ["billboard", "poster", "video", "social"];
+  const allowed: ScoringSectionKey[] = ["billboard", "poster", "video", "social", "broadcast"];
   if (!Array.isArray(raw)) return [...fallback];
   const next = raw.filter((v): v is ScoringSectionKey =>
     allowed.includes(v as ScoringSectionKey)
@@ -322,6 +375,10 @@ export function normalizeScoringPolicy(raw: unknown): CampaignScoringPolicy {
     poster: normalizeFlatSection(source.poster, defaults.poster),
     video: normalizeFlatSection(source.video, defaults.video),
     socialAudienceRanges: normalizeAudienceRanges(source.socialAudienceRanges),
+    mediaRepublishRows:
+      !("mediaRepublishRows" in source)
+        ? defaults.mediaRepublishRows
+        : normalizeMediaRepublishRows(source.mediaRepublishRows),
     phaseCoefficients: normalizeCompanyCoeffs(source.phaseCoefficients),
     defaultPhaseCoefficient: Math.max(
       0,
@@ -495,17 +552,19 @@ export function computeBillboardPolicyScore(
         : null;
   const areaHit = findAreaCoeff(policy.areaRanges, areaSqm, policy.defaultAreaCoefficient);
 
+  /** Additive base (topic + design + media + location + area). */
   const raw =
-    topicHit.coefficient *
-    approvedHit.coefficient *
-    mediaHit.coefficient *
-    locationHit.coefficient *
+    topicHit.coefficient +
+    approvedHit.coefficient +
+    mediaHit.coefficient +
+    locationHit.coefficient +
     areaHit.coefficient;
 
   const ownerUserId = typeof item.ownerUserId === "string" ? item.ownerUserId : null;
   const ownerName = typeof item.ownerName === "string" ? item.ownerName : null;
 
-  const phase = policy.phaseAppliesTo.includes("billboard")
+  const phaseApplies = policy.phaseAppliesTo.includes("billboard");
+  const phase = phaseApplies
     ? findCompanyCoeff(
         policy.phaseCoefficients,
         ownerUserId,
@@ -523,7 +582,8 @@ export function computeBillboardPolicyScore(
       )
     : 1;
 
-  const final = raw * phase * entitlement;
+  /** Only entitlement multiplies; phase (when applied) is added to the base sum. */
+  const final = (raw + (phaseApplies ? phase : 0)) * entitlement;
 
   return {
     topic: topicHit.coefficient,
@@ -562,6 +622,25 @@ export function computeSocialAudienceScore(
     const minOk = range.minAudience == null || audienceCount >= range.minAudience;
     const maxOk = range.maxAudience == null || audienceCount <= range.maxAudience;
     if (minOk && maxOk) return range.points;
+  }
+  return 0;
+}
+
+export function computeMediaRepublishScore(
+  mediaScope: string | null | undefined,
+  policy: CampaignScoringPolicy
+): number {
+  if (policy.mediaRepublishRows.length === 0) return 0;
+  const raw = typeof mediaScope === "string" ? mediaScope.trim() : "";
+  if (!raw) return 0;
+  const needle = normalizeMatchKey(raw);
+  for (const row of policy.mediaRepublishRows) {
+    if (
+      normalizeMatchKey(row.key) === needle ||
+      normalizeMatchKey(row.label) === needle
+    ) {
+      return row.points;
+    }
   }
   return 0;
 }

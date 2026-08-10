@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "2f5281c4466c6c234579a9a6f0cd1d73a34b31b7",
+      "committedAt": "2026-08-10T11:10:05+03:30",
+      "title": "امکان امتیازدهی باز نشر در صداوسیما و روزنامه‌ها با سطح سراسری و محلی",
+      "subject": "Add media republish scoring for IRIB and press"
+    },
+    {
       "hash": "790b2a8c04c6cc6bafe1b1f09196595df6b9a2c0",
       "committedAt": "2026-08-10T11:08:33+03:30",
       "title": "افزودن منطقه مرکز به دسته‌بندی شرکت‌ها",
