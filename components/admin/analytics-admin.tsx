@@ -11,13 +11,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AdminContentFilterBar,
+  adminUsersToFilterOptions,
+  collectAdminFilterLocations,
+  collectAdminFilterLocationsFromUsers,
+  collectAdminFilterUsers,
+  DEFAULT_ADMIN_CONTENT_FILTER,
+  matchesAdminContentFilter,
+  mergeAdminFilterLocations,
+  sortAdminContentItems,
+  type AdminContentFilterState,
+} from "@/components/admin/admin-content-filter-bar";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { saveAnalyticsAction, deleteAnalyticsAction } from "@/lib/actions/admin-actions";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { todayISO } from "@/lib/jalali";
-import type { AnalyticsMetric } from "@/lib/types";
+import type { AdminUser, AnalyticsMetric } from "@/lib/types";
 import { formatPersianDate, getStatusLabel } from "@/lib/utils";
 
 const schema = z.object({
@@ -35,9 +47,20 @@ const schema = z.object({
 interface AnalyticsAdminProps {
   campaignId: string;
   initialMetrics: AnalyticsMetric[];
+  contentPlans?: string[];
+  isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
+  users?: AdminUser[];
 }
 
-export function AnalyticsAdmin({ campaignId, initialMetrics }: AnalyticsAdminProps) {
+export function AnalyticsAdmin({
+  campaignId,
+  initialMetrics,
+  contentPlans = [],
+  isFullAdmin = false,
+  canTransferOwnership = false,
+  users = [],
+}: AnalyticsAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("analytics");
   const siteMetrics = useMemo(
     () => initialMetrics.filter((metric) => (metric.channel ?? "site") === "site"),
@@ -48,6 +71,32 @@ export function AnalyticsAdmin({ campaignId, initialMetrics }: AnalyticsAdminPro
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [rows, setRows] = useState(siteMetrics);
+  const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
+
+  const filterUsers = useMemo(() => {
+    if (!(canTransferOwnership || isFullAdmin)) return [];
+    const fromUsers = adminUsersToFilterOptions(users);
+    return fromUsers.length > 0 ? fromUsers : collectAdminFilterUsers(rows);
+  }, [canTransferOwnership, isFullAdmin, users, rows]);
+
+  const filterLocations = useMemo(
+    () =>
+      mergeAdminFilterLocations(
+        collectAdminFilterLocations(rows),
+        collectAdminFilterLocationsFromUsers(users)
+      ),
+    [rows, users]
+  );
+
+  const filteredRows = useMemo(
+    () =>
+      sortAdminContentItems(
+        rows.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+        contentFilter.sortOrder,
+        (item) => item.date || item.createdAt
+      ),
+    [rows, contentFilter]
+  );
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -109,8 +158,16 @@ export function AnalyticsAdmin({ campaignId, initialMetrics }: AnalyticsAdminPro
         </Button>
       </div>
 
+      <AdminContentFilterBar
+        filter={contentFilter}
+        onChange={setContentFilter}
+        users={filterUsers}
+        plans={contentPlans}
+        locations={filterLocations}
+      />
+
       <AdminDataTable
-        data={rows}
+        data={filteredRows}
         searchKeys={["date", "city", "page"]}
         columns={[
           { key: "date", label: "تاریخ", render: (item) => formatPersianDate(item.date) },

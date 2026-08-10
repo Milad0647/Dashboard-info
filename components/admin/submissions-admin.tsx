@@ -1,9 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FileSpreadsheet, Loader2, Upload } from "lucide-react";
+import {
+  AdminContentFilterBar,
+  adminUsersToFilterOptions,
+  collectAdminFilterLocations,
+  collectAdminFilterLocationsFromUsers,
+  collectAdminFilterUsers,
+  DEFAULT_ADMIN_CONTENT_FILTER,
+  matchesAdminContentFilter,
+  mergeAdminFilterLocations,
+  sortAdminContentItems,
+  type AdminContentFilterState,
+} from "@/components/admin/admin-content-filter-bar";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
 import { Badge } from "@/components/ui/badge";
@@ -18,16 +30,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { updateSubmissionAction, deleteSubmissionAction } from "@/lib/actions/admin-actions";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
-import type { CampaignSubmission } from "@/lib/types";
+import type { AdminUser, CampaignSubmission } from "@/lib/types";
 import { redirectIfUnauthorized } from "@/lib/client/auth-session";
 import { formatPersianDate, formatPersianNumber, getStatusLabel, maskEmail, maskPhone } from "@/lib/utils";
 
 interface SubmissionsAdminProps {
   campaignId: string;
   initialSubmissions: CampaignSubmission[];
+  contentPlans?: string[];
+  isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
+  users?: AdminUser[];
 }
 
-export function SubmissionsAdmin({ campaignId, initialSubmissions }: SubmissionsAdminProps) {
+export function SubmissionsAdmin({
+  campaignId,
+  initialSubmissions,
+  contentPlans = [],
+  isFullAdmin = false,
+  canTransferOwnership = false,
+  users = [],
+}: SubmissionsAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("submissions");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,10 +60,36 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
   const [rejectionReason, setRejectionReason] = useState("");
   const [uploading, setUploading] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
 
   useEffect(() => {
     setSubmissions(initialSubmissions);
   }, [initialSubmissions]);
+
+  const filterUsers = useMemo(() => {
+    if (!(canTransferOwnership || isFullAdmin)) return [];
+    const fromUsers = adminUsersToFilterOptions(users);
+    return fromUsers.length > 0 ? fromUsers : collectAdminFilterUsers(submissions);
+  }, [canTransferOwnership, isFullAdmin, users, submissions]);
+
+  const filterLocations = useMemo(
+    () =>
+      mergeAdminFilterLocations(
+        collectAdminFilterLocations(submissions),
+        collectAdminFilterLocationsFromUsers(users)
+      ),
+    [submissions, users]
+  );
+
+  const filteredSubmissions = useMemo(
+    () =>
+      sortAdminContentItems(
+        submissions.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+        contentFilter.sortOrder,
+        (item) => item.updatedAt || item.createdAt
+      ),
+    [submissions, contentFilter]
+  );
 
   const applyLocalStatus = (
     id: string,
@@ -202,8 +251,16 @@ export function SubmissionsAdmin({ campaignId, initialSubmissions }: Submissions
         }}
       />
 
+      <AdminContentFilterBar
+        filter={contentFilter}
+        onChange={setContentFilter}
+        users={filterUsers}
+        plans={contentPlans}
+        locations={filterLocations}
+      />
+
       <AdminDataTable
-        data={submissions}
+        data={filteredSubmissions}
         searchKeys={["title", "participantName", "submissionType"]}
         columns={[
           { key: "title", label: "عنوان" },

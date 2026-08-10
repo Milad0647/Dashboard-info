@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,6 +15,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AdminContentFilterBar,
+  adminUsersToFilterOptions,
+  collectAdminFilterLocations,
+  collectAdminFilterLocationsFromUsers,
+  collectAdminFilterUsers,
+  DEFAULT_ADMIN_CONTENT_FILTER,
+  matchesAdminContentFilter,
+  mergeAdminFilterLocations,
+  sortAdminContentItems,
+  type AdminContentFilterState,
+} from "@/components/admin/admin-content-filter-bar";
 import { AdminDataTable } from "@/components/admin/admin-data-table";
 import { adminCreatedAtTableColumn } from "@/components/admin/admin-created-at";
 import { adminOwnerTableColumn } from "@/components/admin/admin-owner-badge";
@@ -40,7 +52,7 @@ import {
   type MeetingTaskInput,
 } from "@/lib/meeting-tasks";
 import { todayISO } from "@/lib/jalali";
-import type { MeetingWithTasks } from "@/lib/types";
+import type { AdminUser, MeetingWithTasks } from "@/lib/types";
 import { cn, formatPersianDate } from "@/lib/utils";
 
 const schema = z.object({
@@ -59,6 +71,10 @@ interface MeetingsAdminProps {
   campaignId: string;
   initialMeetings: MeetingWithTasks[];
   hasMeetingsPassword: boolean;
+  contentPlans?: string[];
+  isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
+  users?: AdminUser[];
 }
 
 function taskProgress(tasks: MeetingTaskInput[]) {
@@ -72,12 +88,21 @@ function decisionSummary(decisions: MeetingDecisionInput[]) {
   return `${decisions.length} مورد`;
 }
 
-export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword }: MeetingsAdminProps) {
+export function MeetingsAdmin({
+  campaignId,
+  initialMeetings,
+  hasMeetingsPassword,
+  contentPlans = [],
+  isFullAdmin = false,
+  canTransferOwnership = false,
+  users = [],
+}: MeetingsAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("meetings");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rows, setRows] = useState(initialMeetings);
   const [meetingsPassword, setMeetingsPassword] = useState("");
+  const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const [passwordConfigured, setPasswordConfigured] = useState(hasMeetingsPassword);
   const [tasks, setTasks] = useState<MeetingTaskInput[]>([]);
   const [decisions, setDecisions] = useState<MeetingDecisionInput[]>([]);
@@ -385,6 +410,31 @@ export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword
     });
   });
 
+  const filterUsers = useMemo(() => {
+    if (!(canTransferOwnership || isFullAdmin)) return [];
+    const fromUsers = adminUsersToFilterOptions(users);
+    return fromUsers.length > 0 ? fromUsers : collectAdminFilterUsers(rows);
+  }, [canTransferOwnership, isFullAdmin, users, rows]);
+
+  const filterLocations = useMemo(
+    () =>
+      mergeAdminFilterLocations(
+        collectAdminFilterLocations(rows),
+        collectAdminFilterLocationsFromUsers(users)
+      ),
+    [rows, users]
+  );
+
+  const filteredRows = useMemo(
+    () =>
+      sortAdminContentItems(
+        rows.filter((item) => matchesAdminContentFilter(item, contentFilter)),
+        contentFilter.sortOrder,
+        (item) => item.meetingDate || item.updatedAt || item.createdAt
+      ),
+    [rows, contentFilter]
+  );
+
   return (
     <div className="space-y-4">
       {tutorialModal}
@@ -400,6 +450,14 @@ export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword
           افزودن جلسه
         </Button>
       </div>
+
+      <AdminContentFilterBar
+        filter={contentFilter}
+        onChange={setContentFilter}
+        users={filterUsers}
+        plans={contentPlans}
+        locations={filterLocations}
+      />
 
       <Card>
         <CardHeader>
@@ -442,7 +500,7 @@ export function MeetingsAdmin({ campaignId, initialMeetings, hasMeetingsPassword
       </Card>
 
       <AdminDataTable
-        data={rows}
+        data={filteredRows}
         searchKeys={["title", "location", "discussionSummary"]}
         columns={[
           { key: "title", label: "عنوان" },

@@ -4,12 +4,10 @@ import {
   ArrowUpDown,
   Building2,
   CalendarRange,
-  Filter,
   MapPin,
   RotateCcw,
   Search,
   Sparkles,
-  UserRound,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -284,6 +282,84 @@ export function collectAdminFilterLocations(items: Ownable[]): AdminFilterLocati
   return { provinces, citiesByProvince: citiesRecord };
 }
 
+export function collectAdminFilterLocationsFromUsers(
+  users: Array<{ province?: string | null; city?: string | null }>
+): AdminFilterLocations {
+  const provinceSet = new Set<string>();
+  const citiesByProvince = new Map<string, Set<string>>();
+
+  for (const user of users) {
+    const province = user.province?.trim();
+    if (!province) continue;
+    provinceSet.add(province);
+    if (!citiesByProvince.has(province)) {
+      citiesByProvince.set(province, new Set());
+    }
+    const city = user.city?.trim();
+    if (city) citiesByProvince.get(province)?.add(city);
+  }
+
+  const provinces = [...provinceSet].sort((a, b) => a.localeCompare(b, "fa"));
+  const citiesRecord: Record<string, string[]> = {};
+  for (const province of provinces) {
+    citiesRecord[province] = [...(citiesByProvince.get(province) ?? [])].sort((a, b) =>
+      a.localeCompare(b, "fa")
+    );
+  }
+
+  return { provinces, citiesByProvince: citiesRecord };
+}
+
+export function mergeAdminFilterLocations(
+  ...lists: AdminFilterLocations[]
+): AdminFilterLocations {
+  const provinceSet = new Set<string>();
+  const citiesByProvince = new Map<string, Set<string>>();
+
+  for (const list of lists) {
+    for (const province of list.provinces) {
+      provinceSet.add(province);
+      if (!citiesByProvince.has(province)) {
+        citiesByProvince.set(province, new Set());
+      }
+      for (const city of list.citiesByProvince[province] ?? []) {
+        citiesByProvince.get(province)?.add(city);
+      }
+    }
+  }
+
+  const provinces = [...provinceSet].sort((a, b) => a.localeCompare(b, "fa"));
+  const citiesRecord: Record<string, string[]> = {};
+  for (const province of provinces) {
+    citiesRecord[province] = [...(citiesByProvince.get(province) ?? [])].sort((a, b) =>
+      a.localeCompare(b, "fa")
+    );
+  }
+
+  return { provinces, citiesByProvince: citiesRecord };
+}
+
+export function adminUsersToFilterOptions(
+  users: Array<{
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    province?: string | null;
+    city?: string | null;
+    companyType?: UserCompanyType | null;
+  }>
+): AdminFilterUserOption[] {
+  return users
+    .map((user) => ({
+      key: user.id,
+      label: user.name?.trim() || user.email?.trim() || "کاربر",
+      province: user.province,
+      city: user.city,
+      companyType: user.companyType ?? null,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, "fa"));
+}
+
 export function adminContentFilterResetKey(
   filter: AdminContentFilterState,
   ...extras: Array<string | number | boolean | null | undefined>
@@ -305,8 +381,8 @@ export function adminContentFilterResetKey(
 }
 
 const SORT_OPTIONS = [
-  { value: "newest", label: "جدیدترین" },
-  { value: "oldest", label: "قدیمی‌ترین" },
+  { value: "newest", label: "جدیدترین آپلود" },
+  { value: "oldest", label: "قدیمی‌ترین آپلود" },
   { value: "title", label: "عنوان" },
   { value: "default", label: "ترتیب پیش‌فرض" },
 ];
@@ -341,9 +417,8 @@ export function AdminContentFilterBar({
       : (locations.citiesByProvince[filter.province] ?? []);
 
   const userLocked = filter.userKey !== ADMIN_FILTER_ALL;
-  const selectedUser = userLocked ? users.find((user) => user.key === filter.userKey) : undefined;
-  const provinceLocked = Boolean(userLocked && selectedUser?.province);
-  const cityLocked = Boolean(userLocked && selectedUser?.city);
+  const provinceLocked = userLocked && filter.province !== ADMIN_FILTER_ALL;
+  const cityLocked = userLocked && filter.city !== ADMIN_FILTER_ALL;
 
   const active =
     filter.userKey !== ADMIN_FILTER_ALL ||
@@ -399,7 +474,7 @@ export function AdminContentFilterBar({
   };
 
   const userOptions = [
-    { value: ADMIN_FILTER_ALL, label: "همه کاربران" },
+    { value: ADMIN_FILTER_ALL, label: "همه شرکت‌ها" },
     ...users.map((user) => ({
       value: user.key,
       label: user.label,
@@ -450,16 +525,16 @@ export function AdminContentFilterBar({
   };
 
   return (
-    <div className="mb-4 flex flex-col gap-3 rounded-xl border bg-card/60 p-4 text-right" dir="rtl">
+    <div className="mb-4 flex flex-col gap-4 rounded-xl border bg-card/60 p-4 text-right" dir="rtl">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-medium">
-          <Filter className="h-4 w-4 text-primary" />
-          فیلتر و مرتب‌سازی محتوا
+          <MapPin className="h-4 w-4 shrink-0 text-primary" />
+          <span>فیلتر و مرتب‌سازی محتوای کمپین</span>
         </div>
         {active && (
           <Button type="button" variant="outline" size="sm" className="gap-2" onClick={resetFilters}>
             <RotateCcw className="h-4 w-4" />
-            ریست فیلتر
+            بازگشت به پیش‌فرض
           </Button>
         )}
       </div>
@@ -485,15 +560,15 @@ export function AdminContentFilterBar({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
         {users.length > 0 && (
           <SearchableSelect
             value={filter.userKey}
             onValueChange={setUserKey}
             options={userOptions}
-            placeholder="کاربر"
-            searchPlaceholder="جستجوی کاربر..."
-            leadingIcon={<UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />}
+            placeholder="شرکت"
+            searchPlaceholder="جستجوی شرکت..."
+            leadingIcon={<Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />}
           />
         )}
 
@@ -505,7 +580,6 @@ export function AdminContentFilterBar({
           options={companyTypeOptions}
           placeholder="نوع شرکت"
           searchPlaceholder="جستجوی نوع شرکت..."
-          leadingIcon={<Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />}
         />
 
         <SearchableSelect
@@ -515,7 +589,6 @@ export function AdminContentFilterBar({
           placeholder="استان"
           searchPlaceholder="جستجوی استان..."
           disabled={provinceLocked}
-          leadingIcon={<MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />}
         />
 
         <SearchableSelect
@@ -547,6 +620,27 @@ export function AdminContentFilterBar({
             <SelectItem value="this_week">۷ روز اخیر</SelectItem>
             <SelectItem value="this_month">۳۰ روز اخیر</SelectItem>
             <SelectItem value="custom">تاریخ دستی</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filter.sortOrder}
+          onValueChange={(value) =>
+            onChange({ ...filter, sortOrder: value as AdminContentSort })
+          }
+        >
+          <SelectTrigger className="w-full">
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <SelectValue placeholder="ترتیب نمایش" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            {sortOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
@@ -587,18 +681,29 @@ export function AdminContentFilterBar({
             leadingIcon={<Sparkles className="h-4 w-4 shrink-0 text-amber-500" />}
           />
         )}
-
-        <SearchableSelect
-          value={filter.sortOrder}
-          onValueChange={(sortOrder) =>
-            onChange({ ...filter, sortOrder: sortOrder as AdminContentSort })
-          }
-          options={sortOptions}
-          placeholder="ترتیب نمایش"
-          searchPlaceholder="جستجوی ترتیب..."
-          leadingIcon={<ArrowUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
-        />
       </div>
+
+      {filter.planLabels.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground">موضوع‌های انتخاب‌شده:</span>
+          {filter.planLabels.map((label) => (
+            <Badge key={label} variant="secondary" className="gap-1 pl-1">
+              {formatPlanLabelDisplay(label)}
+              <button
+                type="button"
+                className="rounded-sm p-0.5 hover:bg-muted"
+                onClick={() => togglePlan(label)}
+                aria-label={`حذف ${label}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+          <Button type="button" variant="ghost" size="sm" onClick={() => onChange({ ...filter, planLabels: [] })}>
+            پاک کردن موضوع‌ها
+          </Button>
+        </div>
+      )}
 
       {filter.datePreset === "custom" && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -620,24 +725,6 @@ export function AdminContentFilterBar({
               placeholder="تا تاریخ"
             />
           </div>
-        </div>
-      )}
-
-      {filter.planLabels.length > 0 && (
-        <div className="flex flex-wrap items-center justify-start gap-2">
-          {filter.planLabels.map((label) => (
-            <Badge key={label} variant="secondary" className="gap-1 pl-1">
-              {formatPlanLabelDisplay(label)}
-              <button
-                type="button"
-                className="rounded-sm p-0.5 hover:bg-muted"
-                onClick={() => togglePlan(label)}
-                aria-label={`حذف ${label}`}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
         </div>
       )}
     </div>

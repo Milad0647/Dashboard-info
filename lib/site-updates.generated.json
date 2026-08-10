@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "dc8d6a3568ec3cc12a3073e115b89735ace1ffde",
+      "committedAt": "2026-08-10T11:31:01+03:30",
+      "title": "افزودن فیلتر جستجو، استان، شهر و تاریخ به صفحه داشبورد مدیر و کارفرما",
+      "subject": "Add content filters to admin home dashboard"
+    },
+    {
       "hash": "8c25ee193a423d3ccf3da7b219a598ecb5b6e5c3",
       "committedAt": "2026-08-10T11:14:47+03:30",
       "title": "افزودن فیلتر جستجو، استان، شهر و تاریخ به همه بخش‌های داشبورد مدیر",
