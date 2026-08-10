@@ -72,7 +72,7 @@ const schema = z
     startDate: z.string().min(1, "تاریخ شروع الزامی است"),
     endDate: z.string().min(1, "تاریخ پایان الزامی است"),
     audienceType: z.enum(["all", "region", "users"]),
-    audienceRegion: z.enum(["north", "south", "east", "west"]).nullable().optional(),
+    audienceRegion: z.enum(USER_REGIONS).nullable().optional(),
     actionType: z.enum(["none", "custom_url", "system"]),
     actionLabel: z.string().optional(),
     actionUrl: z.string().optional(),

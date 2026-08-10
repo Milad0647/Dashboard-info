@@ -43,6 +43,7 @@ import { normalizePlanLabels } from "@/lib/content-topics";
 import { normalizeSocialPostLinkEntries } from "@/lib/social-posts";
 import { generateId } from "@/lib/utils";
 import { hashPassword } from "@/lib/auth/password";
+import { normalizeUserRegion } from "@/lib/user-regions";
 
 function resolvePlanFields(data: Partial<Ownable>) {
   const planLabels = normalizePlanLabels(data.planLabels, data.planLabel);
@@ -181,13 +182,7 @@ export async function pgSaveUser(data: {
   const now = new Date().toISOString();
   const province = data.province?.trim() || null;
   const city = data.city?.trim() || null;
-  const region =
-    data.region === "north" ||
-    data.region === "south" ||
-    data.region === "east" ||
-    data.region === "west"
-      ? data.region
-      : null;
+  const region = normalizeUserRegion(data.region);
   const companyType =
     data.companyType === "distribution" || data.companyType === "regional_electricity"
       ? data.companyType
@@ -272,10 +267,7 @@ export async function pgSaveUser(data: {
 
 export async function pgUpdateUserRegion(userId: string, region: string | null) {
   const sql = getSql();
-  const normalized =
-    region === "north" || region === "south" || region === "east" || region === "west"
-      ? region
-      : null;
+  const normalized = normalizeUserRegion(region);
   await sql`UPDATE users SET region = ${normalized} WHERE id = ${userId}`;
   return { success: true as const };
 }
@@ -288,13 +280,7 @@ export async function pgUpdateUserClassifications(
   // Ensure column exists on older deployments that have not run db:migrate yet.
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS company_type TEXT`;
 
-  const region =
-    data.region === "north" ||
-    data.region === "south" ||
-    data.region === "east" ||
-    data.region === "west"
-      ? data.region
-      : null;
+  const region = normalizeUserRegion(data.region);
   const companyType =
     data.companyType === "distribution" || data.companyType === "regional_electricity"
       ? data.companyType

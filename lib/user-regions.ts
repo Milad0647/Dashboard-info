@@ -1,4 +1,4 @@
-export const USER_REGIONS = ["north", "south", "east", "west"] as const;
+export const USER_REGIONS = ["north", "south", "east", "west", "center"] as const;
 
 export type UserRegion = (typeof USER_REGIONS)[number];
 
@@ -7,6 +7,7 @@ export const userRegionLabels: Record<UserRegion, string> = {
   south: "جنوب",
   east: "شرق",
   west: "غرب",
+  center: "مرکز",
 };
 
 export function isUserRegion(value: unknown): value is UserRegion {

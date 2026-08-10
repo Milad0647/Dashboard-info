@@ -11,6 +11,7 @@ import type {
 } from "@/lib/types";
 import { isDirectiveActionType, isDirectiveSystemAction } from "@/lib/directive-cta";
 import type { UserRegion } from "@/lib/user-regions";
+import { normalizeUserRegion } from "@/lib/user-regions";
 import { toDateOnlyString } from "@/lib/jalali";
 import { generateId } from "@/lib/utils";
 
@@ -50,10 +51,7 @@ function mapAudienceType(value: unknown): DirectiveAudienceType {
 }
 
 function mapRegion(value: unknown): UserRegion | null {
-  if (value === "north" || value === "south" || value === "east" || value === "west") {
-    return value;
-  }
-  return null;
+  return normalizeUserRegion(value);
 }
 
 function mapSmsStatus(value: unknown): DirectiveSmsStatus {

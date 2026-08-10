@@ -57,7 +57,7 @@ const schema = z.object({
   password: z.string().optional(),
   province: z.string().optional(),
   city: z.string().optional(),
-  region: z.enum(["north", "south", "east", "west"]).nullable().optional(),
+  region: z.enum(USER_REGIONS).nullable().optional(),
   companyType: z.enum(["distribution", "regional_electricity"]).nullable().optional(),
   phone: z.string().optional(),
   campaignIds: z.array(z.string()),

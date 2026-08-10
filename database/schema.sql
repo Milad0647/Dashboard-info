@@ -215,7 +215,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS region TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS account_manager_name TEXT;
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_region_check;
 ALTER TABLE users ADD CONSTRAINT users_region_check
-  CHECK (region IS NULL OR region IN ('north', 'south', 'east', 'west'));
+  CHECK (region IS NULL OR region IN ('north', 'south', 'east', 'west', 'center'));
 
 CREATE TABLE IF NOT EXISTS user_campaign_access (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -797,7 +797,7 @@ CREATE TABLE IF NOT EXISTS campaign_directives (
   letter_mime_type TEXT,
   letter_file_size INT NOT NULL DEFAULT 0,
   audience_type TEXT NOT NULL DEFAULT 'all' CHECK (audience_type IN ('all', 'region', 'users')),
-  audience_region TEXT CHECK (audience_region IS NULL OR audience_region IN ('north', 'south', 'east', 'west')),
+  audience_region TEXT CHECK (audience_region IS NULL OR audience_region IN ('north', 'south', 'east', 'west', 'center')),
   action_type TEXT NOT NULL DEFAULT 'none' CHECK (action_type IN ('none', 'custom_url', 'system')),
   action_label TEXT,
   action_url TEXT,
@@ -821,6 +821,11 @@ ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS action_label TEXT;
 ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS action_url TEXT;
 ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS system_action TEXT;
 ALTER TABLE campaign_directives ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+
+-- Keep audience_region check in sync for existing deployments (CREATE TABLE IF NOT EXISTS won't alter it).
+ALTER TABLE campaign_directives DROP CONSTRAINT IF EXISTS campaign_directives_audience_region_check;
+ALTER TABLE campaign_directives ADD CONSTRAINT campaign_directives_audience_region_check
+  CHECK (audience_region IS NULL OR audience_region IN ('north', 'south', 'east', 'west', 'center'));
 
 UPDATE campaign_directives
 SET end_date = due_date

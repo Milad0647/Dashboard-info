@@ -36,6 +36,7 @@ import {
 import { truncateMeetingSummary } from "@/lib/meeting-preview";
 import { parseSocialPostLinkEntries } from "@/lib/social-posts";
 import { toDateOnlyString } from "@/lib/jalali";
+import { normalizeUserRegion } from "@/lib/user-regions";
 
 function toDateString(value: unknown): string {
   return toDateOnlyString(value) ?? "";
@@ -642,9 +643,7 @@ export function mapUserFromDb(
     role: row.role,
     province: row.province ?? null,
     city: row.city ?? null,
-    region: row.region === "north" || row.region === "south" || row.region === "east" || row.region === "west"
-      ? row.region
-      : null,
+    region: normalizeUserRegion(row.region),
     companyType:
       row.company_type === "distribution" || row.company_type === "regional_electricity"
         ? row.company_type
