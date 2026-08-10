@@ -596,18 +596,18 @@ export function RawMediaAdmin({
 
       <Dialog open={dialogOpen} onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}>
         <DialogContent
-          className="max-w-lg"
+          className="!flex max-h-[92vh] max-w-lg flex-col gap-0 overflow-hidden p-0"
           onPointerDownOutside={(event) => event.preventDefault()}
           onInteractOutside={(event) => event.preventDefault()}
         >
-          <DialogHeader>
+          <DialogHeader className="shrink-0 space-y-1.5 border-b px-6 py-4 pe-12">
             <DialogTitle>{editingId ? "ویرایش راش تصویر" : "آپلود راش تصویر"}</DialogTitle>
             <DialogDescription>
               همه فرمت‌های تصویر و ویدیو با حجم بالا — حداکثر هر فایل{" "}
               {formatStorageBytes(RAW_MEDIA_MAX_FILE_BYTES)}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
             <div className="space-y-2">
               <Label className={cn(highlightTitle && "text-destructive")}>عنوان</Label>
               <Input
@@ -691,6 +691,8 @@ export function RawMediaAdmin({
                 <p className="mt-2 text-xs text-destructive">فایل هنوز آپلود نشده است.</p>
               )}
             </div>
+          </div>
+          <div className="shrink-0 space-y-2 border-t bg-card px-6 py-4">
             <Button className="w-full" disabled={isPending} onClick={handleSave}>
               ذخیره
             </Button>

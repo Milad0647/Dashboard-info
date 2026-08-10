@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "244f37ffc87b5319a3b3c0cec92d3c281770023e",
+      "committedAt": "2026-08-10T11:00:48+03:30",
+      "title": "حذف هاله مشکی از تصاویر پس‌زمینه صفحه ورود",
+      "subject": "Remove black overlay from login backgrounds"
+    },
+    {
       "hash": "3605e589f20666a540ee453b8d8faaf2d93b6d68",
       "committedAt": "2026-08-06T16:25:06+03:30",
       "title": "افزودن بخش محتوای برگشتی و امکان بازبینی محتوا",
