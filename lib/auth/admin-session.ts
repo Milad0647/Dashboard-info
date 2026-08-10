@@ -22,9 +22,6 @@ export function verifyAdminCredentials(email: string, password: string): boolean
   return email.trim().toLowerCase() === adminEmail && password === adminPassword;
 }
 
-/** Prefer database override, then fall back to ADMIN_EMAIL / ADMIN_PASSWORD. */
-export { verifyEffectiveAdminCredentials } from "@/lib/auth/admin-credentials";
-
 export {
   buildEnvAdminPayload as buildAdminSessionToken,
   createSignedSessionToken as createAdminSessionToken,

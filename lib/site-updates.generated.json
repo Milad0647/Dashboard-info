@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "12df3d4c65eba8a93e39fe9566edd43e7e4d9a9f",
+      "committedAt": "2026-08-10T12:43:42+03:30",
+      "title": "رفع مشکل استقرار داشبورد پس از تغییر مسیر بیلد",
+      "subject": "Fix Docker COPY paths for custom Next distDir"
+    },
+    {
       "hash": "528ef7644c65c24eb845ef2609ab0d9ae0881d22",
       "committedAt": "2026-08-10T11:43:04+03:30",
       "title": "پایدارتر شدن آماده‌سازی سرویس قبل از دریافت ترافیک",

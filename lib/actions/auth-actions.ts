@@ -6,8 +6,8 @@ import {
   getAdminSessionCookieName,
   getAdminSessionCookieOptions,
   getLegacyMockCookieName,
-  verifyEffectiveAdminCredentials,
 } from "@/lib/auth/admin-session";
+import { verifyEffectiveAdminCredentials } from "@/lib/auth/admin-credentials";
 import {
   createAdminSessionTokenSync,
   createUserSessionTokenSync,

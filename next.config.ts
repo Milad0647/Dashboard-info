@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
   // Keep yazl outside the bundler so streaming ZIP works reliably at runtime.
   serverExternalPackages: ["yazl"],
+  // Docker/Coolify builds are memory-constrained; lint locally / in CI instead.
+  eslint: {
+    ignoreDuringBuilds: process.env.DOCKER_BUILD === "1",
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "2gb",

@@ -17,7 +17,10 @@ RUN mkdir -p public
 # Must be set at build time so action IDs decrypt consistently after deploy.
 ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
 ENV NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
-# DATABASE_URL is injected at runtime by Compose; db host is unavailable during image build
+# DATABASE_URL is injected at runtime by Compose; db host is unavailable during image build.
+# Raise heap to avoid Coolify/BuildKit OOM (exit 255) during typecheck/trace.
+ENV NODE_OPTIONS=--max-old-space-size=4096
+ENV DOCKER_BUILD=1
 RUN DATABASE_URL= npm run build
 
 FROM base AS runner

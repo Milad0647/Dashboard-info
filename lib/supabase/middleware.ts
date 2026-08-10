@@ -1,4 +1,3 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   getAdminSessionCookieName,
@@ -14,37 +13,34 @@ function redirectAuthenticatedFromLogin(request: NextRequest) {
   return NextResponse.redirect(url);
 }
 
-function handleEnvAdminAuth(request: NextRequest) {
-  return verifyAdminSessionToken(request.cookies.get(getAdminSessionCookieName())?.value).then(
-    (isAuthenticated) => {
-      const isLoginRoute = request.nextUrl.pathname.startsWith("/admin/login");
-      const isAdminRoute =
-        request.nextUrl.pathname.startsWith("/admin") && !isLoginRoute;
-
-      if (isAdminRoute && !isAuthenticated) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/admin/login";
-        const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-        if (nextPath.startsWith("/admin") && nextPath !== "/admin/login") {
-          url.searchParams.set("next", nextPath);
-        }
-        return NextResponse.redirect(url);
-      }
-
-      // Intentionally do not redirect authenticated cookies away from /admin/login.
-      // Middleware only verifies signature/expiry; getAuthSession() also checks
-      // sessionVersion. Redirecting revoked sessions back to the panel caused an
-      // infinite loop that looked like admin pages never loading.
-      // The login page performs the full session check and redirects when valid.
-      return NextResponse.next({ request });
-    }
+async function handleEnvAdminAuth(request: NextRequest) {
+  const isAuthenticated = await verifyAdminSessionToken(
+    request.cookies.get(getAdminSessionCookieName())?.value
   );
+  const isLoginRoute = request.nextUrl.pathname.startsWith("/admin/login");
+  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin") && !isLoginRoute;
+
+  if (isAdminRoute && !isAuthenticated) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/login";
+    const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    if (nextPath.startsWith("/admin") && nextPath !== "/admin/login") {
+      url.searchParams.set("next", nextPath);
+    }
+    return NextResponse.redirect(url);
+  }
+
+  // Intentionally do not redirect authenticated cookies away from /admin/login.
+  // Middleware only verifies signature/expiry; getAuthSession() also checks
+  // sessionVersion. Redirecting revoked sessions back to the panel caused an
+  // infinite loop that looked like admin pages never loading.
+  // The login page performs the full session check and redirects when valid.
+  return NextResponse.next({ request });
 }
 
-export async function updateSession(request: NextRequest) {
-  if (isPostgresConfigured() || !isSupabaseConfigured()) {
-    return handleEnvAdminAuth(request);
-  }
+async function handleSupabaseAuth(request: NextRequest) {
+  // Keep @supabase/ssr out of the default Edge graph used by Postgres deploys.
+  const { createServerClient } = await import("@supabase/ssr");
 
   let supabaseResponse = NextResponse.next({ request });
 
@@ -86,4 +82,12 @@ export async function updateSession(request: NextRequest) {
   }
 
   return supabaseResponse;
+}
+
+export async function updateSession(request: NextRequest) {
+  if (isPostgresConfigured() || !isSupabaseConfigured()) {
+    return handleEnvAdminAuth(request);
+  }
+
+  return handleSupabaseAuth(request);
 }
