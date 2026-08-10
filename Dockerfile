@@ -31,8 +31,9 @@ RUN apk add --no-cache postgresql-client su-exec
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# next.config uses distDir: ".next-build" (not default ".next")
+COPY --from=builder --chown=nextjs:nodejs /app/.next-build/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next-build/static ./.next-build/static
 COPY --from=builder /app/database ./database
 COPY --from=builder /app/scripts ./scripts
 RUN mkdir -p /app/data/uploads /app/data/backups && chown -R nextjs:nodejs /app/data/uploads /app/data/backups /app/public

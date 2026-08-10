@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "528ef7644c65c24eb845ef2609ab0d9ae0881d22",
+      "committedAt": "2026-08-10T11:43:04+03:30",
+      "title": "پایدارتر شدن آماده‌سازی سرویس قبل از دریافت ترافیک",
+      "subject": "Add container health check for Coolify routing"
+    },
+    {
       "hash": "e5dc2c2f08294bd70a08031712feee62ac5bac23",
       "committedAt": "2026-08-10T11:35:24+03:30",
       "title": "یکسان‌سازی فیلتر و مرتب‌سازی محتوای کمپین در همه بخش‌های داشبورد مدیر و کارفرما",
