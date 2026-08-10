@@ -156,11 +156,6 @@ export function AdminLoginForm() {
         />
       ))}
 
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-black/45 via-black/35 to-black/55"
-        aria-hidden
-      />
-
       {now && timeOfDay ? (
         <div
           className="pointer-events-none absolute bottom-4 right-4 z-10 max-w-[14rem] text-right sm:bottom-6 sm:right-6 sm:max-w-none"
