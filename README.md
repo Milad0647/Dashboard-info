@@ -57,8 +57,12 @@ Or run `database/schema.sql` manually in PostgreSQL.
 
 1. Add a new **Application** in Coolify → connect GitHub repo `Dashboard-info`.
 2. Build pack: **Dockerfile** (auto-detected).
-3. Port: **3000**
-4. Health check path: `/api/health`
+3. Port: **3030**
+4. Health check (recommended so Traefik/Caddy wait until ready):
+   - Path: `/api/health`
+   - Port: `3030`
+   - Method: `GET`
+   - The image also includes a Docker `HEALTHCHECK` on the same endpoint.
 
 ### 4. Environment variables (Coolify)
 

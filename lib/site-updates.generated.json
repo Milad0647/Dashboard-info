@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "e5dc2c2f08294bd70a08031712feee62ac5bac23",
+      "committedAt": "2026-08-10T11:35:24+03:30",
+      "title": "یکسان‌سازی فیلتر و مرتب‌سازی محتوای کمپین در همه بخش‌های داشبورد مدیر و کارفرما",
+      "subject": "Match live campaign filter bar across all admin sections"
+    },
+    {
       "hash": "dc8d6a3568ec3cc12a3073e115b89735ace1ffde",
       "committedAt": "2026-08-10T11:31:01+03:30",
       "title": "افزودن فیلتر جستجو، استان، شهر و تاریخ به صفحه داشبورد مدیر و کارفرما",
