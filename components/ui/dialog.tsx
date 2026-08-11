@@ -70,7 +70,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, onPointerDownOutside, onInteractOutside, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -79,6 +79,20 @@ const DialogContent = React.forwardRef<
         "fixed left-[50%] top-[50%] z-[93] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-6 shadow-lg duration-200 sm:rounded-xl",
         className
       )}
+      onPointerDownOutside={(e) => {
+        const target = e.target as HTMLElement | null;
+        if (target?.closest("[role='listbox'], [data-radix-select-content], [data-radix-popper-content-wrapper]")) {
+          e.preventDefault();
+        }
+        onPointerDownOutside?.(e);
+      }}
+      onInteractOutside={(e) => {
+        const target = e.target as HTMLElement | null;
+        if (target?.closest("[role='listbox'], [data-radix-select-content], [data-radix-popper-content-wrapper]")) {
+          e.preventDefault();
+        }
+        onInteractOutside?.(e);
+      }}
       {...props}
     >
       {children}

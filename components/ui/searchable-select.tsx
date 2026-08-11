@@ -174,6 +174,7 @@ export function SearchableSelect({
             className="flex flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md"
             role="listbox"
             id={listId}
+            onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="shrink-0 border-b p-2">
               <div className="relative">
