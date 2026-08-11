@@ -48,6 +48,14 @@ function normalizeSearch(value: string): string {
     .replace(/\u200C/g, " ");
 }
 
+function findDialogContent(from: HTMLElement | null): HTMLElement | null {
+  if (!from) return null;
+  return (
+    (from.closest("[data-radix-dialog-content]") as HTMLElement | null) ??
+    (from.closest('[role="dialog"]') as HTMLElement | null)
+  );
+}
+
 export function SearchableSelect({
   value,
   onValueChange,
@@ -64,6 +72,7 @@ export function SearchableSelect({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,6 +95,7 @@ export function SearchableSelect({
   useLayoutEffect(() => {
     if (!open) {
       setPanelStyle(null);
+      setPortalTarget(null);
       return;
     }
 
@@ -93,6 +103,7 @@ export function SearchableSelect({
       const trigger = rootRef.current;
       if (!trigger) return;
 
+      const dialog = findDialogContent(trigger);
       const rect = trigger.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
@@ -102,9 +113,36 @@ export function SearchableSelect({
         DROPDOWN_ESTIMATED_HEIGHT,
         Math.max(160, openUp ? spaceAbove - 12 : spaceBelow - 12)
       );
+
+      // Inside a Radix Dialog: portal INTO the dialog content so the panel is not
+      // marked inert / aria-hidden (body portals are). Absolute coords are relative
+      // to the dialog box (which is position:fixed + transformed).
+      if (dialog) {
+        const dialogRect = dialog.getBoundingClientRect();
+        const width = Math.min(Math.max(rect.width, 0), dialogRect.width - 16);
+        const left = Math.min(
+          Math.max(8, rect.left - dialogRect.left),
+          Math.max(8, dialogRect.width - width - 8)
+        );
+
+        setPortalTarget(dialog);
+        setPanelStyle({
+          position: "absolute",
+          left,
+          width,
+          maxHeight,
+          zIndex: 60,
+          ...(openUp
+            ? { bottom: dialogRect.bottom - rect.top + 4 }
+            : { top: rect.bottom - dialogRect.top + 4 }),
+        });
+        return;
+      }
+
+      // Outside dialogs (filter bars, etc.): fixed to the viewport via body portal.
       const width = Math.min(Math.max(rect.width, 0), window.innerWidth - 16);
       const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
-
+      setPortalTarget(document.body);
       setPanelStyle({
         position: "fixed",
         left,
@@ -165,79 +203,72 @@ export function SearchableSelect({
     setQuery("");
   };
 
-  const portalContainer = useMemo(() => {
-    if (!open || typeof document === "undefined") return null;
-    const el = rootRef.current;
-    if (!el) return document.body;
-    const radixPortal = el.closest("[data-radix-portal]");
-    return (radixPortal as HTMLElement) ?? document.body;
-  }, [open]);
+  const panel =
+    open && !disabled && panelStyle && portalTarget ? (
+      <div
+        ref={panelRef}
+        style={panelStyle}
+        data-searchable-select-panel=""
+        className="pointer-events-auto flex flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md"
+        role="listbox"
+        id={listId}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <div className="shrink-0 border-b p-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={inputRef}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-9 pr-8 text-sm"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && filtered[0]) {
+                  event.preventDefault();
+                  handleSelect(filtered[0].value);
+                }
+              }}
+            />
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {filtered.length === 0 ? (
+            <p className="px-3 py-3 text-center text-sm text-muted-foreground">{emptyText}</p>
+          ) : (
+            filtered.map((option, index) => {
+              const isSelected = !clearAfterSelect && option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  title={option.label}
+                  className={cn(
+                    "relative flex w-full cursor-pointer select-none items-start py-2.5 pr-9 pl-3 text-sm outline-none",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    isSelected && "bg-accent/60",
+                    index > 0 && "border-t border-border/70"
+                  )}
+                  onClick={() => handleSelect(option.value)}
+                >
+                  <span className="absolute right-2.5 top-3 flex h-3.5 w-3.5 items-center justify-center">
+                    {isSelected ? <Check className="h-4 w-4" /> : null}
+                  </span>
+                  <span className="w-full whitespace-normal break-words text-right text-[13px] font-medium leading-relaxed">
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+    ) : null;
 
   const dropdown =
-    open && !disabled && panelStyle
-      ? createPortal(
-          <div
-            ref={panelRef}
-            style={panelStyle}
-            className="flex flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md"
-            role="listbox"
-            id={listId}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <div className="shrink-0 border-b p-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  ref={inputRef}
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={searchPlaceholder}
-                  className="h-9 pr-8 text-sm"
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && filtered[0]) {
-                      event.preventDefault();
-                      handleSelect(filtered[0].value);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {filtered.length === 0 ? (
-                <p className="px-3 py-3 text-center text-sm text-muted-foreground">{emptyText}</p>
-              ) : (
-                filtered.map((option, index) => {
-                  const isSelected = !clearAfterSelect && option.value === value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      role="option"
-                      aria-selected={isSelected}
-                      title={option.label}
-                      className={cn(
-                        "relative flex w-full cursor-default select-none items-start py-2.5 pr-9 pl-3 text-sm outline-none",
-                        "hover:bg-accent hover:text-accent-foreground",
-                        isSelected && "bg-accent/60",
-                        index > 0 && "border-t border-border/70"
-                      )}
-                      onClick={() => handleSelect(option.value)}
-                    >
-                      <span className="absolute right-2.5 top-3 flex h-3.5 w-3.5 items-center justify-center">
-                        {isSelected ? <Check className="h-4 w-4" /> : null}
-                      </span>
-                      <span className="w-full whitespace-normal break-words text-right text-[13px] font-medium leading-relaxed">
-                        {option.label}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>,
-          portalContainer || document.body
-        )
-      : null;
+    panel && portalTarget ? createPortal(panel, portalTarget) : null;
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>

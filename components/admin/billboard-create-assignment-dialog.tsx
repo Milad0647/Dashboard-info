@@ -361,8 +361,8 @@ export function BillboardCreateAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col gap-4 overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle>{isEditing ? "ویرایش تبلیغات محیطی" : "ثبت تبلیغات محیطی جدید"}</DialogTitle>
           <p className="text-sm text-muted-foreground">
             {contributorProfile?.province && contributorProfile?.city && !isEditing
@@ -372,7 +372,7 @@ export function BillboardCreateAssignmentDialog({
           </p>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pe-1">
           <div className="space-y-2">
             <Label>دسته‌بندی *</Label>
             <Select value={category} onValueChange={(value) => setCategory(value as BillboardCategory)}>

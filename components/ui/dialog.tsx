@@ -67,31 +67,39 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+function isPortaledSelectTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  return Boolean(
+    el?.closest(
+      "[data-searchable-select-panel], [role='listbox'], [data-radix-select-content], [data-radix-popper-content-wrapper]"
+    )
+  );
+}
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, onPointerDownOutside, onInteractOutside, ...props }, ref) => (
+>(({ className, children, onPointerDownOutside, onInteractOutside, onFocusOutside, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      data-radix-dialog-content=""
       className={cn(
-        "fixed left-[50%] top-[50%] z-[93] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-6 shadow-lg duration-200 sm:rounded-xl",
+        "fixed left-[50%] top-[50%] z-[93] flex w-full max-w-lg flex-col translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-6 shadow-lg duration-200 sm:rounded-xl",
         className
       )}
       onPointerDownOutside={(e) => {
-        const target = e.target as HTMLElement | null;
-        if (target?.closest("[role='listbox'], [data-radix-select-content], [data-radix-popper-content-wrapper]")) {
-          e.preventDefault();
-        }
+        if (isPortaledSelectTarget(e.target)) e.preventDefault();
         onPointerDownOutside?.(e);
       }}
       onInteractOutside={(e) => {
-        const target = e.target as HTMLElement | null;
-        if (target?.closest("[role='listbox'], [data-radix-select-content], [data-radix-popper-content-wrapper]")) {
-          e.preventDefault();
-        }
+        if (isPortaledSelectTarget(e.target)) e.preventDefault();
         onInteractOutside?.(e);
+      }}
+      onFocusOutside={(e) => {
+        if (isPortaledSelectTarget(e.target)) e.preventDefault();
+        onFocusOutside?.(e);
       }}
       {...props}
     >
