@@ -165,6 +165,14 @@ export function SearchableSelect({
     setQuery("");
   };
 
+  const portalContainer = useMemo(() => {
+    if (!open || typeof document === "undefined") return null;
+    const el = rootRef.current;
+    if (!el) return document.body;
+    const radixPortal = el.closest("[data-radix-portal]");
+    return (radixPortal as HTMLElement) ?? document.body;
+  }, [open]);
+
   const dropdown =
     open && !disabled && panelStyle
       ? createPortal(
@@ -227,7 +235,7 @@ export function SearchableSelect({
               )}
             </div>
           </div>,
-          document.body
+          portalContainer || document.body
         )
       : null;
 
