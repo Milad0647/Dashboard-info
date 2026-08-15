@@ -524,6 +524,10 @@ export function mapCampaignActivityFromDb(row: any): CampaignActivity {
       typeof row.media_scope === "string" && row.media_scope.trim()
         ? row.media_scope.trim()
         : null,
+    pressContentType:
+      typeof row.press_content_type === "string" && row.press_content_type.trim()
+        ? row.press_content_type.trim()
+        : null,
     published: row.published ?? false,
     sortOrder: row.sort_order ?? 0,
     createdAt: toIsoString(row.created_at),

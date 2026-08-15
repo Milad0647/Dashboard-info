@@ -41,7 +41,6 @@ import {
 import { MediaUpload } from "@/components/ui/media-upload";
 import { PersianDateField } from "@/components/ui/persian-date-input";
 import { applyVideoCoverToMediaItems } from "@/lib/client/activity-media-cover";
-import { getActivityTypeLabel, pressActivityTypeOptions } from "@/lib/activity-types";
 import {
   deleteCampaignActivityAction,
   fetchSocialLinkMetricsAction,
@@ -57,10 +56,16 @@ import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { todayISO } from "@/lib/jalali";
-import { isPressPublication } from "@/lib/press-publications";
+import {
+  getPressContentTypeLabel,
+  isPressContentType,
+  isPressPublication,
+  PRESS_CONTENT_TYPES,
+  PRESS_PUBLICATION_LABEL,
+} from "@/lib/press-publications";
 import { MEDIA_REPUBLISH_SCOPE_OPTIONS } from "@/lib/scoring/scoring-policy";
-import { cn, formatPersianDate } from "@/lib/utils";
-import type { ActivityMediaItem, AdminUser, CampaignActivity } from "@/lib/types";
+import { cn, ensureHttpUrl, formatPersianDate, isValidHttpUrl } from "@/lib/utils";
+import type { ActivityMediaItem, AdminUser, CampaignActivity, PressContentType } from "@/lib/types";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 
 const ACTIVITY_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
@@ -71,18 +76,31 @@ const schema = z.object({
     .string()
     .min(1, "عنوان الزامی است")
     .max(CONTENT_TITLE_MAX_LENGTH, CONTENT_TITLE_MAX_LENGTH_MESSAGE),
-  activityType: z.enum(["magazine", "newspaper"]),
+  pressContentType: z.enum([
+    "news",
+    "news_interview",
+    "report",
+    "news_report",
+    "interview",
+    "other",
+  ]),
   mediaScope: z.enum(["national", "local"]),
   activityDate: z.string(),
   location: z.string().optional(),
   link: z
     .string()
     .optional()
-    .refine((value) => !value?.trim() || z.string().url().safeParse(value.trim()).success, {
+    .refine((value) => !value?.trim() || isValidHttpUrl(value), {
       message: "لینک معتبر وارد کنید",
     }),
   description: z.string().optional(),
 });
+
+function resolvePressContentType(
+  value: string | null | undefined
+): PressContentType {
+  return isPressContentType(value) ? value : "news";
+}
 
 interface PressPublicationsAdminProps {
   campaignId: string;
@@ -141,7 +159,7 @@ export function PressPublicationsAdmin({
     resolver: zodResolver(schema),
     defaultValues: {
       title: "",
-      activityType: "magazine" as const,
+      pressContentType: "news" as const,
       mediaScope: "national" as const,
       activityDate: todayISO(),
       location: "",
@@ -161,7 +179,7 @@ export function PressPublicationsAdmin({
       setEditOwnerUserId(activity.ownerUserId ?? null);
       form.reset({
         title: activity.title,
-        activityType: activity.activityType === "newspaper" ? "newspaper" : "magazine",
+        pressContentType: resolvePressContentType(activity.pressContentType),
         mediaScope: activity.mediaScope === "local" ? "local" : "national",
         activityDate: activity.activityDate,
         location: activity.location,
@@ -205,7 +223,7 @@ export function PressPublicationsAdmin({
       setHighlightFields([]);
       form.reset({
         title: "",
-        activityType: "magazine",
+        pressContentType: "news",
         mediaScope: "national",
         activityDate: todayISO(),
         location: "",
@@ -223,7 +241,7 @@ export function PressPublicationsAdmin({
     setEditOwnerUserId(activity.ownerUserId ?? null);
     form.reset({
       title: activity.title,
-      activityType: activity.activityType === "newspaper" ? "newspaper" : "magazine",
+      pressContentType: resolvePressContentType(activity.pressContentType),
       mediaScope: activity.mediaScope === "local" ? "local" : "national",
       activityDate: activity.activityDate,
       location: activity.location,
@@ -253,17 +271,20 @@ export function PressPublicationsAdmin({
   };
 
   const handleFetchFromLink = () => {
-    const link = form.getValues("link")?.trim() ?? "";
-    const activityType = form.getValues("activityType");
+    const rawLink = form.getValues("link")?.trim() ?? "";
+    const link = ensureHttpUrl(rawLink);
     if (!link) {
       toast.error("ابتدا لینک را وارد کنید");
       return;
+    }
+    if (link !== rawLink) {
+      form.setValue("link", link);
     }
 
     startTransition(async () => {
       const result = await fetchSocialLinkMetricsAction({
         url: link,
-        platform: activityType,
+        platform: "magazine",
       });
       if (!result.success) {
         toast.error(result.error);
@@ -324,10 +345,10 @@ export function PressPublicationsAdmin({
         campaignId,
         id: editingId ?? undefined,
         title: data.title,
-        activityType: data.activityType,
+        activityType: "magazine",
         activityDate: data.activityDate,
         location: data.location?.trim() ?? "",
-        link: data.link?.trim() || "",
+        link: ensureHttpUrl(data.link?.trim() || ""),
         imageUrl: filledMedia.find((item) => item.type === "image")?.url ?? null,
         videoUrl: filledMedia.find((item) => item.type === "video")?.url ?? null,
         mediaItems: filledMedia,
@@ -335,6 +356,7 @@ export function PressPublicationsAdmin({
         description: data.description || null,
         isCreative: false,
         mediaScope: data.mediaScope,
+        pressContentType: data.pressContentType,
         published: true,
         planLabels,
         planLabel: planLabels[0] ?? null,
@@ -356,10 +378,10 @@ export function PressPublicationsAdmin({
         id: savedId,
         campaignId,
         title: data.title,
-        activityType: data.activityType,
+        activityType: "magazine",
         activityDate: data.activityDate,
         location: data.location?.trim() ?? "",
-        link: data.link?.trim() || "",
+        link: ensureHttpUrl(data.link?.trim() || ""),
         imageUrl: primaryImage,
         videoUrl: primaryVideo,
         mediaItems: filledMedia,
@@ -367,6 +389,7 @@ export function PressPublicationsAdmin({
         description: data.description || null,
         isCreative: false,
         mediaScope: data.mediaScope,
+        pressContentType: data.pressContentType,
         published: true,
         planLabels,
         planLabel: planLabels[0] ?? null,
@@ -465,7 +488,10 @@ export function PressPublicationsAdmin({
         meta={
           previewActivity ? (
             <p className="text-xs text-muted-foreground">
-              {getActivityTypeLabel(previewActivity.activityType)}
+              {PRESS_PUBLICATION_LABEL}
+              {getPressContentTypeLabel(previewActivity.pressContentType)
+                ? ` · ${getPressContentTypeLabel(previewActivity.pressContentType)}`
+                : ""}
               {previewActivity.location ? ` · ${previewActivity.location}` : ""}
             </p>
           ) : null
@@ -473,6 +499,10 @@ export function PressPublicationsAdmin({
         details={
           previewActivity
             ? [
+                {
+                  label: "نوع محتوا",
+                  value: getPressContentTypeLabel(previewActivity.pressContentType) || "—",
+                },
                 { label: "تاریخ", value: formatPersianDate(previewActivity.activityDate) },
                 adminCreatedAtDetail(previewActivity.createdAt),
                 {
@@ -541,16 +571,18 @@ export function PressPublicationsAdmin({
               />
             </div>
             <div className="space-y-2">
-              <Label>نوع</Label>
+              <Label>نوع محتوا</Label>
               <Select
-                value={form.watch("activityType")}
-                onValueChange={(value) => form.setValue("activityType", value as "magazine" | "newspaper")}
+                value={form.watch("pressContentType")}
+                onValueChange={(value) =>
+                  form.setValue("pressContentType", value as PressContentType)
+                }
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {pressActivityTypeOptions.map((type) => (
+                  {PRESS_CONTENT_TYPES.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {getActivityTypeLabel(type)}
+                      {getPressContentTypeLabel(type)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -590,6 +622,12 @@ export function PressPublicationsAdmin({
                     "min-w-0 flex-1",
                     highlightMedia && "border-destructive focus-visible:ring-destructive"
                   )}
+                  onBlur={(event) => {
+                    const normalized = ensureHttpUrl(event.target.value);
+                    if (normalized && normalized !== event.target.value) {
+                      form.setValue("link", normalized);
+                    }
+                  }}
                 />
                 <Button
                   type="button"

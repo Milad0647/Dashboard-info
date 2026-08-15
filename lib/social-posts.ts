@@ -1,4 +1,5 @@
 import type { SocialMediaPost, SocialPlatform, SocialPostLinkEntry } from "@/lib/types";
+import { ensureHttpUrl } from "@/lib/utils";
 
 export const MAX_SOCIAL_POST_LINK_ENTRIES = 200;
 
@@ -74,7 +75,7 @@ export function parseSocialPostLinkEntries(value: unknown): SocialPostLinkEntry[
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
     const record = item as Record<string, unknown>;
-    const link = typeof record.link === "string" ? record.link.trim() : "";
+    const link = ensureHttpUrl(typeof record.link === "string" ? record.link : "");
     if (!link) continue;
 
     const viewsRaw = record.views;
@@ -136,7 +137,8 @@ export function parseSocialPostLinkEntriesForEditor(
     if (!item || typeof item !== "object") continue;
     const record = item as Record<string, unknown>;
 
-    const link = typeof record.link === "string" ? record.link.trim() : "";
+    const linkRaw = typeof record.link === "string" ? record.link.trim() : "";
+    const link = linkRaw ? ensureHttpUrl(linkRaw) : "";
 
     const viewsRaw = record.views;
     const views =

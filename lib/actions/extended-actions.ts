@@ -163,8 +163,9 @@ export async function fetchSocialLinkMetricsAction(input: {
   const session = await getAuthSession();
   if (!session) return { success: false as const, error: "Unauthorized" };
 
+  const { ensureHttpUrl } = await import("@/lib/utils");
   const { fetchSocialLinkMetrics } = await import("@/lib/services/link-metrics");
-  const metrics = await fetchSocialLinkMetrics(input.url, input.platform);
+  const metrics = await fetchSocialLinkMetrics(ensureHttpUrl(input.url), input.platform);
 
   if (metrics.error || metrics.supported === false) {
     return {

@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "4b3f9736a04268e3c8700c4e35bb6997df26ba77",
+      "committedAt": "2026-08-11T13:45:50+03:30",
+      "title": "رفع کلیک و هاور دراپ‌داون استان، شهر و موضوع داخل فرم‌ها",
+      "subject": "Portal SearchableSelect into dialog content to restore clicks"
+    },
+    {
       "hash": "e5750915f03a9e82885ebc93dd4ed1c3131e295d",
       "committedAt": "2026-08-11T13:03:53+03:30",
       "title": "رفع مشکل کلیک نشدن دراپ‌داون‌ها داخل دیالوگ‌ها",

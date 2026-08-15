@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { PublicContentDetailFields } from "@/components/public/public-content-detail-fields";
-import { getActivityTypeLabel } from "@/lib/activity-types";
+import { getActivityCategoryLabel } from "@/lib/activity-types";
 import {
   downloadMedia,
   getFilenameFromUrl,
@@ -303,7 +303,7 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
         <DialogHeader className="p-4 pb-3 pe-12">
           <DialogTitle className="flex flex-wrap items-center gap-2 text-base">
             {activity.title}
-            <Badge variant="outline">{getActivityTypeLabel(activity.activityType)}</Badge>
+            <Badge variant="outline">{getActivityCategoryLabel(activity)}</Badge>
           </DialogTitle>
         </DialogHeader>
 
@@ -313,7 +313,7 @@ export function ActivityMediaDialog({ activity, open, onOpenChange }: ActivityMe
 
         <div className="space-y-3 border-t p-4">
           <PublicContentDetailFields
-            category={getActivityTypeLabel(activity.activityType)}
+            category={getActivityCategoryLabel(activity)}
             topics={activity.planLabels ?? (activity.planLabel ? [activity.planLabel] : [])}
             date={formatPersianDate(activity.activityDate)}
             ownerName={activity.ownerName}

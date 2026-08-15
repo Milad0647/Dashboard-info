@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Download, ExternalLink, Eye, FileText, Music, Play, Star } from "lucide-react";
-import { getActivityTypeLabel } from "@/lib/activity-types";
+import { getActivityCategoryLabel } from "@/lib/activity-types";
 import { toCardThumbnailUrl } from "@/lib/card-image";
 import { useFilteredOwnerGroups } from "@/lib/hooks/use-filtered-owner-groups";
 import { useCampaignSectionVisibility } from "@/lib/hooks/use-campaign-section-visibility";
@@ -86,7 +86,7 @@ function ActivityCard({
       scrollId={activity.id}
       title={activity.title}
       date={formatPersianDate(activity.activityDate)}
-      category={getActivityTypeLabel(activity.activityType)}
+      category={getActivityCategoryLabel(activity)}
       topics={activity.planLabels ?? (activity.planLabel ? [activity.planLabel] : [])}
       ownerUserId={activity.ownerUserId}
       ownerName={activity.ownerName}
@@ -121,7 +121,7 @@ function ActivityCard({
           </div>
         ) : (
           <div className="flex h-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
-            {getActivityTypeLabel(activity.activityType)}
+            {getActivityCategoryLabel(activity)}
           </div>
         )}
 
@@ -146,7 +146,7 @@ function ActivityCard({
             </Badge>
           )}
           <Badge variant="overlay" className="px-1.5 py-0 text-[10px]">
-            {getActivityTypeLabel(activity.activityType)}
+            {getActivityCategoryLabel(activity)}
           </Badge>
         </div>
         </div>

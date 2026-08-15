@@ -18,6 +18,14 @@ export type ActivityType =
   | "painting"
   | "exhibition"
   | "other";
+/** Genre of a press (magazine/newspaper) publication. */
+export type PressContentType =
+  | "news"
+  | "news_interview"
+  | "report"
+  | "news_report"
+  | "interview"
+  | "other";
 export type SocialContentType = "image" | "text" | "video" | "carousel" | "story" | "reel" | "audio";
 export type SessionRole = "admin" | "contributor" | "client";
 
@@ -699,6 +707,8 @@ export interface CampaignActivity extends Ownable {
   isCreative: boolean;
   /** Coverage scope for press republication scoring (national / local). */
   mediaScope?: "national" | "local" | string | null;
+  /** Content genre for press publications (news, interview, report, …). */
+  pressContentType?: PressContentType | string | null;
   published: boolean;
   sortOrder: number;
   createdAt: string;

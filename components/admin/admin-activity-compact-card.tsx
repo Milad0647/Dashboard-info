@@ -9,7 +9,7 @@ import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badg
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { InlineVideoPlayer } from "@/components/media/inline-video-player";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
-import { getActivityTypeLabel } from "@/lib/activity-types";
+import { getActivityCategoryLabel } from "@/lib/activity-types";
 import type { CampaignActivity } from "@/lib/types";
 import { cn, formatPersianDate } from "@/lib/utils";
 
@@ -72,7 +72,7 @@ export function AdminActivityCompactCard({
             </Badge>
           )}
           <Badge variant="overlay" className="px-1.5 py-0 text-[10px]">
-            {getActivityTypeLabel(activity.activityType)}
+            {getActivityCategoryLabel(activity)}
           </Badge>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import type { DirectiveActionType, DirectiveSystemAction } from "@/lib/types";
-import { adminHref } from "@/lib/utils";
+import { adminHref, ensureHttpUrl } from "@/lib/utils";
 
 export type { DirectiveActionType, DirectiveSystemAction };
 
@@ -107,11 +107,10 @@ export function getDirectiveSystemAction(
 
 /** Normalize and validate an external http(s) URL for custom CTA buttons. */
 export function normalizeDirectiveActionUrl(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
+  const withProtocol = ensureHttpUrl(raw);
+  if (!withProtocol) return null;
 
   try {
-    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
     const parsed = new URL(withProtocol);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
     return parsed.toString();

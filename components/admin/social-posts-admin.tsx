@@ -66,7 +66,7 @@ import {
 } from "@/lib/social-posts";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
 import type { AdminUser, SocialContentType, SocialMediaPost, SocialPlatform, SocialPostLinkEntry } from "@/lib/types";
-import { cn, formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
+import { cn, ensureHttpUrl, formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
 import { GenerateMissingVideoCoversButton } from "@/components/admin/generate-missing-video-covers-button";
 import {
   CONTENT_TITLE_MAX_LENGTH,
@@ -429,11 +429,15 @@ export function SocialPostsAdmin({
   };
 
   const handleFetchFromLink = () => {
-    const link = form.getValues("link")?.trim() ?? "";
+    const rawLink = form.getValues("link")?.trim() ?? "";
+    const link = ensureHttpUrl(rawLink);
     const platform = form.getValues("platform");
     if (!link) {
       toast.error("ابتدا لینک پست را وارد کنید");
       return;
+    }
+    if (link !== rawLink) {
+      form.setValue("link", link);
     }
 
     const detected = detectLinkMetricsPlatform(link, platform);
@@ -521,7 +525,11 @@ export function SocialPostsAdmin({
         : data.views;
       const resolvedLink = useGroupLinks
         ? normalizedEntries[0]?.link ?? ""
-        : data.link ?? "";
+        : ensureHttpUrl(data.link ?? "");
+
+      if (!useGroupLinks && resolvedLink && resolvedLink !== (data.link ?? "")) {
+        form.setValue("link", resolvedLink);
+      }
 
       const result = await saveSocialPostAction({
         ...data,
@@ -960,6 +968,12 @@ export function SocialPostsAdmin({
                             onChange={(event) =>
                               updateLinkEntry(entry.id, { link: event.target.value })
                             }
+                            onBlur={() => {
+                              const normalized = ensureHttpUrl(entry.link);
+                              if (normalized && normalized !== entry.link) {
+                                updateLinkEntry(entry.id, { link: normalized });
+                              }
+                            }}
                           />
                         </div>
                         <div className="space-y-1">
@@ -1109,6 +1123,12 @@ export function SocialPostsAdmin({
                         "min-w-0 flex-1",
                         highlightLink && "border-destructive focus-visible:ring-destructive"
                       )}
+                      onBlur={(event) => {
+                        const normalized = ensureHttpUrl(event.target.value);
+                        if (normalized && normalized !== event.target.value) {
+                          form.setValue("link", normalized);
+                        }
+                      }}
                     />
                     <Button
                       type="button"

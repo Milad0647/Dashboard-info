@@ -41,7 +41,7 @@ import {
 import type { ParsedUserImportRow } from "@/lib/services/users-excel-parser";
 import { normalizePlanLabels } from "@/lib/content-topics";
 import { normalizeSocialPostLinkEntries } from "@/lib/social-posts";
-import { generateId } from "@/lib/utils";
+import { ensureHttpUrl, generateId } from "@/lib/utils";
 import { hashPassword } from "@/lib/auth/password";
 import { normalizeUserRegion } from "@/lib/user-regions";
 
@@ -487,6 +487,7 @@ export async function pgSaveSocialPost(data: Partial<SocialMediaPost> & { id?: s
   const id = data.id ?? generateId();
   const { planLabel, planLabels } = resolvePlanFields(data);
   const linkEntries = normalizeSocialPostLinkEntries(data.linkEntries);
+  const link = ensureHttpUrl(data.link ?? "") || (linkEntries[0]?.link ?? "");
   // Ensure column exists on older deployments that have not run db:migrate yet.
   await sql`
     ALTER TABLE social_media_posts
@@ -514,7 +515,7 @@ export async function pgSaveSocialPost(data: Partial<SocialMediaPost> & { id?: s
       ${data.likes ?? 0},
       ${data.comments ?? 0},
       ${data.shares ?? 0},
-      ${data.link ?? ""},
+      ${link},
       ${sql.json(JSON.parse(JSON.stringify(linkEntries)))},
       ${data.contentType ?? "image"},
       ${data.mediaUrl ?? null},
@@ -611,7 +612,8 @@ export async function pgSaveSocialPlatformStat(data: Partial<SocialPlatformStat>
   const title = data.title?.trim() || null;
   const followers = data.followers ?? 0;
   const posts = data.posts ?? 0;
-  const profileUrl = data.profileUrl ?? null;
+  const profileUrlRaw = data.profileUrl?.trim() || null;
+  const profileUrl = profileUrlRaw ? ensureHttpUrl(profileUrlRaw) : null;
 
   if (data.id) {
     await sql`
@@ -878,6 +880,7 @@ export async function pgSaveCampaignActivity(data: Partial<CampaignActivity> & {
     SELECT COUNT(*)::int AS count FROM campaign_activities WHERE campaign_id = ${data.campaignId ?? ""}
   `;
   const sortOrder = data.sortOrder ?? (Number(countRows[0]?.count) || 0) + 1;
+  const link = ensureHttpUrl(data.link ?? "");
 
   await sql`ALTER TABLE campaign_activities ADD COLUMN IF NOT EXISTS media_scope TEXT`;
 
@@ -894,7 +897,7 @@ export async function pgSaveCampaignActivity(data: Partial<CampaignActivity> & {
       ${data.activityType ?? "other"},
       ${data.activityDate ?? now.split("T")[0]},
       ${data.location ?? ""},
-      ${data.link ?? ""},
+      ${link},
       ${data.imageUrl ?? null},
       ${data.videoUrl ?? null},
       ${sql.json(JSON.parse(JSON.stringify(data.mediaItems ?? [])))},

@@ -30,7 +30,7 @@ import {
 } from "@/lib/actions/extended-actions";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import type { SocialPlatform, SocialPlatformStat } from "@/lib/types";
-import { formatPersianNumber } from "@/lib/utils";
+import { ensureHttpUrl, formatPersianNumber } from "@/lib/utils";
 import {
   CONTENT_TITLE_MAX_LENGTH,
   CONTENT_TITLE_MAX_LENGTH_MESSAGE,
@@ -150,9 +150,11 @@ export function SocialAnalyticsAdmin({
 
   const onSubmit = form.handleSubmit((data) => {
     startTransition(async () => {
+      const profileUrl = ensureHttpUrl(data.profileUrl ?? "") || undefined;
       const result = await saveSocialPlatformStatAction({
         ...data,
         title: data.title?.trim() || null,
+        profileUrl,
         campaignId,
         id: editingId ?? undefined,
       });
@@ -314,7 +316,17 @@ export function SocialAnalyticsAdmin({
 
             <div className="space-y-2">
               <Label>لینک صفحه (اختیاری)</Label>
-              <Input {...form.register("profileUrl")} dir="ltr" placeholder="https://..." />
+              <Input
+                {...form.register("profileUrl")}
+                dir="ltr"
+                placeholder="https://..."
+                onBlur={(event) => {
+                  const normalized = ensureHttpUrl(event.target.value);
+                  if (normalized && normalized !== event.target.value) {
+                    form.setValue("profileUrl", normalized);
+                  }
+                }}
+              />
             </div>
 
             <Button type="submit" disabled={isPending} className="w-full">

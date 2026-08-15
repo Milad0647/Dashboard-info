@@ -33,14 +33,23 @@ export interface ScoreableFieldsContext {
 }
 
 const ACTIVITY_TYPE_OPTIONS: ScoreableFieldOption[] = [
-  { value: "magazine", label: "مجله" },
-  { value: "newspaper", label: "روزنامه" },
+  { value: "magazine", label: "آگهی مجله و روزنامه" },
+  { value: "newspaper", label: "آگهی مجله و روزنامه" },
   { value: "tract", label: "تراکت" },
   { value: "booth", label: "غرفه" },
   { value: "field", label: "میدانی" },
   { value: "poetry", label: "شعر" },
   { value: "painting", label: "نقاشی" },
   { value: "exhibition", label: "نمایشگاه" },
+  { value: "other", label: "سایر" },
+];
+
+const PRESS_CONTENT_TYPE_OPTIONS: ScoreableFieldOption[] = [
+  { value: "news", label: "خبر" },
+  { value: "news_interview", label: "مصاحبه خبری" },
+  { value: "report", label: "گزارش" },
+  { value: "news_report", label: "گزارش خبری" },
+  { value: "interview", label: "مصاحبه" },
   { value: "other", label: "سایر" },
 ];
 
@@ -267,6 +276,13 @@ function buildScoreableFields(
         valueType: "select",
         kinds: ["filled", "equals"],
         options: ACTIVITY_TYPE_OPTIONS,
+      },
+      {
+        key: "pressContentType",
+        label: "نوع محتوا (مطبوعات)",
+        valueType: "select",
+        kinds: ["filled", "equals"],
+        options: PRESS_CONTENT_TYPE_OPTIONS,
       },
       {
         key: "mediaScope",

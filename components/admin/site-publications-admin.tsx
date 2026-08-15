@@ -57,7 +57,7 @@ import {
   normalizeSocialPostLinkEntries,
 } from "@/lib/social-posts";
 import type { AdminUser, SocialMediaPost, SocialPostLinkEntry } from "@/lib/types";
-import { cn, formatPersianDate, formatPersianNumber } from "@/lib/utils";
+import { cn, ensureHttpUrl, formatPersianDate, formatPersianNumber, isValidHttpUrl } from "@/lib/utils";
 
 const schema = z.object({
   title: z
@@ -69,15 +69,6 @@ const schema = z.object({
   description: z.string().optional(),
   publishedDate: z.string(),
 });
-
-function isValidHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
 
 interface SitePublicationsAdminProps {
   campaignId: string;
@@ -290,12 +281,20 @@ export function SitePublicationsAdmin({
   };
 
   const handleFetchFromLink = () => {
-    const link = isGroupDistribution
+    const rawLink = isGroupDistribution
       ? (linkEntries.find((entry) => entry.link.trim())?.link.trim() ?? "")
       : (form.getValues("link")?.trim() ?? "");
+    const link = ensureHttpUrl(rawLink);
     if (!link) {
       toast.error("ابتدا لینک مطلب را وارد کنید");
       return;
+    }
+    if (!isGroupDistribution && link !== rawLink) {
+      form.setValue("link", link);
+    }
+    if (isGroupDistribution && link !== rawLink) {
+      const entry = linkEntries.find((item) => item.link.trim());
+      if (entry) updateLinkEntry(entry.id, { link });
     }
 
     startTransition(async () => {
@@ -350,12 +349,15 @@ export function SitePublicationsAdmin({
 
       const resolvedLink = isGroupDistribution
         ? (normalizedEntries[0]?.link ?? "")
-        : (data.link?.trim() ?? "");
+        : ensureHttpUrl(data.link?.trim() ?? "");
 
       if (!isGroupDistribution) {
         if (!resolvedLink || !isValidHttpUrl(resolvedLink)) {
           toast.error("لینک معتبر وارد کنید");
           return;
+        }
+        if (resolvedLink !== (data.link?.trim() ?? "")) {
+          form.setValue("link", resolvedLink);
         }
       }
 
@@ -660,6 +662,12 @@ export function SitePublicationsAdmin({
                           onChange={(event) =>
                             updateLinkEntry(entry.id, { link: event.target.value })
                           }
+                          onBlur={() => {
+                            const normalized = ensureHttpUrl(entry.link);
+                            if (normalized && normalized !== entry.link) {
+                              updateLinkEntry(entry.id, { link: normalized });
+                            }
+                          }}
                         />
                       </div>
                       <Button
@@ -702,6 +710,12 @@ export function SitePublicationsAdmin({
                       "min-w-0 flex-1",
                       highlightLink && "border-destructive focus-visible:ring-destructive"
                     )}
+                    onBlur={(event) => {
+                      const normalized = ensureHttpUrl(event.target.value);
+                      if (normalized && normalized !== event.target.value) {
+                        form.setValue("link", normalized);
+                      }
+                    }}
                   />
                   <Button
                     type="button"

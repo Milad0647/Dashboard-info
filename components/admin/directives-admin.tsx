@@ -62,7 +62,7 @@ import type {
 } from "@/lib/types";
 import { USER_REGIONS, getUserRegionLabel, type UserRegion } from "@/lib/user-regions";
 import { todayISO } from "@/lib/jalali";
-import { cn, formatPersianDate, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
+import { cn, ensureHttpUrl, formatPersianDate, formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
 const schema = z
   .object({
@@ -811,6 +811,12 @@ export function DirectivesAdmin({
                     className="text-left"
                     placeholder="https://example.com"
                     {...form.register("actionUrl")}
+                    onBlur={(event) => {
+                      const normalized = ensureHttpUrl(event.target.value);
+                      if (normalized && normalized !== event.target.value) {
+                        form.setValue("actionUrl", normalized);
+                      }
+                    }}
                   />
                 </div>
               )}

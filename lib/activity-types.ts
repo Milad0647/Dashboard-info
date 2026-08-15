@@ -1,5 +1,10 @@
 import type { ActivityType } from "@/lib/types";
-import { PRESS_ACTIVITY_TYPES } from "@/lib/press-publications";
+import {
+  getPressPublicationCategoryLabel,
+  isPressPublication,
+  PRESS_ACTIVITY_TYPES,
+} from "@/lib/press-publications";
+import type { CampaignActivity } from "@/lib/types";
 
 export const activityTypeOptions: ActivityType[] = [
   "magazine",
@@ -22,8 +27,8 @@ export const pressActivityTypeOptions = activityTypeOptions.filter((type) =>
 );
 
 export const activityTypeLabels: Record<ActivityType, string> = {
-  magazine: "آگهی مجله",
-  newspaper: "آگهی روزنامه",
+  magazine: "آگهی مجله و روزنامه",
+  newspaper: "آگهی مجله و روزنامه",
   tract: "تراکت و بروشور",
   booth: "غرفه‌گذاری",
   field: "برنامه میدانی",
@@ -35,4 +40,14 @@ export const activityTypeLabels: Record<ActivityType, string> = {
 
 export function getActivityTypeLabel(type: string): string {
   return activityTypeLabels[type as ActivityType] ?? type;
+}
+
+/** Public/admin category badge: press content type when applicable. */
+export function getActivityCategoryLabel(
+  activity: Pick<CampaignActivity, "activityType" | "pressContentType">
+): string {
+  if (isPressPublication(activity)) {
+    return getPressPublicationCategoryLabel(activity);
+  }
+  return getActivityTypeLabel(activity.activityType);
 }

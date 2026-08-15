@@ -211,6 +211,24 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
+/** Prepend https:// when the value looks like a host/path without a scheme. */
+export function ensureHttpUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+export function isValidHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(ensureHttpUrl(value));
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function isPostgresConfigured(): boolean {
   if (process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true") return false;
   return Boolean(process.env.DATABASE_URL);
