@@ -764,15 +764,18 @@ export async function pgSaveVideo(data: Partial<Video> & { id?: string }) {
   `;
   const sortOrder = data.sortOrder ?? (Number(countRows[0]?.count) || 0) + 1;
 
+  await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS video_content_type TEXT`;
+
   await sql`
     INSERT INTO videos (
-      id, campaign_id, category_id, title, description, published, sort_order, owner_user_id, plan_label, plan_labels, score, created_at, updated_at
+      id, campaign_id, category_id, title, description, video_content_type, published, sort_order, owner_user_id, plan_label, plan_labels, score, created_at, updated_at
     ) VALUES (
       ${id},
       ${data.campaignId ?? ""},
       ${data.categoryId ?? ""},
       ${data.title ?? ""},
       ${data.description ?? null},
+      ${typeof data.videoContentType === "string" ? data.videoContentType.trim() || null : null},
       ${data.published ?? true},
       ${sortOrder},
       ${data.ownerUserId ?? null},
@@ -786,6 +789,7 @@ export async function pgSaveVideo(data: Partial<Video> & { id?: string }) {
       category_id = EXCLUDED.category_id,
       title = EXCLUDED.title,
       description = EXCLUDED.description,
+      video_content_type = EXCLUDED.video_content_type,
       published = EXCLUDED.published,
       sort_order = EXCLUDED.sort_order,
       owner_user_id = COALESCE(EXCLUDED.owner_user_id, videos.owner_user_id),

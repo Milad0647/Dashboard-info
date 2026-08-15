@@ -10,6 +10,8 @@ import { InlineVideoPlayer } from "@/components/media/inline-video-player";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { Video, VideoVersion } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { getVideoContentTypeLabel } from "@/lib/video-content-types";
+import { Badge } from "@/components/ui/badge";
 
 interface AdminVideoCompactCardProps {
   video: Video;
@@ -49,6 +51,13 @@ export function AdminVideoCompactCard({
             بدون ویدیو
           </div>
         )}
+        {getVideoContentTypeLabel(video.videoContentType) ? (
+          <div className="pointer-events-none absolute top-1.5 right-1.5 z-20">
+            <Badge variant="overlay" className="px-1.5 py-0 text-[10px]">
+              {getVideoContentTypeLabel(video.videoContentType)}
+            </Badge>
+          </div>
+        ) : null}
       </div>
 
       <button

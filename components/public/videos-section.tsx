@@ -28,6 +28,7 @@ import { useOwnerLocationFilter } from "@/lib/context/owner-location-filter-cont
 import { flattenOwnerGroupsInSortOrder, shouldRenderChronologically } from "@/lib/owner-groups";
 import type { DataOwnerGroup, MediaCategory, VideoWithVersions } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
+import { getVideoCategoryLabel } from "@/lib/video-content-types";
 
 function getVideoLatestDate(video: VideoWithVersions): string | undefined {
   return [...video.versions].sort((a, b) => b.versionNumber - a.versionNumber)[0]?.date;
@@ -167,7 +168,7 @@ export function VideosSection({ categories: _categories, videos, groups }: Video
                     score={video.score}
                     ownerUserId={video.ownerUserId}
                     ownerName={video.ownerName}
-                    category={video.category?.title}
+                    category={getVideoCategoryLabel(video)}
                     topics={video.planLabels ?? (video.planLabel ? [video.planLabel] : [])}
                     createdAt={video.createdAt}
                   />

@@ -30,6 +30,7 @@ import type {
   VideoWithVersions,
 } from "@/lib/types";
 import { formatPersianDate, formatPersianNumber } from "@/lib/utils";
+import { getVideoCategoryLabel } from "@/lib/video-content-types";
 
 interface RecentActivityDetailModalProps {
   item: RecentActivityItem | null;
@@ -128,7 +129,7 @@ function VideoDetail({
       versions={video.versions}
       initialVersionId={displayVersion.id}
       description={video.description}
-      category={video.category?.title ?? null}
+      category={getVideoCategoryLabel(video)}
       topics={video.planLabels ?? (video.planLabel ? [video.planLabel] : [])}
       ownerName={video.ownerName}
       createdAt={video.createdAt}

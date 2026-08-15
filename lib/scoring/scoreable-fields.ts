@@ -53,6 +53,15 @@ const PRESS_CONTENT_TYPE_OPTIONS: ScoreableFieldOption[] = [
   { value: "other", label: "سایر" },
 ];
 
+const VIDEO_CONTENT_TYPE_OPTIONS: ScoreableFieldOption[] = [
+  { value: "news", label: "خبر" },
+  { value: "news_report", label: "گزارش خبری" },
+  { value: "live", label: "پخش زنده" },
+  { value: "news_interview", label: "مصاحبه خبری" },
+  { value: "program_appearance", label: "حضور در برنامه" },
+  { value: "tv_contest", label: "مسابقه تلویزیونی" },
+];
+
 const SOCIAL_PLATFORM_OPTIONS: ScoreableFieldOption[] = [
   { value: "instagram", label: "اینستاگرام" },
   { value: "telegram", label: "تلگرام" },
@@ -206,6 +215,13 @@ function buildScoreableFields(
     video: [
       ...commonTitleDesc,
       categoryIdField("دسته‌بندی محتوا", videoCategoryOptions),
+      {
+        key: "videoContentType",
+        label: "نوع محتوا",
+        valueType: "select",
+        kinds: ["filled", "equals"],
+        options: VIDEO_CONTENT_TYPE_OPTIONS,
+      },
       planLabels,
     ],
     file: [

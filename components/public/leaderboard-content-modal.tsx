@@ -21,6 +21,7 @@ import {
 } from "@/lib/city-leaderboard";
 import { downloadMedia, getFilenameFromUrl } from "@/lib/media-utils";
 import { formatPersianDateTime } from "@/lib/utils";
+import { getVideoCategoryLabel } from "@/lib/video-content-types";
 
 interface LeaderboardContentModalProps {
   open: boolean;
@@ -185,7 +186,7 @@ export function LeaderboardContentModal({
           versions={selected.item.item.versions}
           initialVersionId={selected.item.item.versions[0]?.id ?? ""}
           description={selected.item.item.description}
-          category={selected.item.item.category?.title ?? null}
+          category={getVideoCategoryLabel(selected.item.item)}
           ownerName={selected.item.item.ownerName}
           createdAt={selected.item.item.createdAt}
         />

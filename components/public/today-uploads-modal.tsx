@@ -26,6 +26,7 @@ import {
   type TodayUploadListItem,
 } from "@/lib/upload-activity-stats";
 import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
+import { getVideoCategoryLabel } from "@/lib/video-content-types";
 
 interface TodayUploadsModalProps {
   open: boolean;
@@ -224,7 +225,7 @@ export function TodayUploadsModal({ open, onOpenChange, items }: TodayUploadsMod
           versions={selected.item.item.versions}
           initialVersionId={selected.item.item.versions[0]?.id ?? ""}
           description={selected.item.item.description}
-          category={selected.item.item.category?.title ?? null}
+          category={getVideoCategoryLabel(selected.item.item)}
           ownerName={selected.item.item.ownerName}
           createdAt={selected.item.item.createdAt}
         />

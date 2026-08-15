@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "104b61324ed9220a37686a257020410ff83cd952",
+      "committedAt": "2026-08-15T12:40:23+03:30",
+      "title": "افزودن خودکار https به لینک‌های بدون پروتکل",
+      "subject": "Auto-prepend https:// when saving external links"
+    },
+    {
       "hash": "4b3f9736a04268e3c8700c4e35bb6997df26ba77",
       "committedAt": "2026-08-11T13:45:50+03:30",
       "title": "رفع کلیک و هاور دراپ‌داون استان، شهر و موضوع داخل فرم‌ها",

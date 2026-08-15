@@ -32,8 +32,13 @@ import {
   resolveDisplayVersion,
   resolveVideoThumbnail,
 } from "@/lib/media-utils";
-import type { AdminUser, MediaCategory, Video, VideoVersion } from "@/lib/types";
+import type { AdminUser, MediaCategory, Video, VideoContentType, VideoVersion } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import {
+  getVideoContentTypeLabel,
+  resolveVideoContentType,
+  VIDEO_CONTENT_TYPES,
+} from "@/lib/video-content-types";
 import { pickDefaultVideoCategoryId, videoTypeSelectOptions } from "@/lib/video-types";
 
 interface AdminVideoEditorProps {
@@ -120,6 +125,9 @@ export function AdminVideoEditor({
   const [editCategoryId, setEditCategoryId] = useState(
     () => video.categoryId || pickDefaultVideoCategoryId(categories)
   );
+  const [editContentType, setEditContentType] = useState<VideoContentType>(() =>
+    resolveVideoContentType(video.videoContentType)
+  );
   const [editPlanLabels, setEditPlanLabels] = useState<string[]>(() =>
     normalizePlanLabels(video.planLabels, video.planLabel)
   );
@@ -139,6 +147,7 @@ export function AdminVideoEditor({
     setEditTitle(video.title);
     setEditDescription(video.description ?? "");
     setEditCategoryId(video.categoryId || pickDefaultVideoCategoryId(categories));
+    setEditContentType(resolveVideoContentType(video.videoContentType));
     setEditPlanLabels(normalizePlanLabels(video.planLabels, video.planLabel));
     setEditScore(video.score);
     setEditOwnerUserId(video.ownerUserId ?? null);
@@ -151,6 +160,7 @@ export function AdminVideoEditor({
     video.title,
     video.description,
     video.categoryId,
+    video.videoContentType,
     video.planLabel,
     video.planLabels,
     video.score,
@@ -184,6 +194,7 @@ export function AdminVideoEditor({
         title: editTitle,
         description: editDescription,
         categoryId: editCategoryId,
+        videoContentType: editContentType,
         published: true,
         planLabels: editPlanLabels,
         planLabel: editPlanLabels[0] ?? null,
@@ -349,6 +360,24 @@ export function AdminVideoEditor({
               {highlightDescription && (
                 <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">توضیحات خالی است؛ بهتر است تکمیل شود.</p>
               )}
+            </div>
+            <div>
+              <Label>نوع محتوا</Label>
+              <Select
+                value={editContentType}
+                onValueChange={(value) => setEditContentType(value as VideoContentType)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="انتخاب نوع محتوا" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VIDEO_CONTENT_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {getVideoContentTypeLabel(type)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>نوع ویدیو</Label>

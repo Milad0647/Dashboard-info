@@ -27,6 +27,14 @@ export type PressContentType =
   | "interview"
   | "other";
 export type SocialContentType = "image" | "text" | "video" | "carousel" | "story" | "reel" | "audio";
+/** Genre of a video publication (news, live, interview, …). */
+export type VideoContentType =
+  | "news"
+  | "news_report"
+  | "live"
+  | "news_interview"
+  | "program_appearance"
+  | "tv_contest";
 export type SessionRole = "admin" | "contributor" | "client";
 
 export interface CampaignFeatures {
@@ -315,6 +323,8 @@ export interface Video extends Ownable {
   categoryId: string;
   title: string;
   description?: string | null;
+  /** Content genre (news, live broadcast, interview, …). */
+  videoContentType?: VideoContentType | string | null;
   published: boolean;
   sortOrder: number;
   planLabel?: string | null;

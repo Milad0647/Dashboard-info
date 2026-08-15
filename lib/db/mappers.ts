@@ -331,6 +331,10 @@ export function mapVideoFromDb(row: any): Video {
     categoryId: row.category_id,
     title: row.title,
     description: row.description,
+    videoContentType:
+      typeof row.video_content_type === "string" && row.video_content_type.trim()
+        ? row.video_content_type.trim()
+        : null,
     published: row.published,
     sortOrder: row.sort_order,
     ...mapOwnerFromDb(row),

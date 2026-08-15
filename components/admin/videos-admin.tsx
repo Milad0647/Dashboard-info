@@ -46,6 +46,7 @@ import { VideoModal } from "@/components/media/video-modal";
 import { SendContentMessageButton } from "@/components/admin/send-content-message-button";
 import type { AdminUser, MediaCategory, Video, VideoVersion } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { getVideoCategoryLabel } from "@/lib/video-content-types";
 import { pickDefaultVideoCategoryId } from "@/lib/video-types";
 
 interface VideosAdminProps {
@@ -238,6 +239,7 @@ export function VideosAdmin({
         categoryId,
         title: `ویدیو ${videos.length + 1}`,
         description: "",
+        videoContentType: "news",
         published: true,
         sortOrder: videos.length + 1,
         planLabel: null,
@@ -447,7 +449,10 @@ export function VideosAdmin({
             versions={previewVersions}
             initialVersionId={display.id}
             description={previewVideo.description}
-            category={initialCategories.find((category) => category.id === previewVideo.categoryId)?.title}
+            category={getVideoCategoryLabel({
+              videoContentType: previewVideo.videoContentType,
+              category: initialCategories.find((category) => category.id === previewVideo.categoryId),
+            })}
             topics={previewVideo.planLabels ?? (previewVideo.planLabel ? [previewVideo.planLabel] : [])}
             ownerName={previewVideo.ownerName}
             createdAt={previewVideo.createdAt}
