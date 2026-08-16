@@ -73,8 +73,8 @@ export default async function CompanySupervisionPage({
   if (!entry) {
     const backHref = `/admin/performance?campaign=${encodeURIComponent(campaignId)}`;
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center gap-4 p-10 text-center">
+      <Card dir="rtl">
+        <CardContent className="flex flex-col items-center gap-4 p-10 text-center text-right">
           <p className="text-muted-foreground">
             کاربر یا شرکتی با این شناسه در کمپین فعلی یافت نشد.
           </p>

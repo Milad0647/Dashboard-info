@@ -160,7 +160,7 @@ export function PerformanceAdmin({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-right" dir="rtl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold">مشاهده عملکرد</h1>
@@ -201,7 +201,7 @@ export function PerformanceAdmin({
               <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="فیلتر استان" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent dir="rtl">
                 <SelectItem value="all">همه استان‌ها</SelectItem>
                 {provinces.map((province) => (
                   <SelectItem key={province} value={province}>

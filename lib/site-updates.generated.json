@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "bfb975227969b38193fb14c4046d540cb71ef32d",
+      "committedAt": "2026-08-16T13:10:37+03:30",
+      "title": "افزودن صفحه نظارت شرکت با تایید محتوا و گزارش اکسل در مشاهده عملکرد",
+      "subject": "Add company supervision page from performance overview"
+    },
+    {
       "hash": "f626d15a6cd1cd0fbf2da8694fd55617d44a9a3b",
       "committedAt": "2026-08-16T12:58:12+03:30",
       "title": "بازطراحی قوانین امتیازدهی با دسته‌ها، پیش‌نمایش زنده و ثبت فقط بعد از تأیید",

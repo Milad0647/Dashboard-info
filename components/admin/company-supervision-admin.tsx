@@ -90,7 +90,7 @@ function ContentItemCard({
   const statusLabel = reviewStatusLabel(item.reviewStatus);
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border bg-card">
+    <article className="flex flex-col overflow-hidden rounded-xl border bg-card text-right" dir="rtl">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
         {item.thumbnailUrl ? (
           <Image
@@ -103,7 +103,7 @@ function ContentItemCard({
         ) : (
           <MediaPlaceholder kind="poster" className="h-full w-full" />
         )}
-        <div className="absolute top-2 right-2 flex flex-wrap justify-end gap-1">
+        <div className="absolute top-2 end-2 flex flex-wrap justify-end gap-1">
           <Badge variant="overlay" className="text-[10px]">
             {item.typeLabel}
           </Badge>
@@ -203,7 +203,7 @@ function MessageList({ messages }: { messages: AdminContentMessageListItem[] }) 
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" dir="rtl">
       {messages.map((message) => {
         const followUpLabel =
           message.followUpStatus === "awaiting_user"
@@ -214,9 +214,9 @@ function MessageList({ messages }: { messages: AdminContentMessageListItem[] }) 
                 ? "بسته‌شده"
                 : "باز";
         return (
-          <article key={message.id} className="rounded-xl border bg-card p-4">
+          <article key={message.id} className="rounded-xl border bg-card p-4 text-right" dir="rtl">
             <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="space-y-1">
+              <div className="min-w-0 space-y-1 text-right">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Badge variant="outline" className="text-[10px]">
                     {message.contentTypeLabel}
@@ -431,7 +431,7 @@ export function CompanySupervisionAdmin({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-right" dir="rtl">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-3">
           <Button type="button" variant="ghost" size="sm" className="gap-1.5 px-0" asChild>
@@ -481,7 +481,7 @@ export function CompanySupervisionAdmin({
         </Button>
       </div>
 
-      <Tabs defaultValue="summary" className="space-y-4">
+      <Tabs defaultValue="summary" className="space-y-4" dir="rtl">
         <TabsList className="h-auto w-full justify-start">
           <TabsTrigger value="summary">خلاصه</TabsTrigger>
           <TabsTrigger value="today">
@@ -594,7 +594,7 @@ export function CompanySupervisionAdmin({
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="نوع محتوا" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent dir="rtl">
                 {COMPANY_SUPERVISION_TYPE_FILTERS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -617,7 +617,7 @@ export function CompanySupervisionAdmin({
           ) : (
             <div className="space-y-3">
               {returnedItems.map((item) => (
-                <article key={item.key} className="rounded-xl border bg-card p-4">
+                <article key={item.key} className="rounded-xl border bg-card p-4 text-right" dir="rtl">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -726,8 +726,8 @@ export function CompanySupervisionAdmin({
           }
         }}
       >
-        <DialogContent dir="rtl">
-          <DialogHeader>
+        <DialogContent className="text-right" dir="rtl">
+          <DialogHeader className="text-right sm:text-right">
             <DialogTitle>رد محتوا با دلیل</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
