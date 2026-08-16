@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
+  BadgeCheck,
   Download,
   ExternalLink,
   FileText,
@@ -201,8 +202,9 @@ function ContentItemCard({
           item.reviewStatus === "approved" ? (
             <Badge
               variant="secondary"
-              className="flex-1 justify-center bg-success/15 py-1.5 text-success hover:bg-success/15"
+              className="flex-1 justify-center gap-1.5 rounded-md bg-success/15 py-1.5 text-success hover:bg-success/15"
             >
+              <BadgeCheck className="h-3.5 w-3.5 shrink-0" />
               تایید شده
             </Badge>
           ) : (
@@ -527,8 +529,9 @@ function SupervisionItemDialog({
             item.reviewStatus === "approved" ? (
               <Badge
                 variant="secondary"
-                className="bg-success/15 px-3 py-1.5 text-success hover:bg-success/15"
+                className="gap-1.5 rounded-md bg-success/15 px-3 py-1.5 text-success hover:bg-success/15"
               >
+                <BadgeCheck className="h-3.5 w-3.5 shrink-0" />
                 تایید شده
               </Badge>
             ) : (
