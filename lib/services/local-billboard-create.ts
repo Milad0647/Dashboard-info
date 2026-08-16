@@ -2,6 +2,7 @@ import { saveBillboard } from "@/lib/data-access/admin";
 import { pgReplaceBillboardPeriods } from "@/lib/db/repository";
 import { saveUploadedImageFile } from "@/lib/services/save-uploaded-file";
 import type { BillboardDisplayPeriodInput } from "@/lib/services/billboard-assignment-api";
+import { stripFileAccessToken } from "@/lib/uploads";
 import { generateId, formatPersianDateShort } from "@/lib/utils";
 import type { BillboardCategory } from "@/lib/billboard-categories";
 
@@ -68,9 +69,9 @@ async function resolvePeriodImage(
     return saveUploadedImageFile(period.billboardImage);
   }
   if (typeof period.billboardImageUrl === "string" && period.billboardImageUrl.trim()) {
-    return period.billboardImageUrl.trim();
+    return stripFileAccessToken(period.billboardImageUrl.trim());
   }
-  if (existingUrl?.trim()) return existingUrl.trim();
+  if (existingUrl?.trim()) return stripFileAccessToken(existingUrl.trim());
   throw new Error("عکس بیلبورد در دوره نمایش الزامی است");
 }
 
@@ -82,9 +83,9 @@ async function resolveConfirmationImage(
     return saveUploadedImageFile(period.image);
   }
   if (typeof period.confirmationImageUrl === "string" && period.confirmationImageUrl.trim()) {
-    return period.confirmationImageUrl.trim();
+    return stripFileAccessToken(period.confirmationImageUrl.trim());
   }
-  return existingUrl ?? null;
+  return existingUrl ? stripFileAccessToken(existingUrl) : null;
 }
 
 export async function saveLocalBillboard(params: CreateLocalBillboardInput): Promise<string> {

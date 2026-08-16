@@ -22,6 +22,11 @@ interface ImageZoomProps {
   sizes?: string;
   /** Thumbnail quality (1–100). Lower = less bandwidth. */
   quality?: number;
+  /**
+   * Use `eager` inside dialogs/modals — `lazy` often never loads in portaled content.
+   * Keep `lazy` for grid cards.
+   */
+  loading?: "lazy" | "eager";
   /** Called when the thumbnail image fails to load */
   onError?: () => void;
 }
@@ -35,6 +40,7 @@ export function ImageZoom({
   showHint = true,
   sizes: _sizes = DEFAULT_SIZES,
   quality: _quality,
+  loading = "lazy",
   onError,
 }: ImageZoomProps) {
   void _sizes;
@@ -95,10 +101,12 @@ export function ImageZoom({
         {/* Plain img avoids next/image optimizer failures for signed/local and remote hosts */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
+          key={cardSrc}
           src={cardSrc}
           alt={alt}
-          loading="lazy"
+          loading={loading}
           decoding="async"
+          fetchPriority={loading === "eager" ? "high" : undefined}
           className={cn("absolute inset-0 h-full w-full object-cover", imgClassName)}
           onError={handleImageError}
         />
@@ -109,65 +117,69 @@ export function ImageZoom({
         )}
       </button>
 
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-h-[95vh] max-w-[95vw] overflow-hidden border-none bg-black/95 p-2 sm:p-4">
-          <DialogTitle className="sr-only">{alt || "تصویر"}</DialogTitle>
-          <button
-            type="button"
-            onClick={() => handleOpenChange(false)}
-            className="absolute left-3 top-3 z-10 rounded-full bg-black/60 p-2 text-white hover:bg-black/80"
-            aria-label="بستن"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/70 p-1">
-            <Button
+      {open ? (
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+          <DialogContent className="max-h-[95vh] max-w-[95vw] overflow-hidden border-none bg-black/95 p-2 sm:p-4">
+            <DialogTitle className="sr-only">{alt || "تصویر"}</DialogTitle>
+            <button
               type="button"
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 text-white hover:bg-white/20"
-              onClick={() => setScale((s) => Math.max(0.5, Number((s - 0.25).toFixed(2))))}
-              aria-label="کوچک‌نمایی"
+              onClick={() => handleOpenChange(false)}
+              className="absolute left-3 top-3 z-10 rounded-full bg-black/60 p-2 text-white hover:bg-black/80"
+              aria-label="بستن"
             >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <span className="min-w-[3rem] text-center text-xs text-white tabular-nums">
-              {Math.round(scale * 100)}%
-            </span>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 text-white hover:bg-white/20"
-              onClick={() => setScale((s) => Math.min(4, Number((s + 0.25).toFixed(2))))}
-              aria-label="بزرگ‌نمایی"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+              <X className="h-5 w-5" />
+            </button>
 
-          <div
-            ref={containerRef}
-            className="flex max-h-[90vh] items-center justify-center overflow-auto"
-            onWheel={(event) => {
-              if (!event.ctrlKey && Math.abs(event.deltaY) < 40) return;
-              event.preventDefault();
-              const delta = event.deltaY > 0 ? -0.15 : 0.15;
-              setScale((s) => Math.min(4, Math.max(0.5, Number((s + delta).toFixed(2)))));
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={fullSrc}
-              alt={alt}
-              className="max-h-[90vh] max-w-full origin-center object-contain transition-transform"
-              style={{ transform: `scale(${scale})` }}
-              draggable={false}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+            <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/70 p-1">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-white hover:bg-white/20"
+                onClick={() => setScale((s) => Math.max(0.5, Number((s - 0.25).toFixed(2))))}
+                aria-label="کوچک‌نمایی"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[3rem] text-center text-xs text-white tabular-nums">
+                {Math.round(scale * 100)}%
+              </span>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-white hover:bg-white/20"
+                onClick={() => setScale((s) => Math.min(4, Number((s + 0.25).toFixed(2))))}
+                aria-label="بزرگ‌نمایی"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div
+              ref={containerRef}
+              className="flex max-h-[90vh] items-center justify-center overflow-auto"
+              onWheel={(event) => {
+                if (!event.ctrlKey && Math.abs(event.deltaY) < 40) return;
+                event.preventDefault();
+                const delta = event.deltaY > 0 ? -0.15 : 0.15;
+                setScale((s) => Math.min(4, Math.max(0.5, Number((s + delta).toFixed(2)))));
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={fullSrc}
+                alt={alt}
+                loading="eager"
+                decoding="async"
+                className="max-h-[90vh] max-w-full origin-center object-contain transition-transform"
+                style={{ transform: `scale(${scale})` }}
+                draggable={false}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </>
   );
 }

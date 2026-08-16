@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import {
   type SendContentMessageTarget,
 } from "@/components/admin/send-content-message-button";
 import { ImageZoom } from "@/components/ui/image-zoom";
+import { toCardThumbnailUrl } from "@/lib/card-image";
 
 interface AdminContentPreviewDialogProps {
   open: boolean;
@@ -50,7 +52,14 @@ export function AdminContentPreviewDialog({
   messageTarget,
   canSendMessage = false,
 }: AdminContentPreviewDialogProps) {
+  const [zoomFailed, setZoomFailed] = useState(false);
   const showFooter = Boolean(onEdit || onDelete || (canSendMessage && messageTarget));
+  const displayUrl = (previewImageUrl?.trim() || imageUrl?.trim() || "").trim();
+  const fallbackSrc = displayUrl ? toCardThumbnailUrl(displayUrl) : "";
+
+  useEffect(() => {
+    setZoomFailed(false);
+  }, [imageUrl, previewImageUrl]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -65,14 +74,32 @@ export function AdminContentPreviewDialog({
             mediaPreview
           ) : imageUrl ? (
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted">
-              <ImageZoom
-                src={imageUrl}
-                previewSrc={previewImageUrl}
-                alt={title}
-                className="absolute inset-0 h-full w-full"
-                imgClassName="object-contain"
-                sizes="(max-width: 768px) 100vw, 42rem"
-              />
+              {!zoomFailed ? (
+                <ImageZoom
+                  src={imageUrl}
+                  previewSrc={previewImageUrl}
+                  alt={title}
+                  className="absolute inset-0 h-full w-full"
+                  imgClassName="object-contain"
+                  sizes="(max-width: 768px) 100vw, 42rem"
+                  loading="eager"
+                  onError={() => setZoomFailed(true)}
+                />
+              ) : fallbackSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={fallbackSrc}
+                  alt={title}
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  className="absolute inset-0 h-full w-full object-contain"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  تصویری ثبت نشده است
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">

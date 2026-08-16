@@ -12,6 +12,8 @@ interface BillboardThumbnailProps {
   sizes: string;
   className?: string;
   imageClassName?: string;
+  /** Use `eager` inside dialogs — lazy often never loads in portaled content. */
+  loading?: "lazy" | "eager";
 }
 
 /**
@@ -24,6 +26,7 @@ export function BillboardThumbnail({
   sizes: _sizes,
   className,
   imageClassName,
+  loading = "lazy",
 }: BillboardThumbnailProps) {
   void _sizes;
   const [imageFailed, setImageFailed] = useState(false);
@@ -43,8 +46,9 @@ export function BillboardThumbnail({
     <img
       src={getBillboardCardImage(billboard)}
       alt={alt}
-      loading="lazy"
+      loading={loading}
       decoding="async"
+      fetchPriority={loading === "eager" ? "high" : undefined}
       className={cn("absolute inset-0 h-full w-full object-cover", imageClassName, className)}
       onError={() => setImageFailed(true)}
     />

@@ -78,6 +78,7 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
               className="absolute inset-0 h-full w-full"
               imgClassName="object-cover"
               sizes="(max-width: 768px) 100vw, 768px"
+              loading="eager"
               onError={() => setZoomFailed(true)}
             />
           ) : (
@@ -85,6 +86,7 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
               billboard={billboard}
               alt={billboard.title}
               sizes="(max-width: 768px) 100vw, 768px"
+              loading="eager"
             />
           )}
         </div>

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth/get-session";
 import { pgGetBillboardPeriods } from "@/lib/db/repository";
 
+import { withFileAccessTokensDeep } from "@/lib/uploads";
+
 export async function GET(request: Request) {
   const session = await getAuthSession();
   if (!session?.userId && session?.type !== "env_admin") {
@@ -15,5 +17,5 @@ export async function GET(request: Request) {
   }
 
   const periods = await pgGetBillboardPeriods(billboardId);
-  return NextResponse.json({ periods });
+  return NextResponse.json({ periods: withFileAccessTokensDeep(periods) });
 }
