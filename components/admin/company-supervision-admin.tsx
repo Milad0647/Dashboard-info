@@ -4,17 +4,30 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
   Download,
   ExternalLink,
+  FileText,
+  Globe,
+  History,
+  ImageIcon,
+  LayoutGrid,
+  Layers,
   Loader2,
+  Megaphone,
   MessageSquare,
+  Share2,
+  Video,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ContentMixChart } from "@/components/charts/content-mix-chart";
+import { UploadActivityChart } from "@/components/charts/upload-activity-chart";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { SendContentMessageButton } from "@/components/admin/send-content-message-button";
 import { UserProfileNotesPanel } from "@/components/admin/user-profile-notes-panel";
+import { KPICard } from "@/components/public/kpi-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +51,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   listAllContentMessagesAction,
+  listContentMessagesForCardAction,
   type AdminContentMessageListItem,
+  type ContentMessageListItem,
 } from "@/lib/actions/content-message-actions";
 import {
   approveContentAction,
@@ -46,27 +61,26 @@ import {
 } from "@/lib/actions/content-review-actions";
 import { getProvinceRankBadge, type UserLeaderboardEntry } from "@/lib/city-leaderboard";
 import {
+  COMPANY_SUPERVISION_DATE_PRESETS,
+  COMPANY_SUPERVISION_REVIEW_FILTERS,
   COMPANY_SUPERVISION_TYPE_FILTERS,
+  buildCompanyContentMix,
+  buildCompanyUploadActivityStats,
+  countTodayByContentType,
+  filterCompanySupervisionItems,
+  groupCompanySupervisionItems,
   reviewStatusLabel,
+  type CompanyExcelSource,
   type CompanySupervisionContentType,
+  type CompanySupervisionDatePreset,
   type CompanySupervisionItem,
+  type CompanySupervisionReviewFilter,
 } from "@/lib/company-supervision";
 import { downloadCompanyPerformanceExcel } from "@/lib/services/performance-excel-export";
 import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-const METRIC_COLUMNS: { key: keyof UserLeaderboardEntry; label: string }[] = [
-  { key: "billboards", label: "تبلیغات محیطی" },
-  { key: "totalAreaSqm", label: "متراژ" },
-  { key: "posters", label: "پوستر" },
-  { key: "videos", label: "ویدیو" },
-  { key: "socialPosts", label: "شبکه اجتماعی" },
-  { key: "sitePublications", label: "انتشار سایت" },
-  { key: "activities", label: "اقدام" },
-  { key: "files", label: "فایل" },
-];
 
 function ContentItemCard({
   item,
@@ -75,6 +89,7 @@ function ContentItemCard({
   canSendMessage,
   canManageReviews,
   reviewPending,
+  onOpen,
   onApprove,
   onReject,
 }: {
@@ -84,6 +99,7 @@ function ContentItemCard({
   canSendMessage: boolean;
   canManageReviews: boolean;
   reviewPending: boolean;
+  onOpen: () => void;
   onApprove: () => void;
   onReject: () => void;
 }) {
@@ -91,7 +107,11 @@ function ContentItemCard({
 
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border bg-card text-right" dir="rtl">
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+      <button
+        type="button"
+        className="relative aspect-[4/3] w-full overflow-hidden bg-muted text-start"
+        onClick={onOpen}
+      >
         {item.thumbnailUrl ? (
           <Image
             src={item.thumbnailUrl}
@@ -118,9 +138,11 @@ function ContentItemCard({
             </Badge>
           )}
         </div>
-      </div>
+      </button>
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <p className="line-clamp-2 font-medium leading-snug">{item.title}</p>
+        <button type="button" className="text-right" onClick={onOpen}>
+          <p className="line-clamp-2 font-medium leading-snug">{item.title}</p>
+        </button>
         <p className="text-[11px] text-muted-foreground">
           {item.createdAt ? formatPersianDateTime(item.createdAt) : "بدون تاریخ"}
         </p>
@@ -147,6 +169,10 @@ function ContentItemCard({
       )}
 
       <div className="flex flex-wrap items-center gap-2 border-t p-3">
+        <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={onOpen}>
+          <History className="h-3.5 w-3.5" />
+          مشاهده / تاریخچه
+        </Button>
         {canSendMessage && (
           <SendContentMessageButton
             target={{
@@ -169,7 +195,7 @@ function ContentItemCard({
               disabled={reviewPending}
               onClick={onApprove}
             >
-              تایید محتوا
+              تایید
             </Button>
             <Button
               type="button"
@@ -179,7 +205,7 @@ function ContentItemCard({
               disabled={reviewPending}
               onClick={onReject}
             >
-              رد با دلیل
+              رد
             </Button>
           </>
         )}
@@ -262,12 +288,259 @@ function MessageList({ messages }: { messages: AdminContentMessageListItem[] }) 
   );
 }
 
+function CardHistoryTimeline({ item }: { item: CompanySupervisionItem }) {
+  const events: { label: string; at: string; detail?: string | null }[] = [];
+  if (item.createdAt) {
+    events.push({ label: "ثبت محتوا", at: item.createdAt });
+  }
+  if (item.rejectedAt) {
+    events.push({
+      label: "رد برای ویرایش",
+      at: item.rejectedAt,
+      detail: item.rejectionReason,
+    });
+  }
+  if (item.resubmittedAt) {
+    events.push({ label: "ارسال مجدد پس از ویرایش", at: item.resubmittedAt });
+  }
+  if (item.resolvedAt && item.reviewStatus === "approved") {
+    events.push({ label: "تایید نهایی", at: item.resolvedAt });
+  } else if (item.reviewUpdatedAt && item.reviewStatus === "approved") {
+    events.push({ label: "تایید نهایی", at: item.reviewUpdatedAt });
+  }
+
+  events.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+
+  if (events.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">هنوز تاریخچه‌ای برای این کارت ثبت نشده است.</p>
+    );
+  }
+
+  return (
+    <ol className="space-y-3 border-s-2 border-muted ps-4">
+      {events.map((event, index) => (
+        <li key={`${event.label}-${event.at}-${index}`} className="relative space-y-1">
+          <span className="absolute -start-[1.35rem] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
+          <p className="text-sm font-medium">{event.label}</p>
+          <p className="text-xs text-muted-foreground">{formatPersianDateTime(event.at)}</p>
+          {event.detail && (
+            <p className="whitespace-pre-wrap rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground">
+              {event.detail}
+            </p>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function SupervisionItemDialog({
+  item,
+  open,
+  onOpenChange,
+  campaignId,
+  canScore,
+  canSendMessage,
+  canManageReviews,
+  reviewPending,
+  onApprove,
+  onReject,
+}: {
+  item: CompanySupervisionItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  campaignId: string;
+  canScore: boolean;
+  canSendMessage: boolean;
+  canManageReviews: boolean;
+  reviewPending: boolean;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  const [messages, setMessages] = useState<ContentMessageListItem[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  useEffect(() => {
+    if (!open || !item) {
+      setMessages([]);
+      return;
+    }
+    setLoadingMessages(true);
+    void listContentMessagesForCardAction({
+      contentType: item.contentType,
+      contentId: item.contentId,
+    }).then((result) => {
+      if (result.success) {
+        setMessages(result.messages ?? []);
+      } else {
+        setMessages([]);
+      }
+      setLoadingMessages(false);
+    });
+  }, [open, item]);
+
+  if (!item) return null;
+
+  const statusLabel = reviewStatusLabel(item.reviewStatus);
+  const details = [
+    { label: "نوع", value: item.typeLabel },
+    {
+      label: "تاریخ ثبت",
+      value: item.createdAt ? formatPersianDateTime(item.createdAt) : "—",
+    },
+    { label: "استان", value: item.province || "—" },
+    { label: "شهر", value: item.city || "—" },
+    { label: "طرح", value: item.planLabel || "—" },
+    { label: "وضعیت بازبینی", value: statusLabel || "بدون بازبینی" },
+    { label: "منتشرشده", value: item.published ? "بله" : "خیر" },
+  ];
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="!flex max-h-[92vh] max-w-3xl flex-col gap-0 overflow-hidden p-0" dir="rtl">
+        <DialogHeader className="shrink-0 border-b px-6 py-4 pe-12 text-right">
+          <DialogTitle className="break-words text-base">{item.title}</DialogTitle>
+        </DialogHeader>
+
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-4 text-right">
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted">
+            {item.imageUrl || item.thumbnailUrl ? (
+              <Image
+                src={item.imageUrl || item.thumbnailUrl || ""}
+                alt={item.title}
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, 42rem"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                تصویری ثبت نشده است
+              </div>
+            )}
+          </div>
+
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+            {item.description || "بدون توضیحات"}
+          </p>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            {details.map((row) => (
+              <div key={row.label} className="rounded-lg border bg-muted/30 px-3 py-2">
+                <p className="text-[11px] text-muted-foreground">{row.label}</p>
+                <p className="text-sm font-medium">{row.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {canScore && (
+            <div className="rounded-xl border p-3">
+              <ContentScoreControl
+                campaignId={campaignId}
+                contentType={item.contentType}
+                contentId={item.contentId}
+                score={item.score}
+                autoScore={item.autoScore}
+                manualScore={item.manualScore}
+                canScore={canScore}
+              />
+            </div>
+          )}
+
+          <section className="space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <History className="h-4 w-4" />
+              تاریخچه کارت
+            </h3>
+            <CardHistoryTimeline item={item} />
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <MessageSquare className="h-4 w-4" />
+              پیام‌های این کارت
+            </h3>
+            {loadingMessages ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                در حال بارگذاری...
+              </div>
+            ) : messages.length === 0 ? (
+              <p className="text-sm text-muted-foreground">پیامی روی این کارت نیست.</p>
+            ) : (
+              <div className="space-y-3">
+                {messages.map((message) => (
+                  <article key={message.id} className="rounded-lg border bg-muted/30 p-3 text-sm">
+                    <p className="text-xs text-muted-foreground">
+                      {message.senderName ?? "مدیر / کارفرما"} ·{" "}
+                      {formatPersianDateTime(message.createdAt)}
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap">{message.body}</p>
+                    {message.replies?.map((reply) => (
+                      <div key={reply.id} className="mt-2 rounded-md border bg-background p-2">
+                        <p className="text-[11px] text-muted-foreground">
+                          پاسخ · {formatPersianDateTime(reply.createdAt)}
+                        </p>
+                        <p className="mt-1 whitespace-pre-wrap">{reply.body}</p>
+                      </div>
+                    ))}
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 border-t px-6 py-3">
+          {canSendMessage && (
+            <SendContentMessageButton
+              target={{
+                campaignId,
+                contentType: item.contentType,
+                contentId: item.contentId,
+                contentTitle: item.title,
+              }}
+            />
+          )}
+          {canManageReviews && item.isReviewable && (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={reviewPending}
+                onClick={onApprove}
+              >
+                تایید محتوا
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={reviewPending}
+                onClick={onReject}
+              >
+                رد با دلیل
+              </Button>
+            </>
+          )}
+          <Button type="button" variant="outline" className="gap-1.5" asChild>
+            <Link href={item.adminPath}>
+              <ExternalLink className="h-3.5 w-3.5" />
+              ویرایش در پنل
+            </Link>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function CompanySupervisionAdmin({
   campaignId,
   campaignTitle,
   campaignSlug,
   entry,
   items,
+  excelSource,
   canScore,
   canManageReviews,
   canSendMessage,
@@ -277,23 +550,27 @@ export function CompanySupervisionAdmin({
   campaignSlug: string;
   entry: UserLeaderboardEntry;
   items: CompanySupervisionItem[];
+  excelSource: CompanyExcelSource;
   canScore: boolean;
   canManageReviews: boolean;
   canSendMessage: boolean;
 }) {
   const router = useRouter();
+  const [datePreset, setDatePreset] = useState<CompanySupervisionDatePreset>("all");
   const [typeFilter, setTypeFilter] = useState<CompanySupervisionContentType | "all">("all");
+  const [reviewFilter, setReviewFilter] = useState<CompanySupervisionReviewFilter>("all");
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [rejectingItem, setRejectingItem] = useState<CompanySupervisionItem | null>(null);
+  const [viewingItem, setViewingItem] = useState<CompanySupervisionItem | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isPending, startTransition] = useTransition();
   const [messages, setMessages] = useState<AdminContentMessageListItem[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("summary");
   const canOpenNotes = UUID_RE.test(entry.userKey);
 
   const backHref = `/admin/performance?campaign=${encodeURIComponent(campaignId)}`;
 
-  const todayItems = useMemo(() => items.filter((item) => item.isToday), [items]);
   const returnedItems = useMemo(
     () =>
       items.filter(
@@ -302,18 +579,19 @@ export function CompanySupervisionAdmin({
     [items]
   );
 
-  const filteredContent = useMemo(() => {
-    if (typeFilter === "all") return items;
-    return items.filter((item) => item.contentType === typeFilter);
-  }, [items, typeFilter]);
+  const todayCounts = useMemo(() => countTodayByContentType(items), [items]);
+  const contentMix = useMemo(() => buildCompanyContentMix(entry), [entry]);
+  const uploadStats = useMemo(() => buildCompanyUploadActivityStats(items), [items]);
 
-  const todayByType = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const item of todayItems) {
-      map.set(item.typeLabel, (map.get(item.typeLabel) ?? 0) + 1);
-    }
-    return [...map.entries()];
-  }, [todayItems]);
+  const filteredContent = useMemo(
+    () =>
+      filterCompanySupervisionItems(items, {
+        datePreset,
+        contentType: typeFilter,
+        reviewFilter,
+      }),
+    [items, datePreset, typeFilter, reviewFilter]
+  );
 
   const loadMessages = useCallback(() => {
     if (!canOpenNotes) {
@@ -353,6 +631,7 @@ export function CompanySupervisionAdmin({
         return;
       }
       toast.success("محتوا تایید شد");
+      setViewingItem(null);
       router.refresh();
     });
   };
@@ -381,6 +660,7 @@ export function CompanySupervisionAdmin({
       toast.success("محتوا برای ویرایش برگشت داده شد");
       setRejectingItem(null);
       setRejectionReason("");
+      setViewingItem(null);
       router.refresh();
       loadMessages();
     });
@@ -391,6 +671,7 @@ export function CompanySupervisionAdmin({
       downloadCompanyPerformanceExcel({
         entry,
         items,
+        excelSource,
         campaignTitle,
         campaignSlug,
       });
@@ -400,8 +681,85 @@ export function CompanySupervisionAdmin({
     }
   };
 
-  const renderGrid = (list: CompanySupervisionItem[]) => {
-    if (list.length === 0) {
+  const focusContentWithPreset = (
+    preset: CompanySupervisionDatePreset,
+    type: CompanySupervisionContentType | "all" = "all"
+  ) => {
+    setDatePreset(preset);
+    setTypeFilter(type);
+    setActiveTab("content");
+  };
+
+  const kpiItems = (
+    [
+      {
+        title: "مجموع محتوا",
+        value: entry.totalUploads,
+        icon: Layers,
+        todayDelta: entry.todayUploads,
+        type: "all" as const,
+      },
+      {
+        title: "تبلیغات محیطی",
+        value: entry.billboards,
+        icon: LayoutGrid,
+        todayDelta: todayCounts.billboard,
+        type: "billboard" as const,
+      },
+      {
+        title: "پوستر",
+        value: entry.posters,
+        icon: ImageIcon,
+        todayDelta: todayCounts.poster,
+        type: "poster" as const,
+      },
+      {
+        title: "ویدیو",
+        value: entry.videos,
+        icon: Video,
+        todayDelta: todayCounts.video,
+        type: "video" as const,
+      },
+      {
+        title: "شبکه اجتماعی",
+        value: entry.socialPosts,
+        icon: Share2,
+        todayDelta: todayCounts.social_post,
+        type: "social_post" as const,
+      },
+      {
+        title: "انتشار سایت",
+        value: entry.sitePublications,
+        icon: Globe,
+        todayDelta: todayCounts.site_publication,
+        type: "site_publication" as const,
+      },
+      {
+        title: "اقدام",
+        value: entry.activities,
+        icon: Megaphone,
+        todayDelta: todayCounts.activity,
+        type: "activity" as const,
+      },
+      {
+        title: "فایل",
+        value: entry.files,
+        icon: FileText,
+        todayDelta: todayCounts.file,
+        type: "file" as const,
+      },
+    ] satisfies {
+      title: string;
+      value: number;
+      icon: LucideIcon;
+      todayDelta?: number;
+      type: CompanySupervisionContentType | "all";
+    }[]
+  ).filter((item) => item.value > 0 || (item.todayDelta ?? 0) > 0);
+
+  const renderGroupedGrid = (list: CompanySupervisionItem[]) => {
+    const groups = groupCompanySupervisionItems(list);
+    if (groups.length === 0) {
       return (
         <div className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">
           موردی یافت نشد.
@@ -409,22 +767,33 @@ export function CompanySupervisionAdmin({
       );
     }
     return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {list.map((item) => (
-          <ContentItemCard
-            key={item.key}
-            item={item}
-            campaignId={campaignId}
-            canScore={canScore}
-            canSendMessage={canSendMessage}
-            canManageReviews={canManageReviews}
-            reviewPending={isPending && pendingKey === item.key}
-            onApprove={() => runApprove(item)}
-            onReject={() => {
-              setRejectingItem(item);
-              setRejectionReason("");
-            }}
-          />
+      <div className="space-y-8">
+        {groups.map((group) => (
+          <section key={group.type} className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-base font-semibold">{group.label}</h3>
+              <Badge variant="secondary">{formatPersianNumber(group.items.length)}</Badge>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {group.items.map((item) => (
+                <ContentItemCard
+                  key={item.key}
+                  item={item}
+                  campaignId={campaignId}
+                  canScore={canScore}
+                  canSendMessage={canSendMessage}
+                  canManageReviews={canManageReviews}
+                  reviewPending={isPending && pendingKey === item.key}
+                  onOpen={() => setViewingItem(item)}
+                  onApprove={() => runApprove(item)}
+                  onReject={() => {
+                    setRejectingItem(item);
+                    setRejectionReason("");
+                  }}
+                />
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     );
@@ -443,7 +812,7 @@ export function CompanySupervisionAdmin({
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">نظارت شرکت — {entry.userName}</h1>
             <p className="text-sm text-muted-foreground">
-              همه اطلاعات و عملیات نظارتی این شرکت در کمپین «{campaignTitle}»
+              گزارش زنده این شرکت در کمپین «{campaignTitle}» با امکان تایید، رد و تاریخچه کارت
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -481,12 +850,9 @@ export function CompanySupervisionAdmin({
         </Button>
       </div>
 
-      <Tabs defaultValue="summary" className="space-y-4" dir="rtl">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4" dir="rtl">
         <TabsList className="h-auto w-full justify-start">
           <TabsTrigger value="summary">خلاصه</TabsTrigger>
-          <TabsTrigger value="today">
-            امروز ({formatPersianNumber(todayItems.length)})
-          </TabsTrigger>
           <TabsTrigger value="content">
             محتوا ({formatPersianNumber(items.length)})
           </TabsTrigger>
@@ -499,7 +865,23 @@ export function CompanySupervisionAdmin({
           <TabsTrigger value="notes">یادداشت‌ها</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="summary" className="space-y-4">
+        <TabsContent value="summary" className="space-y-6">
+          {kpiItems.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+              {kpiItems.map((kpi) => (
+                <KPICard
+                  key={kpi.title}
+                  title={kpi.title}
+                  value={kpi.value}
+                  icon={kpi.icon}
+                  todayDelta={kpi.todayDelta}
+                  onClick={() => focusContentWithPreset("all", kpi.type)}
+                  onTodayDeltaClick={() => focusContentWithPreset("today", kpi.type)}
+                />
+              ))}
+            </div>
+          )}
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">امتیاز بخش‌ها</CardTitle>
@@ -535,63 +917,39 @@ export function CompanySupervisionAdmin({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">آمار عددی این کمپین</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {METRIC_COLUMNS.map((column) => (
-                  <div
-                    key={column.key}
-                    className="rounded-lg border bg-muted/30 px-3 py-2.5"
-                  >
-                    <p className="text-[11px] text-muted-foreground">{column.label}</p>
-                    <p className="text-sm font-semibold tabular-nums">
-                      {formatPersianNumber(Number(entry[column.key] ?? 0))}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">آپلود امروز</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                امروز {formatPersianNumber(todayItems.length)} محتوا آپلود شده است.
-              </p>
-              {todayByType.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {todayByType.map(([label, count]) => (
-                    <Badge key={label} variant="outline">
-                      {label}: {formatPersianNumber(count)}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">آپلودی برای امروز ثبت نشده.</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="today" className="space-y-4">
-          {renderGrid(todayItems)}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ContentMixChart data={contentMix} title="ترکیب محتوای این شرکت" />
+            <UploadActivityChart stats={uploadStats} todayItems={[]} />
+          </div>
         </TabsContent>
 
         <TabsContent value="content" className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
+            <Select
+              value={datePreset}
+              onValueChange={(value) =>
+                setDatePreset(value as CompanySupervisionDatePreset)
+              }
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="بازه تاریخ" />
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                {COMPANY_SUPERVISION_DATE_PRESETS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select
               value={typeFilter}
               onValueChange={(value) =>
                 setTypeFilter(value as CompanySupervisionContentType | "all")
               }
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="نوع محتوا" />
               </SelectTrigger>
               <SelectContent dir="rtl">
@@ -602,11 +960,30 @@ export function CompanySupervisionAdmin({
                 ))}
               </SelectContent>
             </Select>
+
+            <Select
+              value={reviewFilter}
+              onValueChange={(value) =>
+                setReviewFilter(value as CompanySupervisionReviewFilter)
+              }
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="وضعیت بازبینی" />
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                {COMPANY_SUPERVISION_REVIEW_FILTERS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <p className="text-sm text-muted-foreground">
               {formatPersianNumber(filteredContent.length)} مورد
             </p>
           </div>
-          {renderGrid(filteredContent)}
+          {renderGroupedGrid(filteredContent)}
         </TabsContent>
 
         <TabsContent value="returned" className="space-y-4">
@@ -615,70 +992,7 @@ export function CompanySupervisionAdmin({
               محتوای برگشتی برای این شرکت نیست.
             </div>
           ) : (
-            <div className="space-y-3">
-              {returnedItems.map((item) => (
-                <article key={item.key} className="rounded-xl border bg-card p-4 text-right" dir="rtl">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <Badge
-                          variant={
-                            item.reviewStatus === "resubmitted" ? "default" : "destructive"
-                          }
-                          className="text-[10px]"
-                        >
-                          {item.reviewStatus === "resubmitted"
-                            ? "ارسال‌مجدد (ویرایش کرده)"
-                            : "برگشت برای ویرایش (هنوز ویرایش نشده)"}
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {item.typeLabel}
-                        </Badge>
-                      </div>
-                      <h3 className="font-medium leading-snug">{item.title}</h3>
-                      {item.reviewUpdatedAt && (
-                        <p className="text-xs text-muted-foreground">
-                          آخرین بروزرسانی: {formatPersianDateTime(item.reviewUpdatedAt)}
-                        </p>
-                      )}
-                    </div>
-                    <Button type="button" variant="ghost" size="sm" className="gap-1.5" asChild>
-                      <Link href={item.adminPath}>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        ویرایش محتوا
-                      </Link>
-                    </Button>
-                  </div>
-                  {item.rejectionReason && (
-                    <p className="mt-3 whitespace-pre-wrap rounded-lg bg-muted/60 p-3 text-sm">
-                      دلیل برگشت: {item.rejectionReason}
-                    </p>
-                  )}
-                  {canManageReviews && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        disabled={isPending && pendingKey === item.key}
-                        onClick={() => runApprove(item)}
-                      >
-                        تایید نهایی
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={isPending && pendingKey === item.key}
-                        onClick={() => {
-                          setRejectingItem(item);
-                          setRejectionReason("");
-                        }}
-                      >
-                        رد مجدد
-                      </Button>
-                    </div>
-                  )}
-                </article>
-              ))}
-            </div>
+            renderGroupedGrid(returnedItems)
           )}
         </TabsContent>
 
@@ -716,6 +1030,25 @@ export function CompanySupervisionAdmin({
           )}
         </TabsContent>
       </Tabs>
+
+      <SupervisionItemDialog
+        item={viewingItem}
+        open={Boolean(viewingItem)}
+        onOpenChange={(open) => {
+          if (!open) setViewingItem(null);
+        }}
+        campaignId={campaignId}
+        canScore={canScore}
+        canSendMessage={canSendMessage}
+        canManageReviews={canManageReviews}
+        reviewPending={Boolean(viewingItem && isPending && pendingKey === viewingItem.key)}
+        onApprove={() => viewingItem && runApprove(viewingItem)}
+        onReject={() => {
+          if (!viewingItem) return;
+          setRejectingItem(viewingItem);
+          setRejectionReason("");
+        }}
+      />
 
       <Dialog
         open={Boolean(rejectingItem)}

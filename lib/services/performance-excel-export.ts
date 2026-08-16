@@ -1,7 +1,18 @@
 import * as XLSX from "xlsx";
 import type { UserLeaderboardEntry } from "@/lib/city-leaderboard";
-import type { CompanySupervisionItem } from "@/lib/company-supervision";
+import type {
+  CompanyExcelSource,
+  CompanySupervisionItem,
+} from "@/lib/company-supervision";
 import { reviewStatusLabel } from "@/lib/company-supervision";
+import type {
+  Billboard,
+  CampaignActivity,
+  CampaignFile,
+  Poster,
+  SocialMediaPost,
+  Video,
+} from "@/lib/types";
 
 export type PerformanceExcelSortMode = "activity" | "rating";
 
@@ -104,39 +115,197 @@ export function downloadPerformanceExcel(
   downloadWorkbookBytes(bytes, `performance-${slug}-${date}.xlsx`);
 }
 
-const COMPANY_SHEET_GROUPS: {
-  sheetName: string;
-  match: (item: CompanySupervisionItem) => boolean;
-}[] = [
-  { sheetName: "تبلیغات محیطی", match: (item) => item.contentType === "billboard" },
-  { sheetName: "پوستر", match: (item) => item.contentType === "poster" },
-  { sheetName: "ویدیو", match: (item) => item.contentType === "video" },
-  { sheetName: "شبکه اجتماعی", match: (item) => item.contentType === "social_post" },
-  { sheetName: "انتشار سایت", match: (item) => item.contentType === "site_publication" },
-  { sheetName: "اقدام", match: (item) => item.contentType === "activity" },
-  { sheetName: "فایل", match: (item) => item.contentType === "file" },
-];
+function reviewLookup(items: CompanySupervisionItem[]) {
+  return new Map(items.map((item) => [`${item.contentType}:${item.contentId}`, item]));
+}
 
-function companyItemRows(items: CompanySupervisionItem[]) {
-  return items.map((item) => ({
+function reviewColumns(item: CompanySupervisionItem | undefined) {
+  return {
+    امتیاز: item?.score ?? "",
+    "امتیاز پیشنهادی": item?.autoScore ?? "",
+    "امتیاز دستی": item?.manualScore ?? "",
+    "وضعیت بازبینی": reviewStatusLabel(item?.reviewStatus ?? null) ?? "—",
+    "دلیل رد": item?.rejectionReason ?? "",
+    "تاریخ رد": item?.rejectedAt?.slice(0, 19) ?? "",
+    "تاریخ ارسال مجدد": item?.resubmittedAt?.slice(0, 19) ?? "",
+    "تاریخ تایید": item?.resolvedAt?.slice(0, 19) ?? "",
+    "قبلاً رد شده": item?.everRejected ? "بله" : "خیر",
+    امروز: item?.isToday ? "بله" : "خیر",
+  };
+}
+
+function appendSheet(
+  workbook: XLSX.WorkBook,
+  name: string,
+  rows: Record<string, string | number | boolean | null | undefined>[]
+) {
+  if (rows.length === 0) return;
+  const sheet = XLSX.utils.json_to_sheet(rows);
+  const keys = Object.keys(rows[0] ?? {});
+  sheet["!cols"] = keys.map((key) => ({ wch: Math.min(36, Math.max(12, key.length + 4)) }));
+  XLSX.utils.book_append_sheet(workbook, sheet, name);
+}
+
+function billboardRows(list: Billboard[], items: CompanySupervisionItem[]) {
+  const reviews = reviewLookup(items);
+  return list.map((item) => ({
     عنوان: item.title,
-    نوع: item.typeLabel,
-    تاریخ: item.createdAt?.slice(0, 10) ?? "",
-    امتیاز: item.score ?? "",
-    "امتیاز پیشنهادی": item.autoScore ?? "",
-    "وضعیت بازبینی": reviewStatusLabel(item.reviewStatus) ?? "—",
-    "دلیل رد": item.rejectionReason ?? "",
+    توضیحات: item.description ?? "",
+    استان: item.province ?? item.ownerProvince ?? "",
+    شهر: item.city ?? item.ownerCity ?? "",
+    موقعیت: item.location ?? "",
+    "تاریخ اکران": item.date ?? "",
+    "بازه نمایش": item.displayDateRange ?? "",
+    کد: item.code ?? "",
+    دسته‌بندی: item.category ?? "",
+    "نوع بیلبورد": item.billboardTypeLabel ?? "",
+    "سطح کیفیت": item.qualityTierLabel ?? "",
+    "نوع مکان": item.locationType ?? "",
+    متراژ: item.areaSqm ?? "",
+    "عرض‌دهنده": item.providerName ?? "",
+    "طراحی تاییدشده": item.usesApprovedDesign ? "بله" : "خیر",
+    وضعیت: item.status ?? "",
+    برچسب‌ها: (item.tags ?? []).join("، "),
+    یادداشت: item.notes ?? "",
+    "لینک خارجی": item.externalUrl ?? "",
+    "تصویر بندانگشتی": item.thumbnailUrl ?? "",
+    تصویر: item.imageUrl ?? "",
+    عرض: item.latitude ?? "",
+    طول: item.longitude ?? "",
+    منبع: item.source ?? "",
+    "شناسه خارجی": item.externalId ?? "",
+    "مالک / شرکت": item.ownerName ?? "",
+    "ایمیل مالک": item.ownerEmail ?? "",
     منتشرشده: item.published ? "بله" : "خیر",
-    امروز: item.isToday ? "بله" : "خیر",
+    "تاریخ ثبت": item.createdAt?.slice(0, 19) ?? "",
+    "آخرین بروزرسانی": item.updatedAt?.slice(0, 19) ?? "",
+    "تعداد دوره نمایش": item.displayPeriods?.length ?? 0,
+    ...reviewColumns(reviews.get(`billboard:${item.id}`)),
+  }));
+}
+
+function posterRows(list: Poster[], items: CompanySupervisionItem[]) {
+  const reviews = reviewLookup(items);
+  return list.map((item) => ({
+    عنوان: item.title,
+    توضیحات: item.description ?? "",
+    طرح: item.planLabel ?? "",
+    "شناسه دسته": item.categoryId ?? "",
+    "مالک / شرکت": item.ownerName ?? "",
+    "ایمیل مالک": item.ownerEmail ?? "",
+    استان: item.ownerProvince ?? "",
+    شهر: item.ownerCity ?? "",
+    منتشرشده: item.published ? "بله" : "خیر",
+    "تاریخ ثبت": item.createdAt?.slice(0, 19) ?? "",
+    "آخرین بروزرسانی": item.updatedAt?.slice(0, 19) ?? "",
+    ...reviewColumns(reviews.get(`poster:${item.id}`)),
+  }));
+}
+
+function videoRows(list: Video[], items: CompanySupervisionItem[]) {
+  const reviews = reviewLookup(items);
+  return list.map((item) => ({
+    عنوان: item.title,
+    توضیحات: item.description ?? "",
+    طرح: item.planLabel ?? "",
+    "ژانر ویدیو": item.videoContentType ?? "",
+    "شناسه دسته": item.categoryId ?? "",
+    "مالک / شرکت": item.ownerName ?? "",
+    "ایمیل مالک": item.ownerEmail ?? "",
+    استان: item.ownerProvince ?? "",
+    شهر: item.ownerCity ?? "",
+    منتشرشده: item.published ? "بله" : "خیر",
+    "تاریخ ثبت": item.createdAt?.slice(0, 19) ?? "",
+    "آخرین بروزرسانی": item.updatedAt?.slice(0, 19) ?? "",
+    ...reviewColumns(reviews.get(`video:${item.id}`)),
+  }));
+}
+
+function socialRows(
+  list: SocialMediaPost[],
+  items: CompanySupervisionItem[],
+  contentType: "social_post" | "site_publication"
+) {
+  const reviews = reviewLookup(items);
+  return list.map((item) => ({
+    عنوان: item.title,
+    توضیحات: item.description ?? "",
+    پلتفرم: item.platform ?? "",
+    "نوع محتوا": item.contentType ?? "",
+    لینک: item.link ?? "",
+    "تاریخ انتشار": item.publishedDate ?? "",
+    بازدید: item.views ?? 0,
+    لایک: item.likes ?? 0,
+    کامنت: item.comments ?? 0,
+    اشتراک: item.shares ?? 0,
+    "تصویر کاور": item.coverImageUrl ?? "",
+    رسانه: item.mediaUrl ?? "",
+    "مالک / شرکت": item.ownerName ?? "",
+    "ایمیل مالک": item.ownerEmail ?? "",
+    استان: item.ownerProvince ?? "",
+    شهر: item.ownerCity ?? "",
+    منتشرشده: item.published ? "بله" : "خیر",
+    "تاریخ ثبت": item.createdAt?.slice(0, 19) ?? "",
+    "آخرین بروزرسانی": item.updatedAt?.slice(0, 19) ?? "",
+    ...reviewColumns(reviews.get(`${contentType}:${item.id}`)),
+  }));
+}
+
+function activityRows(list: CampaignActivity[], items: CompanySupervisionItem[]) {
+  const reviews = reviewLookup(items);
+  return list.map((item) => ({
+    عنوان: item.title,
+    توضیحات: item.description ?? "",
+    "نوع اقدام": item.activityType ?? "",
+    "تاریخ اقدام": item.activityDate ?? "",
+    مکان: item.location ?? "",
+    لینک: item.link ?? "",
+    خلاقانه: item.isCreative ? "بله" : "خیر",
+    "دامنه رسانه": item.mediaScope ?? "",
+    "ژانر نشریه": item.pressContentType ?? "",
+    تصویر: item.imageUrl ?? "",
+    ویدیو: item.videoUrl ?? "",
+    "تعداد رسانه": item.mediaItems?.length ?? 0,
+    "تعداد پیوست": item.attachments?.length ?? 0,
+    "مالک / شرکت": item.ownerName ?? "",
+    "ایمیل مالک": item.ownerEmail ?? "",
+    استان: item.ownerProvince ?? "",
+    شهر: item.ownerCity ?? "",
+    منتشرشده: item.published ? "بله" : "خیر",
+    "تاریخ ثبت": item.createdAt?.slice(0, 19) ?? "",
+    "آخرین بروزرسانی": item.updatedAt?.slice(0, 19) ?? "",
+    ...reviewColumns(reviews.get(`activity:${item.id}`)),
+  }));
+}
+
+function fileRows(list: CampaignFile[], items: CompanySupervisionItem[]) {
+  const reviews = reviewLookup(items);
+  return list.map((item) => ({
+    عنوان: item.title,
+    توضیحات: item.description ?? "",
+    طرح: item.planLabel ?? "",
+    "نام فایل": item.fileName ?? "",
+    "نوع فایل": item.mimeType ?? "",
+    "حجم (بایت)": item.fileSize ?? "",
+    "لینک فایل": item.fileUrl ?? "",
+    "مالک / شرکت": item.ownerName ?? "",
+    "ایمیل مالک": item.ownerEmail ?? "",
+    استان: item.ownerProvince ?? "",
+    شهر: item.ownerCity ?? "",
+    منتشرشده: item.published ? "بله" : "خیر",
+    "تاریخ ثبت": item.createdAt?.slice(0, 19) ?? "",
+    "آخرین بروزرسانی": item.updatedAt?.slice(0, 19) ?? "",
+    ...reviewColumns(reviews.get(`file:${item.id}`)),
   }));
 }
 
 export function buildCompanyPerformanceExcelBuffer(input: {
   entry: UserLeaderboardEntry;
   items: CompanySupervisionItem[];
+  excelSource?: CompanyExcelSource;
   campaignTitle?: string;
 }): Uint8Array {
-  const { entry, items } = input;
+  const { entry, items, excelSource } = input;
   const workbook = XLSX.utils.book_new();
 
   const summary = XLSX.utils.aoa_to_sheet([
@@ -168,22 +337,26 @@ export function buildCompanyPerformanceExcelBuffer(input: {
   summary["!cols"] = [{ wch: 22 }, { wch: 28 }];
   XLSX.utils.book_append_sheet(workbook, summary, "خلاصه");
 
-  for (const group of COMPANY_SHEET_GROUPS) {
-    const groupItems = items.filter(group.match);
-    if (groupItems.length === 0) continue;
-    const sheet = XLSX.utils.json_to_sheet(companyItemRows(groupItems));
-    sheet["!cols"] = [
-      { wch: 32 },
-      { wch: 14 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 14 },
-      { wch: 18 },
-      { wch: 28 },
-      { wch: 10 },
-      { wch: 8 },
-    ];
-    XLSX.utils.book_append_sheet(workbook, sheet, group.sheetName);
+  if (excelSource) {
+    appendSheet(workbook, "تبلیغات محیطی", billboardRows(excelSource.billboards, items));
+    appendSheet(workbook, "پوستر", posterRows(excelSource.posters, items));
+    appendSheet(workbook, "ویدیو", videoRows(excelSource.videos, items));
+    appendSheet(
+      workbook,
+      "شبکه اجتماعی",
+      socialRows(excelSource.socialPosts, items, "social_post")
+    );
+    appendSheet(
+      workbook,
+      "انتشار سایت",
+      socialRows(excelSource.sitePublications, items, "site_publication")
+    );
+    appendSheet(
+      workbook,
+      "اقدام",
+      activityRows([...excelSource.activities, ...excelSource.pressPublications], items)
+    );
+    appendSheet(workbook, "فایل", fileRows(excelSource.files, items));
   }
 
   const bytes = XLSX.write(workbook, { type: "array", bookType: "xlsx" }) as number[];
@@ -193,6 +366,7 @@ export function buildCompanyPerformanceExcelBuffer(input: {
 export function downloadCompanyPerformanceExcel(input: {
   entry: UserLeaderboardEntry;
   items: CompanySupervisionItem[];
+  excelSource?: CompanyExcelSource;
   campaignTitle?: string;
   campaignSlug?: string;
 }) {

@@ -317,7 +317,10 @@ export async function listContentMessagesForCardAction(input: {
   contentId: string;
 }): Promise<{ success: boolean; messages?: ContentMessageListItem[]; error?: string }> {
   const session = await getAuthSession();
-  if (!session || !canManageAllContent(session)) {
+  if (
+    !session ||
+    !(canManageAllContent(session) || canSendContentMessages(session) || isFullAdmin(session))
+  ) {
     return { success: false, error: "دسترسی ندارید" };
   }
   if (!isPostgresConfigured()) {

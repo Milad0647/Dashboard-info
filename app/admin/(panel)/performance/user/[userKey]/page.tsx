@@ -14,7 +14,9 @@ import { getAuthSession } from "@/lib/auth/get-session";
 import { buildUserLeaderboard } from "@/lib/city-leaderboard";
 import {
   collectCompanySupervisionItems,
+  filterLeaderboardSourceByUser,
   findUserLeaderboardEntry,
+  toCompanyExcelSource,
 } from "@/lib/company-supervision";
 import { getAdminData } from "@/lib/data-access/admin";
 import { buildLeaderboardSourceFromAdmin } from "@/lib/performance-overview";
@@ -92,6 +94,7 @@ export default async function CompanySupervisionPage({
     source,
     reviews: reviewsResult.success ? reviewsResult.reviews ?? [] : [],
   });
+  const userSource = filterLeaderboardSourceByUser(source, userKey);
 
   return (
     <CompanySupervisionAdmin
@@ -100,6 +103,7 @@ export default async function CompanySupervisionPage({
       campaignSlug={data.settings.slug}
       entry={entry}
       items={items}
+      excelSource={toCompanyExcelSource(userSource)}
       canScore={canScoreContent(session)}
       canManageReviews={canManageAllContent(session)}
       canSendMessage={canSendContentMessages(session)}
