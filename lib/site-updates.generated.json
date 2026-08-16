@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "97e91aa3d1fcacd3fb59d28b34a747d1316463cd",
+      "committedAt": "2026-08-16T15:16:36+03:30",
+      "title": "نمایش وضعیت تایید شده به‌جای دکمه رد و تایید روی محتوای تاییدشده",
+      "subject": "Hide approve/reject on already approved company content"
+    },
+    {
       "hash": "ae39e7fd36171c929f0f694ab21f22f3449f3e46",
       "committedAt": "2026-08-16T15:06:16+03:30",
       "title": "نمایش ۹ کارت در ردیف و فیلترهای کمپین زنده در نظارت شرکت",
