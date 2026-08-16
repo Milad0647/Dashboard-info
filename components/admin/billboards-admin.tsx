@@ -42,7 +42,7 @@ import {
 } from "@/lib/billboard-categories";
 import { BillboardCategoryChart } from "@/components/charts/billboard-category-chart";
 import { isApiBillboard } from "@/lib/billboards";
-import { getBillboardDisplayImage } from "@/lib/billboard-media";
+import { getBillboardCardImage, getBillboardDisplayImage } from "@/lib/billboard-media";
 import type { ContentTopic } from "@/lib/content-topics";
 import { type EditSuggestionMissingField } from "@/lib/edit-suggestions";
 import { useAdminEditDeepLink } from "@/lib/hooks/use-admin-edit-deep-link";
@@ -409,6 +409,7 @@ export function BillboardsAdmin({
         title={previewBillboard?.title ?? "نمایش تبلیغات محیطی"}
         description={previewBillboard?.description}
         imageUrl={previewBillboard ? getBillboardDisplayImage(previewBillboard) : null}
+        previewImageUrl={previewBillboard ? getBillboardCardImage(previewBillboard) : null}
         meta={
           previewBillboard ? (
             <div className="space-y-1">

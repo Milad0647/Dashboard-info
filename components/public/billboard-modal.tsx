@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Download, ExternalLink, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { resolveBillboardCategoryDisplay } from "@/lib/billboard-categories";
 import {
   filterPublicBillboardTags,
   getBillboardDateLabel,
+  getBillboardCardImage,
   getBillboardDisplayImage,
   hasBillboardDisplayImage,
   shouldShowBillboardNotes,
@@ -27,6 +29,12 @@ interface BillboardModalProps {
 }
 
 export function BillboardModal({ open, onOpenChange, billboard }: BillboardModalProps) {
+  const [zoomFailed, setZoomFailed] = useState(false);
+
+  useEffect(() => {
+    setZoomFailed(false);
+  }, [billboard?.id]);
+
   if (!billboard) return null;
 
   const displayTags = filterPublicBillboardTags(billboard.tags);
@@ -34,12 +42,14 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
   const showStatus = shouldShowBillboardStatus(billboard);
   const showNotes = shouldShowBillboardNotes(billboard);
   const canDownload = hasBillboardDisplayImage(billboard);
+  const canZoom = canDownload && !zoomFailed;
+  const fullImage = getBillboardDisplayImage(billboard);
+  const cardImage = getBillboardCardImage(billboard);
   const dateLabel = getBillboardDateLabel(billboard);
 
   const handleDownload = () => {
     if (!canDownload) return;
-    const imageUrl = getBillboardDisplayImage(billboard);
-    void downloadMedia(imageUrl, getFilenameFromUrl(imageUrl, `${billboard.title}.jpg`));
+    void downloadMedia(fullImage, getFilenameFromUrl(fullImage, `${billboard.title}.jpg`));
   };
 
   const handleOpenMap = () => {
@@ -60,12 +70,15 @@ export function BillboardModal({ open, onOpenChange, billboard }: BillboardModal
         </DialogHeader>
 
         <div className="relative aspect-[4/3] w-full bg-muted">
-          {canDownload ? (
+          {canZoom ? (
             <ImageZoom
-              src={getBillboardDisplayImage(billboard)}
+              src={fullImage}
+              previewSrc={cardImage}
               alt={billboard.title}
               className="absolute inset-0 h-full w-full"
               imgClassName="object-cover"
+              sizes="(max-width: 768px) 100vw, 768px"
+              onError={() => setZoomFailed(true)}
             />
           ) : (
             <BillboardThumbnail

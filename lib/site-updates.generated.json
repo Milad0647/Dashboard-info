@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "6994124475b322335c2a9a2af22ab0fa485b1de0",
+      "committedAt": "2026-08-15T13:43:55+03:30",
+      "title": "افزودن نوع محتوا به ویدیوها (خبر، گزارش خبری، پخش زنده و …)",
+      "subject": "Add video content type field for news and broadcast genres"
+    },
+    {
       "hash": "104b61324ed9220a37686a257020410ff83cd952",
       "committedAt": "2026-08-15T12:40:23+03:30",
       "title": "افزودن خودکار https به لینک‌های بدون پروتکل",

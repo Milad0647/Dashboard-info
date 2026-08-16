@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Minus, Plus, X, ZoomIn } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -42,9 +42,23 @@ export function ImageZoom({
   const [open, setOpen] = useState(false);
   const [scale, setScale] = useState(1);
   const [imageFailed, setImageFailed] = useState(false);
+  /** 0 = card thumb, 1 = preview URL, 2 = full src */
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const cardSrc = toCardThumbnailUrl((previewSrc?.trim() || src).trim());
+  const fullSrc = src.trim();
+  const preferredPreview = (previewSrc?.trim() || fullSrc).trim();
+  const candidates = [
+    toCardThumbnailUrl(preferredPreview),
+    preferredPreview,
+    fullSrc,
+  ].filter((url, index, list) => Boolean(url) && list.indexOf(url) === index);
+  const cardSrc = candidates[Math.min(loadAttempt, candidates.length - 1)] ?? fullSrc;
+
+  useEffect(() => {
+    setImageFailed(false);
+    setLoadAttempt(0);
+  }, [fullSrc, preferredPreview]);
 
   const resetZoom = useCallback(() => setScale(1), []);
 
@@ -54,11 +68,15 @@ export function ImageZoom({
   };
 
   const handleImageError = () => {
+    if (loadAttempt < candidates.length - 1) {
+      setLoadAttempt((current) => current + 1);
+      return;
+    }
     setImageFailed(true);
     onError?.();
   };
 
-  if (!src || imageFailed) return null;
+  if (!fullSrc || imageFailed) return null;
 
   return (
     <>
@@ -141,7 +159,7 @@ export function ImageZoom({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={src}
+              src={fullSrc}
               alt={alt}
               className="max-h-[90vh] max-w-full origin-center object-contain transition-transform"
               style={{ transform: `scale(${scale})` }}

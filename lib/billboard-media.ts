@@ -1,5 +1,5 @@
 import type { Billboard } from "@/lib/types";
-import { resolveCardCoverUrl, toCardThumbnailUrl } from "@/lib/card-image";
+import { isLocalUploadedImageUrl, resolveCardCoverUrl, toCardThumbnailUrl } from "@/lib/card-image";
 
 export const BILLBOARD_PLACEHOLDER_IMAGE = "/images/billboard-placeholder.svg";
 
@@ -28,12 +28,20 @@ function firstPeriodImageUrl(billboard: Billboard): string {
   return "";
 }
 
+function pickPreferredBillboardUrl(...urls: string[]): string {
+  const valid = urls.filter((url) => !isInvalidBillboardImageUrl(url));
+  if (!valid.length) return "";
+  // Prefer local uploads over remote hosts that may be expired/unreachable in view.
+  const local = valid.find((url) => isLocalUploadedImageUrl(url) || url.includes("/api/files/"));
+  return local || valid[0];
+}
+
 /** Full-quality candidate for lightbox / download. */
 function resolveBillboardFullImageCandidate(billboard: Billboard): string {
   const imageUrl = normalizeBillboardImageUrl(billboard.imageUrl);
   const thumbnailUrl = normalizeBillboardImageUrl(billboard.thumbnailUrl);
-  const fromRow = imageUrl || thumbnailUrl;
-  if (!isInvalidBillboardImageUrl(fromRow)) return fromRow;
+  const fromRow = pickPreferredBillboardUrl(imageUrl, thumbnailUrl);
+  if (fromRow) return fromRow;
   return firstPeriodImageUrl(billboard);
 }
 
