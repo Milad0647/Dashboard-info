@@ -8,6 +8,7 @@ import type {
   Video,
   VideoVersion,
 } from "@/lib/types";
+import { resolveDisplayVersion } from "@/lib/media-utils";
 
 export type NotificationRange = "day" | "week" | "month" | "all";
 export type NotificationSort = "upload" | "date" | "owner" | "province";
@@ -55,10 +56,9 @@ function startOfRange(range: NotificationRange): Date | null {
 }
 
 function posterThumbnail(posterId: string, versions: PosterVersion[]): string | null {
-  const versionsForPoster = versions
-    .filter((version) => version.posterId === posterId)
-    .sort((a, b) => b.versionNumber - a.versionNumber);
-  return versionsForPoster[0]?.thumbnailUrl ?? versionsForPoster[0]?.imageUrl ?? null;
+  const versionsForPoster = versions.filter((version) => version.posterId === posterId);
+  const display = resolveDisplayVersion(versionsForPoster);
+  return display?.thumbnailUrl?.trim() || display?.imageUrl?.trim() || null;
 }
 
 function videoThumbnail(videoId: string, versions: VideoVersion[]): string | null {

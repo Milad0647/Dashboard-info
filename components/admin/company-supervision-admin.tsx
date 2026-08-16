@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
+import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import {
   Select,
   SelectContent,
@@ -124,12 +125,12 @@ function ContentItemCard({
         onClick={onOpen}
       >
         {item.thumbnailUrl ? (
-          <Image
+          <MediaThumbnail
             src={item.thumbnailUrl}
             alt={item.title}
-            fill
-            className="object-cover"
+            kind={item.contentType === "video" ? "video" : "poster"}
             sizes="(max-width: 768px) 100vw, 33vw"
+            objectFit="cover"
           />
         ) : (
           <MediaPlaceholder kind="poster" className="h-full w-full" />
@@ -426,12 +427,12 @@ function SupervisionItemDialog({
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-4 text-right">
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted">
             {item.imageUrl || item.thumbnailUrl ? (
-              <Image
-                src={item.imageUrl || item.thumbnailUrl || ""}
+              <MediaThumbnail
+                src={item.imageUrl || item.thumbnailUrl}
                 alt={item.title}
-                fill
-                className="object-contain"
+                kind={item.contentType === "video" ? "video" : "poster"}
                 sizes="(max-width: 768px) 100vw, 42rem"
+                objectFit="contain"
               />
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

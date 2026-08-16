@@ -503,10 +503,25 @@ export function collectUserContentItems(
     push(data.billboards, "تبلیغات محیطی", "billboard", (item) => item.thumbnailUrl);
   }
   if (data.sections.posters) {
-    push(data.posters, "پوستر", "poster");
+    push(data.posters, "پوستر", "poster", (item) => {
+      const versions = (item as PosterWithVersions).versions;
+      if (versions?.length) {
+        const version = resolveDisplayVersion(versions);
+        return version?.thumbnailUrl?.trim() || version?.imageUrl?.trim() || null;
+      }
+      return null;
+    });
   }
   if (data.sections.videos) {
-    push(data.videos, "ویدیو", "video");
+    push(data.videos, "ویدیو", "video", (item) => {
+      const versions = (item as VideoWithVersions).versions;
+      if (versions?.length) {
+        const version = resolveDisplayVersion(versions);
+        if (!version) return null;
+        return resolveVideoThumbnail(version.videoUrl, version.thumbnailUrl);
+      }
+      return null;
+    });
   }
   if (data.sections.socialPosts) {
     push(data.socialPosts, "پست اجتماعی", "social_post", (item) => item.coverImageUrl);

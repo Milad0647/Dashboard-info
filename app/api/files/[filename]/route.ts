@@ -71,18 +71,22 @@ export async function GET(
 
   try {
     if (wantCardThumb) {
-      const thumbName = await ensureLocalImageThumbnail(filename);
-      if (thumbName) {
-        const thumbPath = resolveUploadFilePath(thumbName);
-        const thumbBuffer = await readFile(thumbPath);
-        return new NextResponse(thumbBuffer, {
-          headers: {
-            "Content-Type": "image/webp",
-            "Content-Length": String(thumbBuffer.byteLength),
-            "Cache-Control": "private, max-age=86400",
-            "X-Content-Type-Options": "nosniff",
-          },
-        });
+      try {
+        const thumbName = await ensureLocalImageThumbnail(filename);
+        if (thumbName) {
+          const thumbPath = resolveUploadFilePath(thumbName);
+          const thumbBuffer = await readFile(thumbPath);
+          return new NextResponse(thumbBuffer, {
+            headers: {
+              "Content-Type": "image/webp",
+              "Content-Length": String(thumbBuffer.byteLength),
+              "Cache-Control": "private, max-age=86400",
+              "X-Content-Type-Options": "nosniff",
+            },
+          });
+        }
+      } catch {
+        // Fall through and serve the original image when thumb generation fails.
       }
     }
 

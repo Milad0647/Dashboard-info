@@ -11,6 +11,7 @@ import type { ContentReview, ContentReviewStatus } from "@/lib/content-review/ty
 import { isReviewableContentType } from "@/lib/content-review/types";
 import type { ContentMixItem } from "@/lib/campaign-overview-insights";
 import { countsAsTodayBillboardUpload } from "@/lib/billboards";
+import { resolveDisplayVersion, resolveVideoThumbnail } from "@/lib/media-utils";
 import {
   getSafeCreatedTimestamp,
   getTehranCalendarDateIso,
@@ -34,14 +35,64 @@ import type {
   CampaignFile,
   Ownable,
   Poster,
+  PosterVersion,
   SocialMediaPost,
   Video,
+  VideoVersion,
 } from "@/lib/types";
 import type { UserCompanyType } from "@/lib/user-company-types";
 import type {
   UploadActivityPoint,
   UploadActivitySummary,
 } from "@/lib/upload-activity-stats";
+
+type VersionedMedia = {
+  versions?: Array<PosterVersion | VideoVersion>;
+};
+
+function resolvePosterCoverUrls(item: Ownable & VersionedMedia & {
+  imageUrl?: string | null;
+  thumbnailUrl?: string | null;
+  coverImageUrl?: string | null;
+}): { thumb: string | null; image: string | null } {
+  const version = item.versions?.length
+    ? resolveDisplayVersion(item.versions as PosterVersion[])
+    : undefined;
+  const image =
+    version?.imageUrl?.trim() ||
+    version?.thumbnailUrl?.trim() ||
+    item.imageUrl?.trim() ||
+    item.thumbnailUrl?.trim() ||
+    item.coverImageUrl?.trim() ||
+    null;
+  const thumb =
+    version?.thumbnailUrl?.trim() ||
+    version?.imageUrl?.trim() ||
+    item.thumbnailUrl?.trim() ||
+    item.coverImageUrl?.trim() ||
+    image;
+  return { thumb, image };
+}
+
+function resolveVideoCoverUrls(item: Ownable & VersionedMedia & {
+  imageUrl?: string | null;
+  thumbnailUrl?: string | null;
+  coverImageUrl?: string | null;
+}): { thumb: string | null; image: string | null } {
+  const version = item.versions?.length
+    ? resolveDisplayVersion(item.versions as VideoVersion[])
+    : undefined;
+  if (version) {
+    const thumb = resolveVideoThumbnail(version.videoUrl, version.thumbnailUrl);
+    return { thumb, image: thumb };
+  }
+  const thumb =
+    item.thumbnailUrl?.trim() ||
+    item.coverImageUrl?.trim() ||
+    item.imageUrl?.trim() ||
+    null;
+  return { thumb, image: thumb };
+}
 
 export type CompanySupervisionContentType = ContentMessageContentType;
 
@@ -213,10 +264,24 @@ export function collectCompanySupervisionItems(input: {
     );
   }
   if (source.sections.posters) {
-    push(source.posters as Array<Ownable & { id: string; title: string; published?: boolean }>, "poster");
+    push(
+      source.posters as Array<
+        Ownable & { id: string; title: string; published?: boolean } & VersionedMedia
+      >,
+      "poster",
+      (item) => resolvePosterCoverUrls(item).thumb,
+      (item) => resolvePosterCoverUrls(item).image
+    );
   }
   if (source.sections.videos) {
-    push(source.videos as Array<Ownable & { id: string; title: string; published?: boolean }>, "video");
+    push(
+      source.videos as Array<
+        Ownable & { id: string; title: string; published?: boolean } & VersionedMedia
+      >,
+      "video",
+      (item) => resolveVideoCoverUrls(item).thumb,
+      (item) => resolveVideoCoverUrls(item).image
+    );
   }
   if (source.sections.socialPosts) {
     push(

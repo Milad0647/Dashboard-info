@@ -141,7 +141,9 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
           const source = buildLeaderboardSourceFromAdmin({
             billboards,
             posters: data.posters ?? [],
+            posterVersions: data.posterVersions ?? [],
             videos: data.videos ?? [],
+            videoVersions: data.videoVersions ?? [],
             socialPosts: data.socialPosts ?? [],
             activities: data.activities ?? [],
             files: data.files ?? [],
