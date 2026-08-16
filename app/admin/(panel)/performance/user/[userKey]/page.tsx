@@ -18,6 +18,7 @@ import {
   findUserLeaderboardEntry,
   toCompanyExcelSource,
 } from "@/lib/company-supervision";
+import { contentPlansFromTopics } from "@/lib/content-topics";
 import { getAdminData } from "@/lib/data-access/admin";
 import { buildLeaderboardSourceFromAdmin } from "@/lib/performance-overview";
 
@@ -95,6 +96,10 @@ export default async function CompanySupervisionPage({
     reviews: reviewsResult.success ? reviewsResult.reviews ?? [] : [],
   });
   const userSource = filterLeaderboardSourceByUser(source, userKey);
+  const contentPlans =
+    data.settings.contentTopics && data.settings.contentTopics.length > 0
+      ? contentPlansFromTopics(data.settings.contentTopics)
+      : data.settings.contentPlans ?? [];
 
   return (
     <CompanySupervisionAdmin
@@ -104,6 +109,7 @@ export default async function CompanySupervisionPage({
       entry={entry}
       items={items}
       excelSource={toCompanyExcelSource(userSource)}
+      contentPlans={contentPlans}
       canScore={canScoreContent(session)}
       canManageReviews={canManageAllContent(session)}
       canSendMessage={canSendContentMessages(session)}

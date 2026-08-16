@@ -18,6 +18,16 @@ import {
   isSameDay,
   timestampToTehranDateIso,
 } from "@/lib/safe-dates";
+import type { CampaignOwnerLocations } from "@/lib/context/owner-location-filter-context";
+import {
+  isCampaignContentFilterActive,
+  sortCampaignContent,
+} from "@/lib/campaign-content-filter";
+import {
+  collectOwnerLocations,
+  filterItemsByOwnerLocation,
+  type OwnerLocationFilter,
+} from "@/lib/owner-location-filter";
 import type {
   Billboard,
   CampaignActivity,
@@ -27,14 +37,13 @@ import type {
   SocialMediaPost,
   Video,
 } from "@/lib/types";
+import type { UserCompanyType } from "@/lib/user-company-types";
 import type {
   UploadActivityPoint,
   UploadActivitySummary,
 } from "@/lib/upload-activity-stats";
 
 export type CompanySupervisionContentType = ContentMessageContentType;
-
-export type CompanySupervisionDatePreset = "all" | "today" | "7d" | "30d";
 
 export type CompanySupervisionReviewFilter =
   | "all"
@@ -43,6 +52,9 @@ export type CompanySupervisionReviewFilter =
   | "resubmitted"
   | "approved"
   | "ever_rejected";
+
+/** Max cards per category when no content filters are active (2 rows × 9). */
+export const COMPANY_CATEGORY_CARD_LIMIT = 18;
 
 export interface CompanySupervisionItem {
   key: string;
@@ -71,6 +83,13 @@ export interface CompanySupervisionItem {
   city: string | null;
   province: string | null;
   planLabel: string | null;
+  planLabels: string[];
+  ownerUserId: string | null;
+  ownerEmail: string | null;
+  ownerName: string | null;
+  ownerProvince: string | null;
+  ownerCity: string | null;
+  ownerCompanyType: UserCompanyType | null;
 }
 
 export function resolveUserKeyMatch(item: Ownable, userKey: string): boolean {
@@ -119,6 +138,7 @@ export function collectCompanySupervisionItems(input: {
       city?: string | null;
       province?: string | null;
       planLabel?: string | null;
+      planLabels?: string[];
       imageUrl?: string | null;
       thumbnailUrl?: string | null;
       coverImageUrl?: string | null;
@@ -173,6 +193,13 @@ export function collectCompanySupervisionItems(input: {
         city: item.city ?? item.ownerCity ?? null,
         province: item.province ?? item.ownerProvince ?? null,
         planLabel: item.planLabel ?? null,
+        planLabels: item.planLabels ?? [],
+        ownerUserId: item.ownerUserId ?? null,
+        ownerEmail: item.ownerEmail ?? null,
+        ownerName: item.ownerName ?? null,
+        ownerProvince: item.ownerProvince ?? null,
+        ownerCity: item.ownerCity ?? null,
+        ownerCompanyType: item.ownerCompanyType ?? null,
       });
     }
   };
@@ -273,16 +300,6 @@ export const COMPANY_SUPERVISION_TYPE_FILTERS: {
   { value: "file", label: "فایل" },
 ];
 
-export const COMPANY_SUPERVISION_DATE_PRESETS: {
-  value: CompanySupervisionDatePreset;
-  label: string;
-}[] = [
-  { value: "all", label: "همه تاریخ‌ها" },
-  { value: "today", label: "امروز" },
-  { value: "7d", label: "۷ روز اخیر" },
-  { value: "30d", label: "۳۰ روز اخیر" },
-];
-
 export const COMPANY_SUPERVISION_REVIEW_FILTERS: {
   value: CompanySupervisionReviewFilter;
   label: string;
@@ -302,19 +319,6 @@ export function reviewStatusLabel(status: ContentReviewStatus | null): string | 
   return null;
 }
 
-function matchesDatePreset(
-  item: CompanySupervisionItem,
-  preset: CompanySupervisionDatePreset
-): boolean {
-  if (preset === "all") return true;
-  if (preset === "today") return item.isToday;
-  const day = timestampToTehranDateIso(item.createdAt);
-  if (!day) return false;
-  const oldest =
-    preset === "7d" ? getTehranOffsetDateIso(-6) : getTehranOffsetDateIso(-29);
-  return day >= oldest;
-}
-
 function matchesReviewFilter(
   item: CompanySupervisionItem,
   filter: CompanySupervisionReviewFilter
@@ -325,24 +329,112 @@ function matchesReviewFilter(
   return item.reviewStatus === filter;
 }
 
+function companyItemAsOwnable(item: CompanySupervisionItem): Ownable & {
+  title: string;
+  description: string | null;
+  city: string | null;
+  province: string | null;
+  createdAt: string | null;
+  score: number | null;
+} {
+  return {
+    title: item.title,
+    description: item.description,
+    city: item.city,
+    province: item.province,
+    createdAt: item.createdAt,
+    score: item.score,
+    planLabel: item.planLabel,
+    planLabels: item.planLabels,
+    ownerUserId: item.ownerUserId,
+    ownerEmail: item.ownerEmail,
+    ownerName: item.ownerName,
+    ownerProvince: item.ownerProvince,
+    ownerCity: item.ownerCity,
+    ownerCompanyType: item.ownerCompanyType,
+  };
+}
+
+export function collectCompanyOwnerLocations(
+  items: CompanySupervisionItem[]
+): CampaignOwnerLocations {
+  return collectOwnerLocations([
+    {
+      ownerKey: "company",
+      ownerLabel: "شرکت",
+      ownerUserId: null,
+      items: items.map(companyItemAsOwnable),
+    },
+  ]);
+}
+
+export function isCompanyContentFilterActive(
+  filter: OwnerLocationFilter,
+  options?: {
+    contentType?: CompanySupervisionContentType | "all";
+    reviewFilter?: CompanySupervisionReviewFilter;
+  }
+): boolean {
+  const contentType = options?.contentType ?? "all";
+  const reviewFilter = options?.reviewFilter ?? "all";
+  return (
+    isCampaignContentFilterActive(filter) ||
+    filter.sortOrder !== "default" ||
+    contentType !== "all" ||
+    reviewFilter !== "all"
+  );
+}
+
 export function filterCompanySupervisionItems(
   items: CompanySupervisionItem[],
   options: {
-    datePreset?: CompanySupervisionDatePreset;
+    campaignFilter: OwnerLocationFilter;
     contentType?: CompanySupervisionContentType | "all";
     reviewFilter?: CompanySupervisionReviewFilter;
   }
 ): CompanySupervisionItem[] {
-  const datePreset = options.datePreset ?? "all";
   const contentType = options.contentType ?? "all";
   const reviewFilter = options.reviewFilter ?? "all";
 
-  return items.filter((item) => {
+  const ownableFiltered = new Set(
+    filterItemsByOwnerLocation(
+      items.map((item) => ({ ...companyItemAsOwnable(item), key: item.key })),
+      options.campaignFilter,
+      (item) => item.createdAt ?? undefined
+    ).map((item) => item.key)
+  );
+
+  let filtered = items.filter((item) => {
+    if (!ownableFiltered.has(item.key)) return false;
     if (contentType !== "all" && item.contentType !== contentType) return false;
-    if (!matchesDatePreset(item, datePreset)) return false;
     if (!matchesReviewFilter(item, reviewFilter)) return false;
     return true;
   });
+
+  if (options.campaignFilter.sortOrder !== "default") {
+    filtered = sortCampaignContent(
+      filtered,
+      options.campaignFilter.sortOrder,
+      (item) => item.createdAt ?? "",
+      () => 0
+    );
+  }
+
+  return filtered;
+}
+
+export function limitCompanyCategoryItems(
+  items: CompanySupervisionItem[],
+  showAll: boolean,
+  limit = COMPANY_CATEGORY_CARD_LIMIT
+): { visible: CompanySupervisionItem[]; hiddenCount: number } {
+  if (showAll || items.length <= limit) {
+    return { visible: items, hiddenCount: 0 };
+  }
+  return {
+    visible: items.slice(0, limit),
+    hiddenCount: items.length - limit,
+  };
 }
 
 export function groupCompanySupervisionItems(

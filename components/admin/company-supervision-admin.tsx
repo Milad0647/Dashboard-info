@@ -28,6 +28,7 @@ import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { SendContentMessageButton } from "@/components/admin/send-content-message-button";
 import { UserProfileNotesPanel } from "@/components/admin/user-profile-notes-panel";
 import { KPICard } from "@/components/public/kpi-card";
+import { OwnerLocationFilterBar } from "@/components/public/owner-location-filter-bar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,26 +62,37 @@ import {
 } from "@/lib/actions/content-review-actions";
 import { getProvinceRankBadge, type UserLeaderboardEntry } from "@/lib/city-leaderboard";
 import {
-  COMPANY_SUPERVISION_DATE_PRESETS,
+  COMPANY_CATEGORY_CARD_LIMIT,
   COMPANY_SUPERVISION_REVIEW_FILTERS,
   COMPANY_SUPERVISION_TYPE_FILTERS,
   buildCompanyContentMix,
   buildCompanyUploadActivityStats,
+  collectCompanyOwnerLocations,
   countTodayByContentType,
   filterCompanySupervisionItems,
   groupCompanySupervisionItems,
+  isCompanyContentFilterActive,
+  limitCompanyCategoryItems,
   reviewStatusLabel,
   type CompanyExcelSource,
   type CompanySupervisionContentType,
-  type CompanySupervisionDatePreset,
   type CompanySupervisionItem,
   type CompanySupervisionReviewFilter,
 } from "@/lib/company-supervision";
+import { ContentScoreProvider } from "@/lib/context/content-score-context";
+import {
+  OwnerLocationFilterProvider,
+  useOwnerLocationFilter,
+} from "@/lib/context/owner-location-filter-context";
+import type { CampaignDatePreset } from "@/lib/owner-location-filter";
 import { downloadCompanyPerformanceExcel } from "@/lib/services/performance-excel-export";
 import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const CONTENT_CARD_GRID_CLASS =
+  "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-9";
 
 function ContentItemCard({
   item,
@@ -541,6 +553,50 @@ export function CompanySupervisionAdmin({
   entry,
   items,
   excelSource,
+  contentPlans = [],
+  canScore,
+  canManageReviews,
+  canSendMessage,
+}: {
+  campaignId: string;
+  campaignTitle: string;
+  campaignSlug: string;
+  entry: UserLeaderboardEntry;
+  items: CompanySupervisionItem[];
+  excelSource: CompanyExcelSource;
+  contentPlans?: string[];
+  canScore: boolean;
+  canManageReviews: boolean;
+  canSendMessage: boolean;
+}) {
+  const locations = useMemo(() => collectCompanyOwnerLocations(items), [items]);
+
+  return (
+    <ContentScoreProvider canScore={canScore} campaignId={campaignId}>
+      <OwnerLocationFilterProvider locations={locations} plans={contentPlans} users={[]}>
+        <CompanySupervisionAdminInner
+          campaignId={campaignId}
+          campaignTitle={campaignTitle}
+          campaignSlug={campaignSlug}
+          entry={entry}
+          items={items}
+          excelSource={excelSource}
+          canScore={canScore}
+          canManageReviews={canManageReviews}
+          canSendMessage={canSendMessage}
+        />
+      </OwnerLocationFilterProvider>
+    </ContentScoreProvider>
+  );
+}
+
+function CompanySupervisionAdminInner({
+  campaignId,
+  campaignTitle,
+  campaignSlug,
+  entry,
+  items,
+  excelSource,
   canScore,
   canManageReviews,
   canSendMessage,
@@ -556,7 +612,7 @@ export function CompanySupervisionAdmin({
   canSendMessage: boolean;
 }) {
   const router = useRouter();
-  const [datePreset, setDatePreset] = useState<CompanySupervisionDatePreset>("all");
+  const { filter, setDatePreset } = useOwnerLocationFilter();
   const [typeFilter, setTypeFilter] = useState<CompanySupervisionContentType | "all">("all");
   const [reviewFilter, setReviewFilter] = useState<CompanySupervisionReviewFilter>("all");
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -583,14 +639,23 @@ export function CompanySupervisionAdmin({
   const contentMix = useMemo(() => buildCompanyContentMix(entry), [entry]);
   const uploadStats = useMemo(() => buildCompanyUploadActivityStats(items), [items]);
 
-  const filteredContent = useMemo(
+  const showAllCategoryCards = useMemo(
     () =>
-      filterCompanySupervisionItems(items, {
-        datePreset,
+      isCompanyContentFilterActive(filter, {
         contentType: typeFilter,
         reviewFilter,
       }),
-    [items, datePreset, typeFilter, reviewFilter]
+    [filter, typeFilter, reviewFilter]
+  );
+
+  const filteredContent = useMemo(
+    () =>
+      filterCompanySupervisionItems(items, {
+        campaignFilter: filter,
+        contentType: typeFilter,
+        reviewFilter,
+      }),
+    [items, filter, typeFilter, reviewFilter]
   );
 
   const loadMessages = useCallback(() => {
@@ -682,7 +747,7 @@ export function CompanySupervisionAdmin({
   };
 
   const focusContentWithPreset = (
-    preset: CompanySupervisionDatePreset,
+    preset: CampaignDatePreset,
     type: CompanySupervisionContentType | "all" = "all"
   ) => {
     setDatePreset(preset);
@@ -757,7 +822,7 @@ export function CompanySupervisionAdmin({
     }[]
   ).filter((item) => item.value > 0 || (item.todayDelta ?? 0) > 0);
 
-  const renderGroupedGrid = (list: CompanySupervisionItem[]) => {
+  const renderGroupedGrid = (list: CompanySupervisionItem[], applyCategoryLimit: boolean) => {
     const groups = groupCompanySupervisionItems(list);
     if (groups.length === 0) {
       return (
@@ -766,35 +831,49 @@ export function CompanySupervisionAdmin({
         </div>
       );
     }
+    const showAll = !applyCategoryLimit || showAllCategoryCards;
     return (
       <div className="space-y-8">
-        {groups.map((group) => (
-          <section key={group.type} className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-semibold">{group.label}</h3>
-              <Badge variant="secondary">{formatPersianNumber(group.items.length)}</Badge>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {group.items.map((item) => (
-                <ContentItemCard
-                  key={item.key}
-                  item={item}
-                  campaignId={campaignId}
-                  canScore={canScore}
-                  canSendMessage={canSendMessage}
-                  canManageReviews={canManageReviews}
-                  reviewPending={isPending && pendingKey === item.key}
-                  onOpen={() => setViewingItem(item)}
-                  onApprove={() => runApprove(item)}
-                  onReject={() => {
-                    setRejectingItem(item);
-                    setRejectionReason("");
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
+        {groups.map((group) => {
+          const { visible, hiddenCount } = limitCompanyCategoryItems(group.items, showAll);
+          return (
+            <section key={group.type} className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-base font-semibold">{group.label}</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary">
+                    {formatPersianNumber(group.items.length)}
+                  </Badge>
+                  {hiddenCount > 0 && (
+                    <Badge variant="outline" className="text-[11px]">
+                      نمایش {formatPersianNumber(COMPANY_CATEGORY_CARD_LIMIT)} از{" "}
+                      {formatPersianNumber(group.items.length)} — با فیلتر همه را ببینید
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <div className={CONTENT_CARD_GRID_CLASS}>
+                {visible.map((item) => (
+                  <ContentItemCard
+                    key={item.key}
+                    item={item}
+                    campaignId={campaignId}
+                    canScore={canScore}
+                    canSendMessage={canSendMessage}
+                    canManageReviews={canManageReviews}
+                    reviewPending={isPending && pendingKey === item.key}
+                    onOpen={() => setViewingItem(item)}
+                    onApprove={() => runApprove(item)}
+                    onReject={() => {
+                      setRejectingItem(item);
+                      setRejectionReason("");
+                    }}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     );
   };
@@ -924,25 +1003,9 @@ export function CompanySupervisionAdmin({
         </TabsContent>
 
         <TabsContent value="content" className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <Select
-              value={datePreset}
-              onValueChange={(value) =>
-                setDatePreset(value as CompanySupervisionDatePreset)
-              }
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="بازه تاریخ" />
-              </SelectTrigger>
-              <SelectContent dir="rtl">
-                {COMPANY_SUPERVISION_DATE_PRESETS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <OwnerLocationFilterBar />
 
+          <div className="flex flex-wrap items-center gap-3">
             <Select
               value={typeFilter}
               onValueChange={(value) =>
@@ -981,9 +1044,15 @@ export function CompanySupervisionAdmin({
 
             <p className="text-sm text-muted-foreground">
               {formatPersianNumber(filteredContent.length)} مورد
+              {!showAllCategoryCards && (
+                <span className="ms-2 text-xs">
+                  (بدون فیلتر حداکثر {formatPersianNumber(COMPANY_CATEGORY_CARD_LIMIT)} در هر
+                  دسته)
+                </span>
+              )}
             </p>
           </div>
-          {renderGroupedGrid(filteredContent)}
+          {renderGroupedGrid(filteredContent, true)}
         </TabsContent>
 
         <TabsContent value="returned" className="space-y-4">
@@ -992,7 +1061,7 @@ export function CompanySupervisionAdmin({
               محتوای برگشتی برای این شرکت نیست.
             </div>
           ) : (
-            renderGroupedGrid(returnedItems)
+            renderGroupedGrid(returnedItems, false)
           )}
         </TabsContent>
 
