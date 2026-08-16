@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "ae39e7fd36171c929f0f694ab21f22f3449f3e46",
+      "committedAt": "2026-08-16T15:06:16+03:30",
+      "title": "نمایش ۹ کارت در ردیف و فیلترهای کمپین زنده در نظارت شرکت",
+      "subject": "Show 9 cards per row and live campaign filters on company content"
+    },
+    {
+      "hash": "102f80238ec8c425042360991ef9374b7f00c7d2",
+      "committedAt": "2026-08-16T14:21:09+03:30",
+      "title": "رفع قطع شدن صفحه و خطاهای آزاردهنده هنگام کار طولانی و آپلود",
+      "subject": "Fix stale RSC and session interruptions in admin panel"
+    },
+    {
       "hash": "234aebdf73653cab9b354a1bc395a7d8ed0d80a4",
       "committedAt": "2026-08-16T14:20:10+03:30",
       "title": "گزارش زنده شرکت با اکسل کامل، کارت KPI، فیلتر محتوا و تاریخچه رد/تایید",
