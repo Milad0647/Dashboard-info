@@ -3,6 +3,11 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { heartbeatChatPresenceAction } from "@/lib/actions/chat-actions";
+import {
+  isRecoverableNextErrorMessage,
+  messageFromUnknownError,
+  tryRecoverStaleClient,
+} from "@/lib/client/next-recoverable-errors";
 
 /**
  * Keeps chat presence fresh while the user is anywhere in the admin panel,
@@ -20,7 +25,13 @@ export function ChatPresenceBeacon() {
 
     const beat = () => {
       if (cancelled || document.visibilityState === "hidden") return;
-      void heartbeatChatPresenceAction({ activeConversationId: null });
+      void heartbeatChatPresenceAction({ activeConversationId: null }).catch((error) => {
+        const message = messageFromUnknownError(error);
+        if (isRecoverableNextErrorMessage(message)) {
+          tryRecoverStaleClient(message);
+        }
+        // Presence is best-effort; never surface to the user.
+      });
     };
 
     beat();

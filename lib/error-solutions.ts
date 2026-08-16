@@ -123,10 +123,10 @@ const RULES: ErrorRule[] = [
   },
   {
     match:
-      /Server Action|failed-to-find-server-action|was not found on the server|Failed to find Server Action/i,
+      /Server Action|failed-to-find-server-action|was not found on the server|Failed to find Server Action|unexpected response was received from the server|Minified React error #418|Hydration failed/i,
     title: "نسخهٔ صفحه قدیمی است",
     problem:
-      "نسخهٔ بازشده در مرورگر با نسخهٔ فعلی سرور هم‌خوان نیست (معمولاً بعد از به‌روزرسانی سایت).",
+      "نسخهٔ بازشده در مرورگر با نسخهٔ فعلی سرور هم‌خوان نیست (معمولاً بعد از به‌روزرسانی سایت یا قطع کوتاه ارتباط).",
     solution:
       "صفحه را با Ctrl+Shift+R (یا Cmd+Shift+R در مک) کامل رفرش کنید، یا از دکمه «بارگذاری مجدد» استفاده کنید تا نسخهٔ جدید بارگذاری شود.",
     category: "runtime",

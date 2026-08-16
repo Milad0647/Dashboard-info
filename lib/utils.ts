@@ -10,10 +10,13 @@ export function formatPersianNumber(value: number): string {
   return new Intl.NumberFormat("fa-IR").format(value);
 }
 
+const TEHRAN_TZ = "Asia/Tehran";
+
 const persianDateFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
   year: "numeric",
   month: "long",
   day: "numeric",
+  timeZone: TEHRAN_TZ,
 });
 
 const persianDateTimeFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
@@ -22,11 +25,13 @@ const persianDateTimeFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
   day: "numeric",
   hour: "2-digit",
   minute: "2-digit",
+  timeZone: TEHRAN_TZ,
 });
 
 const persianDateShortFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
   month: "short",
   day: "numeric",
+  timeZone: TEHRAN_TZ,
 });
 
 function toLocalDate(dateStr: string): Date {

@@ -94,7 +94,7 @@ export function ErrorModalProvider() {
 
         <DialogFooter className="border-t px-6 py-4 sm:justify-start gap-2">
           {info?.message &&
-          /Server Action|failed-to-find-server-action|was not found on the server/i.test(
+          /Server Action|failed-to-find-server-action|was not found on the server|unexpected response was received from the server|Minified React error #418|Hydration failed/i.test(
             info.message
           ) ? (
             <Button

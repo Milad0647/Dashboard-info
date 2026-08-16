@@ -11,6 +11,7 @@ import {
 } from "@/lib/audit/problem-types";
 import { cn, formatPersianNumber } from "@/lib/utils";
 import { redirectIfUnauthorized } from "@/lib/client/auth-session";
+import { withUploadBusy } from "@/lib/client/upload-busy";
 
 const ACCEPT =
   "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov";
@@ -65,63 +66,65 @@ export function ProblemReportAttachmentsField({
     const uploaded: ProblemReportAttachment[] = [];
 
     try {
-      for (const file of selected) {
-        const kind = resolveKind(file);
-        if (!kind) {
-          toast.error(`فرمت «${file.name}» مجاز نیست — فقط تصویر یا ویدیو`);
-          continue;
+      await withUploadBusy(async () => {
+        for (const file of selected) {
+          const kind = resolveKind(file);
+          if (!kind) {
+            toast.error(`فرمت «${file.name}» مجاز نیست — فقط تصویر یا ویدیو`);
+            continue;
+          }
+
+          const maxBytes = kind === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+          if (file.size > maxBytes) {
+            toast.error(
+              kind === "image"
+                ? `حجم تصویر «${file.name}» بیشتر از ۱۰ مگابایت است`
+                : `حجم ویدیو «${file.name}» بیشتر از ۱۰۰ مگابایت است`
+            );
+            continue;
+          }
+
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("kind", kind);
+
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (redirectIfUnauthorized(response)) return;
+
+          if (!response.ok) {
+            const body = (await response.json().catch(() => null)) as { error?: string } | null;
+            throw new Error(body?.error ?? `آپلود «${file.name}» ناموفق بود`);
+          }
+
+          const data = (await response.json()) as {
+            url: string;
+            fileName: string;
+            fileSize: number;
+            mimeType: string;
+          };
+
+          uploaded.push({
+            url: data.url,
+            kind,
+            fileName: data.fileName || file.name,
+            fileSize: data.fileSize ?? file.size,
+            mimeType: data.mimeType || file.type,
+          });
         }
 
-        const maxBytes = kind === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
-        if (file.size > maxBytes) {
-          toast.error(
-            kind === "image"
-              ? `حجم تصویر «${file.name}» بیشتر از ۱۰ مگابایت است`
-              : `حجم ویدیو «${file.name}» بیشتر از ۱۰۰ مگابایت است`
+        if (uploaded.length > 0) {
+          onChange([...value, ...uploaded]);
+          toast.success(
+            uploaded.length === 1
+              ? "فایل با موفقیت آپلود شد"
+              : `${formatPersianNumber(uploaded.length)} فایل آپلود شد`
           );
-          continue;
         }
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("kind", kind);
-
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (redirectIfUnauthorized(response)) return;
-
-        if (!response.ok) {
-          const body = (await response.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(body?.error ?? `آپلود «${file.name}» ناموفق بود`);
-        }
-
-        const data = (await response.json()) as {
-          url: string;
-          fileName: string;
-          fileSize: number;
-          mimeType: string;
-        };
-
-        uploaded.push({
-          url: data.url,
-          kind,
-          fileName: data.fileName || file.name,
-          fileSize: data.fileSize ?? file.size,
-          mimeType: data.mimeType || file.type,
-        });
-      }
-
-      if (uploaded.length > 0) {
-        onChange([...value, ...uploaded]);
-        toast.success(
-          uploaded.length === 1
-            ? "فایل با موفقیت آپلود شد"
-            : `${formatPersianNumber(uploaded.length)} فایل آپلود شد`
-        );
-      }
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "آپلود ناموفق بود");
     } finally {

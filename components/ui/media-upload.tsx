@@ -19,6 +19,7 @@ import {
   videoNeedsAutoCover,
 } from "@/lib/client/video-cover";
 import { redirectIfUnauthorized } from "@/lib/client/auth-session";
+import { withUploadBusy } from "@/lib/client/upload-busy";
 import { Loader2, Trash2, Upload } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -245,45 +246,47 @@ export function MediaUpload({
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("kind", resolvedKind);
+      await withUploadBusy(async () => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("kind", resolvedKind);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (redirectIfUnauthorized(response)) return;
+
+        if (!response.ok) {
+          const body = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(body?.error ?? "آپلود ناموفق بود");
+        }
+
+        const data = (await response.json()) as {
+          url: string;
+          thumbnailUrl?: string;
+          fileName?: string;
+          fileSize?: number;
+          mimeType?: string;
+        };
+        onChange(data.url);
+        onUploaded?.(data.url);
+        onUploadedFile?.(file, data.url);
+        onUploadedMeta?.({
+          url: data.url,
+          thumbnailUrl: data.thumbnailUrl,
+          fileName: data.fileName ?? file.name,
+          fileSize: data.fileSize ?? file.size,
+          mimeType: data.mimeType ?? file.type,
+        });
+        setShowLinkEditor(false);
+        toast.success("فایل با موفقیت آپلود شد");
+
+        if (resolvedKind === "video" && (file.type.startsWith("video/") || /\.(mp4|webm|mov|m4v)$/i.test(file.name))) {
+          await tryGenerateCoverFromFile(file, data.url);
+        }
       });
-
-      if (redirectIfUnauthorized(response)) return;
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? "آپلود ناموفق بود");
-      }
-
-      const data = (await response.json()) as {
-        url: string;
-        thumbnailUrl?: string;
-        fileName?: string;
-        fileSize?: number;
-        mimeType?: string;
-      };
-      onChange(data.url);
-      onUploaded?.(data.url);
-      onUploadedFile?.(file, data.url);
-      onUploadedMeta?.({
-        url: data.url,
-        thumbnailUrl: data.thumbnailUrl,
-        fileName: data.fileName ?? file.name,
-        fileSize: data.fileSize ?? file.size,
-        mimeType: data.mimeType ?? file.type,
-      });
-      setShowLinkEditor(false);
-      toast.success("فایل با موفقیت آپلود شد");
-
-      if (resolvedKind === "video" && (file.type.startsWith("video/") || /\.(mp4|webm|mov|m4v)$/i.test(file.name))) {
-        await tryGenerateCoverFromFile(file, data.url);
-      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "آپلود ناموفق بود");
     } finally {

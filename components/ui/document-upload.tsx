@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn, formatPersianNumber } from "@/lib/utils";
 import { redirectIfUnauthorized } from "@/lib/client/auth-session";
+import { withUploadBusy } from "@/lib/client/upload-busy";
 import { FileText, Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -144,31 +145,33 @@ export function DocumentUpload({
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("kind", kind);
+      await withUploadBusy(async () => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("kind", kind);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (redirectIfUnauthorized(response)) return;
+
+        if (!response.ok) {
+          const body = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(body?.error ?? "آپلود ناموفق بود");
+        }
+
+        const data = (await response.json()) as {
+          url: string;
+          fileName: string;
+          fileSize: number;
+          mimeType: string;
+        };
+
+        onChange(data);
+        toast.success("فایل با موفقیت آپلود شد");
       });
-
-      if (redirectIfUnauthorized(response)) return;
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? "آپلود ناموفق بود");
-      }
-
-      const data = (await response.json()) as {
-        url: string;
-        fileName: string;
-        fileSize: number;
-        mimeType: string;
-      };
-
-      onChange(data);
-      toast.success("فایل با موفقیت آپلود شد");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "آپلود ناموفق بود");
     } finally {

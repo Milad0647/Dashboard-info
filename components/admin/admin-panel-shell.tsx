@@ -16,6 +16,7 @@ import { DirectiveAckGate } from "@/components/admin/directive-ack-gate";
 import { ErrorModalProvider } from "@/components/admin/error-modal-provider";
 import { ProblemReportButton } from "@/components/admin/problem-report-button";
 import { SessionExpiryGuard } from "@/components/admin/session-expiry-guard";
+import { StaleClientRecovery } from "@/components/admin/stale-client-recovery";
 import { ScrollToTopButton } from "@/components/ui/scroll-to-top-button";
 import type { CampaignSettings } from "@/lib/types";
 
@@ -82,6 +83,7 @@ function PanelChrome({
 }) {
   return (
     <div className="min-h-screen bg-background">
+      <StaleClientRecovery />
       <SessionExpiryGuard />
       {withTracker ? (
         <Suspense fallback={null}>

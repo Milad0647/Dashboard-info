@@ -6,6 +6,10 @@ import { toast } from "sonner";
 import { resolveErrorInfo } from "@/lib/error-solutions";
 import { emitUiError } from "@/lib/ui-error-bus";
 import { redirectToLoginForExpiredSession } from "@/lib/client/auth-session";
+import {
+  isRecoverableNextErrorMessage,
+  tryRecoverStaleClient,
+} from "@/lib/client/next-recoverable-errors";
 
 const MAX_LABEL_LENGTH = 120;
 const MAX_ERROR_LABEL_LENGTH = 200;
@@ -55,7 +59,7 @@ let lastErrorAt = 0;
 const ERROR_DEDUP_MS = 1500;
 
 const NOISY_RUNTIME =
-  /ResizeObserver|Script error\.?$|Loading chunk|ChunkLoadError|AbortError|cancelled|canceled/i;
+  /ResizeObserver|Script error\.?$|Loading chunk|ChunkLoadError|AbortError|cancelled|canceled|Minified React error #(?:418|419|422|423|425)|Hydration failed|Text content does not match|unexpected response was received from the server|Failed to find Server Action|failed-to-find-server-action|was not found on the server/i;
 
 function reportUiError(
   rawMessage: string,
@@ -64,6 +68,12 @@ function reportUiError(
 ) {
   if (/^unauthorized$/i.test(rawMessage.trim()) || /نشست شما منقضی/i.test(rawMessage)) {
     redirectToLoginForExpiredSession();
+    return;
+  }
+
+  // Deploy/proxy/middleware Flight mismatches — recover quietly instead of modal spam.
+  if (isRecoverableNextErrorMessage(rawMessage)) {
+    tryRecoverStaleClient(rawMessage);
     return;
   }
 

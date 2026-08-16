@@ -13,6 +13,38 @@ function redirectAuthenticatedFromLogin(request: NextRequest) {
   return NextResponse.redirect(url);
 }
 
+function buildLoginRedirectUrl(request: NextRequest): URL {
+  const url = request.nextUrl.clone();
+  url.pathname = "/admin/login";
+  const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  if (nextPath.startsWith("/admin") && nextPath !== "/admin/login") {
+    url.searchParams.set("next", nextPath);
+  } else {
+    url.search = "";
+  }
+  return url;
+}
+
+/**
+ * Auth failure for Server Actions must use the action-redirect protocol.
+ * A normal 307/302 HTML redirect makes the client throw
+ * "An unexpected response was received from the server."
+ */
+function redirectUnauthorized(request: NextRequest): NextResponse {
+  const loginUrl = buildLoginRedirectUrl(request);
+
+  if (request.headers.has("next-action")) {
+    return new NextResponse(null, {
+      status: 303,
+      headers: {
+        "X-Action-Redirect": `${loginUrl.pathname}${loginUrl.search}`,
+      },
+    });
+  }
+
+  return NextResponse.redirect(loginUrl);
+}
+
 async function handleEnvAdminAuth(request: NextRequest) {
   const isAuthenticated = await verifyAdminSessionToken(
     request.cookies.get(getAdminSessionCookieName())?.value
@@ -21,13 +53,7 @@ async function handleEnvAdminAuth(request: NextRequest) {
   const isAdminRoute = request.nextUrl.pathname.startsWith("/admin") && !isLoginRoute;
 
   if (isAdminRoute && !isAuthenticated) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin/login";
-    const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-    if (nextPath.startsWith("/admin") && nextPath !== "/admin/login") {
-      url.searchParams.set("next", nextPath);
-    }
-    return NextResponse.redirect(url);
+    return redirectUnauthorized(request);
   }
 
   // Intentionally do not redirect authenticated cookies away from /admin/login.
@@ -72,9 +98,7 @@ async function handleSupabaseAuth(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/admin/login");
 
   if (isAdminRoute && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin/login";
-    return NextResponse.redirect(url);
+    return redirectUnauthorized(request);
   }
 
   if (request.nextUrl.pathname === "/admin/login" && user) {
