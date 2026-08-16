@@ -334,7 +334,10 @@ export async function listContentMessagesForCardAction(input: {
   return { success: true, messages };
 }
 
-/** Full admin only: all content messages across every user (Rasad). */
+/**
+ * Full admin: all content messages (optional recipient filter).
+ * Admin/client (کارفرما): only when scoped to a specific recipientUserId.
+ */
 export async function listAllContentMessagesAction(input?: {
   recipientUserId?: string | null;
   limit?: number;
@@ -344,8 +347,21 @@ export async function listAllContentMessagesAction(input?: {
   error?: string;
 }> {
   const session = await getAuthSession();
-  if (!session || !isFullAdmin(session)) {
-    return { success: false, error: "فقط مدیر می‌تواند همه پیام‌ها را ببیند" };
+  const recipientUserId = input?.recipientUserId?.trim() || null;
+  if (!session) {
+    return { success: false, error: "برای این عملیات وارد شوید" };
+  }
+  if (isFullAdmin(session)) {
+    // ok
+  } else if (canManageAllContent(session) && recipientUserId) {
+    // کارفرما فقط برای یک کاربر مشخص
+  } else {
+    return {
+      success: false,
+      error: recipientUserId
+        ? "دسترسی ندارید"
+        : "فقط مدیر می‌تواند همه پیام‌ها را ببیند",
+    };
   }
   if (!isPostgresConfigured()) {
     return { success: true, messages: [] };
@@ -353,7 +369,7 @@ export async function listAllContentMessagesAction(input?: {
 
   const messages = (
     await pgListAllContentMessages({
-      recipientUserId: input?.recipientUserId,
+      recipientUserId,
       limit: input?.limit,
     })
   ).map(toAdminListItem);

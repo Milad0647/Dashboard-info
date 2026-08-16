@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "f626d15a6cd1cd0fbf2da8694fd55617d44a9a3b",
+      "committedAt": "2026-08-16T12:58:12+03:30",
+      "title": "بازطراحی قوانین امتیازدهی با دسته‌ها، پیش‌نمایش زنده و ثبت فقط بعد از تأیید",
+      "subject": "Overhaul scoring into category hub with live preview and approval lock"
+    },
+    {
       "hash": "280253704170aab397044f42fc4b0a7b99c34fb2",
       "committedAt": "2026-08-16T12:26:31+03:30",
       "title": "رفع نمایش عکس تبلیغات محیطی در پنجره مشاهده",

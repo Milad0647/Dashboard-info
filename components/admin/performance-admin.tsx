@@ -1,29 +1,28 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   Download,
   LayoutList,
   Search,
   Star,
-  StickyNote,
   Table2,
   Trophy,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { UserProfileNotesPanel } from "@/components/admin/user-profile-notes-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   buildUserLeaderboard,
   buildUserRatingLeaderboard,
@@ -39,12 +38,10 @@ type ViewMode = "cards" | "table";
 
 interface PerformanceAdminProps {
   source: LeaderboardSourceData;
+  campaignId: string;
   campaignTitle: string;
   campaignSlug: string;
 }
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const METRIC_COLUMNS: {
   key: keyof UserLeaderboardEntry;
@@ -92,33 +89,45 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function canOpenProfileNotes(entry: UserLeaderboardEntry): boolean {
-  return UUID_RE.test(entry.userKey);
+function companySupervisionHref(campaignId: string, userKey: string): string {
+  const params = new URLSearchParams({ campaign: campaignId });
+  return `/admin/performance/user/${encodeURIComponent(userKey)}?${params.toString()}`;
 }
 
 export function PerformanceAdmin({
   source,
+  campaignId,
   campaignTitle,
   campaignSlug,
 }: PerformanceAdminProps) {
   const [sortMode, setSortMode] = useState<SortMode>("activity");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [search, setSearch] = useState("");
-  const [selectedEntry, setSelectedEntry] = useState<UserLeaderboardEntry | null>(null);
+  const [provinceFilter, setProvinceFilter] = useState("all");
 
   const activityEntries = useMemo(() => buildUserLeaderboard(source), [source]);
   const ratingEntries = useMemo(() => buildUserRatingLeaderboard(source), [source]);
   const entries = sortMode === "rating" ? ratingEntries : activityEntries;
 
+  const provinces = useMemo(() => {
+    const set = new Set<string>();
+    for (const entry of entries) {
+      if (entry.province.trim()) set.add(entry.province);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, "fa"));
+  }, [entries]);
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return entries;
-    return entries.filter(
-      (entry) =>
+    return entries.filter((entry) => {
+      if (provinceFilter !== "all" && entry.province !== provinceFilter) return false;
+      if (!query) return true;
+      return (
         entry.userName.toLowerCase().includes(query) ||
         entry.province.toLowerCase().includes(query)
-    );
-  }, [entries, search]);
+      );
+    });
+  }, [entries, search, provinceFilter]);
 
   const totals = useMemo(() => {
     return filtered.reduce(
@@ -150,22 +159,14 @@ export function PerformanceAdmin({
     }
   };
 
-  const openNotes = (entry: UserLeaderboardEntry) => {
-    if (!canOpenProfileNotes(entry)) {
-      toast.error("برای این ردیف شناسه کاربر ثبت نشده و یادداشت ممکن نیست");
-      return;
-    }
-    setSelectedEntry(entry);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold">مشاهده عملکرد</h1>
           <p className="text-sm text-muted-foreground">
-            نمای مدیریتی از آمار عددی همه کاربران کمپین «{campaignTitle}» — با امکان ثبت یادداشت
-            داخلی روی هر کاربر
+            نمای مدیریتی از آمار عددی همه کاربران کمپین «{campaignTitle}» — با کلیک روی هر
+            کاربر صفحه نظارت شرکت باز می‌شود
           </p>
         </div>
         <Button type="button" onClick={handleExport} className="shrink-0 gap-2">
@@ -186,14 +187,29 @@ export function PerformanceAdmin({
 
       <Card>
         <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="relative w-full max-w-md">
-            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="جستجوی نام کاربر یا استان..."
-              className="pr-9"
-            />
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative w-full max-w-md">
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="جستجوی نام کاربر یا استان..."
+                className="pr-9"
+              />
+            </div>
+            <Select value={provinceFilter} onValueChange={setProvinceFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="فیلتر استان" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">همه استان‌ها</SelectItem>
+                {provinces.map((province) => (
+                  <SelectItem key={province} value={province}>
+                    {province}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -247,50 +263,48 @@ export function PerformanceAdmin({
         <div className="space-y-3">
           {filtered.map((entry) => {
             const scoreValue = sortMode === "rating" ? entry.ratingScore : entry.score;
+            const href = companySupervisionHref(campaignId, entry.userKey);
             return (
-              <Card key={entry.userKey}>
-                <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-lg">{getProvinceRankBadge(entry.rank)}</span>
-                      <p className="font-semibold">{entry.userName}</p>
-                      <span className="text-sm text-muted-foreground">— {entry.province}</span>
-                      {entry.todayUploads > 0 && (
-                        <Badge className="bg-success/15 text-success hover:bg-success/20">
-                          +{formatPersianNumber(entry.todayUploads)} امروز
+              <Link
+                key={entry.userKey}
+                href={href}
+                className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Card className="transition-colors hover:border-primary/40">
+                  <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-lg">{getProvinceRankBadge(entry.rank)}</span>
+                        <p className="font-semibold">{entry.userName}</p>
+                        <span className="text-sm text-muted-foreground">— {entry.province}</span>
+                        {entry.todayUploads > 0 && (
+                          <Badge className="bg-success/15 text-success hover:bg-success/20">
+                            +{formatPersianNumber(entry.todayUploads)} امروز
+                          </Badge>
+                        )}
+                      </div>
+                      <MetricsBreakdown entry={entry} />
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <Badge variant="secondary">
+                        {formatPersianNumber(scoreValue)}{" "}
+                        {sortMode === "rating" ? "امتیاز محتوا" : "امتیاز"}
+                      </Badge>
+                      <Badge variant="outline">
+                        {formatPersianNumber(entry.totalUploads)} محتوا
+                      </Badge>
+                      {(entry.pendingScore ?? 0) > 0 && (
+                        <Badge variant="outline" className="text-amber-700 dark:text-amber-400">
+                          {formatPersianNumber(entry.pendingScore)} در انتظار
                         </Badge>
                       )}
-                    </div>
-                    <MetricsBreakdown entry={entry} />
-                  </div>
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <Badge variant="secondary">
-                      {formatPersianNumber(scoreValue)}{" "}
-                      {sortMode === "rating" ? "امتیاز محتوا" : "امتیاز"}
-                    </Badge>
-                    <Badge variant="outline">
-                      {formatPersianNumber(entry.totalUploads)} محتوا
-                    </Badge>
-                    {(entry.pendingScore ?? 0) > 0 && (
-                      <Badge variant="outline" className="text-amber-700 dark:text-amber-400">
-                        {formatPersianNumber(entry.pendingScore)} در انتظار
+                      <Badge variant="outline" className="text-primary">
+                        نظارت شرکت
                       </Badge>
-                    )}
-                    {canOpenProfileNotes(entry) && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5"
-                        onClick={() => openNotes(entry)}
-                      >
-                        <StickyNote className="h-3.5 w-3.5" />
-                        یادداشت
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             );
           })}
         </div>
@@ -315,7 +329,7 @@ export function PerformanceAdmin({
                   <th className="px-3 py-3 text-right font-medium">امتیاز فعالیت</th>
                   <th className="px-3 py-3 text-right font-medium">امتیاز محتوا</th>
                   <th className="px-3 py-3 text-right font-medium">در انتظار</th>
-                  <th className="px-3 py-3 text-right font-medium">یادداشت</th>
+                  <th className="px-3 py-3 text-right font-medium">نظارت</th>
                 </tr>
               </thead>
               <tbody>
@@ -324,7 +338,12 @@ export function PerformanceAdmin({
                     <td className="px-3 py-3 tabular-nums">{getProvinceRankBadge(entry.rank)}</td>
                     <td className="px-3 py-3 font-medium">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span>{entry.userName}</span>
+                        <Link
+                          href={companySupervisionHref(campaignId, entry.userKey)}
+                          className="text-primary hover:underline"
+                        >
+                          {entry.userName}
+                        </Link>
                         {entry.todayUploads > 0 && (
                           <Badge className="bg-success/15 text-success hover:bg-success/20">
                             +{formatPersianNumber(entry.todayUploads)} امروز
@@ -351,20 +370,11 @@ export function PerformanceAdmin({
                       {formatPersianNumber(entry.pendingScore ?? 0)}
                     </td>
                     <td className="px-3 py-3">
-                      {canOpenProfileNotes(entry) ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="gap-1.5"
-                          onClick={() => openNotes(entry)}
-                        >
-                          <StickyNote className="h-3.5 w-3.5" />
-                          یادداشت
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                      <Button type="button" size="sm" variant="outline" asChild>
+                        <Link href={companySupervisionHref(campaignId, entry.userKey)}>
+                          باز کردن
+                        </Link>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -373,115 +383,6 @@ export function PerformanceAdmin({
           </CardContent>
         </Card>
       )}
-
-      <Dialog
-        open={Boolean(selectedEntry)}
-        onOpenChange={(open) => {
-          if (!open) setSelectedEntry(null);
-        }}
-      >
-        <DialogContent className="max-h-[90vh] w-[min(96vw,720px)] max-w-2xl overflow-y-auto" dir="rtl">
-          {selectedEntry && (
-            <>
-              <DialogHeader>
-                <DialogTitle>پروفایل عملکرد — {selectedEntry.userName}</DialogTitle>
-                <DialogDescription>
-                  آمار کمپین فعلی و یادداشت‌های داخلی (فقط مدیر و کارفرما)
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">
-                    رتبه {getProvinceRankBadge(selectedEntry.rank)}
-                  </Badge>
-                  <Badge variant="outline">{selectedEntry.province}</Badge>
-                  <Badge variant="outline">
-                    {formatPersianNumber(selectedEntry.totalUploads)} محتوا
-                  </Badge>
-                  <Badge variant="outline">
-                    {formatPersianNumber(selectedEntry.score)} امتیاز فعالیت
-                  </Badge>
-                  <Badge variant="outline">
-                    {formatPersianNumber(selectedEntry.ratingScore)} امتیاز محتوا
-                  </Badge>
-                  {(selectedEntry.pendingScore ?? 0) > 0 && (
-                    <Badge variant="outline" className="text-amber-700 dark:text-amber-400">
-                      {formatPersianNumber(selectedEntry.pendingScore)} در انتظار
-                    </Badge>
-                  )}
-                  {selectedEntry.todayUploads > 0 && (
-                    <Badge className="bg-success/15 text-success hover:bg-success/20">
-                      +{formatPersianNumber(selectedEntry.todayUploads)} امروز
-                    </Badge>
-                  )}
-                </div>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">امتیاز بخش‌ها</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {[
-                        { label: "امتیاز اکران محیطی", value: selectedEntry.billboardScore },
-                        { label: "امتیاز تولید پوستر", value: selectedEntry.posterScore },
-                        { label: "امتیاز تولید ویدئو", value: selectedEntry.videoScore },
-                        { label: "امتیاز نشر و بازنشر", value: selectedEntry.socialScore },
-                        {
-                          label: "امتیاز نهایی شرکت",
-                          value:
-                            selectedEntry.billboardScore +
-                            selectedEntry.posterScore +
-                            selectedEntry.videoScore +
-                            selectedEntry.socialScore,
-                        },
-                        { label: "رتبه کشوری", value: selectedEntry.rank },
-                      ].map((item) => (
-                        <div
-                          key={item.label}
-                          className="rounded-lg border bg-muted/30 px-3 py-2.5"
-                        >
-                          <p className="text-[11px] text-muted-foreground">{item.label}</p>
-                          <p className="text-sm font-semibold tabular-nums">
-                            {formatPersianNumber(item.value)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">آمار عددی این کمپین</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {METRIC_COLUMNS.map((column) => (
-                        <div
-                          key={column.key}
-                          className="rounded-lg border bg-muted/30 px-3 py-2.5"
-                        >
-                          <p className="text-[11px] text-muted-foreground">{column.label}</p>
-                          <p className="text-sm font-semibold tabular-nums">
-                            {formatPersianNumber(Number(selectedEntry[column.key] ?? 0))}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <UserProfileNotesPanel
-                  subjectUserId={selectedEntry.userKey}
-                  subjectName={selectedEntry.userName}
-                />
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

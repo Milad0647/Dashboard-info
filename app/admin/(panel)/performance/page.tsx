@@ -45,6 +45,7 @@ export default async function PerformancePage({ searchParams }: PageProps) {
   return (
     <PerformanceAdmin
       source={source}
+      campaignId={campaignId}
       campaignTitle={data.settings.title}
       campaignSlug={data.settings.slug}
     />
