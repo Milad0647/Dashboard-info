@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "034a8c0b5fa53eeddad7dacc523a6c81227e2d30",
+      "committedAt": "2026-08-16T15:27:38+03:30",
+      "title": "مربعی شدن برچسب تایید شده با آیکون تیک",
+      "subject": "Make approved status badge square with check icon"
+    },
+    {
+      "hash": "7548fcf06b6cfe041212826dec5d8a4f55e8a4d8",
+      "committedAt": "2026-08-16T15:18:25+03:30",
+      "title": "رفع نمایش نشدن تصاویر پوستر در بخش نظارت شرکت",
+      "subject": "Fix missing poster thumbnails in company supervision"
+    },
+    {
       "hash": "97e91aa3d1fcacd3fb59d28b34a747d1316463cd",
       "committedAt": "2026-08-16T15:16:36+03:30",
       "title": "نمایش وضعیت تایید شده به‌جای دکمه رد و تایید روی محتوای تاییدشده",
