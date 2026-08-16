@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -198,28 +197,37 @@ function ContentItemCard({
           />
         )}
         {canManageReviews && item.isReviewable && (
-          <>
-            <Button
-              type="button"
+          item.reviewStatus === "approved" ? (
+            <Badge
               variant="secondary"
-              size="sm"
-              className="flex-1"
-              disabled={reviewPending}
-              onClick={onApprove}
+              className="flex-1 justify-center bg-success/15 py-1.5 text-success hover:bg-success/15"
             >
-              تایید
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              className="flex-1"
-              disabled={reviewPending}
-              onClick={onReject}
-            >
-              رد
-            </Button>
-          </>
+              تایید شده
+            </Badge>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="flex-1"
+                disabled={reviewPending}
+                onClick={onApprove}
+              >
+                تایید
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="flex-1"
+                disabled={reviewPending}
+                onClick={onReject}
+              >
+                رد
+              </Button>
+            </>
+          )
         )}
         <Button type="button" variant="ghost" size="icon" className="shrink-0" asChild>
           <Link href={item.adminPath} title="ویرایش در پنل">
@@ -515,24 +523,33 @@ function SupervisionItemDialog({
             />
           )}
           {canManageReviews && item.isReviewable && (
-            <>
-              <Button
-                type="button"
+            item.reviewStatus === "approved" ? (
+              <Badge
                 variant="secondary"
-                disabled={reviewPending}
-                onClick={onApprove}
+                className="bg-success/15 px-3 py-1.5 text-success hover:bg-success/15"
               >
-                تایید محتوا
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={reviewPending}
-                onClick={onReject}
-              >
-                رد با دلیل
-              </Button>
-            </>
+                تایید شده
+              </Badge>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={reviewPending}
+                  onClick={onApprove}
+                >
+                  تایید محتوا
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={reviewPending}
+                  onClick={onReject}
+                >
+                  رد با دلیل
+                </Button>
+              </>
+            )
           )}
           <Button type="button" variant="outline" className="gap-1.5" asChild>
             <Link href={item.adminPath}>
