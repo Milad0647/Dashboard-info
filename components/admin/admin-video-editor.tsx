@@ -14,6 +14,8 @@ import { VideoThumbnail } from "@/components/media/video-thumbnail";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
 import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
+import { LiveScorePanel } from "@/components/admin/live-score-panel";
+import { useScoringRules } from "@/lib/context/scoring-rules-context";
 import {
   deleteVideoAction,
   deleteVideoVersionAction,
@@ -133,6 +135,14 @@ export function AdminVideoEditor({
   );
   const [editScore, setEditScore] = useState<number | null | undefined>(video.score);
   const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(video.ownerUserId ?? null);
+  const scoringRules = useScoringRules();
+  const liveScoreValues = {
+    title: editTitle,
+    description: editDescription,
+    categoryId: editCategoryId,
+    videoContentType: editContentType,
+    planLabels: editPlanLabels,
+  };
 
   const typeOptions = useMemo(() => videoTypeSelectOptions(categories), [categories]);
   const selectOptions = useMemo(() => {
@@ -403,6 +413,11 @@ export function AdminVideoEditor({
               plans={contentPlans}
               values={editPlanLabels}
               onChangeMultiple={setEditPlanLabels}
+            />
+            <LiveScorePanel
+              contentType="video"
+              values={liveScoreValues}
+              scoringRules={scoringRules}
             />
             {!isNew && (
               <ContentScoreControl

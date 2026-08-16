@@ -5,7 +5,7 @@ import {
   type ContentReviewStatus,
   type ReviewableContentType,
 } from "@/lib/content-review/types";
-import { SCORE_TABLE_BY_TYPE } from "@/lib/scoring/persist-content-score";
+import { SCORE_TABLE_BY_TYPE } from "@/lib/scoring/score-tables";
 import { isPostgresConfigured } from "@/lib/utils";
 
 const REVIEWABLE_TYPE_SET = new Set<string>(REVIEWABLE_CONTENT_TYPES);
@@ -15,6 +15,11 @@ let contentReviewsReady: Promise<void> | null = null;
 function mapRow(row: Record<string, unknown>): ContentReview {
   const toIso = (value: unknown): string | null =>
     value ? new Date(String(value)).toISOString() : null;
+  const everRejected =
+    row.ever_rejected === true ||
+    row.ever_rejected === "t" ||
+    row.ever_rejected === 1 ||
+    Boolean(row.rejected_at);
   return {
     id: String(row.id),
     campaignId: String(row.campaign_id),
@@ -26,6 +31,7 @@ function mapRow(row: Record<string, unknown>): ContentReview {
     rejectedAt: toIso(row.rejected_at),
     resubmittedAt: toIso(row.resubmitted_at),
     resolvedAt: toIso(row.resolved_at),
+    everRejected,
     createdAt: new Date(String(row.created_at)).toISOString(),
     updatedAt: new Date(String(row.updated_at)).toISOString(),
   };
@@ -58,10 +64,20 @@ export async function ensureContentReviewsTable(): Promise<void> {
           rejected_at TIMESTAMPTZ,
           resubmitted_at TIMESTAMPTZ,
           resolved_at TIMESTAMPTZ,
+          ever_rejected BOOLEAN NOT NULL DEFAULT false,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           UNIQUE (campaign_id, content_type, content_id)
         )
+      `;
+      await sql`
+        ALTER TABLE content_reviews
+        ADD COLUMN IF NOT EXISTS ever_rejected BOOLEAN NOT NULL DEFAULT false
+      `;
+      await sql`
+        UPDATE content_reviews
+        SET ever_rejected = true
+        WHERE rejected_at IS NOT NULL AND ever_rejected = false
       `;
       await sql`
         CREATE INDEX IF NOT EXISTS idx_content_reviews_campaign_status
@@ -103,6 +119,7 @@ export async function pgUpsertContentReview(input: {
       rejected_at,
       resubmitted_at,
       resolved_at,
+      ever_rejected,
       updated_at
     ) VALUES (
       ${input.campaignId}::uuid,
@@ -114,6 +131,7 @@ export async function pgUpsertContentReview(input: {
       ${input.status === "needs_revision" ? new Date().toISOString() : null},
       ${input.status === "resubmitted" ? new Date().toISOString() : null},
       ${input.status === "approved" ? new Date().toISOString() : null},
+      ${input.status === "needs_revision"},
       ${new Date().toISOString()}
     )
     ON CONFLICT (campaign_id, content_type, content_id) DO UPDATE SET
@@ -137,6 +155,10 @@ export async function pgUpsertContentReview(input: {
       resolved_at = CASE
         WHEN EXCLUDED.status = 'approved' THEN EXCLUDED.resolved_at
         ELSE content_reviews.resolved_at
+      END,
+      ever_rejected = CASE
+        WHEN EXCLUDED.status = 'needs_revision' THEN true
+        ELSE content_reviews.ever_rejected
       END,
       updated_at = EXCLUDED.updated_at
     RETURNING *

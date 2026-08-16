@@ -35,6 +35,7 @@ export default async function VideosPage({ searchParams }: PageProps) {
       initialVersions={data.videoVersions}
       contentPlans={data.settings?.contentPlans ?? []}
       contentTopics={data.settings?.contentTopics ?? []}
+      scoringRules={data.settings?.scoringRules ?? null}
       canScore={canScore}
       isFullAdmin={bulkProps.isFullAdmin}
       canTransferOwnership={bulkProps.canTransferOwnership}

@@ -1,4 +1,11 @@
 import { getSql } from "@/lib/db/client";
+import { isReviewableContentType } from "@/lib/content-review/types";
+import {
+  computeContentScore,
+  computeOfficialScore,
+} from "@/lib/scoring/compute-content-score";
+import { normalizeScoringRules } from "@/lib/scoring/normalize-scoring-rules";
+import { SCORE_TABLE_BY_TYPE } from "@/lib/scoring/score-tables";
 import {
   mapBillboardFromDb,
   mapBroadcastReportFromDb,
@@ -11,34 +18,14 @@ import {
   mapSocialPostFromDb,
   mapVideoFromDb,
 } from "@/lib/db/mappers";
-import {
-  computeContentScore,
-  sumFinalScore,
-} from "@/lib/scoring/compute-content-score";
-import { getRulesForContentType } from "@/lib/scoring/normalize-scoring-rules";
-import {
-  normalizeScoringPolicy,
-  type CampaignScoringPolicy,
-} from "@/lib/scoring/scoring-policy";
+import { pgGetContentReview } from "@/lib/db/content-review-repository";
 import type {
-  CampaignScoringRules,
+  CampaignScoringConfig,
   ScoreableContentType,
-  ScoringRule,
 } from "@/lib/types";
 import { isPostgresConfigured } from "@/lib/utils";
 
-export const SCORE_TABLE_BY_TYPE: Record<ScoreableContentType, string> = {
-  billboard: "billboards",
-  poster: "posters",
-  video: "videos",
-  file: "campaign_files",
-  raw_media: "raw_media_uploads",
-  social_post: "social_media_posts",
-  site_publication: "social_media_posts",
-  activity: "campaign_activities",
-  broadcast: "broadcast_reports",
-  meeting: "campaign_meetings",
-};
+export { SCORE_TABLE_BY_TYPE } from "@/lib/scoring/score-tables";
 
 const ALL_SCOREABLE_TYPES: ScoreableContentType[] = [
   "billboard",
@@ -57,25 +44,14 @@ function asRecord(item: object): Record<string, unknown> {
   return item as Record<string, unknown>;
 }
 
-async function loadCampaignScoringBundle(campaignId: string): Promise<{
-  scoringRules: CampaignScoringRules;
-  scoringPolicy: CampaignScoringPolicy;
-}> {
+async function loadCampaignScoringConfig(campaignId: string): Promise<CampaignScoringConfig> {
   const sql = getSql();
   const rows = await sql`
     SELECT * FROM campaign_settings WHERE id = ${campaignId} LIMIT 1
   `;
-  if (!rows[0]) {
-    return {
-      scoringRules: {},
-      scoringPolicy: normalizeScoringPolicy(null),
-    };
-  }
+  if (!rows[0]) return normalizeScoringRules(null);
   const settings = mapSettingsFromDb(rows[0]);
-  return {
-    scoringRules: settings.scoringRules ?? {},
-    scoringPolicy: settings.scoringPolicy ?? normalizeScoringPolicy(null),
-  };
+  return normalizeScoringRules(settings.scoringRules ?? {});
 }
 
 async function loadContentItem(
@@ -121,10 +97,8 @@ async function loadContentItem(
     `;
     if (!rows[0]) return null;
     const mapped = mapSocialPostFromDb(rows[0]);
-    const expectedPlatform = contentType === "site_publication" ? "site" : mapped.platform;
     if (contentType === "site_publication" && mapped.platform !== "site") return null;
     if (contentType === "social_post" && mapped.platform === "site") return null;
-    void expectedPlatform;
     return asRecord(mapped);
   }
   if (contentType === "activity") {
@@ -241,14 +215,37 @@ function readManualScore(item: Record<string, unknown>): number {
   return 0;
 }
 
+async function resolveReviewState(
+  contentType: ScoreableContentType,
+  campaignId: string,
+  contentId: string
+): Promise<{ requiresApproval: boolean; approved: boolean; everRejected: boolean }> {
+  if (!isReviewableContentType(contentType)) {
+    return { requiresApproval: false, approved: true, everRejected: false };
+  }
+  const review = await pgGetContentReview({
+    campaignId,
+    contentType,
+    contentId,
+  });
+  return {
+    requiresApproval: true,
+    approved: review?.status === "approved",
+    everRejected: Boolean(review?.everRejected),
+  };
+}
+
 export async function applyAutoScoreToItem(input: {
   campaignId: string;
   contentType: ScoreableContentType;
   contentId: string;
   /** When true, wipe manual bonus (used after rule apply). */
   resetManual?: boolean;
-  scoringRules?: CampaignScoringRules;
-  scoringPolicy?: CampaignScoringPolicy;
+  scoringRules?: CampaignScoringConfig;
+  /** Force official score as if approved (used right after approve). */
+  forceApproved?: boolean;
+  /** Clear official score (used on reject). */
+  clearOfficial?: boolean;
 }): Promise<{
   success: boolean;
   autoScore?: number;
@@ -261,13 +258,8 @@ export async function applyAutoScoreToItem(input: {
     return { success: false, error: "امتیاز خودکار فقط روی دیتابیس فعال است" };
   }
 
-  const bundle =
-    input.scoringRules && input.scoringPolicy
-      ? { scoringRules: input.scoringRules, scoringPolicy: input.scoringPolicy }
-      : await loadCampaignScoringBundle(input.campaignId);
-  const scoringRules = input.scoringRules ?? bundle.scoringRules;
-  const scoringPolicy = input.scoringPolicy ?? bundle.scoringPolicy;
-  const rules: ScoringRule[] = getRulesForContentType(scoringRules, input.contentType);
+  const scoringRules =
+    input.scoringRules ?? (await loadCampaignScoringConfig(input.campaignId));
   const item = await loadContentItem(input.contentType, input.campaignId, input.contentId);
   if (!item) {
     return { success: false, error: "محتوا یافت نشد" };
@@ -276,11 +268,27 @@ export async function applyAutoScoreToItem(input: {
   const { autoScore, rawScore } = computeContentScore(
     input.contentType,
     item,
-    rules,
-    scoringPolicy
+    scoringRules
   );
   const manualScore = input.resetManual ? 0 : readManualScore(item);
-  const finalScore = sumFinalScore(autoScore, manualScore);
+
+  let finalScore: number;
+  if (input.clearOfficial) {
+    finalScore = 0;
+  } else {
+    const reviewState = await resolveReviewState(
+      input.contentType,
+      input.campaignId,
+      input.contentId
+    );
+    finalScore = computeOfficialScore({
+      autoScore,
+      manualScore,
+      everRejected: reviewState.everRejected,
+      approved: input.forceApproved || reviewState.approved,
+      requiresApproval: reviewState.requiresApproval,
+    });
+  }
 
   await updateScoreColumns(
     input.contentType,
@@ -293,6 +301,37 @@ export async function applyAutoScoreToItem(input: {
   );
 
   return { success: true, autoScore, manualScore, rawScore, score: finalScore };
+}
+
+/** Persist official score after content approval. */
+export async function finalizeOfficialScore(input: {
+  campaignId: string;
+  contentType: ScoreableContentType;
+  contentId: string;
+}): Promise<{ success: boolean; score?: number; error?: string }> {
+  const result = await applyAutoScoreToItem({
+    ...input,
+    resetManual: false,
+    forceApproved: true,
+  });
+  return {
+    success: result.success,
+    score: result.score,
+    error: result.error,
+  };
+}
+
+/** Clear official score when content is rejected for revision. */
+export async function clearOfficialScoreOnReject(input: {
+  campaignId: string;
+  contentType: ScoreableContentType;
+  contentId: string;
+}): Promise<void> {
+  await applyAutoScoreToItem({
+    ...input,
+    resetManual: false,
+    clearOfficial: true,
+  });
 }
 
 /** Resolve social row to the correct scoreable type from platform. */
@@ -383,17 +422,15 @@ async function listIdsForType(
  */
 export async function recalculateCampaignScores(input: {
   campaignId: string;
-  scoringRules?: CampaignScoringRules;
-  scoringPolicy?: CampaignScoringPolicy;
+  scoringRules?: CampaignScoringConfig;
   resetManual?: boolean;
 }): Promise<{ success: boolean; updated: number; error?: string }> {
   if (!isPostgresConfigured()) {
     return { success: false, updated: 0, error: "امتیاز خودکار فقط روی دیتابیس فعال است" };
   }
 
-  const bundle = await loadCampaignScoringBundle(input.campaignId);
-  const scoringRules = input.scoringRules ?? bundle.scoringRules;
-  const scoringPolicy = input.scoringPolicy ?? bundle.scoringPolicy;
+  const scoringRules =
+    input.scoringRules ?? (await loadCampaignScoringConfig(input.campaignId));
   const resetManual = input.resetManual ?? true;
   let updated = 0;
 
@@ -406,7 +443,6 @@ export async function recalculateCampaignScores(input: {
         contentId,
         resetManual,
         scoringRules,
-        scoringPolicy,
       });
       if (result.success) updated += 1;
     }
@@ -417,35 +453,36 @@ export async function recalculateCampaignScores(input: {
 
 export async function saveCampaignScoringRules(
   campaignId: string,
-  scoringRules: CampaignScoringRules
+  scoringRules: CampaignScoringConfig
 ): Promise<{ success: boolean; error?: string }> {
   if (!isPostgresConfigured()) {
     return { success: false, error: "ذخیره قوانین فقط روی دیتابیس فعال است" };
   }
   const sql = getSql();
   const now = new Date().toISOString();
+  const normalized = normalizeScoringRules(scoringRules);
   await sql`
     UPDATE campaign_settings
-    SET scoring_rules = ${sql.json(JSON.parse(JSON.stringify(scoringRules)))},
+    SET scoring_rules = ${sql.json(JSON.parse(JSON.stringify(normalized)))},
         updated_at = ${now}
     WHERE id = ${campaignId}
   `;
   return { success: true };
 }
 
+/** @deprecated Policy no longer drives scoring; kept for backup/settings compatibility. */
 export async function saveCampaignScoringPolicy(
   campaignId: string,
-  scoringPolicy: CampaignScoringPolicy
+  scoringPolicy: unknown
 ): Promise<{ success: boolean; error?: string }> {
   if (!isPostgresConfigured()) {
     return { success: false, error: "ذخیره سیاست امتیاز فقط روی دیتابیس فعال است" };
   }
   const sql = getSql();
   const now = new Date().toISOString();
-  const normalized = normalizeScoringPolicy(scoringPolicy);
   await sql`
     UPDATE campaign_settings
-    SET scoring_policy = ${sql.json(JSON.parse(JSON.stringify(normalized)))},
+    SET scoring_policy = ${sql.json(JSON.parse(JSON.stringify(scoringPolicy ?? {})))},
         updated_at = ${now}
     WHERE id = ${campaignId}
   `;
@@ -471,17 +508,29 @@ export async function setManualScore(input: {
   const item = await loadContentItem(input.contentType, input.campaignId, input.contentId);
   if (!item) return { success: false, error: "محتوا یافت نشد" };
 
-  const bundle = await loadCampaignScoringBundle(input.campaignId);
-  const rules = getRulesForContentType(bundle.scoringRules, input.contentType);
+  const scoringRules = await loadCampaignScoringConfig(input.campaignId);
   const { autoScore, rawScore } = computeContentScore(
     input.contentType,
     item,
-    rules,
-    bundle.scoringPolicy
+    scoringRules
   );
   const manualScore =
     input.manualScore == null || !Number.isFinite(input.manualScore) ? 0 : input.manualScore;
-  const finalScore = sumFinalScore(autoScore, manualScore);
+
+  // Persist manual on the row first via updateScoreColumns after computing official
+  item.manualScore = manualScore;
+  const reviewState = await resolveReviewState(
+    input.contentType,
+    input.campaignId,
+    input.contentId
+  );
+  const finalScore = computeOfficialScore({
+    autoScore,
+    manualScore,
+    everRejected: reviewState.everRejected,
+    approved: reviewState.approved,
+    requiresApproval: reviewState.requiresApproval,
+  });
 
   await updateScoreColumns(
     input.contentType,

@@ -129,9 +129,11 @@ export interface CampaignSettings {
   features: CampaignFeatures;
   analyticsConfig: AnalyticsConfig;
   billboardConfig: BillboardConfig;
-  /** Field-based auto scoring rules per content type. */
-  scoringRules?: CampaignScoringRules;
-  /** Additive / entitlement scoring policy (billboard formula, daily caps, phase, …). */
+  /** Scoring config v2 (general + per-type base/rules). Stored in scoring_rules JSONB. */
+  scoringRules?: CampaignScoringConfig;
+  /**
+   * @deprecated Legacy formula policy — no longer used for scoring; kept for backup compatibility.
+   */
   scoringPolicy?: import("./scoring/scoring-policy").CampaignScoringPolicy;
   /** Campaign content plan names configured by admin (e.g. مهتاب، سامان). Legacy flat list. */
   contentPlans?: string[];
@@ -182,11 +184,14 @@ export interface Ownable {
   planLabel?: string | null;
   /** Multiple topic/subtopic tokens (e.g. "مهتاب" or "مهتاب|هفته اول"). */
   planLabels?: string[];
-  /** Final score = autoScore + manualScore (public / sort / leaderboard). */
+  /**
+   * Official score (leaderboard). For reviewable content this stays 0 until approved;
+   * after approval: autoScore * (everRejected ? 0.5 : 1) + manualScore.
+   */
   score?: number | null;
-  /** Score computed from campaign scoring rules. */
+  /** Preview / computed score from campaign scoring config (always updated on save). */
   autoScore?: number | null;
-  /** Manual bonus set by admin/client. */
+  /** Manual bonus set by admin/client (applied to official score when approved). */
   manualScore?: number | null;
 }
 
@@ -217,14 +222,32 @@ export interface ScoringRule {
   max?: number | string;
 }
 
-/** Per content-type scoring rules stored on the campaign. */
+/** @deprecated v1 shape — prefer CampaignScoringConfig */
 export type CampaignScoringRules = Partial<Record<ScoreableContentType, ScoringRule[]>>;
+
+/** Per content-type config: base points for the work + selectable field rules. */
+export interface CategoryScoringConfig {
+  basePoints: number;
+  rules: ScoringRule[];
+}
+
+/**
+ * Scoring config v2 stored in campaign_settings.scoring_rules JSONB.
+ * general = shared fields (e.g. planLabels / topics) for all content types.
+ */
+export interface CampaignScoringConfig {
+  version: 2;
+  general: ScoringRule[];
+  byType: Partial<Record<ScoreableContentType, CategoryScoringConfig>>;
+}
 
 export interface ScoreBreakdownEntry {
   ruleId: string;
   field: string;
   points: number;
   matched: boolean;
+  /** Optional display label for UI (e.g. base / topic). */
+  label?: string;
 }
 
 export interface BillboardDisplayPeriod {

@@ -271,6 +271,11 @@ export function PerformanceAdmin({
                     <Badge variant="outline">
                       {formatPersianNumber(entry.totalUploads)} محتوا
                     </Badge>
+                    {(entry.pendingScore ?? 0) > 0 && (
+                      <Badge variant="outline" className="text-amber-700 dark:text-amber-400">
+                        {formatPersianNumber(entry.pendingScore)} در انتظار
+                      </Badge>
+                    )}
                     {canOpenProfileNotes(entry) && (
                       <Button
                         type="button"
@@ -309,6 +314,7 @@ export function PerformanceAdmin({
                   <th className="px-3 py-3 text-right font-medium">محتوا</th>
                   <th className="px-3 py-3 text-right font-medium">امتیاز فعالیت</th>
                   <th className="px-3 py-3 text-right font-medium">امتیاز محتوا</th>
+                  <th className="px-3 py-3 text-right font-medium">در انتظار</th>
                   <th className="px-3 py-3 text-right font-medium">یادداشت</th>
                 </tr>
               </thead>
@@ -340,6 +346,9 @@ export function PerformanceAdmin({
                     </td>
                     <td className="px-3 py-3 tabular-nums font-medium">
                       {formatPersianNumber(entry.ratingScore)}
+                    </td>
+                    <td className="px-3 py-3 tabular-nums font-medium text-amber-700 dark:text-amber-400">
+                      {formatPersianNumber(entry.pendingScore ?? 0)}
                     </td>
                     <td className="px-3 py-3">
                       {canOpenProfileNotes(entry) ? (
@@ -396,6 +405,11 @@ export function PerformanceAdmin({
                   <Badge variant="outline">
                     {formatPersianNumber(selectedEntry.ratingScore)} امتیاز محتوا
                   </Badge>
+                  {(selectedEntry.pendingScore ?? 0) > 0 && (
+                    <Badge variant="outline" className="text-amber-700 dark:text-amber-400">
+                      {formatPersianNumber(selectedEntry.pendingScore)} در انتظار
+                    </Badge>
+                  )}
                   {selectedEntry.todayUploads > 0 && (
                     <Badge className="bg-success/15 text-success hover:bg-success/20">
                       +{formatPersianNumber(selectedEntry.todayUploads)} امروز

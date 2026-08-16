@@ -22,6 +22,10 @@ import {
 } from "@/lib/db/content-review-repository";
 import { pgMarkNotificationReads } from "@/lib/db/repository-extended";
 import { getNotificationReaderKey } from "@/lib/notification-reader";
+import {
+  clearOfficialScoreOnReject,
+  finalizeOfficialScore,
+} from "@/lib/scoring/persist-content-score";
 import { isPostgresConfigured } from "@/lib/utils";
 
 const REVIEWABLE_SET = new Set<string>(REVIEWABLE_CONTENT_TYPES);
@@ -82,6 +86,7 @@ export async function rejectContentForRevisionAction(input: {
   if (!review) return { success: false, error: "ثبت وضعیت رد ناموفق بود" };
 
   await pgSetContentPublished({ campaignId, contentType, contentId, published: false });
+  await clearOfficialScoreOnReject({ campaignId, contentType, contentId });
   await markSeenForCurrentSession(input.notificationKey);
 
   if (owner.ownerUserId) {
@@ -148,6 +153,7 @@ export async function approveContentAction(input: {
     status: "approved",
   });
   await pgSetContentPublished({ campaignId, contentType, contentId, published: true });
+  await finalizeOfficialScore({ campaignId, contentType, contentId });
   await pgUpdateFollowUpStatusForContent({
     campaignId,
     contentType,
@@ -163,10 +169,12 @@ export async function approveContentAction(input: {
     entityId: review?.id ?? contentId,
     campaignId,
     label: owner.title || "تایید محتوا",
-    metadata: { contentType, contentId },
+    metadata: { contentType, contentId, everRejected: review?.everRejected ?? false },
   });
 
   revalidateReviewViews();
+  revalidatePath("/admin/performance");
+  revalidatePath("/campaign");
   return { success: true };
 }
 

@@ -54,6 +54,7 @@ export default async function BillboardsPage({ searchParams }: PageProps) {
       initialBillboards={billboards}
       contentPlans={settings?.contentPlans ?? []}
       contentTopics={settings?.contentTopics ?? []}
+      scoringRules={settings?.scoringRules ?? null}
       canScore={canScore}
       isFullAdmin={fullAdmin}
       canTransferOwnership={canTransfer}

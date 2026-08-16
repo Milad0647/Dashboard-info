@@ -1,20 +1,19 @@
 import type {
+  CampaignScoringConfig,
   ScoreBreakdownEntry,
   ScoreableContentType,
   ScoringRule,
 } from "@/lib/types";
 import { getScoreableField } from "@/lib/scoring/scoreable-fields";
 import {
-  computeBillboardPolicyScore,
-  computeFlatSectionScore,
-  computeMediaRepublishScore,
-  computeSocialAudienceScore,
-  type CampaignScoringPolicy,
-} from "@/lib/scoring/scoring-policy";
+  getCategoryConfig,
+  getGeneralRules,
+  normalizeScoringRules,
+} from "@/lib/scoring/normalize-scoring-rules";
 
 export interface ComputeContentScoreResult {
   autoScore: number;
-  /** Score before company phase addition / entitlement multiply. */
+  /** Same as autoScore in v2 (no phase/entitlement pipeline). */
   rawScore: number;
   breakdown: ScoreBreakdownEntry[];
 }
@@ -89,17 +88,13 @@ function matchRange(value: unknown, rule: ScoringRule, valueType: string): boole
   return true;
 }
 
-function readFieldValue(item: Record<string, unknown>, field: string): unknown {
-  return item[field];
-}
-
 function ruleMatches(
   contentType: ScoreableContentType,
   item: Record<string, unknown>,
   rule: ScoringRule
 ): boolean {
   const fieldDef = getScoreableField(contentType, rule.field);
-  const value = readFieldValue(item, rule.field);
+  const value = item[rule.field];
   const valueType = fieldDef?.valueType ?? "text";
 
   switch (rule.kind) {
@@ -127,18 +122,14 @@ function isRejectedOrDuplicate(item: Record<string, unknown>): boolean {
   return false;
 }
 
-function computeFromFieldRules(
+function applyRules(
   contentType: ScoreableContentType,
   item: Record<string, unknown>,
-  rules: ScoringRule[]
-): ComputeContentScoreResult {
-  if (!rules.length) {
-    return { autoScore: 0, rawScore: 0, breakdown: [] };
-  }
-
-  const breakdown: ScoreBreakdownEntry[] = [];
-  let autoScore = 0;
-  /** Numeric/date bands are mutually exclusive: first matching range per field wins. */
+  rules: ScoringRule[],
+  breakdown: ScoreBreakdownEntry[],
+  labelPrefix?: string
+): number {
+  let total = 0;
   const matchedRangeFields = new Set<string>();
 
   for (const rule of rules) {
@@ -151,172 +142,84 @@ function computeFromFieldRules(
       }
     }
     const points = matched ? rule.points : 0;
-    if (matched) autoScore += rule.points;
+    if (matched) total += rule.points;
     breakdown.push({
       ruleId: rule.id,
       field: rule.field,
       points,
       matched,
+      label: labelPrefix,
     });
   }
 
-  return { autoScore, rawScore: autoScore, breakdown };
+  return total;
 }
 
 /**
- * Compute automatic score from campaign policy (preferred) and/or field rules.
+ * Compute preview score: basePoints + general rules + type field rules.
+ * Pure / client-safe (no I/O).
  */
 export function computeContentScore(
   contentType: ScoreableContentType,
   item: Record<string, unknown>,
-  rules: ScoringRule[],
-  policy?: CampaignScoringPolicy | null
+  configOrRules: CampaignScoringConfig | ScoringRule[] | null | undefined
 ): ComputeContentScoreResult {
   if (isRejectedOrDuplicate(item)) {
     return { autoScore: 0, rawScore: 0, breakdown: [] };
   }
 
-  if (policy?.enabled) {
-    if (contentType === "billboard") {
-      const result = computeBillboardPolicyScore(item, policy);
-      return {
-        autoScore: result.final,
-        rawScore: result.raw,
-        breakdown: [
-          {
-            ruleId: "policy.topic",
-            field: "planLabels",
-            points: result.topic,
-            matched: true,
-          },
-          {
-            ruleId: "policy.approvedDesign",
-            field: "usesApprovedDesign",
-            points: result.approvedDesign,
-            matched: true,
-          },
-          {
-            ruleId: "policy.mediaValue",
-            field: "category",
-            points: result.mediaValue,
-            matched: true,
-          },
-          {
-            ruleId: "policy.location",
-            field: "locationType",
-            points: result.location,
-            matched: true,
-          },
-          {
-            ruleId: "policy.area",
-            field: "areaSqm",
-            points: result.area,
-            matched: true,
-          },
-          {
-            ruleId: "policy.phase",
-            field: "phase",
-            points: result.phase,
-            matched: true,
-          },
-          {
-            ruleId: "policy.entitlement",
-            field: "entitlement",
-            points: result.entitlement,
-            matched: true,
-          },
-        ],
-      };
-    }
-
-    if (contentType === "poster" || contentType === "video") {
-      const points = computeFlatSectionScore(contentType, policy);
-      return {
-        autoScore: points,
-        rawScore: points,
-        breakdown: [
-          {
-            ruleId: `policy.${contentType}`,
-            field: "flat",
-            points,
-            matched: true,
-          },
-        ],
-      };
-    }
-
-    if (contentType === "social_post" || contentType === "site_publication") {
-      if (policy.socialAudienceRanges.length > 0) {
-        const audience =
-          toNumber(item.audienceCount) ??
-          toNumber(item.views) ??
-          toNumber(item.followers) ??
-          null;
-        const points = computeSocialAudienceScore(audience, policy);
-        return {
-          autoScore: points,
-          rawScore: points,
-          breakdown: [
-            {
-              ruleId: "policy.socialAudience",
-              field: "audienceCount",
-              points,
-              matched: points > 0,
-            },
-          ],
-        };
+  const config: CampaignScoringConfig = Array.isArray(configOrRules)
+    ? {
+        version: 2,
+        general: [],
+        byType: { [contentType]: { basePoints: 0, rules: configOrRules } },
       }
-    }
+    : normalizeScoringRules(configOrRules ?? {});
 
-    if (contentType === "broadcast") {
-      if (policy.mediaRepublishRows.length > 0) {
-        const scope =
-          (typeof item.mediaScope === "string" && item.mediaScope.trim()) ||
-          (item.summaryData &&
-          typeof item.summaryData === "object" &&
-          typeof (item.summaryData as { mediaScope?: unknown }).mediaScope === "string"
-            ? String((item.summaryData as { mediaScope: string }).mediaScope).trim()
-            : "");
-        const points = computeMediaRepublishScore(scope || null, policy);
-        return {
-          autoScore: points,
-          rawScore: points,
-          breakdown: [
-            {
-              ruleId: "policy.mediaRepublish",
-              field: "mediaScope",
-              points,
-              matched: points > 0,
-            },
-          ],
-        };
-      }
-    }
+  const category = getCategoryConfig(config, contentType);
+  const general = getGeneralRules(config);
+  const breakdown: ScoreBreakdownEntry[] = [];
 
-    if (contentType === "activity") {
-      if (policy.mediaRepublishRows.length > 0) {
-        const scope =
-          typeof item.mediaScope === "string" ? item.mediaScope.trim() : "";
-        if (scope) {
-          const points = computeMediaRepublishScore(scope, policy);
-          return {
-            autoScore: points,
-            rawScore: points,
-            breakdown: [
-              {
-                ruleId: "policy.mediaRepublish",
-                field: "mediaScope",
-                points,
-                matched: points > 0,
-              },
-            ],
-          };
-        }
-      }
-    }
+  let autoScore = 0;
+  if (category.basePoints > 0) {
+    autoScore += category.basePoints;
+    breakdown.push({
+      ruleId: "base",
+      field: "_base",
+      points: category.basePoints,
+      matched: true,
+      label: "امتیاز پایه اثر",
+    });
   }
 
-  return computeFromFieldRules(contentType, item, rules);
+  autoScore += applyRules(contentType, item, general, breakdown, "تنظیمات کلی");
+  autoScore += applyRules(contentType, item, category.rules, breakdown, "فیلد دسته");
+
+  return { autoScore, rawScore: autoScore, breakdown };
+}
+
+/** Official score from preview, rejection flag, and manual bonus. */
+export function computeOfficialScore(input: {
+  autoScore: number;
+  manualScore?: number | null;
+  everRejected?: boolean;
+  /** When false, official score is 0 (pending review). */
+  approved?: boolean;
+  /** Non-reviewable types are always "approved" for scoring. */
+  requiresApproval?: boolean;
+}): number {
+  const auto =
+    typeof input.autoScore === "number" && Number.isFinite(input.autoScore)
+      ? input.autoScore
+      : 0;
+  const manual =
+    typeof input.manualScore === "number" && Number.isFinite(input.manualScore)
+      ? input.manualScore
+      : 0;
+  const requiresApproval = input.requiresApproval !== false;
+  if (requiresApproval && !input.approved) return 0;
+  const factor = input.everRejected ? 0.5 : 1;
+  return auto * factor + manual;
 }
 
 export function sumFinalScore(

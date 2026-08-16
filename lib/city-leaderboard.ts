@@ -51,13 +51,19 @@ export interface ProvinceLeaderboardMetrics {
   todayUploads: number;
   totalUploads: number;
   score: number;
-  /** Sum of Ownable.score values across content items. */
+  /** Sum of Ownable.score values across content items (official / approved). */
   ratingScore: number;
+  /** Preview scores not yet officially recorded (autoScore while score is 0). */
+  pendingScore: number;
   /** Section content scores (for company profile cards). */
   billboardScore: number;
   posterScore: number;
   videoScore: number;
   socialScore: number;
+  pendingBillboardScore: number;
+  pendingPosterScore: number;
+  pendingVideoScore: number;
+  pendingSocialScore: number;
   /** Sum of billboard areaSqm values. */
   totalAreaSqm: number;
 }
@@ -139,10 +145,15 @@ function emptyMetrics(): ProvinceLeaderboardMetrics {
     totalUploads: 0,
     score: 0,
     ratingScore: 0,
+    pendingScore: 0,
     billboardScore: 0,
     posterScore: 0,
     videoScore: 0,
     socialScore: 0,
+    pendingBillboardScore: 0,
+    pendingPosterScore: 0,
+    pendingVideoScore: 0,
+    pendingSocialScore: 0,
     totalAreaSqm: 0,
   };
 }
@@ -150,8 +161,18 @@ function emptyMetrics(): ProvinceLeaderboardMetrics {
 function addSectionScore(
   current: ProvinceLeaderboardMetrics,
   field: MetricField,
-  itemScore: number
+  itemScore: number,
+  pending = false
 ) {
+  if (pending) {
+    if (field === "billboards") current.pendingBillboardScore += itemScore;
+    else if (field === "posters") current.pendingPosterScore += itemScore;
+    else if (field === "videos") current.pendingVideoScore += itemScore;
+    else if (field === "socialPosts" || field === "sitePublications") {
+      current.pendingSocialScore += itemScore;
+    }
+    return;
+  }
   if (field === "billboards") current.billboardScore += itemScore;
   else if (field === "posters") current.posterScore += itemScore;
   else if (field === "videos") current.videoScore += itemScore;
@@ -184,9 +205,18 @@ function addItem<T extends Ownable & { createdAt?: string | null; province?: str
   current[field]++;
   current.totalUploads++;
   current.score += SCORE_WEIGHTS[field];
-  if (typeof item.score === "number" && Number.isFinite(item.score)) {
-    current.ratingScore += item.score;
-    addSectionScore(current, field, item.score);
+  const official =
+    typeof item.score === "number" && Number.isFinite(item.score) ? item.score : 0;
+  const preview =
+    typeof item.autoScore === "number" && Number.isFinite(item.autoScore)
+      ? item.autoScore
+      : 0;
+  if (official > 0) {
+    current.ratingScore += official;
+    addSectionScore(current, field, official, false);
+  } else if (preview > 0) {
+    current.pendingScore += preview;
+    addSectionScore(current, field, preview, true);
   }
 
   if (field === "billboards") {
@@ -224,8 +254,10 @@ function addContributor<T extends Ownable & { createdAt?: string | null; provinc
 
   current.totalUploads++;
   current.score += SCORE_WEIGHTS[field];
-  if (typeof item.score === "number" && Number.isFinite(item.score)) {
-    current.ratingScore = (current.ratingScore ?? 0) + item.score;
+  const official =
+    typeof item.score === "number" && Number.isFinite(item.score) ? item.score : 0;
+  if (official > 0) {
+    current.ratingScore = (current.ratingScore ?? 0) + official;
   }
   map.set(contributorKey, current);
 }
@@ -251,9 +283,18 @@ function addUserItem<T extends Ownable & { createdAt?: string | null; province?:
   current[field]++;
   current.totalUploads++;
   current.score += SCORE_WEIGHTS[field];
-  if (typeof item.score === "number" && Number.isFinite(item.score)) {
-    current.ratingScore += item.score;
-    addSectionScore(current, field, item.score);
+  const officialScore =
+    typeof item.score === "number" && Number.isFinite(item.score) ? item.score : 0;
+  const previewScore =
+    typeof item.autoScore === "number" && Number.isFinite(item.autoScore)
+      ? item.autoScore
+      : 0;
+  if (officialScore > 0) {
+    current.ratingScore += officialScore;
+    addSectionScore(current, field, officialScore, false);
+  } else if (previewScore > 0) {
+    current.pendingScore += previewScore;
+    addSectionScore(current, field, previewScore, true);
   }
 
   if (field === "billboards") {
@@ -337,10 +378,15 @@ export function buildProvinceLeaderboard(data: LeaderboardSourceData): ProvinceL
       totalUploads: metrics.totalUploads,
       score: metrics.score,
       ratingScore: metrics.ratingScore,
+      pendingScore: metrics.pendingScore,
       billboardScore: metrics.billboardScore,
       posterScore: metrics.posterScore,
       videoScore: metrics.videoScore,
       socialScore: metrics.socialScore,
+      pendingBillboardScore: metrics.pendingBillboardScore,
+      pendingPosterScore: metrics.pendingPosterScore,
+      pendingVideoScore: metrics.pendingVideoScore,
+      pendingSocialScore: metrics.pendingSocialScore,
       totalAreaSqm: metrics.totalAreaSqm,
       rank: 0,
     }))
@@ -371,10 +417,15 @@ export function buildUserLeaderboard(data: LeaderboardSourceData): UserLeaderboa
       totalUploads: metrics.totalUploads,
       score: metrics.score,
       ratingScore: metrics.ratingScore,
+      pendingScore: metrics.pendingScore,
       billboardScore: metrics.billboardScore,
       posterScore: metrics.posterScore,
       videoScore: metrics.videoScore,
       socialScore: metrics.socialScore,
+      pendingBillboardScore: metrics.pendingBillboardScore,
+      pendingPosterScore: metrics.pendingPosterScore,
+      pendingVideoScore: metrics.pendingVideoScore,
+      pendingSocialScore: metrics.pendingSocialScore,
       totalAreaSqm: metrics.totalAreaSqm,
       rank: 0,
     }))
@@ -395,7 +446,12 @@ export interface UserContentScoreItem {
   typeLabel: string;
   contentType: string;
   thumbnailUrl?: string | null;
+  /** Official recorded score (0 / null until approved for reviewable types). */
   score: number | null;
+  /** Live / preview auto score. */
+  autoScore: number | null;
+  /** approved | pending */
+  scoreStatus: "approved" | "pending";
   createdAt?: string | null;
 }
 
@@ -421,13 +477,23 @@ export function collectUserContentItems(
     for (const item of list) {
       if (!item.id || !item.title) continue;
       if (!resolveUserKeyMatch(item, userKey)) continue;
+      const official =
+        typeof item.score === "number" && Number.isFinite(item.score) ? item.score : 0;
+      const auto =
+        typeof item.autoScore === "number" && Number.isFinite(item.autoScore)
+          ? item.autoScore
+          : null;
+      const scoreStatus: "approved" | "pending" =
+        official > 0 ? "approved" : auto && auto > 0 ? "pending" : "approved";
       items.push({
         id: item.id,
         title: item.title,
         typeLabel,
         contentType,
         thumbnailUrl: getThumb?.(item) ?? null,
-        score: typeof item.score === "number" ? item.score : null,
+        score: official > 0 ? official : null,
+        autoScore: auto,
+        scoreStatus,
         createdAt: item.createdAt ?? null,
       });
     }
@@ -456,7 +522,11 @@ export function collectUserContentItems(
     push(data.files, "فایل", "file");
   }
 
-  return items.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  return items.sort((a, b) => {
+    const aVal = a.scoreStatus === "approved" ? (a.score ?? 0) : (a.autoScore ?? 0);
+    const bVal = b.scoreStatus === "approved" ? (b.score ?? 0) : (b.autoScore ?? 0);
+    return bVal - aVal;
+  });
 }
 
 export interface LeaderboardContentScope {

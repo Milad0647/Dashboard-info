@@ -18,6 +18,8 @@ export interface ContentReview {
   rejectedAt: string | null;
   resubmittedAt: string | null;
   resolvedAt: string | null;
+  /** Once true, stays true — official score is halved after approval. */
+  everRejected: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,3 +32,7 @@ export const REVIEWABLE_CONTENT_TYPES: ReviewableContentType[] = [
   "social_post",
   "site_publication",
 ];
+
+export function isReviewableContentType(type: string): type is ReviewableContentType {
+  return (REVIEWABLE_CONTENT_TYPES as string[]).includes(type);
+}

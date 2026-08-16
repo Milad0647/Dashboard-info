@@ -7,23 +7,18 @@ import { normalizeScoreValue } from "@/lib/content-score";
 import { logAuditForSession } from "@/lib/audit/log-event";
 import {
   recalculateCampaignScores,
-  saveCampaignScoringPolicy,
   saveCampaignScoringRules,
   setManualScore,
 } from "@/lib/scoring/persist-content-score";
 import { normalizeScoringRules } from "@/lib/scoring/normalize-scoring-rules";
-import {
-  normalizeScoringPolicy,
-  type CampaignScoringPolicy,
-} from "@/lib/scoring/scoring-policy";
-import type { CampaignScoringRules, ScoreableContentType } from "@/lib/types";
+import type { CampaignScoringConfig, ScoreableContentType } from "@/lib/types";
 import { isPostgresConfigured } from "@/lib/utils";
 
 export async function saveContentScoreAction(input: {
   campaignId: string;
   contentType: ScoreableContentType;
   contentId: string;
-  /** Manual bonus only; final score = auto + manual. */
+  /** Manual bonus only; final score = auto + manual (when approved). */
   score: number | null;
 }): Promise<{
   success: boolean;
@@ -83,7 +78,7 @@ export async function saveContentScoreAction(input: {
 
 export async function saveScoringRulesAction(input: {
   campaignId: string;
-  scoringRules: CampaignScoringRules;
+  scoringRules: CampaignScoringConfig;
   /** When true, recalculate all content and reset manual bonuses. */
   applyAndRecalculate?: boolean;
 }): Promise<{ success: boolean; error?: string; updated?: number }> {
@@ -127,56 +122,6 @@ export async function saveScoringRulesAction(input: {
 
   revalidatePath(`/admin`);
   revalidatePath(`/admin/scoring`);
-  revalidatePath(`/campaign`);
-  return { success: true, updated };
-}
-
-export async function saveScoringPolicyAction(input: {
-  campaignId: string;
-  scoringPolicy: CampaignScoringPolicy;
-  applyAndRecalculate?: boolean;
-}): Promise<{ success: boolean; error?: string; updated?: number }> {
-  const session = await getAuthSession();
-  if (!session || !canScoreContent(session)) {
-    return { success: false, error: "فقط مدیر و کارفرما می‌توانند سیاست امتیاز را ذخیره کنند" };
-  }
-
-  if (!isPostgresConfigured()) {
-    return { success: false, error: "ذخیره سیاست امتیاز فقط روی دیتابیس فعال است" };
-  }
-
-  const scoringPolicy = normalizeScoringPolicy(input.scoringPolicy);
-  const saved = await saveCampaignScoringPolicy(input.campaignId, scoringPolicy);
-  if (!saved.success) {
-    return { success: false, error: saved.error };
-  }
-
-  let updated = 0;
-  if (input.applyAndRecalculate !== false) {
-    const recalc = await recalculateCampaignScores({
-      campaignId: input.campaignId,
-      scoringPolicy,
-      resetManual: false,
-    });
-    if (!recalc.success) {
-      return { success: false, error: recalc.error };
-    }
-    updated = recalc.updated;
-  }
-
-  await logAuditForSession(session, {
-    category: "admin",
-    action: "campaign.scoring_policy",
-    entityType: "campaign",
-    entityId: input.campaignId,
-    campaignId: input.campaignId,
-    label: `ذخیره سیاست امتیازدهی${updated ? ` و محاسبه مجدد (${updated} مورد)` : ""}`,
-    metadata: { updated, applyAndRecalculate: input.applyAndRecalculate !== false },
-  });
-
-  revalidatePath(`/admin`);
-  revalidatePath(`/admin/scoring`);
-  revalidatePath(`/admin/performance`);
   revalidatePath(`/campaign`);
   return { success: true, updated };
 }

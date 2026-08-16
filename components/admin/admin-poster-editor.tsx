@@ -13,6 +13,8 @@ import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
 import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
+import { LiveScorePanel } from "@/components/admin/live-score-panel";
+import { useScoringRules } from "@/lib/context/scoring-rules-context";
 import {
   deletePosterAction,
   deletePosterVersionAction,
@@ -75,6 +77,13 @@ export function AdminPosterEditor({
   );
   const [editScore, setEditScore] = useState<number | null | undefined>(poster.score);
   const [editOwnerUserId, setEditOwnerUserId] = useState<string | null>(poster.ownerUserId ?? null);
+  const scoringRules = useScoringRules();
+  const liveScoreValues = {
+    title: editTitle,
+    description: editDescription,
+    categoryId: editCategoryId,
+    planLabels: editPlanLabels,
+  };
 
   useEffect(() => {
     const current = resolveDisplayVersion(versions);
@@ -270,6 +279,11 @@ export function AdminPosterEditor({
               plans={contentPlans}
               values={editPlanLabels}
               onChangeMultiple={setEditPlanLabels}
+            />
+            <LiveScorePanel
+              contentType="poster"
+              values={liveScoreValues}
+              scoringRules={scoringRules}
             />
             {!isNew && (
               <ContentScoreControl

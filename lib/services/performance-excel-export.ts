@@ -32,6 +32,7 @@ export function buildPerformanceExcelBuffer(
     "جمع محتوا": entry.totalUploads,
     "امتیاز فعالیت": entry.score,
     "امتیاز محتوا": entry.ratingScore,
+    "امتیاز در انتظار": entry.pendingScore ?? 0,
   }));
 
   const sheet = XLSX.utils.json_to_sheet(rows);

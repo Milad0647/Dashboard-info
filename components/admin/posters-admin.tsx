@@ -33,6 +33,7 @@ import {
 } from "@/components/admin/section-bulk-edit";
 import { deletePosterAction } from "@/lib/actions/admin-actions";
 import type { ContentTopic } from "@/lib/content-topics";
+import { ScoringRulesProvider } from "@/lib/context/scoring-rules-context";
 import {
   parseEditSuggestionMissingFields,
   type EditSuggestionMissingField,
@@ -43,7 +44,13 @@ import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import { cn, formatPersianDate, formatPersianDateTime } from "@/lib/utils";
-import type { AdminUser, MediaCategory, Poster, PosterVersion } from "@/lib/types";
+import type {
+  AdminUser,
+  CampaignScoringConfig,
+  MediaCategory,
+  Poster,
+  PosterVersion,
+} from "@/lib/types";
 
 interface PostersAdminProps {
   campaignId: string;
@@ -52,6 +59,7 @@ interface PostersAdminProps {
   initialVersions: PosterVersion[];
   contentPlans?: string[];
   contentTopics?: ContentTopic[];
+  scoringRules?: CampaignScoringConfig | null;
   canScore?: boolean;
   isFullAdmin?: boolean;
   canTransferOwnership?: boolean;
@@ -68,6 +76,7 @@ export function PostersAdmin({
   initialVersions,
   contentPlans = [],
   contentTopics = [],
+  scoringRules = null,
   canScore = false,
   isFullAdmin = false,
   canTransferOwnership = false,
@@ -229,6 +238,7 @@ export function PostersAdmin({
   };
 
   return (
+    <ScoringRulesProvider scoringRules={scoringRules}>
     <div className="space-y-6">
       {tutorialModal}
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -507,5 +517,6 @@ export function PostersAdmin({
         </DialogContent>
       </Dialog>
     </div>
+    </ScoringRulesProvider>
   );
 }

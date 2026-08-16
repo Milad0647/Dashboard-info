@@ -83,9 +83,23 @@ export function UserContentScoreModal({
                         </p>
                       ) : null}
                     </div>
-                    <div className="inline-flex shrink-0 items-center gap-1 text-sm text-warning">
-                      <Star className="h-3.5 w-3.5 fill-current" />
-                      {item.score != null ? formatPersianNumber(item.score) : "—"}
+                    <div className="inline-flex shrink-0 flex-col items-end gap-1 text-sm">
+                      <div className="inline-flex items-center gap-1 text-warning">
+                        <Star className="h-3.5 w-3.5 fill-current" />
+                        {item.scoreStatus === "approved"
+                          ? item.score != null
+                            ? formatPersianNumber(item.score)
+                            : "—"
+                          : item.autoScore != null
+                            ? formatPersianNumber(item.autoScore)
+                            : "—"}
+                      </div>
+                      <Badge
+                        variant={item.scoreStatus === "approved" ? "secondary" : "outline"}
+                        className="text-[10px]"
+                      >
+                        {item.scoreStatus === "approved" ? "تأییدشده" : "در انتظار"}
+                      </Badge>
                     </div>
                   </button>
                 </li>
@@ -116,9 +130,18 @@ export function UserContentScoreModal({
               )}
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">{selectedItem.typeLabel}</Badge>
+                <Badge variant={selectedItem.scoreStatus === "approved" ? "secondary" : "outline"}>
+                  {selectedItem.scoreStatus === "approved" ? "تأییدشده" : "در انتظار تأیید"}
+                </Badge>
                 <span className="inline-flex items-center gap-1 text-sm text-warning">
                   <Star className="h-3.5 w-3.5 fill-current" />
-                  {selectedItem.score != null ? formatPersianNumber(selectedItem.score) : "—"}
+                  {selectedItem.scoreStatus === "approved"
+                    ? selectedItem.score != null
+                      ? formatPersianNumber(selectedItem.score)
+                      : "—"
+                    : selectedItem.autoScore != null
+                      ? formatPersianNumber(selectedItem.autoScore)
+                      : "—"}
                 </span>
                 {selectedItem.createdAt ? (
                   <span className="text-xs text-muted-foreground">

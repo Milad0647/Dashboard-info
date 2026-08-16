@@ -976,10 +976,14 @@ CREATE TABLE IF NOT EXISTS content_reviews (
   rejected_at TIMESTAMPTZ,
   resubmitted_at TIMESTAMPTZ,
   resolved_at TIMESTAMPTZ,
+  ever_rejected BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (campaign_id, content_type, content_id)
 );
+
+ALTER TABLE content_reviews
+  ADD COLUMN IF NOT EXISTS ever_rejected BOOLEAN NOT NULL DEFAULT false;
 
 CREATE INDEX IF NOT EXISTS idx_content_reviews_campaign_status
   ON content_reviews(campaign_id, status, updated_at DESC);

@@ -23,6 +23,8 @@ import {
 import { PlanLabelSelect } from "@/components/admin/plan-label-select";
 import { ContentOwnerSelect } from "@/components/admin/content-owner-select";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
+import { LiveScorePanel } from "@/components/admin/live-score-panel";
+import { useScoringRules } from "@/lib/context/scoring-rules-context";
 import { BillboardLocationMapPicker } from "@/components/admin/billboard-location-map-picker";
 import { ProvinceCityFields } from "@/components/admin/province-city-fields";
 import {
@@ -151,6 +153,20 @@ export function BillboardCreateAssignmentDialog({
       address: string;
     }>
   >([]);
+
+  const scoringRules = useScoringRules();
+  const liveScoreValues = {
+    title: axis,
+    description: address,
+    province,
+    city,
+    location: address,
+    category,
+    locationType,
+    areaSqm: areaSqm ? Number(areaSqm) : null,
+    usesApprovedDesign,
+    planLabels,
+  };
 
   const isEditing = Boolean(editingBillboard);
 
@@ -651,6 +667,13 @@ export function BillboardCreateAssignmentDialog({
             values={planLabels}
             onChangeMultiple={setPlanLabels}
             optional={false}
+          />
+
+          <LiveScorePanel
+            contentType="billboard"
+            values={liveScoreValues}
+            scoringRules={scoringRules}
+            everRejected={false}
           />
 
           {isEditing && editingBillboard && (

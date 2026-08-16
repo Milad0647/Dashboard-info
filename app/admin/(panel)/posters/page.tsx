@@ -28,6 +28,7 @@ export default async function PostersPage({ searchParams }: PageProps) {
       initialVersions={data.posterVersions}
       contentPlans={data.settings?.contentPlans ?? []}
       contentTopics={data.settings?.contentTopics ?? []}
+      scoringRules={data.settings?.scoringRules ?? null}
       canScore={canScore}
       isFullAdmin={bulkProps.isFullAdmin}
       canTransferOwnership={bulkProps.canTransferOwnership}

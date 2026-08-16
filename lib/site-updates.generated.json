@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "280253704170aab397044f42fc4b0a7b99c34fb2",
+      "committedAt": "2026-08-16T12:26:31+03:30",
+      "title": "رفع نمایش عکس تبلیغات محیطی در پنجره مشاهده",
+      "subject": "Fix billboard view images not loading in dialogs"
+    },
+    {
       "hash": "23e83d3119f48c28d6961f7af138cdcaac6d40d9",
       "committedAt": "2026-08-16T11:44:14+03:30",
       "title": "رفع نمایش عکس تبلیغات محیطی در مشاهده",

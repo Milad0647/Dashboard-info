@@ -230,7 +230,7 @@ export async function saveCampaign(data: Partial<CampaignSettings> & { id?: stri
           social: { source: "manual", metabase: null },
         },
         billboardConfig: data.billboardConfig ?? {},
-        scoringRules: data.scoringRules ?? {},
+        scoringRules: data.scoringRules ?? { version: 2, general: [], byType: {} },
         updatedAt: now,
       };
       return { ...store, campaigns: [...store.campaigns, newCampaign] };

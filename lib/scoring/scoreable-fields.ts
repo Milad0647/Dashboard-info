@@ -386,3 +386,32 @@ export function getScoreableField(
 ): ScoreableFieldDef | undefined {
   return getScoreableFields(contentType, context).find((f) => f.key === fieldKey);
 }
+
+/** Fields shared across all content types — configured in "تنظیمات کلی". */
+export const GENERAL_SCOREABLE_FIELD_KEYS = ["planLabels"] as const;
+
+/** Selectable / option-based fields for category scoring UI (excludes general keys). */
+export function getSelectableScoreableFields(
+  contentType: ScoreableContentType,
+  context?: ScoreableFieldsContext
+): ScoreableFieldDef[] {
+  const general = new Set<string>(GENERAL_SCOREABLE_FIELD_KEYS);
+  return getScoreableFields(contentType, context).filter(
+    (field) =>
+      !general.has(field.key) &&
+      (field.valueType === "select" ||
+        field.valueType === "boolean" ||
+        (field.kinds.includes("equals") && Boolean(field.options?.length)) ||
+        field.kinds.includes("range"))
+  );
+}
+
+/** General (shared) field definitions using billboard as representative type for options. */
+export function getGeneralScoreableFields(
+  context?: ScoreableFieldsContext
+): ScoreableFieldDef[] {
+  const fields = getScoreableFields("billboard", context);
+  return fields.filter((f) =>
+    (GENERAL_SCOREABLE_FIELD_KEYS as readonly string[]).includes(f.key)
+  );
+}

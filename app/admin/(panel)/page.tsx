@@ -25,6 +25,9 @@ import { pgGetUserPermissionsForCampaign } from "@/lib/db/repository-extended";
 import { buildEditSuggestions } from "@/lib/edit-suggestions";
 import { withFileAccessTokensDeep } from "@/lib/uploads";
 import { adminHref, isPostgresConfigured } from "@/lib/utils";
+import { MyScoreSummary } from "@/components/admin/my-score-summary";
+import { buildUserLeaderboard } from "@/lib/city-leaderboard";
+import { buildLeaderboardSourceFromAdmin } from "@/lib/performance-overview";
 
 interface AdminDashboardProps {
   searchParams: Promise<{ campaign?: string }>;
@@ -133,6 +136,22 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
         )
       : [];
 
+  const myScoreEntry = session?.userId
+      ? (() => {
+          const source = buildLeaderboardSourceFromAdmin({
+            billboards,
+            posters: data.posters ?? [],
+            videos: data.videos ?? [],
+            socialPosts: data.socialPosts ?? [],
+            activities: data.activities ?? [],
+            files: data.files ?? [],
+          });
+          return (
+            buildUserLeaderboard(source).find((entry) => entry.userKey === session.userId) ?? null
+          );
+        })()
+      : null;
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -161,6 +180,8 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
           </div>
         )}
       </div>
+
+      {myScoreEntry && <MyScoreSummary entry={myScoreEntry} />}
 
       <DashboardDirectivesPanel
         campaignId={campaignId}

@@ -50,9 +50,10 @@ import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
-import type { AdminUser, Billboard } from "@/lib/types";
+import type { AdminUser, Billboard, CampaignScoringConfig } from "@/lib/types";
 import { formatPersianDate, getStatusLabel } from "@/lib/utils";
 import { formatBillboardCityLine } from "@/lib/billboard-location";
+import { ScoringRulesProvider } from "@/lib/context/scoring-rules-context";
 
 interface ContributorProfile {
   province?: string | null;
@@ -66,6 +67,7 @@ interface BillboardsAdminProps {
   initialBillboards: Billboard[];
   contentPlans?: string[];
   contentTopics?: ContentTopic[];
+  scoringRules?: CampaignScoringConfig | null;
   canScore?: boolean;
   isFullAdmin?: boolean;
   canTransferOwnership?: boolean;
@@ -78,6 +80,7 @@ export function BillboardsAdmin({
   initialBillboards,
   contentPlans = [],
   contentTopics = [],
+  scoringRules = null,
   canScore = false,
   isFullAdmin = false,
   canTransferOwnership = false,
@@ -228,6 +231,7 @@ export function BillboardsAdmin({
   };
 
   return (
+    <ScoringRulesProvider scoringRules={scoringRules}>
     <div className="space-y-6">
       {tutorialModal}
       <div className="flex items-center justify-between gap-4">
@@ -458,5 +462,6 @@ export function BillboardsAdmin({
         }
       />
     </div>
+    </ScoringRulesProvider>
   );
 }

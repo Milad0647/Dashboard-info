@@ -33,6 +33,7 @@ import {
 import { deleteVideoAction, saveVideoVersionAction } from "@/lib/actions/admin-actions";
 import { videoNeedsAutoCover } from "@/lib/client/video-cover";
 import type { ContentTopic } from "@/lib/content-topics";
+import { ScoringRulesProvider } from "@/lib/context/scoring-rules-context";
 import {
   parseEditSuggestionMissingFields,
   type EditSuggestionMissingField,
@@ -44,7 +45,13 @@ import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-s
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import { VideoModal } from "@/components/media/video-modal";
 import { SendContentMessageButton } from "@/components/admin/send-content-message-button";
-import type { AdminUser, MediaCategory, Video, VideoVersion } from "@/lib/types";
+import type {
+  AdminUser,
+  CampaignScoringConfig,
+  MediaCategory,
+  Video,
+  VideoVersion,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getVideoCategoryLabel } from "@/lib/video-content-types";
 import { pickDefaultVideoCategoryId } from "@/lib/video-types";
@@ -56,6 +63,7 @@ interface VideosAdminProps {
   initialVersions: VideoVersion[];
   contentPlans?: string[];
   contentTopics?: ContentTopic[];
+  scoringRules?: CampaignScoringConfig | null;
   canScore?: boolean;
   isFullAdmin?: boolean;
   canTransferOwnership?: boolean;
@@ -72,6 +80,7 @@ export function VideosAdmin({
   initialVersions,
   contentPlans = [],
   contentTopics = [],
+  scoringRules = null,
   canScore = false,
   isFullAdmin = false,
   canTransferOwnership = false,
@@ -263,6 +272,7 @@ export function VideosAdmin({
   };
 
   return (
+    <ScoringRulesProvider scoringRules={scoringRules}>
     <div className="space-y-6">
       {tutorialModal}
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -473,5 +483,6 @@ export function VideosAdmin({
         );
       })()}
     </div>
+    </ScoringRulesProvider>
   );
 }
