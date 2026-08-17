@@ -22,11 +22,13 @@ import { formatPersianDateShort, formatPersianNumber } from "@/lib/utils";
 interface UploadActivityChartProps {
   stats: UploadActivitySummary;
   todayItems?: TodayUploadListItem[];
+  onTodayClick?: () => void;
 }
 
 export function UploadActivityChart({
   stats,
   todayItems = [],
+  onTodayClick,
 }: UploadActivityChartProps) {
   const chartTheme = useChartTheme();
   const [todayOpen, setTodayOpen] = useState(false);
@@ -35,13 +37,21 @@ export function UploadActivityChart({
     label: formatPersianDateShort(point.date),
   }));
 
+  const handleTodayClick = () => {
+    if (onTodayClick) {
+      onTodayClick();
+      return;
+    }
+    setTodayOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
         <button
           type="button"
           className="apple-press rounded-xl text-right outline-none ring-offset-background transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-          onClick={() => setTodayOpen(true)}
+          onClick={handleTodayClick}
           aria-label="مشاهده آپلودهای امروز"
         >
           <Card className="h-full cursor-pointer border-primary/30 py-3 hover:border-primary/60 hover:bg-muted/30">
@@ -107,7 +117,9 @@ export function UploadActivityChart({
         </CardContent>
       </Card>
 
-      <TodayUploadsModal open={todayOpen} onOpenChange={setTodayOpen} items={todayItems} />
+      {!onTodayClick ? (
+        <TodayUploadsModal open={todayOpen} onOpenChange={setTodayOpen} items={todayItems} />
+      ) : null}
     </div>
   );
 }

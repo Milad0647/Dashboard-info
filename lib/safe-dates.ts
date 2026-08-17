@@ -104,3 +104,14 @@ export function isSameDay(value?: string | null, dayIso?: string): boolean {
 export function isTehranToday(value?: string | null): boolean {
   return isSameDay(value, getTehranCalendarDateIso());
 }
+
+/** Position (0–100) of an instant within a Tehran calendar day. */
+export function dayPositionPercent(iso: string, dateIso: string): number {
+  const bounds = getTehranDayBoundsIso(dateIso);
+  if (!bounds) return 0;
+  const start = new Date(bounds.from).getTime();
+  const end = new Date(bounds.to).getTime();
+  const value = new Date(iso).getTime();
+  if (!Number.isFinite(value) || end <= start) return 0;
+  return Math.min(100, Math.max(0, ((value - start) / (end - start)) * 100));
+}

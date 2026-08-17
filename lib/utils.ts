@@ -79,6 +79,23 @@ export function formatPersianDateTime(dateStr: string): string {
   }
 }
 
+const tehranHourMinuteFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: TEHRAN_TZ,
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+/** Clock time in Asia/Tehran, with Persian digits (e.g. ۱۴:۳۵). */
+export function formatTehranClock(iso: string): string {
+  if (!iso?.trim()) return "—";
+  const parsed = new Date(iso);
+  if (!isValidDate(parsed)) return "—";
+  return tehranHourMinuteFormatter
+    .format(parsed)
+    .replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
+}
+
 export function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;

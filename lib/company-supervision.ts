@@ -22,6 +22,7 @@ import {
   getTehranCalendarDateIso,
   getTehranOffsetDateIso,
   isSameDay,
+  isTehranToday,
   timestampToTehranDateIso,
 } from "@/lib/safe-dates";
 import type { CampaignOwnerLocations } from "@/lib/context/owner-location-filter-context";
@@ -46,6 +47,13 @@ import type {
   VideoVersion,
 } from "@/lib/types";
 import type { UserCompanyType } from "@/lib/user-company-types";
+import {
+  collectEmptyContentFields,
+  emptyFieldScopeForContentType,
+  matchesEmptyFieldFilter,
+  type EmptyContentField,
+  type EmptyFieldFilter,
+} from "@/lib/empty-content-fields";
 import type {
   UploadActivityPoint,
   UploadActivitySummary,
@@ -146,6 +154,9 @@ export interface CompanySupervisionItem {
   ownerProvince: string | null;
   ownerCity: string | null;
   ownerCompanyType: UserCompanyType | null;
+  location: string | null;
+  areaSqm: number | null;
+  emptyFields: EmptyContentField[];
 }
 
 export function resolveUserKeyMatch(item: Ownable, userKey: string): boolean {
@@ -198,6 +209,8 @@ export function collectCompanySupervisionItems(input: {
       imageUrl?: string | null;
       thumbnailUrl?: string | null;
       coverImageUrl?: string | null;
+      location?: string | null;
+      areaSqm?: number | null;
     },
   >(
     list: T[],
@@ -256,6 +269,9 @@ export function collectCompanySupervisionItems(input: {
         ownerProvince: item.ownerProvince ?? null,
         ownerCity: item.ownerCity ?? null,
         ownerCompanyType: item.ownerCompanyType ?? null,
+        location: item.location ?? null,
+        areaSqm: typeof item.areaSqm === "number" ? item.areaSqm : null,
+        emptyFields: collectEmptyContentFields(item, emptyFieldScopeForContentType(contentType)),
       });
     }
   };
@@ -443,15 +459,18 @@ export function isCompanyContentFilterActive(
   options?: {
     contentType?: CompanySupervisionContentType | "all";
     reviewFilter?: CompanySupervisionReviewFilter;
+    emptyField?: EmptyFieldFilter;
   }
 ): boolean {
   const contentType = options?.contentType ?? "all";
   const reviewFilter = options?.reviewFilter ?? "all";
+  const emptyField = options?.emptyField ?? "all";
   return (
     isCampaignContentFilterActive(filter) ||
     filter.sortOrder !== "default" ||
     contentType !== "all" ||
-    reviewFilter !== "all"
+    reviewFilter !== "all" ||
+    emptyField !== "all"
   );
 }
 
@@ -461,10 +480,12 @@ export function filterCompanySupervisionItems(
     campaignFilter: OwnerLocationFilter;
     contentType?: CompanySupervisionContentType | "all";
     reviewFilter?: CompanySupervisionReviewFilter;
+    emptyField?: EmptyFieldFilter;
   }
 ): CompanySupervisionItem[] {
   const contentType = options.contentType ?? "all";
   const reviewFilter = options.reviewFilter ?? "all";
+  const emptyField = options.emptyField ?? "all";
 
   const ownableFiltered = new Set(
     filterItemsByOwnerLocation(
@@ -478,6 +499,15 @@ export function filterCompanySupervisionItems(
     if (!ownableFiltered.has(item.key)) return false;
     if (contentType !== "all" && item.contentType !== contentType) return false;
     if (!matchesReviewFilter(item, reviewFilter)) return false;
+    if (
+      !matchesEmptyFieldFilter(
+        item,
+        emptyField,
+        emptyFieldScopeForContentType(item.contentType)
+      )
+    ) {
+      return false;
+    }
     return true;
   });
 
@@ -522,6 +552,29 @@ export function groupCompanySupervisionItems(
       items: items.filter((item) => item.contentType === option.value),
     }))
     .filter((group) => group.items.length > 0);
+}
+
+export function collectTodaySupervisionItems(
+  items: CompanySupervisionItem[]
+): CompanySupervisionItem[] {
+  return items.filter((item) => item.isToday);
+}
+
+export function isTodayReturnedItem(item: CompanySupervisionItem): boolean {
+  const isReturned =
+    item.reviewStatus === "needs_revision" || item.reviewStatus === "resubmitted";
+  if (!isReturned) return false;
+  return (
+    isTehranToday(item.rejectedAt) ||
+    isTehranToday(item.resubmittedAt) ||
+    isTehranToday(item.reviewUpdatedAt)
+  );
+}
+
+export function collectTodayReturnedItems(
+  items: CompanySupervisionItem[]
+): CompanySupervisionItem[] {
+  return items.filter(isTodayReturnedItem);
 }
 
 export function countTodayByContentType(

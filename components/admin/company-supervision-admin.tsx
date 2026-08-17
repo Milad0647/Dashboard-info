@@ -19,10 +19,15 @@ import {
   Megaphone,
   MessageSquare,
   Share2,
+  TriangleAlert,
+  Undo2,
   Video,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CompanyPresenceTimeline } from "@/components/admin/company-presence-timeline";
+import { EmptyFieldFilterSelect } from "@/components/admin/empty-field-filter-select";
+import { EmptyFieldsBadges } from "@/components/admin/empty-fields-badges";
 import { ContentMixChart } from "@/components/charts/content-mix-chart";
 import { UploadActivityChart } from "@/components/charts/upload-activity-chart";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
@@ -65,6 +70,11 @@ import {
   type ContentMessageListItem,
 } from "@/lib/actions/content-message-actions";
 import {
+  getCompanySupervisionDayActivityAction,
+  type CompanyDayActivityEvent,
+  type CompanyDayActivityResult,
+} from "@/lib/actions/audit-actions";
+import {
   approveContentAction,
   bulkApproveContentAction,
   bulkRejectContentForRevisionAction,
@@ -74,12 +84,18 @@ import { bulkUpdatePlanLabelsAction } from "@/lib/actions/bulk-update-actions";
 import { getProvinceRankBadge, type UserLeaderboardEntry } from "@/lib/city-leaderboard";
 import type { ContentTopic } from "@/lib/content-topics";
 import {
+  referralReasonForEmptyItems,
+  type EmptyFieldFilter,
+} from "@/lib/empty-content-fields";
+import {
   COMPANY_CATEGORY_CARD_LIMIT,
   COMPANY_SUPERVISION_REVIEW_FILTERS,
   COMPANY_SUPERVISION_TYPE_FILTERS,
   buildCompanyContentMix,
   buildCompanyUploadActivityStats,
   collectCompanyOwnerLocations,
+  collectTodayReturnedItems,
+  collectTodaySupervisionItems,
   countTodayByContentType,
   filterCompanySupervisionItems,
   groupCompanySupervisionItems,
@@ -93,13 +109,19 @@ import {
 } from "@/lib/company-supervision";
 import { ContentScoreProvider } from "@/lib/context/content-score-context";
 import { threadFromRoot, threadFromRoots } from "@/lib/content-messages/thread";
+import { resolveErrorInfo } from "@/lib/error-solutions";
 import {
   OwnerLocationFilterProvider,
   useOwnerLocationFilter,
 } from "@/lib/context/owner-location-filter-context";
 import type { CampaignDatePreset } from "@/lib/owner-location-filter";
 import { downloadCompanyPerformanceExcel } from "@/lib/services/performance-excel-export";
-import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
+import { getTehranCalendarDateIso, isTehranToday } from "@/lib/safe-dates";
+import {
+  formatPersianDateTime,
+  formatPersianNumber,
+  formatTehranClock,
+} from "@/lib/utils";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -199,6 +221,7 @@ function ContentItemCard({
             دلیل برگشت: {item.rejectionReason}
           </p>
         )}
+        <EmptyFieldsBadges fields={item.emptyFields} />
       </div>
 
       {canScore && (
@@ -277,11 +300,17 @@ function ContentItemCard({
   );
 }
 
-function MessageList({ messages }: { messages: AdminContentMessageListItem[] }) {
+function MessageList({
+  messages,
+  emptyText = "پیامی برای این شرکت ثبت نشده است.",
+}: {
+  messages: AdminContentMessageListItem[];
+  emptyText?: string;
+}) {
   if (messages.length === 0) {
     return (
       <div className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">
-        پیامی برای این شرکت ثبت نشده است.
+        {emptyText}
       </div>
     );
   }
@@ -328,6 +357,51 @@ function MessageList({ messages }: { messages: AdminContentMessageListItem[] }) 
               className="mt-3"
               items={threadFromRoot(message, "staff")}
             />
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function ErrorEventCards({ events }: { events: CompanyDayActivityEvent[] }) {
+  if (events.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed py-8 text-center text-sm text-muted-foreground">
+        خطای ثبت‌شده‌ای برای امروز نیست.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {events.map((event) => {
+        const info = event.label?.trim() ? resolveErrorInfo(event.label) : null;
+        return (
+          <article key={event.id} className="rounded-xl border bg-card p-4 text-right" dir="rtl">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge variant="destructive" className="text-[10px]">
+                {event.action === "auth.login_failed" ? "ورود ناموفق" : "خطای کاربر"}
+              </Badge>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {formatTehranClock(event.createdAt)}
+              </span>
+            </div>
+            <p className="mt-2 text-sm font-medium leading-6">
+              {info?.title ?? event.label?.trim() ?? "خطای ثبت‌شده"}
+            </p>
+            {info?.problem ? (
+              <p className="mt-1 text-xs text-muted-foreground">{info.problem}</p>
+            ) : event.path ? (
+              <p className="mt-1 text-xs text-muted-foreground" dir="ltr">
+                {event.path}
+              </p>
+            ) : null}
+            {info?.solution ? (
+              <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                راهکار: {info.solution}
+              </p>
+            ) : null}
           </article>
         );
       })}
@@ -439,6 +513,17 @@ function SupervisionItemDialog({
     { label: "استان", value: item.province || "—" },
     { label: "شهر", value: item.city || "—" },
     { label: "طرح", value: item.planLabel || "—" },
+    ...(item.contentType === "billboard"
+      ? [
+          { label: "محل اکران", value: item.location || "—" },
+          {
+            label: "متراژ",
+            value: item.areaSqm != null ? String(item.areaSqm) : "—",
+          },
+        ]
+      : item.location
+        ? [{ label: "موقعیت", value: item.location }]
+        : []),
     { label: "وضعیت بازبینی", value: statusLabel || "بدون بازبینی" },
     { label: "منتشرشده", value: item.published ? "بله" : "خیر" },
   ];
@@ -480,6 +565,7 @@ function SupervisionItemDialog({
           <p className="whitespace-pre-wrap text-sm text-muted-foreground">
             {item.description || "بدون توضیحات"}
           </p>
+          <EmptyFieldsBadges fields={item.emptyFields} />
 
           <div className="grid gap-2 sm:grid-cols-2">
             {details.map((row) => (
@@ -660,6 +746,7 @@ function CompanySupervisionAdminInner({
   const { filter, setDatePreset } = useOwnerLocationFilter();
   const [typeFilter, setTypeFilter] = useState<CompanySupervisionContentType | "all">("all");
   const [reviewFilter, setReviewFilter] = useState<CompanySupervisionReviewFilter>("all");
+  const [emptyField, setEmptyField] = useState<EmptyFieldFilter>("all");
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [rejectingItem, setRejectingItem] = useState<CompanySupervisionItem | null>(null);
   const [rejectingBulk, setRejectingBulk] = useState(false);
@@ -670,6 +757,9 @@ function CompanySupervisionAdminInner({
   const [messages, setMessages] = useState<AdminContentMessageListItem[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("summary");
+  const [todayDialogOpen, setTodayDialogOpen] = useState(false);
+  const [dayActivity, setDayActivity] = useState<CompanyDayActivityResult | null>(null);
+  const [dayActivityLoading, setDayActivityLoading] = useState(false);
   const canOpenNotes = UUID_RE.test(entry.userKey);
 
   const backHref = `/admin/performance?campaign=${encodeURIComponent(campaignId)}`;
@@ -682,6 +772,13 @@ function CompanySupervisionAdminInner({
     [items]
   );
 
+  const todayItems = useMemo(() => collectTodaySupervisionItems(items), [items]);
+  const todayReturnedItems = useMemo(() => collectTodayReturnedItems(items), [items]);
+  const todayMessages = useMemo(
+    () => messages.filter((message) => isTehranToday(message.createdAt)),
+    [messages]
+  );
+
   const todayCounts = useMemo(() => countTodayByContentType(items), [items]);
   const contentMix = useMemo(() => buildCompanyContentMix(entry), [entry]);
   const uploadStats = useMemo(() => buildCompanyUploadActivityStats(items), [items]);
@@ -691,8 +788,9 @@ function CompanySupervisionAdminInner({
       isCompanyContentFilterActive(filter, {
         contentType: typeFilter,
         reviewFilter,
+        emptyField,
       }),
-    [filter, typeFilter, reviewFilter]
+    [filter, typeFilter, reviewFilter, emptyField]
   );
 
   const filteredContent = useMemo(
@@ -701,8 +799,9 @@ function CompanySupervisionAdminInner({
         campaignFilter: filter,
         contentType: typeFilter,
         reviewFilter,
+        emptyField,
       }),
-    [items, filter, typeFilter, reviewFilter]
+    [items, filter, typeFilter, reviewFilter, emptyField]
   );
 
   const contentVisibleKeys = useMemo(() => {
@@ -779,6 +878,34 @@ function CompanySupervisionAdminInner({
   useEffect(() => {
     loadMessages();
   }, [loadMessages]);
+
+  useEffect(() => {
+    if (!canOpenNotes) {
+      setDayActivity(null);
+      return;
+    }
+    let cancelled = false;
+    setDayActivityLoading(true);
+    void getCompanySupervisionDayActivityAction(entry.userKey, getTehranCalendarDateIso()).then(
+      (result) => {
+        if (cancelled) return;
+        if (!result.ok) {
+          setDayActivity(null);
+        } else {
+          setDayActivity(result.data);
+        }
+        setDayActivityLoading(false);
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [canOpenNotes, entry.userKey]);
+
+  const openTodayItem = (item: CompanySupervisionItem) => {
+    setTodayDialogOpen(false);
+    setViewingItem(item);
+  };
 
   const runApprove = (item: CompanySupervisionItem) => {
     setPendingKey(item.key);
@@ -999,6 +1126,33 @@ function CompanySupervisionAdminInner({
     }[]
   ).filter((item) => item.value > 0 || (item.todayDelta ?? 0) > 0);
 
+  const extraKpiItems = [
+    {
+      title: "برگشتی امروز",
+      value: todayReturnedItems.length,
+      icon: Undo2,
+      onClick: () => {
+        if (todayReturnedItems.length > 0) setTodayDialogOpen(true);
+        else setActiveTab("returned");
+      },
+    },
+    {
+      title: "خطاهای امروز",
+      value: dayActivity?.errorCount ?? 0,
+      icon: TriangleAlert,
+      onClick: () => setTodayDialogOpen(true),
+    },
+    {
+      title: "پیام‌های امروز",
+      value: todayMessages.length,
+      icon: MessageSquare,
+      onClick: () => {
+        if (todayMessages.length > 0) setTodayDialogOpen(true);
+        else setActiveTab("messages");
+      },
+    },
+  ] as const;
+
   const renderBulkToolbar = () => {
     if (!canManageReviews) return null;
     return (
@@ -1030,7 +1184,9 @@ function CompanySupervisionAdminInner({
                 onReject={() => {
                   setRejectingItem(null);
                   setRejectingBulk(true);
-                  setRejectionReason("");
+                  setRejectionReason(
+                    referralReasonForEmptyItems(selectedReviewItems, emptyField)
+                  );
                 }}
               />
               <Button
@@ -1112,7 +1268,7 @@ function CompanySupervisionAdminInner({
                       onReject={() => {
                         setRejectingBulk(false);
                         setRejectingItem(item);
-                        setRejectionReason("");
+                        setRejectionReason(referralReasonForEmptyItems([item], emptyField));
                       }}
                     />
                   </BulkItemShell>
@@ -1121,6 +1277,39 @@ function CompanySupervisionAdminInner({
             </section>
           );
         })}
+      </div>
+    );
+  };
+
+  const renderSimpleGrid = (list: CompanySupervisionItem[], emptyText: string) => {
+    if (list.length === 0) {
+      return (
+        <div className="rounded-xl border border-dashed py-8 text-center text-sm text-muted-foreground">
+          {emptyText}
+        </div>
+      );
+    }
+    return (
+      <div className={CONTENT_CARD_GRID_CLASS}>
+        {list.map((item) => (
+          <ContentItemCard
+            key={item.key}
+            item={item}
+            campaignId={campaignId}
+            canScore={canScore}
+            canSendMessage={canSendMessage}
+            canManageReviews={canManageReviews}
+            reviewPending={isPending && pendingKey === item.key}
+            onOpen={() => openTodayItem(item)}
+            onApprove={() => runApprove(item)}
+            onReject={() => {
+              setTodayDialogOpen(false);
+              setRejectingBulk(false);
+              setRejectingItem(item);
+              setRejectionReason(referralReasonForEmptyItems([item], emptyField));
+            }}
+          />
+        ))}
       </div>
     );
   };
@@ -1200,7 +1389,7 @@ function CompanySupervisionAdminInner({
         </TabsList>
 
         <TabsContent value="summary" className="space-y-6">
-          {kpiItems.length > 0 && (
+          {(kpiItems.length > 0 || extraKpiItems.length > 0) && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
               {kpiItems.map((kpi) => (
                 <KPICard
@@ -1210,7 +1399,16 @@ function CompanySupervisionAdminInner({
                   icon={kpi.icon}
                   todayDelta={kpi.todayDelta}
                   onClick={() => focusContentWithPreset("all", kpi.type)}
-                  onTodayDeltaClick={() => focusContentWithPreset("today", kpi.type)}
+                  onTodayDeltaClick={() => setTodayDialogOpen(true)}
+                />
+              ))}
+              {extraKpiItems.map((kpi) => (
+                <KPICard
+                  key={kpi.title}
+                  title={kpi.title}
+                  value={kpi.value}
+                  icon={kpi.icon}
+                  onClick={kpi.onClick}
                 />
               ))}
             </div>
@@ -1253,8 +1451,66 @@ function CompanySupervisionAdminInner({
 
           <div className="grid gap-4 lg:grid-cols-2">
             <ContentMixChart data={contentMix} title="ترکیب محتوای این شرکت" />
-            <UploadActivityChart stats={uploadStats} todayItems={[]} />
+            <UploadActivityChart
+              stats={uploadStats}
+              onTodayClick={() => setTodayDialogOpen(true)}
+            />
           </div>
+
+          <CompanyPresenceTimeline activity={dayActivity} loading={dayActivityLoading} />
+
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">آپلودهای امروز</h2>
+              <Badge variant="secondary">{formatPersianNumber(todayItems.length)}</Badge>
+            </div>
+            {renderSimpleGrid(todayItems, "امروز هنوز محتوایی آپلود نشده است.")}
+          </section>
+
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">برگشتی‌های امروز</h2>
+              <Badge variant="destructive">
+                {formatPersianNumber(todayReturnedItems.length)}
+              </Badge>
+            </div>
+            {renderSimpleGrid(todayReturnedItems, "امروز محتوای برگشتی ثبت نشده است.")}
+          </section>
+
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">خطاهای امروز</h2>
+              <Badge variant="outline">
+                {formatPersianNumber(dayActivity?.errorEvents.length ?? 0)}
+              </Badge>
+            </div>
+            {dayActivityLoading ? (
+              <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                در حال بارگذاری خطاها...
+              </div>
+            ) : (
+              <ErrorEventCards events={dayActivity?.errorEvents ?? []} />
+            )}
+          </section>
+
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">پیام‌های امروز</h2>
+              <Badge variant="secondary">{formatPersianNumber(todayMessages.length)}</Badge>
+            </div>
+            {messagesLoading ? (
+              <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                در حال بارگذاری پیام‌ها...
+              </div>
+            ) : (
+              <MessageList
+                messages={todayMessages}
+                emptyText="امروز پیامی برای این شرکت ثبت نشده است."
+              />
+            )}
+          </section>
         </TabsContent>
 
         <TabsContent value="content" className="space-y-4">
@@ -1296,6 +1552,12 @@ function CompanySupervisionAdminInner({
                 ))}
               </SelectContent>
             </Select>
+
+            <EmptyFieldFilterSelect
+              value={emptyField}
+              onChange={setEmptyField}
+              className="w-[260px]"
+            />
 
             <p className="text-sm text-muted-foreground">
               {formatPersianNumber(filteredContent.length)} مورد
@@ -1359,6 +1621,53 @@ function CompanySupervisionAdminInner({
         </TabsContent>
       </Tabs>
 
+      <Dialog open={todayDialogOpen} onOpenChange={setTodayDialogOpen}>
+        <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto text-right" dir="rtl">
+          <DialogHeader className="text-right sm:text-right">
+            <DialogTitle>
+              فعالیت امروز ({formatPersianNumber(todayItems.length)} آپلود)
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-8">
+            <section className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">آپلودهای امروز</h3>
+                <Badge variant="secondary">{formatPersianNumber(todayItems.length)}</Badge>
+              </div>
+              {renderSimpleGrid(todayItems, "امروز هنوز محتوایی آپلود نشده است.")}
+            </section>
+            <section className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">برگشتی‌های امروز</h3>
+                <Badge variant="destructive">
+                  {formatPersianNumber(todayReturnedItems.length)}
+                </Badge>
+              </div>
+              {renderSimpleGrid(todayReturnedItems, "امروز محتوای برگشتی ثبت نشده است.")}
+            </section>
+            <section className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">خطاهای امروز</h3>
+                <Badge variant="outline">
+                  {formatPersianNumber(dayActivity?.errorEvents.length ?? 0)}
+                </Badge>
+              </div>
+              <ErrorEventCards events={dayActivity?.errorEvents ?? []} />
+            </section>
+            <section className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">پیام‌های امروز</h3>
+                <Badge variant="secondary">{formatPersianNumber(todayMessages.length)}</Badge>
+              </div>
+              <MessageList
+                messages={todayMessages}
+                emptyText="امروز پیامی برای این شرکت ثبت نشده است."
+              />
+            </section>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <SupervisionItemDialog
         item={viewingItem}
         open={Boolean(viewingItem)}
@@ -1375,7 +1684,7 @@ function CompanySupervisionAdminInner({
           if (!viewingItem) return;
           setRejectingBulk(false);
           setRejectingItem(viewingItem);
-          setRejectionReason("");
+          setRejectionReason(referralReasonForEmptyItems([viewingItem], emptyField));
         }}
       />
 
