@@ -7,7 +7,9 @@ import {
   flattenTopicOptions,
   type ContentTopic,
 } from "@/lib/content-topics";
+import { IRAN_PROVINCES } from "@/lib/iran-locations";
 import type { MediaCategory, ScoreableContentType } from "@/lib/types";
+import { USER_REGIONS, userRegionLabels } from "@/lib/user-regions";
 
 export type ScoreableFieldValueType = "text" | "select" | "number" | "date" | "media" | "boolean";
 
@@ -147,6 +149,29 @@ function planLabelsField(options: ScoreableFieldOption[]): ScoreableFieldDef {
     label: "موضوع / طرح",
     valueType: "text",
     kinds: ["filled"],
+  };
+}
+
+function ownerProvinceField(): ScoreableFieldDef {
+  return {
+    key: "ownerProvince",
+    label: "استان کاربر",
+    valueType: "select",
+    kinds: ["filled", "equals"],
+    options: IRAN_PROVINCES.map((name) => ({ value: name, label: name })),
+  };
+}
+
+function ownerRegionField(): ScoreableFieldDef {
+  return {
+    key: "ownerRegion",
+    label: "منطقه کاربر",
+    valueType: "select",
+    kinds: ["filled", "equals"],
+    options: USER_REGIONS.map((region) => ({
+      value: region,
+      label: userRegionLabels[region],
+    })),
   };
 }
 
@@ -384,11 +409,17 @@ export function getScoreableField(
   fieldKey: string,
   context?: ScoreableFieldsContext
 ): ScoreableFieldDef | undefined {
-  return getScoreableFields(contentType, context).find((f) => f.key === fieldKey);
+  const fromType = getScoreableFields(contentType, context).find((f) => f.key === fieldKey);
+  if (fromType) return fromType;
+  return getGeneralScoreableFields(context).find((f) => f.key === fieldKey);
 }
 
 /** Fields shared across all content types — configured in "تنظیمات کلی". */
-export const GENERAL_SCOREABLE_FIELD_KEYS = ["planLabels"] as const;
+export const GENERAL_SCOREABLE_FIELD_KEYS = [
+  "planLabels",
+  "ownerProvince",
+  "ownerRegion",
+] as const;
 
 /** Selectable / option-based fields for category scoring UI (excludes general keys). */
 export function getSelectableScoreableFields(
@@ -411,7 +442,12 @@ export function getGeneralScoreableFields(
   context?: ScoreableFieldsContext
 ): ScoreableFieldDef[] {
   const fields = getScoreableFields("billboard", context);
-  return fields.filter((f) =>
+  const fromType = fields.filter((f) =>
     (GENERAL_SCOREABLE_FIELD_KEYS as readonly string[]).includes(f.key)
   );
+  const keys = new Set(fromType.map((f) => f.key));
+  const extras: ScoreableFieldDef[] = [];
+  if (!keys.has("ownerProvince")) extras.push(ownerProvinceField());
+  if (!keys.has("ownerRegion")) extras.push(ownerRegionField());
+  return [...fromType, ...extras];
 }

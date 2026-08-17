@@ -151,6 +151,7 @@ export function BillboardCreateAssignmentDialog({
   >([]);
 
   const scoringRules = useScoringRules();
+  const selectedOwner = users.find((user) => user.id === editOwnerUserId);
   const liveScoreValues = {
     title: axis,
     description: address,
@@ -162,6 +163,12 @@ export function BillboardCreateAssignmentDialog({
     areaSqm: areaSqm ? Number(areaSqm) : null,
     usesApprovedDesign,
     planLabels,
+    ownerProvince:
+      selectedOwner?.province ??
+      editingBillboard?.ownerProvince ??
+      contributorProfile?.province ??
+      null,
+    ownerRegion: selectedOwner?.region ?? editingBillboard?.ownerRegion ?? null,
   };
 
   const isEditing = Boolean(editingBillboard);

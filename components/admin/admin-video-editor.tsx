@@ -142,6 +142,8 @@ export function AdminVideoEditor({
     categoryId: editCategoryId,
     videoContentType: editContentType,
     planLabels: editPlanLabels,
+    ownerProvince: video.ownerProvince,
+    ownerRegion: video.ownerRegion,
   };
 
   const typeOptions = useMemo(() => videoTypeSelectOptions(categories), [categories]);

@@ -3,7 +3,10 @@
 import { useMemo } from "react";
 import { computeContentScore } from "@/lib/scoring/compute-content-score";
 import { normalizeScoringRules } from "@/lib/scoring/normalize-scoring-rules";
-import { SCOREABLE_CONTENT_TYPE_LABELS } from "@/lib/scoring/scoreable-fields";
+import {
+  getScoreableField,
+  SCOREABLE_CONTENT_TYPE_LABELS,
+} from "@/lib/scoring/scoreable-fields";
 import type { CampaignScoringConfig, ScoreableContentType } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -76,9 +79,8 @@ export function LiveScorePanel({
               <span className="text-muted-foreground truncate">
                 {entry.label === "امتیاز پایه اثر"
                   ? "امتیاز پایه اثر"
-                  : entry.field === "planLabels"
-                    ? "موضوع"
-                    : entry.field}
+                  : getScoreableField(contentType, entry.field)?.label ??
+                    (entry.field === "planLabels" ? "موضوع" : entry.field)}
               </span>
               <span className="tabular-nums font-medium">
                 +{formatPersianNumber(entry.points)}

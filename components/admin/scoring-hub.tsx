@@ -76,7 +76,7 @@ function OptionPointsEditor({
   }
 
   return (
-    <div className="space-y-2">
+    <div className={options.length > 12 ? "max-h-80 space-y-2 overflow-y-auto pr-1" : "space-y-2"}>
       {options.map((opt) => {
         const points = findEqualsPoints(rules, field.key, opt.value);
         return (
@@ -220,18 +220,22 @@ function FieldBlock({
 }) {
   const hasOptions = Boolean(field.options?.length);
   const isRange = field.kinds.includes("range") && field.valueType === "number";
+  const description =
+    field.key === "ownerProvince"
+      ? "برای هر استان یک امتیاز تعیین کنید؛ امتیاز استانِ کاربر به همه محتواهای او اضافه می‌شود."
+      : field.key === "ownerRegion"
+        ? "برای هر منطقه (مرکز، شمال، جنوب، شرق، غرب) یک امتیاز تعیین کنید."
+        : hasOptions
+          ? "برای هر گزینه یک امتیاز تعیین کنید؛ فقط گزینه انتخاب‌شده به جمع اضافه می‌شود."
+          : isRange
+            ? "بازه عددی تعریف کنید؛ اولین بازهٔ منطبق اعمال می‌شود."
+            : "امتیاز این فیلد";
 
   return (
     <Card className="border-border/70 shadow-none">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">{field.label}</CardTitle>
-        <CardDescription>
-          {hasOptions
-            ? "برای هر گزینه یک امتیاز تعیین کنید؛ فقط گزینه انتخاب‌شده به جمع اضافه می‌شود."
-            : isRange
-              ? "بازه عددی تعریف کنید؛ اولین بازهٔ منطبق اعمال می‌شود."
-              : "امتیاز این فیلد"}
-        </CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
         {hasOptions ? (
@@ -318,7 +322,7 @@ export function ScoringHub({
           <div>
             <h2 className="text-xl font-semibold">تنظیمات کلی امتیازدهی</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              این امتیازها برای همه دسته‌های محتوا مشترک‌اند (مثل موضوع کارت).
+              این امتیازها برای همه دسته‌های محتوا مشترک‌اند؛ مثلاً موضوع کارت، استان کاربر و منطقه (مرکز، شمال، جنوب، شرق، غرب).
             </p>
           </div>
         </div>
@@ -423,7 +427,7 @@ export function ScoringHub({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">قوانین امتیازدهی</h1>
         <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-          ابتدا تنظیمات کلی (مثل موضوع) را مشخص کنید، سپس روی هر دسته محتوا کلیک کنید و امتیاز پایه و
+          ابتدا تنظیمات کلی (موضوع، استان و منطقه کاربر) را مشخص کنید، سپس روی هر دسته محتوا کلیک کنید و امتیاز پایه و
           فیلدهای انتخابی را تنظیم کنید. امتیاز رسمی فقط بعد از تأیید محتوا ثبت می‌شود.
         </p>
       </div>
@@ -443,7 +447,7 @@ export function ScoringHub({
           <div className="flex-1 space-y-1">
             <p className="font-semibold text-lg">تنظیمات کلی</p>
             <p className="text-sm text-muted-foreground">
-              موضوع و فیلدهای مشترک همه کارت‌ها — {formatPersianNumber(config.general.length)} قانون فعال
+              موضوع، استان و منطقه کاربر — {formatPersianNumber(config.general.length)} قانون فعال
             </p>
           </div>
         </div>

@@ -74,6 +74,7 @@ function mapOwnerFromDb(row: any): Ownable {
     ownerName: row.owner_name ?? null,
     ownerProvince: row.owner_province ?? null,
     ownerCity: row.owner_city ?? null,
+    ownerRegion: normalizeUserRegion(row.owner_region),
     ownerCompanyType:
       row.owner_company_type === "distribution" || row.owner_company_type === "regional_electricity"
         ? row.owner_company_type

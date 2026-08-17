@@ -1,3 +1,4 @@
+import { normalizeImportedProvince } from "@/lib/iran-locations";
 import type {
   CampaignScoringConfig,
   ScoreBreakdownEntry,
@@ -10,6 +11,7 @@ import {
   getGeneralRules,
   normalizeScoringRules,
 } from "@/lib/scoring/normalize-scoring-rules";
+import { normalizeUserRegion } from "@/lib/user-regions";
 
 export interface ComputeContentScoreResult {
   autoScore: number;
@@ -122,6 +124,23 @@ function isRejectedOrDuplicate(item: Record<string, unknown>): boolean {
   return false;
 }
 
+function firstNonEmptyString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+/** Normalize owner province/region so general scoring rules can match user data. */
+function prepareScoreItem(item: Record<string, unknown>): Record<string, unknown> {
+  const rawProvince = firstNonEmptyString(item.ownerProvince, item.province);
+  const ownerProvince = rawProvince
+    ? (normalizeImportedProvince(rawProvince) ?? rawProvince)
+    : null;
+  const ownerRegion = normalizeUserRegion(item.ownerRegion);
+  return { ...item, ownerProvince, ownerRegion };
+}
+
 function applyRules(
   contentType: ScoreableContentType,
   item: Record<string, unknown>,
@@ -168,6 +187,8 @@ export function computeContentScore(
     return { autoScore: 0, rawScore: 0, breakdown: [] };
   }
 
+  const prepared = prepareScoreItem(item);
+
   const config: CampaignScoringConfig = Array.isArray(configOrRules)
     ? {
         version: 2,
@@ -192,8 +213,8 @@ export function computeContentScore(
     });
   }
 
-  autoScore += applyRules(contentType, item, general, breakdown, "تنظیمات کلی");
-  autoScore += applyRules(contentType, item, category.rules, breakdown, "فیلد دسته");
+  autoScore += applyRules(contentType, prepared, general, breakdown, "تنظیمات کلی");
+  autoScore += applyRules(contentType, prepared, category.rules, breakdown, "فیلد دسته");
 
   return { autoScore, rawScore: autoScore, breakdown };
 }

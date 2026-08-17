@@ -83,6 +83,8 @@ export function AdminPosterEditor({
     description: editDescription,
     categoryId: editCategoryId,
     planLabels: editPlanLabels,
+    ownerProvince: poster.ownerProvince,
+    ownerRegion: poster.ownerRegion,
   };
 
   useEffect(() => {

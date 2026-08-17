@@ -63,37 +63,61 @@ async function loadContentItem(
 
   if (contentType === "billboard") {
     const rows = await sql`
-      SELECT * FROM billboards WHERE id = ${contentId} AND campaign_id = ${campaignId} LIMIT 1
+      SELECT b.*, u.province AS owner_province, u.city AS owner_city, u.region AS owner_region
+      FROM billboards b
+      LEFT JOIN users u ON u.id = b.owner_user_id
+      WHERE b.id = ${contentId} AND b.campaign_id = ${campaignId}
+      LIMIT 1
     `;
     return rows[0] ? asRecord(mapBillboardFromDb(rows[0])) : null;
   }
   if (contentType === "poster") {
     const rows = await sql`
-      SELECT * FROM posters WHERE id = ${contentId} AND campaign_id = ${campaignId} LIMIT 1
+      SELECT p.*, u.province AS owner_province, u.city AS owner_city, u.region AS owner_region
+      FROM posters p
+      LEFT JOIN users u ON u.id = p.owner_user_id
+      WHERE p.id = ${contentId} AND p.campaign_id = ${campaignId}
+      LIMIT 1
     `;
     return rows[0] ? asRecord(mapPosterFromDb(rows[0])) : null;
   }
   if (contentType === "video") {
     const rows = await sql`
-      SELECT * FROM videos WHERE id = ${contentId} AND campaign_id = ${campaignId} LIMIT 1
+      SELECT v.*, u.province AS owner_province, u.city AS owner_city, u.region AS owner_region
+      FROM videos v
+      LEFT JOIN users u ON u.id = v.owner_user_id
+      WHERE v.id = ${contentId} AND v.campaign_id = ${campaignId}
+      LIMIT 1
     `;
     return rows[0] ? asRecord(mapVideoFromDb(rows[0])) : null;
   }
   if (contentType === "file") {
     const rows = await sql`
-      SELECT * FROM campaign_files WHERE id = ${contentId} AND campaign_id = ${campaignId} LIMIT 1
+      SELECT f.*, u.province AS owner_province, u.city AS owner_city, u.region AS owner_region
+      FROM campaign_files f
+      LEFT JOIN users u ON u.id = f.owner_user_id
+      WHERE f.id = ${contentId} AND f.campaign_id = ${campaignId}
+      LIMIT 1
     `;
     return rows[0] ? asRecord(mapCampaignFileFromDb(rows[0])) : null;
   }
   if (contentType === "raw_media") {
     const rows = await sql`
-      SELECT * FROM raw_media_uploads WHERE id = ${contentId} AND campaign_id = ${campaignId} LIMIT 1
+      SELECT r.*, u.province AS owner_province, u.city AS owner_city, u.region AS owner_region
+      FROM raw_media_uploads r
+      LEFT JOIN users u ON u.id = r.owner_user_id
+      WHERE r.id = ${contentId} AND r.campaign_id = ${campaignId}
+      LIMIT 1
     `;
     return rows[0] ? asRecord(mapRawMediaUploadFromDb(rows[0])) : null;
   }
   if (contentType === "social_post" || contentType === "site_publication") {
     const rows = await sql`
-      SELECT * FROM social_media_posts WHERE id = ${contentId} AND campaign_id = ${campaignId} LIMIT 1
+      SELECT sp.*, u.province AS owner_province, u.city AS owner_city, u.region AS owner_region
+      FROM social_media_posts sp
+      LEFT JOIN users u ON u.id = sp.owner_user_id
+      WHERE sp.id = ${contentId} AND sp.campaign_id = ${campaignId}
+      LIMIT 1
     `;
     if (!rows[0]) return null;
     const mapped = mapSocialPostFromDb(rows[0]);
@@ -103,19 +127,31 @@ async function loadContentItem(
   }
   if (contentType === "activity") {
     const rows = await sql`
-      SELECT * FROM campaign_activities WHERE id = ${contentId} AND campaign_id = ${campaignId} LIMIT 1
+      SELECT a.*, u.province AS owner_province, u.city AS owner_city, u.region AS owner_region
+      FROM campaign_activities a
+      LEFT JOIN users u ON u.id = a.owner_user_id
+      WHERE a.id = ${contentId} AND a.campaign_id = ${campaignId}
+      LIMIT 1
     `;
     return rows[0] ? asRecord(mapCampaignActivityFromDb(rows[0])) : null;
   }
   if (contentType === "broadcast") {
     const rows = await sql`
-      SELECT * FROM broadcast_reports WHERE id = ${contentId} AND campaign_id = ${campaignId} LIMIT 1
+      SELECT br.*, u.province AS owner_province, u.city AS owner_city, u.region AS owner_region
+      FROM broadcast_reports br
+      LEFT JOIN users u ON u.id = br.owner_user_id
+      WHERE br.id = ${contentId} AND br.campaign_id = ${campaignId}
+      LIMIT 1
     `;
     return rows[0] ? asRecord(mapBroadcastReportFromDb(rows[0])) : null;
   }
   if (contentType === "meeting") {
     const rows = await sql`
-      SELECT * FROM campaign_meetings WHERE id = ${contentId} AND campaign_id = ${campaignId} LIMIT 1
+      SELECT m.*, u.province AS owner_province, u.city AS owner_city, u.region AS owner_region
+      FROM campaign_meetings m
+      LEFT JOIN users u ON u.id = m.owner_user_id
+      WHERE m.id = ${contentId} AND m.campaign_id = ${campaignId}
+      LIMIT 1
     `;
     return rows[0] ? asRecord(mapMeetingFromDb(rows[0])) : null;
   }

@@ -179,6 +179,8 @@ export interface Ownable {
   ownerEmail?: string | null;
   ownerProvince?: string | null;
   ownerCity?: string | null;
+  /** Geographic zone of the owner user: north/south/east/west/center. */
+  ownerRegion?: import("./user-regions").UserRegion | null;
   ownerCompanyType?: import("./user-company-types").UserCompanyType | null;
   /** Legacy single topic — prefer planLabels. */
   planLabel?: string | null;
