@@ -190,12 +190,14 @@ export async function assertUserCategoryDailyLimit(input: {
 
   const sql = getSql();
   const ownerRows = await sql`
-    SELECT region, company_type FROM users WHERE id = ${input.ownerUserId} LIMIT 1
+    SELECT region, company_type, province FROM users WHERE id = ${input.ownerUserId} LIMIT 1
   `;
   const dailyMax = resolveDailyPostingMax({
     config,
+    userId: input.ownerUserId,
     region: normalizeUserRegion(ownerRows[0]?.region),
     companyType: normalizeUserCompanyType(ownerRows[0]?.company_type),
+    province: typeof ownerRows[0]?.province === "string" ? ownerRows[0].province : null,
   });
   if (dailyMax == null) return { ok: true };
 

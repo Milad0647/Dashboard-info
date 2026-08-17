@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { saveDailyPostingLimitsAction } from "@/lib/actions/posting-limits-actions";
@@ -9,19 +9,80 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
+  createDefaultCategoryDailyLimit,
   getPostingLimitCategoryLabel,
   normalizeDailyPostingLimits,
   POSTING_LIMIT_COMPANY_TYPE_KEYS,
+  POSTING_LIMIT_PROVINCE_KEYS,
   POSTING_LIMIT_REGION_KEYS,
   UNCATEGORIZED_POSTING_LIMIT_KEY,
   type CategoryDailyLimit,
   type DailyPostingLimitsConfig,
   type PostingLimitCategoryKey,
 } from "@/lib/posting-limits";
+import { getUserCompanyTypeLabel, type UserCompanyType } from "@/lib/user-company-types";
 import type { CampaignSettings } from "@/lib/types";
+
+export interface PostingLimitCompany {
+  id: string;
+  name: string;
+  province: string | null;
+  companyType: UserCompanyType | null;
+}
 
 interface PostingLimitsAdminProps {
   initialSettings: CampaignSettings;
+  companies: PostingLimitCompany[];
+}
+
+function LimitRow({
+  label,
+  hint,
+  row,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  row: CategoryDailyLimit;
+  disabled: boolean;
+  onChange: (next: CategoryDailyLimit) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/80 px-3 py-2.5">
+      <div className="flex items-center gap-3 min-w-[10rem]">
+        <Switch
+          checked={row.enabled}
+          disabled={disabled}
+          onCheckedChange={(enabled) => onChange({ ...row, enabled })}
+        />
+        <div>
+          <p className="text-sm font-medium">{label}</p>
+          {hint ? <p className="text-xs text-muted-foreground mt-0.5">{hint}</p> : null}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Input
+          type="number"
+          min={0}
+          step={1}
+          dir="ltr"
+          disabled={disabled || !row.enabled}
+          className="w-24 text-left"
+          value={row.dailyMax || ""}
+          placeholder="0"
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            onChange({
+              ...row,
+              dailyMax: Number.isFinite(n) && n > 0 ? Math.floor(n) : 0,
+            });
+          }}
+        />
+        <span className="text-xs text-muted-foreground w-16">محتوا / روز</span>
+      </div>
+    </div>
+  );
 }
 
 function CategoryRows({
@@ -37,52 +98,28 @@ function CategoryRows({
 }) {
   return (
     <div className="space-y-2">
-      {keys.map((key) => {
-        const row = config.byCategory[key] ?? { enabled: false, dailyMax: 5 };
-        return (
-          <div
-            key={key}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/80 px-3 py-2.5"
-          >
-            <div className="flex items-center gap-3 min-w-[10rem]">
-              <Switch
-                checked={row.enabled}
-                disabled={disabled}
-                onCheckedChange={(enabled) => onChange(key, { ...row, enabled })}
-              />
-              <span className="text-sm font-medium">{getPostingLimitCategoryLabel(key)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={0}
-                step={1}
-                dir="ltr"
-                disabled={disabled || !row.enabled}
-                className="w-24 text-left"
-                value={row.dailyMax || ""}
-                placeholder="0"
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  onChange(key, {
-                    ...row,
-                    dailyMax: Number.isFinite(n) && n > 0 ? Math.floor(n) : 0,
-                  });
-                }}
-              />
-              <span className="text-xs text-muted-foreground w-16">محتوا / روز</span>
-            </div>
-          </div>
-        );
-      })}
+      {keys.map((key) => (
+        <LimitRow
+          key={key}
+          label={getPostingLimitCategoryLabel(key)}
+          row={config.byCategory[key] ?? createDefaultCategoryDailyLimit()}
+          disabled={disabled}
+          onChange={(next) => onChange(key, next)}
+        />
+      ))}
     </div>
   );
 }
 
-export function PostingLimitsAdmin({ initialSettings }: PostingLimitsAdminProps) {
+export function PostingLimitsAdmin({
+  initialSettings,
+  companies,
+}: PostingLimitsAdminProps) {
   const [config, setConfig] = useState<DailyPostingLimitsConfig>(() =>
     normalizeDailyPostingLimits(initialSettings.dailyPostingLimits)
   );
+  const [provinceQuery, setProvinceQuery] = useState("");
+  const [companyQuery, setCompanyQuery] = useState("");
   const [pending, startTransition] = useTransition();
 
   const updateCategory = (key: PostingLimitCategoryKey, next: CategoryDailyLimit) => {
@@ -91,6 +128,40 @@ export function PostingLimitsAdmin({ initialSettings }: PostingLimitsAdminProps)
       byCategory: { ...prev.byCategory, [key]: next },
     }));
   };
+
+  const updateProvince = (province: string, next: CategoryDailyLimit) => {
+    setConfig((prev) => ({
+      ...prev,
+      byProvince: { ...prev.byProvince, [province]: next },
+    }));
+  };
+
+  const updateCompany = (userId: string, next: CategoryDailyLimit) => {
+    setConfig((prev) => ({
+      ...prev,
+      byCompany: { ...prev.byCompany, [userId]: next },
+    }));
+  };
+
+  const filteredProvinces = useMemo(() => {
+    const q = provinceQuery.trim();
+    if (!q) return POSTING_LIMIT_PROVINCE_KEYS;
+    return POSTING_LIMIT_PROVINCE_KEYS.filter((name) => name.includes(q));
+  }, [provinceQuery]);
+
+  const sortedCompanies = useMemo(() => {
+    const q = companyQuery.trim();
+    const list = [...companies].sort((a, b) => a.name.localeCompare(b.name, "fa"));
+    if (!q) return list;
+    return list.filter((company) => {
+      const typeLabel = getUserCompanyTypeLabel(company.companyType);
+      return (
+        company.name.includes(q) ||
+        (company.province ?? "").includes(q) ||
+        typeLabel.includes(q)
+      );
+    });
+  }, [companies, companyQuery]);
 
   const save = () => {
     startTransition(async () => {
@@ -111,8 +182,8 @@ export function PostingLimitsAdmin({ initialSettings }: PostingLimitsAdminProps)
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">محدودیت بارگذاری روزانه</h1>
         <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-          برای هر دسته‌بندی کاربر مشخص کنید در هر روز چند محتوا می‌تواند ثبت کند. محدودیت را می‌توان برای کل
-          کمپین یا برای هر دسته جداگانه فعال و غیرفعال کرد. این بخش فقط برای مدیر و کارفرما در دسترس است.
+          برای منطقه، استان، نوع شرکت یا خود شرکت مشخص کنید در هر روز چند محتوا می‌تواند ثبت شود. سقف اختصاصی
+          هر شرکت، اگر فعال باشد، بر بقیه دسته‌ها اولویت دارد.
         </p>
       </div>
 
@@ -143,7 +214,7 @@ export function PostingLimitsAdmin({ initialSettings }: PostingLimitsAdminProps)
         <CardHeader className="pb-3">
           <CardTitle className="text-base">دسته‌بندی منطقه‌ای</CardTitle>
           <CardDescription>
-            اگر کاربر هم منطقه و هم نوع شرکت داشته باشد و هر دو فعال باشند، سقف سخت‌گیرانه‌تر اعمال می‌شود.
+            اگر چند دسته فعال باشد، سقف سخت‌گیرانه‌تر اعمال می‌شود؛ مگر اینکه برای خود شرکت سقف جدا گذاشته باشید.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -153,6 +224,35 @@ export function PostingLimitsAdmin({ initialSettings }: PostingLimitsAdminProps)
             disabled={!config.enabled}
             onChange={updateCategory}
           />
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/70 shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">استان</CardTitle>
+          <CardDescription>سقف روزانه بر اساس استان کاربر.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Input
+            value={provinceQuery}
+            onChange={(e) => setProvinceQuery(e.target.value)}
+            placeholder="جستجوی استان..."
+          />
+          <div className="max-h-96 space-y-2 overflow-y-auto pr-1">
+            {filteredProvinces.length === 0 ? (
+              <p className="text-sm text-muted-foreground">استانی پیدا نشد.</p>
+            ) : (
+              filteredProvinces.map((province) => (
+                <LimitRow
+                  key={province}
+                  label={province}
+                  row={config.byProvince[province] ?? createDefaultCategoryDailyLimit()}
+                  disabled={!config.enabled}
+                  onChange={(next) => updateProvince(province, next)}
+                />
+              ))
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -173,9 +273,46 @@ export function PostingLimitsAdmin({ initialSettings }: PostingLimitsAdminProps)
 
       <Card className="border-border/70 shadow-none">
         <CardHeader className="pb-3">
+          <CardTitle className="text-base">بر اساس شرکت</CardTitle>
+          <CardDescription>
+            سقف اختصاصی هر شرکت روی بقیه دسته‌ها اولویت دارد. فقط شرکت‌های همین کمپین نمایش داده می‌شوند.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Input
+            value={companyQuery}
+            onChange={(e) => setCompanyQuery(e.target.value)}
+            placeholder="جستجوی نام شرکت، استان یا نوع..."
+          />
+          {sortedCompanies.length === 0 ? (
+            <p className="text-sm text-muted-foreground">شرکتی برای این کمپین پیدا نشد.</p>
+          ) : (
+            <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
+              {sortedCompanies.map((company) => {
+                const hint = [company.province, getUserCompanyTypeLabel(company.companyType)]
+                  .filter((part) => part && part !== "—")
+                  .join(" · ");
+                return (
+                  <LimitRow
+                    key={company.id}
+                    label={company.name}
+                    hint={hint || undefined}
+                    row={config.byCompany[company.id] ?? createDefaultCategoryDailyLimit()}
+                    disabled={!config.enabled}
+                    onChange={(next) => updateCompany(company.id, next)}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/70 shadow-none">
+        <CardHeader className="pb-3">
           <CardTitle className="text-base">کاربران بدون دسته‌بندی</CardTitle>
           <CardDescription>
-            فقط وقتی اعمال می‌شود که کاربر نه منطقه داشته باشد و نه نوع شرکت.
+            فقط وقتی اعمال می‌شود که کاربر استان، منطقه و نوع شرکت نداشته باشد و سقف اختصاصی شرکت هم نداشته باشد.
           </CardDescription>
         </CardHeader>
         <CardContent>

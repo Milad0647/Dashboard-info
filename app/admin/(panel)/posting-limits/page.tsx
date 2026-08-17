@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAdminData } from "@/lib/data-access/admin";
+import { getAdminData, getAllUsers } from "@/lib/data-access/admin";
 import { resolveAdminCampaignId } from "@/lib/admin-campaign";
 import { PostingLimitsAdmin } from "@/components/admin/posting-limits-admin";
 import { canManagePostingLimits } from "@/lib/auth/access";
@@ -21,5 +21,14 @@ export default async function PostingLimitsPage({ searchParams }: PageProps) {
   const data = await getAdminData(campaignId, ["settings"]);
   if (!data.settings) redirect("/admin/campaigns");
 
-  return <PostingLimitsAdmin initialSettings={data.settings} />;
+  const users = (await getAllUsers())
+    .filter((user) => user.role === "contributor" && user.campaignIds.includes(campaignId))
+    .map((user) => ({
+      id: user.id,
+      name: user.name,
+      province: user.province ?? null,
+      companyType: user.companyType ?? null,
+    }));
+
+  return <PostingLimitsAdmin initialSettings={data.settings} companies={users} />;
 }

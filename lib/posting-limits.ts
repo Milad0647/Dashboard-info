@@ -1,3 +1,4 @@
+import { IRAN_PROVINCES, normalizeImportedProvince } from "@/lib/iran-locations";
 import { USER_COMPANY_TYPES, userCompanyTypeLabels, type UserCompanyType } from "@/lib/user-company-types";
 import { USER_REGIONS, userRegionLabels, type UserRegion } from "@/lib/user-regions";
 
@@ -19,10 +20,15 @@ export interface DailyPostingLimitsConfig {
   /** Master switch. When false, no category limits apply. */
   enabled: boolean;
   byCategory: Partial<Record<PostingLimitCategoryKey, CategoryDailyLimit>>;
+  /** Province name → daily limit. */
+  byProvince: Record<string, CategoryDailyLimit>;
+  /** User/company id → daily limit. Overrides category limits when enabled. */
+  byCompany: Record<string, CategoryDailyLimit>;
 }
 
 export const POSTING_LIMIT_REGION_KEYS: UserRegion[] = [...USER_REGIONS];
 export const POSTING_LIMIT_COMPANY_TYPE_KEYS: UserCompanyType[] = [...USER_COMPANY_TYPES];
+export const POSTING_LIMIT_PROVINCE_KEYS = [...IRAN_PROVINCES];
 
 export const ALL_POSTING_LIMIT_CATEGORY_KEYS: PostingLimitCategoryKey[] = [
   ...POSTING_LIMIT_REGION_KEYS,
@@ -45,6 +51,8 @@ export function createDefaultDailyPostingLimits(): DailyPostingLimitsConfig {
     version: 1,
     enabled: false,
     byCategory,
+    byProvince: {},
+    byCompany: {},
   };
 }
 
@@ -61,7 +69,7 @@ function asFiniteInt(value: unknown, fallback: number): number {
   return Math.max(0, Math.floor(n));
 }
 
-function normalizeCategoryLimit(raw: unknown): CategoryDailyLimit {
+export function normalizeCategoryLimit(raw: unknown): CategoryDailyLimit {
   const fallback = createDefaultCategoryDailyLimit();
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return fallback;
   const obj = raw as Record<string, unknown>;
@@ -73,6 +81,17 @@ function normalizeCategoryLimit(raw: unknown): CategoryDailyLimit {
 
 function isCategoryKey(value: string): value is PostingLimitCategoryKey {
   return (ALL_POSTING_LIMIT_CATEGORY_KEYS as string[]).includes(value);
+}
+
+function normalizeLimitMap(raw: unknown): Record<string, CategoryDailyLimit> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const next: Record<string, CategoryDailyLimit> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const trimmed = key.trim();
+    if (!trimmed) continue;
+    next[trimmed] = normalizeCategoryLimit(value);
+  }
+  return next;
 }
 
 export function normalizeDailyPostingLimits(raw: unknown): DailyPostingLimitsConfig {
@@ -94,34 +113,57 @@ export function normalizeDailyPostingLimits(raw: unknown): DailyPostingLimitsCon
     version: 1,
     enabled: Boolean(source.enabled),
     byCategory,
+    byProvince: normalizeLimitMap(source.byProvince),
+    byCompany: normalizeLimitMap(source.byCompany),
   };
+}
+
+function enabledDailyMax(row: CategoryDailyLimit | undefined): number | null {
+  if (!row?.enabled || row.dailyMax <= 0) return null;
+  return row.dailyMax;
+}
+
+function lookupProvinceLimit(
+  byProvince: Record<string, CategoryDailyLimit>,
+  province?: string | null
+): CategoryDailyLimit | undefined {
+  const trimmed = province?.trim();
+  if (!trimmed) return undefined;
+  if (byProvince[trimmed]) return byProvince[trimmed];
+  const normalized = normalizeImportedProvince(trimmed);
+  if (normalized && byProvince[normalized]) return byProvince[normalized];
+  return undefined;
 }
 
 export function resolveDailyPostingMax(input: {
   config: DailyPostingLimitsConfig;
+  userId?: string | null;
   region?: UserRegion | null;
   companyType?: UserCompanyType | null;
+  province?: string | null;
 }): number | null {
-  const { config, region, companyType } = input;
+  const { config, userId, region, companyType, province } = input;
   if (!config.enabled) return null;
 
+  if (userId) {
+    const companyMax = enabledDailyMax(config.byCompany[userId]);
+    if (companyMax != null) return companyMax;
+  }
+
   const limits: number[] = [];
-  if (region) {
-    const row = config.byCategory[region];
-    if (row?.enabled && row.dailyMax > 0) limits.push(row.dailyMax);
-  }
-  if (companyType) {
-    const row = config.byCategory[companyType];
-    if (row?.enabled && row.dailyMax > 0) limits.push(row.dailyMax);
-  }
+  const regionMax = region ? enabledDailyMax(config.byCategory[region]) : null;
+  if (regionMax != null) limits.push(regionMax);
+  const typeMax = companyType ? enabledDailyMax(config.byCategory[companyType]) : null;
+  if (typeMax != null) limits.push(typeMax);
+  const provinceMax = enabledDailyMax(lookupProvinceLimit(config.byProvince, province));
+  if (provinceMax != null) limits.push(provinceMax);
 
   if (limits.length > 0) return Math.min(...limits);
 
-  if (!region && !companyType) {
-    const uncategorized = config.byCategory[UNCATEGORIZED_POSTING_LIMIT_KEY];
-    if (uncategorized?.enabled && uncategorized.dailyMax > 0) {
-      return uncategorized.dailyMax;
-    }
+  const hasAnyCategory = Boolean(region || companyType || province?.trim());
+  if (!hasAnyCategory) {
+    const uncategorized = enabledDailyMax(config.byCategory[UNCATEGORIZED_POSTING_LIMIT_KEY]);
+    if (uncategorized != null) return uncategorized;
   }
 
   return null;
