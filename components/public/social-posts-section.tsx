@@ -30,6 +30,7 @@ import { isDirectAudioUrl, isDirectVideoUrl, resolveAbsoluteMediaUrl } from "@/l
 import { ShowMoreButton } from "@/components/public/show-more-button";
 import { PublicContentCard } from "@/components/public/public-content-card";
 import { PublicContentDetailDialog } from "@/components/public/public-content-detail-dialog";
+import { SocialPostViewsCaption } from "@/components/public/social-post-views-caption";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { useContentScoreAccess } from "@/lib/context/content-score-context";
 import { resolveSocialPostCardMedia } from "@/lib/social-posts";
@@ -47,7 +48,7 @@ function SocialPostCover({ post }: { post: SocialMediaPost }) {
 
   if (isAudio && mediaUrl) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted px-3 py-4">
+      <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted px-3 py-4 pb-10">
         <Music className="h-8 w-8 text-muted-foreground" />
         <audio
           src={resolveAbsoluteMediaUrl(mediaUrl)}
@@ -126,7 +127,7 @@ function SocialPostCard({ post }: { post: SocialMediaPost }) {
         media={
           <div className="group relative h-full w-full">
             <SocialPostCover post={post} />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-8">
+            <div className="pointer-events-none absolute top-1.5 right-1.5 z-20">
               <Badge variant="overlay" className="gap-1 px-1.5 py-0 text-[10px]">
                 {post.platform !== "site" ? (
                   <SocialPlatformIcon
@@ -138,6 +139,7 @@ function SocialPostCard({ post }: { post: SocialMediaPost }) {
                 {platformLabel}
               </Badge>
             </div>
+            <SocialPostViewsCaption views={post.views} />
           </div>
         }
         score={

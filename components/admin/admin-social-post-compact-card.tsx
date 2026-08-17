@@ -7,6 +7,7 @@ import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
+import { SocialPostViewsCaption } from "@/components/public/social-post-views-caption";
 import { InlineVideoPlayer } from "@/components/media/inline-video-player";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import { Music } from "lucide-react";
@@ -102,6 +103,7 @@ export function AdminSocialPostCompactCard({
             </Badge>
           ) : null}
         </div>
+        <SocialPostViewsCaption views={post.views} />
       </div>
 
       <button
