@@ -48,18 +48,6 @@ interface OwnerLocationFilterProviderProps {
   plans?: string[];
 }
 
-function userMatchesLocation(
-  user: OwnerFilterOption,
-  province: string,
-  city: string,
-  companyType: OwnerCompanyTypeFilter
-): boolean {
-  if (province !== OWNER_LOCATION_ALL && user.province !== province) return false;
-  if (city !== OWNER_LOCATION_ALL && user.city !== city) return false;
-  if (companyType !== OWNER_COMPANY_TYPE_ALL && user.companyType !== companyType) return false;
-  return true;
-}
-
 export function OwnerLocationFilterProvider({
   children,
   users = [],
@@ -75,57 +63,21 @@ export function OwnerLocationFilterProvider({
     return locations.citiesByProvince[filter.province] ?? [];
   }, [filter.province, locations.citiesByProvince]);
 
-  const visibleUsers = useMemo(
-    () =>
-      users.filter((user) =>
-        userMatchesLocation(user, filter.province, filter.city, filter.companyType)
-      ),
-    [users, filter.province, filter.city, filter.companyType]
-  );
-
   const value = useMemo<OwnerLocationFilterContextValue>(
     () => ({
       filter,
       setProvince: (province) =>
-        setFilter((current) => {
-          const nextUserKey =
-            current.userKey !== OWNER_USER_ALL &&
-            !users.some(
-              (user) =>
-                user.key === current.userKey &&
-                userMatchesLocation(user, province, OWNER_LOCATION_ALL, current.companyType)
-            )
-              ? OWNER_USER_ALL
-              : current.userKey;
-
-          return {
-            ...current,
-            province,
-            city: OWNER_LOCATION_ALL,
-            userKey: nextUserKey,
-          };
-        }),
-      setCity: (city) =>
-        setFilter((current) => {
-          const nextUserKey =
-            current.userKey !== OWNER_USER_ALL &&
-            !users.some(
-              (user) =>
-                user.key === current.userKey &&
-                userMatchesLocation(user, current.province, city, current.companyType)
-            )
-              ? OWNER_USER_ALL
-              : current.userKey;
-
-          return { ...current, city, userKey: nextUserKey };
-        }),
+        setFilter((current) => ({
+          ...current,
+          province,
+          city: OWNER_LOCATION_ALL,
+        })),
+      setCity: (city) => setFilter((current) => ({ ...current, city })),
       setUserKey: (userKey) => {
         if (userKey === OWNER_USER_ALL) {
           setFilter((current) => ({
             ...current,
             userKey: OWNER_USER_ALL,
-            province: OWNER_LOCATION_ALL,
-            city: OWNER_LOCATION_ALL,
           }));
           return;
         }
@@ -134,25 +86,21 @@ export function OwnerLocationFilterProvider({
         setFilter((current) => ({
           ...current,
           userKey,
-          province: user?.province?.trim() || current.province,
-          city: user?.city?.trim() || current.city,
-          companyType: user?.companyType ?? current.companyType,
+          province:
+            current.province !== OWNER_LOCATION_ALL
+              ? current.province
+              : user?.province?.trim() || current.province,
+          city:
+            current.city !== OWNER_LOCATION_ALL
+              ? current.city
+              : user?.city?.trim() || current.city,
+          companyType:
+            current.companyType !== OWNER_COMPANY_TYPE_ALL
+              ? current.companyType
+              : (user?.companyType ?? current.companyType),
         }));
       },
-      setCompanyType: (companyType) =>
-        setFilter((current) => {
-          const nextUserKey =
-            current.userKey !== OWNER_USER_ALL &&
-            !users.some(
-              (user) =>
-                user.key === current.userKey &&
-                userMatchesLocation(user, current.province, current.city, companyType)
-            )
-              ? OWNER_USER_ALL
-              : current.userKey;
-
-          return { ...current, companyType, userKey: nextUserKey };
-        }),
+      setCompanyType: (companyType) => setFilter((current) => ({ ...current, companyType })),
       setDatePreset: (datePreset) => setFilter((current) => ({ ...current, datePreset })),
       setDateFrom: (dateFrom) => setFilter((current) => ({ ...current, dateFrom })),
       setDateTo: (dateTo) => setFilter((current) => ({ ...current, dateTo })),
@@ -173,9 +121,9 @@ export function OwnerLocationFilterProvider({
       provinces,
       cities,
       plans,
-      users: visibleUsers,
+      users,
     }),
-    [filter, provinces, cities, plans, visibleUsers, users]
+    [filter, provinces, cities, plans, users]
   );
 
   return (

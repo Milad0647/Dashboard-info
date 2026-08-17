@@ -12,8 +12,7 @@ import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import {
   AdminContentFilterBar,
   adminContentFilterResetKey,
-  collectAdminFilterLocations,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
   sortAdminContentItems,
@@ -103,8 +102,10 @@ export function FilesAdmin({
   });
   const [isPending, startTransition] = useTransition();
 
-  const filterUsers = useMemo(() => collectAdminFilterUsers(files), [files]);
-  const filterLocations = useMemo(() => collectAdminFilterLocations(files), [files]);
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(files, users, canTransferOwnership || isFullAdmin),
+    [files, users, canTransferOwnership, isFullAdmin]
+  );
   const filteredFiles = useMemo(
     () =>
       sortAdminContentItems(

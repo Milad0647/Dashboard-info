@@ -6,13 +6,9 @@ import { toast } from "sonner";
 import { FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import {
   AdminContentFilterBar,
-  adminUsersToFilterOptions,
-  collectAdminFilterLocations,
-  collectAdminFilterLocationsFromUsers,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
-  mergeAdminFilterLocations,
   sortAdminContentItems,
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
@@ -66,19 +62,9 @@ export function SubmissionsAdmin({
     setSubmissions(initialSubmissions);
   }, [initialSubmissions]);
 
-  const filterUsers = useMemo(() => {
-    if (!(canTransferOwnership || isFullAdmin)) return [];
-    const fromUsers = adminUsersToFilterOptions(users);
-    return fromUsers.length > 0 ? fromUsers : collectAdminFilterUsers(submissions);
-  }, [canTransferOwnership, isFullAdmin, users, submissions]);
-
-  const filterLocations = useMemo(
-    () =>
-      mergeAdminFilterLocations(
-        collectAdminFilterLocations(submissions),
-        collectAdminFilterLocationsFromUsers(users)
-      ),
-    [submissions, users]
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(submissions, users, canTransferOwnership || isFullAdmin),
+    [submissions, users, canTransferOwnership, isFullAdmin]
   );
 
   const filteredSubmissions = useMemo(

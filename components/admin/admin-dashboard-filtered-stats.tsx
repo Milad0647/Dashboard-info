@@ -4,13 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AdminContentFilterBar,
-  collectAdminFilterLocations,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
   type AdminContentFilterState,
-  type AdminFilterLocations,
-  type AdminFilterUserOption,
 } from "@/components/admin/admin-content-filter-bar";
 import { DashboardCompletenessCards } from "@/components/admin/dashboard-completeness-cards";
 import { BillboardCategoryChart } from "@/components/charts/billboard-category-chart";
@@ -81,62 +78,6 @@ function filterOwnables<T extends Ownable>(
   return items.filter((item) => matchesAdminContentFilter(item, filter));
 }
 
-function locationsFromUsers(users: AdminUser[]): AdminFilterLocations {
-  const provinceSet = new Set<string>();
-  const citiesByProvince = new Map<string, Set<string>>();
-
-  for (const user of users) {
-    const province = user.province?.trim();
-    if (!province) continue;
-    provinceSet.add(province);
-    if (!citiesByProvince.has(province)) {
-      citiesByProvince.set(province, new Set());
-    }
-    const city = user.city?.trim();
-    if (city) citiesByProvince.get(province)?.add(city);
-  }
-
-  const provinces = [...provinceSet].sort((a, b) => a.localeCompare(b, "fa"));
-  const citiesRecord: Record<string, string[]> = {};
-  for (const province of provinces) {
-    citiesRecord[province] = [...(citiesByProvince.get(province) ?? [])].sort((a, b) =>
-      a.localeCompare(b, "fa")
-    );
-  }
-  return { provinces, citiesByProvince: citiesRecord };
-}
-
-function mergeLocations(
-  a: AdminFilterLocations,
-  b: AdminFilterLocations
-): AdminFilterLocations {
-  const provinceSet = new Set([...a.provinces, ...b.provinces]);
-  const citiesByProvince: Record<string, string[]> = {};
-  for (const province of provinceSet) {
-    const merged = new Set([
-      ...(a.citiesByProvince[province] ?? []),
-      ...(b.citiesByProvince[province] ?? []),
-    ]);
-    citiesByProvince[province] = [...merged].sort((x, y) => x.localeCompare(y, "fa"));
-  }
-  return {
-    provinces: [...provinceSet].sort((x, y) => x.localeCompare(y, "fa")),
-    citiesByProvince,
-  };
-}
-
-function usersFromAdminUsers(users: AdminUser[]): AdminFilterUserOption[] {
-  return users
-    .map((user) => ({
-      key: user.id,
-      label: user.name?.trim() || user.email,
-      province: user.province,
-      city: user.city,
-      companyType: user.companyType ?? null,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label, "fa"));
-}
-
 export function AdminDashboardFilteredStats({
   campaignId,
   contentPlans = [],
@@ -199,16 +140,9 @@ export function AdminDashboardFilteredStats({
     ]
   );
 
-  const filterUsers = useMemo(() => {
-    if (!showUserFilter) return [];
-    const fromUsers = usersFromAdminUsers(users);
-    if (fromUsers.length > 0) return fromUsers;
-    return collectAdminFilterUsers(allOwnables);
-  }, [showUserFilter, users, allOwnables]);
-
-  const filterLocations = useMemo(
-    () => mergeLocations(collectAdminFilterLocations(allOwnables), locationsFromUsers(users)),
-    [allOwnables, users]
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(allOwnables, users, showUserFilter),
+    [allOwnables, users, showUserFilter]
   );
 
   const filtered = useMemo(() => {

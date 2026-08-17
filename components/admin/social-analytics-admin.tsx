@@ -16,8 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import {
   AdminContentFilterBar,
-  collectAdminFilterLocations,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
   sortAdminContentItems,
@@ -29,7 +28,7 @@ import {
   saveSocialPlatformStatAction,
 } from "@/lib/actions/extended-actions";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
-import type { SocialPlatform, SocialPlatformStat } from "@/lib/types";
+import type { AdminUser, SocialPlatform, SocialPlatformStat } from "@/lib/types";
 import { ensureHttpUrl, formatPersianNumber } from "@/lib/utils";
 import {
   CONTENT_TITLE_MAX_LENGTH,
@@ -78,13 +77,17 @@ interface SocialAnalyticsAdminProps {
   initialStats: SocialPlatformStat[];
   contentPlans?: string[];
   isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
+  users?: AdminUser[];
 }
 
 export function SocialAnalyticsAdmin({
   campaignId,
   initialStats,
   contentPlans = [],
-  isFullAdmin = true,
+  isFullAdmin = false,
+  canTransferOwnership = false,
+  users = [],
 }: SocialAnalyticsAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("socialAnalytics");
   const router = useRouter();
@@ -98,8 +101,10 @@ export function SocialAnalyticsAdmin({
     setRows(initialStats);
   }, [initialStats]);
 
-  const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
-  const filterLocations = useMemo(() => collectAdminFilterLocations(rows), [rows]);
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(rows, users, canTransferOwnership || isFullAdmin),
+    [rows, users, canTransferOwnership, isFullAdmin]
+  );
   const filteredRows = useMemo(
     () =>
       sortAdminContentItems(
@@ -204,7 +209,7 @@ export function SocialAnalyticsAdmin({
       <AdminContentFilterBar
         filter={contentFilter}
         onChange={setContentFilter}
-        users={isFullAdmin ? filterUsers : []}
+        users={filterUsers}
         plans={contentPlans}
         locations={filterLocations}
       />

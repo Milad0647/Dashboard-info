@@ -19,8 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   AdminContentFilterBar,
   adminContentFilterResetKey,
-  collectAdminFilterLocations,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
   sortAdminContentItems,
@@ -135,8 +134,10 @@ export function PressPublicationsAdmin({
   const [previewActivity, setPreviewActivity] = useState<CampaignActivity | null>(null);
   const [isPending, startTransition] = useTransition();
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
-  const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
-  const filterLocations = useMemo(() => collectAdminFilterLocations(rows), [rows]);
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(rows, users, canTransferOwnership || isFullAdmin),
+    [rows, users, canTransferOwnership, isFullAdmin]
+  );
   const filteredRows = useMemo(
     () =>
       sortAdminContentItems(

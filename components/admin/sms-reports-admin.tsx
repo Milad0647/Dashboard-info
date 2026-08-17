@@ -18,8 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import {
   AdminContentFilterBar,
-  collectAdminFilterLocations,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
   sortAdminContentItems,
@@ -38,7 +37,7 @@ import { useAdminEditDeepLink } from "@/lib/hooks/use-admin-edit-deep-link";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { todayISO } from "@/lib/jalali";
-import type { SmsSendReport } from "@/lib/types";
+import type { AdminUser, SmsSendReport } from "@/lib/types";
 import { cn, formatPersianDate, formatPersianNumber } from "@/lib/utils";
 
 const schema = z.object({
@@ -57,6 +56,9 @@ type FormValues = z.infer<typeof schema>;
 interface SmsReportsAdminProps {
   campaignId: string;
   initialReports: SmsSendReport[];
+  isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
+  users?: AdminUser[];
 }
 
 function emptyFormValues(): FormValues {
@@ -91,7 +93,13 @@ function truncateMessage(text: string, max = 90): string {
   return `${trimmed.slice(0, max)}…`;
 }
 
-export function SmsReportsAdmin({ campaignId, initialReports }: SmsReportsAdminProps) {
+export function SmsReportsAdmin({
+  campaignId,
+  initialReports,
+  isFullAdmin = false,
+  canTransferOwnership = false,
+  users = [],
+}: SmsReportsAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("smsReports");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -99,8 +107,10 @@ export function SmsReportsAdmin({ campaignId, initialReports }: SmsReportsAdminP
   const [isPending, startTransition] = useTransition();
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("smsReports");
-  const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
-  const filterLocations = useMemo(() => collectAdminFilterLocations(rows), [rows]);
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(rows, users, canTransferOwnership || isFullAdmin),
+    [rows, users, canTransferOwnership, isFullAdmin]
+  );
   const sortedRows = useMemo(
     () =>
       sortAdminContentItems(

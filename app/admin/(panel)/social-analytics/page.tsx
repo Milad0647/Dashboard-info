@@ -24,6 +24,8 @@ export default async function SocialAnalyticsPage({ searchParams }: PageProps) {
       initialStats={data.socialPlatformStats ?? []}
       contentPlans={data.settings?.contentPlans ?? []}
       isFullAdmin={bulkProps.isFullAdmin}
+      canTransferOwnership={bulkProps.canTransferOwnership}
+      users={bulkProps.users}
     />
   );
 }

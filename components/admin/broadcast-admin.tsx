@@ -29,8 +29,7 @@ import {
 import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import {
   AdminContentFilterBar,
-  collectAdminFilterLocations,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
   sortAdminContentItems,
@@ -57,7 +56,7 @@ import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { todayISO } from "@/lib/jalali";
 import { MEDIA_REPUBLISH_SCOPE_OPTIONS } from "@/lib/scoring/scoring-policy";
-import type { BroadcastReport, VideoVersion } from "@/lib/types";
+import type { AdminUser, BroadcastReport, VideoVersion } from "@/lib/types";
 import { cn, formatPersianDate } from "@/lib/utils";
 
 const MEDIA_ACCEPT =
@@ -80,6 +79,9 @@ interface BroadcastAdminProps {
   campaignId: string;
   initialReports: BroadcastReport[];
   canScore?: boolean;
+  isFullAdmin?: boolean;
+  canTransferOwnership?: boolean;
+  users?: AdminUser[];
 }
 
 function emptyFormValues(): FormValues {
@@ -142,6 +144,9 @@ export function BroadcastAdmin({
   campaignId,
   initialReports,
   canScore = false,
+  isFullAdmin = false,
+  canTransferOwnership = false,
+  users = [],
 }: BroadcastAdminProps) {
   const { requestCreate, tutorialModal } = useSectionCreateGate("broadcast");
   const [open, setOpen] = useState(false);
@@ -151,8 +156,10 @@ export function BroadcastAdmin({
   const [isPending, startTransition] = useTransition();
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const { viewMode, setViewMode } = useAdminViewMode("broadcast");
-  const filterUsers = useMemo(() => collectAdminFilterUsers(rows), [rows]);
-  const filterLocations = useMemo(() => collectAdminFilterLocations(rows), [rows]);
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(rows, users, canTransferOwnership || isFullAdmin),
+    [rows, users, canTransferOwnership, isFullAdmin]
+  );
   const sortedRows = useMemo(
     () =>
       sortAdminContentItems(

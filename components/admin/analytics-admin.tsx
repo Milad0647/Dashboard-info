@@ -13,13 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AdminContentFilterBar,
-  adminUsersToFilterOptions,
-  collectAdminFilterLocations,
-  collectAdminFilterLocationsFromUsers,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
-  mergeAdminFilterLocations,
   sortAdminContentItems,
   type AdminContentFilterState,
 } from "@/components/admin/admin-content-filter-bar";
@@ -73,19 +69,9 @@ export function AnalyticsAdmin({
   const [rows, setRows] = useState(siteMetrics);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
 
-  const filterUsers = useMemo(() => {
-    if (!(canTransferOwnership || isFullAdmin)) return [];
-    const fromUsers = adminUsersToFilterOptions(users);
-    return fromUsers.length > 0 ? fromUsers : collectAdminFilterUsers(rows);
-  }, [canTransferOwnership, isFullAdmin, users, rows]);
-
-  const filterLocations = useMemo(
-    () =>
-      mergeAdminFilterLocations(
-        collectAdminFilterLocations(rows),
-        collectAdminFilterLocationsFromUsers(users)
-      ),
-    [rows, users]
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(rows, users, canTransferOwnership || isFullAdmin),
+    [rows, users, canTransferOwnership, isFullAdmin]
   );
 
   const filteredRows = useMemo(

@@ -11,8 +11,7 @@ import { GenerateMissingVideoCoversButton } from "@/components/admin/generate-mi
 import {
   AdminContentFilterBar,
   adminContentFilterResetKey,
-  collectAdminFilterLocations,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
   sortAdminContentItems,
@@ -128,8 +127,10 @@ export function VideosAdmin({
     return map;
   }, [versions]);
 
-  const filterUsers = useMemo(() => collectAdminFilterUsers(videos), [videos]);
-  const filterLocations = useMemo(() => collectAdminFilterLocations(videos), [videos]);
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(videos, users, canTransferOwnership || isFullAdmin),
+    [videos, users, canTransferOwnership, isFullAdmin]
+  );
   const filteredVideos = useMemo(
     () =>
       sortAdminContentItems(

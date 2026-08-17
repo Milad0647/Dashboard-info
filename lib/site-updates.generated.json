@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "96403e224f9fb7c5175f0a0450a3f480992d2a1c",
+      "committedAt": "2026-08-17T15:02:39+03:30",
+      "title": "نمایش تعداد بازدید پست‌های اجتماعی با کپشن قرمز روی کارت‌ها",
+      "subject": "Highlight social post views with a red caption"
+    },
+    {
+      "hash": "c90102235e41dc39256beab069ccd38509390fc7",
+      "committedAt": "2026-08-17T14:59:50+03:30",
+      "title": "رفع مشکل نمایش عکس‌های تبلیغات محیطی",
+      "subject": "Fix billboard images not displaying"
+    },
+    {
       "hash": "034a8c0b5fa53eeddad7dacc523a6c81227e2d30",
       "committedAt": "2026-08-16T15:27:38+03:30",
       "title": "مربعی شدن برچسب تایید شده با آیکون تیک",

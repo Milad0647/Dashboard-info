@@ -8,8 +8,7 @@ import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import {
   AdminContentFilterBar,
   adminContentFilterResetKey,
-  collectAdminFilterLocations,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
   sortAdminContentItems,
@@ -117,8 +116,10 @@ export function RawMediaAdmin({
     if (!editingId) return storage;
     return buildRawMediaStorageSummary(items.filter((item) => item.id !== editingId));
   }, [editingId, items, storage]);
-  const filterUsers = useMemo(() => collectAdminFilterUsers(items), [items]);
-  const filterLocations = useMemo(() => collectAdminFilterLocations(items), [items]);
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(items, users, canTransferOwnership || isFullAdmin),
+    [items, users, canTransferOwnership, isFullAdmin]
+  );
   const filteredItems = useMemo(
     () =>
       sortAdminContentItems(

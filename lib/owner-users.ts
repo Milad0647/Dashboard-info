@@ -9,14 +9,24 @@ export interface OwnerFilterOption {
   companyType?: import("./user-company-types").UserCompanyType | null;
 }
 
+function resolveOwnerOptionProvince(
+  item: Ownable & { province?: string | null }
+): string | null {
+  return item.ownerProvince?.trim() || item.province?.trim() || null;
+}
+
+function resolveOwnerOptionCity(item: Ownable & { city?: string | null }): string | null {
+  return item.ownerCity?.trim() || item.city?.trim() || null;
+}
+
 function addOwnerOption(
   map: Map<string, OwnerFilterOption>,
-  item: Ownable & { ownerEmail?: string | null }
+  item: Ownable & { ownerEmail?: string | null; province?: string | null; city?: string | null }
 ): void {
   const label = item.ownerName?.trim() || "کاربر";
   const location = {
-    province: item.ownerProvince?.trim() || null,
-    city: item.ownerCity?.trim() || null,
+    province: resolveOwnerOptionProvince(item),
+    city: resolveOwnerOptionCity(item),
     companyType: item.ownerCompanyType ?? null,
   };
 

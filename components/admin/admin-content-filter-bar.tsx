@@ -360,6 +360,32 @@ export function adminUsersToFilterOptions(
     .sort((a, b) => a.label.localeCompare(b.label, "fa"));
 }
 
+export function buildAdminFilterSources(
+  items: Ownable[],
+  users: Array<{
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    province?: string | null;
+    city?: string | null;
+    companyType?: UserCompanyType | null;
+  }> = [],
+  enabled = true
+): { users: AdminFilterUserOption[]; locations: AdminFilterLocations } {
+  const locations = mergeAdminFilterLocations(
+    collectAdminFilterLocations(items),
+    collectAdminFilterLocationsFromUsers(users)
+  );
+  if (!enabled) {
+    return { users: [], locations };
+  }
+  const fromUsers = adminUsersToFilterOptions(users);
+  return {
+    users: fromUsers.length > 0 ? fromUsers : collectAdminFilterUsers(items),
+    locations,
+  };
+}
+
 export function adminContentFilterResetKey(
   filter: AdminContentFilterState,
   ...extras: Array<string | number | boolean | null | undefined>
@@ -416,10 +442,6 @@ export function AdminContentFilterBar({
       ? []
       : (locations.citiesByProvince[filter.province] ?? []);
 
-  const userLocked = filter.userKey !== ADMIN_FILTER_ALL;
-  const provinceLocked = userLocked && filter.province !== ADMIN_FILTER_ALL;
-  const cityLocked = userLocked && filter.city !== ADMIN_FILTER_ALL;
-
   const active =
     filter.userKey !== ADMIN_FILTER_ALL ||
     filter.planLabels.length > 0 ||
@@ -449,8 +471,6 @@ export function AdminContentFilterBar({
       onChange({
         ...filter,
         userKey: ADMIN_FILTER_ALL,
-        province: ADMIN_FILTER_ALL,
-        city: ADMIN_FILTER_ALL,
       });
       return;
     }
@@ -459,9 +479,16 @@ export function AdminContentFilterBar({
     onChange({
       ...filter,
       userKey,
-      province: user?.province?.trim() || filter.province,
-      city: user?.city?.trim() || filter.city,
-      companyType: user?.companyType ?? filter.companyType,
+      province:
+        filter.province !== ADMIN_FILTER_ALL
+          ? filter.province
+          : user?.province?.trim() || filter.province,
+      city:
+        filter.city !== ADMIN_FILTER_ALL ? filter.city : user?.city?.trim() || filter.city,
+      companyType:
+        filter.companyType !== ADMIN_FILTER_ALL
+          ? filter.companyType
+          : (user?.companyType ?? filter.companyType),
     });
   };
 
@@ -588,7 +615,6 @@ export function AdminContentFilterBar({
           options={provinceOptions}
           placeholder="استان"
           searchPlaceholder="جستجوی استان..."
-          disabled={provinceLocked}
         />
 
         <SearchableSelect
@@ -599,7 +625,7 @@ export function AdminContentFilterBar({
             filter.province === ADMIN_FILTER_ALL ? "ابتدا استان را انتخاب کنید" : "شهر"
           }
           searchPlaceholder="جستجوی شهر..."
-          disabled={filter.province === ADMIN_FILTER_ALL || cityLocked}
+          disabled={filter.province === ADMIN_FILTER_ALL}
         />
 
         <Select

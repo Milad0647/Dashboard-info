@@ -11,8 +11,7 @@ import { AdminViewModeToggle } from "@/components/admin/admin-view-mode-toggle";
 import {
   AdminContentFilterBar,
   adminContentFilterResetKey,
-  collectAdminFilterLocations,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
   sortAdminContentItems,
@@ -124,8 +123,10 @@ export function PostersAdmin({
     return map;
   }, [versions]);
 
-  const filterUsers = useMemo(() => collectAdminFilterUsers(posters), [posters]);
-  const filterLocations = useMemo(() => collectAdminFilterLocations(posters), [posters]);
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(posters, users, canTransferOwnership || isFullAdmin),
+    [posters, users, canTransferOwnership, isFullAdmin]
+  );
   const filteredPosters = useMemo(
     () =>
       sortAdminContentItems(

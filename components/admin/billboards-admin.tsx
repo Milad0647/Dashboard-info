@@ -10,8 +10,7 @@ import {
   ADMIN_FILTER_ALL,
   AdminContentFilterBar,
   adminContentFilterResetKey,
-  collectAdminFilterLocations,
-  collectAdminFilterUsers,
+  buildAdminFilterSources,
   DEFAULT_ADMIN_CONTENT_FILTER,
   matchesAdminContentFilter,
   sortAdminContentItems,
@@ -119,8 +118,10 @@ export function BillboardsAdmin({
     setBillboards(initialBillboards);
   }, [initialBillboards]);
 
-  const filterUsers = useMemo(() => collectAdminFilterUsers(billboards), [billboards]);
-  const filterLocations = useMemo(() => collectAdminFilterLocations(billboards), [billboards]);
+  const { users: filterUsers, locations: filterLocations } = useMemo(
+    () => buildAdminFilterSources(billboards, users, canTransferOwnership || isFullAdmin),
+    [billboards, users, canTransferOwnership, isFullAdmin]
+  );
   const filteredBillboards = useMemo(() => {
     const filtered = billboards.filter((item) => {
       if (!matchesAdminContentFilter(item, contentFilter)) return false;

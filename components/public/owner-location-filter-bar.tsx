@@ -59,10 +59,6 @@ export function OwnerLocationFilterBar() {
     }
   }, [canScore, filter.sortOrder, setSortOrder]);
 
-  const userLocked = filter.userKey !== OWNER_USER_ALL;
-  const provinceLocked = userLocked && filter.province !== OWNER_LOCATION_ALL;
-  const cityLocked = userLocked && filter.city !== OWNER_LOCATION_ALL;
-
   const filterActive =
     isCampaignContentFilterActive(filter) || filter.sortOrder !== "default";
 
@@ -166,7 +162,6 @@ export function OwnerLocationFilterBar() {
           options={provinceOptions}
           placeholder="استان"
           searchPlaceholder="جستجوی استان..."
-          disabled={provinceLocked}
         />
 
         <SearchableSelect
@@ -177,7 +172,7 @@ export function OwnerLocationFilterBar() {
             filter.province === OWNER_LOCATION_ALL ? "ابتدا استان را انتخاب کنید" : "شهر"
           }
           searchPlaceholder="جستجوی شهر..."
-          disabled={filter.province === OWNER_LOCATION_ALL || cityLocked}
+          disabled={filter.province === OWNER_LOCATION_ALL}
         />
 
         <Select
