@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "2c9065fcea2d31a85fba8279ab11cf1f087d6d7e",
+      "committedAt": "2026-08-17T15:08:20+03:30",
+      "title": "امکان تایید و رد گروهی محتوا برای کارفرما",
+      "subject": "Add bulk approve and reject for client content review"
+    },
+    {
+      "hash": "57f0dc1307a72f3648eada692b0bc39d11410264",
+      "committedAt": "2026-08-17T15:05:12+03:30",
+      "title": "انتخاب همزمان استان و شرکت در فیلتر صفحه زنده و همه بخش‌ها",
+      "subject": "Keep company and province filters independently selectable"
+    },
+    {
       "hash": "96403e224f9fb7c5175f0a0450a3f480992d2a1c",
       "committedAt": "2026-08-17T15:02:39+03:30",
       "title": "نمایش تعداد بازدید پست‌های اجتماعی با کپشن قرمز روی کارت‌ها",
