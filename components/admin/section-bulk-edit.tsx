@@ -36,17 +36,19 @@ import { cn, formatPersianNumber, getStatusLabel } from "@/lib/utils";
 
 const BILLBOARD_STATUSES: ItemStatus[] = ["pending", "approved", "rejected", "completed"];
 
-export function useSectionBulkEdit(visibleIds: string[]) {
+export function useSectionBulkEdit(visibleIds: string[], retainableIds: string[] = visibleIds) {
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const retainKey = retainableIds.join("\0");
 
   useEffect(() => {
-    const visible = new Set(visibleIds);
+    const keep = new Set(retainKey ? retainKey.split("\0") : []);
     setSelectedIds((prev) => {
-      const next = new Set([...prev].filter((id) => visible.has(id)));
+      if (prev.size === 0) return prev;
+      const next = new Set([...prev].filter((id) => keep.has(id)));
       return next.size === prev.size ? prev : next;
     });
-  }, [visibleIds]);
+  }, [retainKey]);
 
   useEffect(() => {
     if (!bulkMode) setSelectedIds(new Set());

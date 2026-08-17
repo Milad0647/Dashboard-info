@@ -127,7 +127,8 @@ export function SitePublicationsAdmin({
     [filteredRows, visibleCount]
   );
   const visibleIds = useMemo(() => visibleRows.map((item) => item.id), [visibleRows]);
-  const bulk = useSectionBulkEdit(visibleIds);
+  const filteredIds = useMemo(() => filteredRows.map((item) => item.id), [filteredRows]);
+  const bulk = useSectionBulkEdit(visibleIds, filteredIds);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -489,7 +490,7 @@ export function SitePublicationsAdmin({
           >
             <AdminSitePublicationCompactCard
               post={post}
-              onClick={() => openEdit(post)}
+              onClick={() => (bulk.bulkMode ? setPreviewPost(post) : openEdit(post))}
               onView={() => setPreviewPost(post)}
               onEdit={() => openEdit(post)}
               onDelete={() => handleDelete(post)}

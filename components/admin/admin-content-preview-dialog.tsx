@@ -63,7 +63,10 @@ export function AdminContentPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!flex max-h-[92vh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
+      <DialogContent
+        className="!flex max-h-[92vh] max-w-2xl flex-col gap-0 overflow-hidden p-0"
+        onCloseAutoFocus={(event) => event.preventDefault()}
+      >
         <DialogHeader className="shrink-0 border-b px-6 py-4 pe-12">
           <DialogTitle className="break-words text-base">{title}</DialogTitle>
           <DialogDescription className="sr-only">پیش‌نمایش محتوا</DialogDescription>

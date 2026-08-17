@@ -114,7 +114,7 @@ export function FilesAdmin({
       ),
     [files, contentFilter]
   );
-  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
+  const paginationResetKey = adminContentFilterResetKey(contentFilter);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredFiles.length,
     paginationResetKey
@@ -124,7 +124,8 @@ export function FilesAdmin({
     [filteredFiles, visibleCount]
   );
   const visibleIds = useMemo(() => visibleFiles.map((item) => item.id), [visibleFiles]);
-  const bulk = useSectionBulkEdit(visibleIds);
+  const filteredIds = useMemo(() => filteredFiles.map((item) => item.id), [filteredFiles]);
+  const bulk = useSectionBulkEdit(visibleIds, filteredIds);
 
   const resetForm = () => {
     setEditingId(null);
@@ -380,14 +381,12 @@ export function FilesAdmin({
                   />
                 </div>
               </div>
-              {!bulk.bulkMode && (
-                <AdminItemActions
+              <AdminItemActions
                   onView={() => window.open(file.fileUrl, "_blank")}
                   onEdit={() => openEdit(file)}
                   onDelete={() => handleDelete(file)}
                   deleteLabel="این فایل"
                 />
-              )}
             </div>
           ))}
           </div>
@@ -451,14 +450,12 @@ export function FilesAdmin({
                     </div>
                   </div>
 
-                  {!bulk.bulkMode && (
-                    <AdminItemActions
-                      onView={() => window.open(file.fileUrl, "_blank")}
-                      onEdit={() => openEdit(file)}
-                      onDelete={() => handleDelete(file)}
-                      deleteLabel="این فایل"
-                    />
-                  )}
+                  <AdminItemActions
+                    onView={() => window.open(file.fileUrl, "_blank")}
+                    onEdit={() => openEdit(file)}
+                    onDelete={() => handleDelete(file)}
+                    deleteLabel="این فایل"
+                  />
                 </div>
               </BulkItemShell>
             );

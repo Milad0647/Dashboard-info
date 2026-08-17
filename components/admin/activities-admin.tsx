@@ -163,7 +163,7 @@ export function ActivitiesAdmin({
       ),
     [rows, contentFilter]
   );
-  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
+  const paginationResetKey = adminContentFilterResetKey(contentFilter);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredRows.length,
     paginationResetKey
@@ -173,7 +173,8 @@ export function ActivitiesAdmin({
     [filteredRows, visibleCount]
   );
   const visibleIds = useMemo(() => visibleRows.map((item) => item.id), [visibleRows]);
-  const bulk = useSectionBulkEdit(visibleIds);
+  const filteredIds = useMemo(() => filteredRows.map((item) => item.id), [filteredRows]);
+  const bulk = useSectionBulkEdit(visibleIds, filteredIds);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -520,7 +521,7 @@ export function ActivitiesAdmin({
               <AdminActivityCompactCard
                 activity={activity}
                 canScore={canScore}
-                onClick={() => openEdit(activity)}
+                onClick={() => (bulk.bulkMode ? setPreviewActivity(activity) : openEdit(activity))}
                 onView={() => setPreviewActivity(activity)}
                 onEdit={() => openEdit(activity)}
                 onDelete={() => handleDelete(activity)}
@@ -568,13 +569,11 @@ export function ActivitiesAdmin({
                   </p>
                 </div>
               </div>
-              {!bulk.bulkMode && (
-                <AdminItemActions
+              <AdminItemActions
                   onView={() => setPreviewActivity(activity)}
                   onEdit={() => openEdit(activity)}
                   onDelete={() => handleDelete(activity)}
                 />
-              )}
             </div>
           ))}
           {filteredRows.length === 0 && (

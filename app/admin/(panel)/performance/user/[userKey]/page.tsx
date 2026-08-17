@@ -114,6 +114,7 @@ export default async function CompanySupervisionPage({
       items={items}
       excelSource={toCompanyExcelSource(userSource)}
       contentPlans={contentPlans}
+      contentTopics={data.settings.contentTopics ?? []}
       canScore={canScoreContent(session)}
       canManageReviews={canManageAllContent(session)}
       canSendMessage={canSendContentMessages(session)}

@@ -49,6 +49,8 @@ export default async function ElanhaPage({ searchParams }: PageProps) {
       videoVersions={data.videoVersions ?? []}
       contentReviews={reviewsResult.success ? (reviewsResult.reviews ?? []) : []}
       canManageReviews={Boolean(reviewsResult.success && reviewsResult.canManage)}
+      contentTopics={data.settings?.contentTopics ?? []}
+      contentPlans={data.settings?.contentPlans ?? []}
     />
   );
 }

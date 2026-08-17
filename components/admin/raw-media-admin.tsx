@@ -128,7 +128,7 @@ export function RawMediaAdmin({
       ),
     [items, contentFilter]
   );
-  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
+  const paginationResetKey = adminContentFilterResetKey(contentFilter);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredItems.length,
     paginationResetKey
@@ -138,7 +138,8 @@ export function RawMediaAdmin({
     [filteredItems, visibleCount]
   );
   const visibleIds = useMemo(() => visibleItems.map((item) => item.id), [visibleItems]);
-  const bulk = useSectionBulkEdit(visibleIds);
+  const filteredIds = useMemo(() => filteredItems.map((item) => item.id), [filteredItems]);
+  const bulk = useSectionBulkEdit(visibleIds, filteredIds);
 
   const handleDownloadAll = async () => {
     if (isExporting || items.length === 0) return;
@@ -492,14 +493,12 @@ export function RawMediaAdmin({
                   />
                 </div>
               </div>
-              {!bulk.bulkMode && (
-                <AdminItemActions
+              <AdminItemActions
                   onView={() => window.open(item.fileUrl, "_blank")}
                   onEdit={() => openEdit(item)}
                   onDelete={() => handleDelete(item)}
                   deleteLabel="این راش"
                 />
-              )}
             </div>
           ))}
           </div>
@@ -577,14 +576,12 @@ export function RawMediaAdmin({
                       }
                     />
                   </div>
-                  {!bulk.bulkMode && (
-                    <AdminItemActions
-                      onView={() => window.open(item.fileUrl, "_blank")}
-                      onEdit={() => openEdit(item)}
-                      onDelete={() => handleDelete(item)}
-                      deleteLabel="این راش"
-                    />
-                  )}
+                  <AdminItemActions
+                    onView={() => window.open(item.fileUrl, "_blank")}
+                    onEdit={() => openEdit(item)}
+                    onDelete={() => handleDelete(item)}
+                    deleteLabel="این راش"
+                  />
                 </CardContent>
               </Card>
             </BulkItemShell>

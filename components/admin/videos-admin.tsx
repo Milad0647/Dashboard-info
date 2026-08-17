@@ -139,7 +139,7 @@ export function VideosAdmin({
       ),
     [videos, contentFilter]
   );
-  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
+  const paginationResetKey = adminContentFilterResetKey(contentFilter);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredVideos.length,
     paginationResetKey
@@ -149,7 +149,8 @@ export function VideosAdmin({
     [filteredVideos, visibleCount]
   );
   const visibleIds = useMemo(() => visibleVideos.map((item) => item.id), [visibleVideos]);
-  const bulk = useSectionBulkEdit(visibleIds);
+  const filteredIds = useMemo(() => filteredVideos.map((item) => item.id), [filteredVideos]);
+  const bulk = useSectionBulkEdit(visibleIds, filteredIds);
 
   const missingCoverTargets = useMemo(() => {
     return videos.flatMap((video) => {
@@ -338,7 +339,7 @@ export function VideosAdmin({
               <AdminVideoCompactCard
                 video={video}
                 versions={versionsByVideoId.get(video.id) ?? []}
-                onClick={() => openEditor(video.id)}
+                onClick={() => (bulk.bulkMode ? setPreviewVideo(video) : openEditor(video.id))}
                 onView={() => setPreviewVideo(video)}
                 onEdit={() => openEditor(video.id)}
                 onDelete={() => handleDelete(video)}
@@ -378,13 +379,11 @@ export function VideosAdmin({
                     </p>
                   </div>
                 </div>
-                {!bulk.bulkMode && (
                   <AdminItemActions
                     onView={() => setPreviewVideo(video)}
                     onEdit={() => openEditor(video.id)}
                     onDelete={() => handleDelete(video)}
                   />
-                )}
               </div>
             );
           })}

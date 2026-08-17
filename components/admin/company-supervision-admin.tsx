@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { ContentMixChart } from "@/components/charts/content-mix-chart";
 import { UploadActivityChart } from "@/components/charts/upload-activity-chart";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
-import { BulkContentReviewActions } from "@/components/admin/bulk-content-review-bar";
+import { BulkContentReviewActions, BulkTopicEditPanel } from "@/components/admin/bulk-content-review-bar";
 import { SendContentMessageButton } from "@/components/admin/send-content-message-button";
 import { ContentMessageChatThread } from "@/components/admin/content-message-chat-thread";
 import {
@@ -70,7 +70,9 @@ import {
   bulkRejectContentForRevisionAction,
   rejectContentForRevisionAction,
 } from "@/lib/actions/content-review-actions";
+import { bulkUpdatePlanLabelsAction } from "@/lib/actions/bulk-update-actions";
 import { getProvinceRankBadge, type UserLeaderboardEntry } from "@/lib/city-leaderboard";
+import type { ContentTopic } from "@/lib/content-topics";
 import {
   COMPANY_CATEGORY_CARD_LIMIT,
   COMPANY_SUPERVISION_REVIEW_FILTERS,
@@ -104,6 +106,20 @@ const UUID_RE =
 
 const CONTENT_CARD_GRID_CLASS =
   "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-9";
+
+const TOPIC_BULK_CONTENT_TYPES = new Set<CompanySupervisionContentType>([
+  "billboard",
+  "poster",
+  "video",
+  "file",
+  "social_post",
+  "site_publication",
+  "activity",
+]);
+
+function canSelectForBulk(item: CompanySupervisionItem): boolean {
+  return TOPIC_BULK_CONTENT_TYPES.has(item.contentType);
+}
 
 function ContentItemCard({
   item,
@@ -429,7 +445,11 @@ function SupervisionItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!flex max-h-[92vh] max-w-3xl flex-col gap-0 overflow-hidden p-0" dir="rtl">
+      <DialogContent
+        className="!flex max-h-[92vh] max-w-3xl flex-col gap-0 overflow-hidden p-0"
+        dir="rtl"
+        onCloseAutoFocus={(event) => event.preventDefault()}
+      >
         <DialogHeader className="shrink-0 border-b px-6 py-4 pe-12 text-right">
           <DialogTitle className="break-words text-base">{item.title}</DialogTitle>
         </DialogHeader>
@@ -571,6 +591,7 @@ export function CompanySupervisionAdmin({
   items,
   excelSource,
   contentPlans = [],
+  contentTopics = [],
   canScore,
   canManageReviews,
   canSendMessage,
@@ -582,6 +603,7 @@ export function CompanySupervisionAdmin({
   items: CompanySupervisionItem[];
   excelSource: CompanyExcelSource;
   contentPlans?: string[];
+  contentTopics?: ContentTopic[];
   canScore: boolean;
   canManageReviews: boolean;
   canSendMessage: boolean;
@@ -598,6 +620,8 @@ export function CompanySupervisionAdmin({
           entry={entry}
           items={items}
           excelSource={excelSource}
+          contentPlans={contentPlans}
+          contentTopics={contentTopics}
           canScore={canScore}
           canManageReviews={canManageReviews}
           canSendMessage={canSendMessage}
@@ -614,6 +638,8 @@ function CompanySupervisionAdminInner({
   entry,
   items,
   excelSource,
+  contentPlans,
+  contentTopics,
   canScore,
   canManageReviews,
   canSendMessage,
@@ -624,6 +650,8 @@ function CompanySupervisionAdminInner({
   entry: UserLeaderboardEntry;
   items: CompanySupervisionItem[];
   excelSource: CompanyExcelSource;
+  contentPlans: string[];
+  contentTopics: ContentTopic[];
   canScore: boolean;
   canManageReviews: boolean;
   canSendMessage: boolean;
@@ -683,23 +711,23 @@ function CompanySupervisionAdminInner({
     for (const group of groups) {
       const { visible } = limitCompanyCategoryItems(group.items, showAllCategoryCards);
       for (const item of visible) {
-        if (item.isReviewable) keys.push(item.key);
+        if (canSelectForBulk(item)) keys.push(item.key);
       }
     }
     return keys;
   }, [filteredContent, showAllCategoryCards]);
 
   const returnedVisibleKeys = useMemo(
-    () => returnedItems.filter((item) => item.isReviewable).map((item) => item.key),
+    () => returnedItems.filter((item) => canSelectForBulk(item)).map((item) => item.key),
     [returnedItems]
   );
 
   const contentRetainKeys = useMemo(
-    () => filteredContent.filter((item) => item.isReviewable).map((item) => item.key),
+    () => filteredContent.filter((item) => canSelectForBulk(item)).map((item) => item.key),
     [filteredContent]
   );
   const returnedRetainKeys = useMemo(
-    () => returnedItems.filter((item) => item.isReviewable).map((item) => item.key),
+    () => returnedItems.filter((item) => canSelectForBulk(item)).map((item) => item.key),
     [returnedItems]
   );
   const bulkVisibleKeys = activeTab === "returned" ? returnedVisibleKeys : contentVisibleKeys;
@@ -714,6 +742,13 @@ function CompanySupervisionAdminInner({
     return [...bulk.selectedIds]
       .map((key) => map.get(key))
       .filter((item): item is CompanySupervisionItem => Boolean(item?.isReviewable));
+  }, [items, bulk.selectedIds]);
+
+  const selectedTopicItems = useMemo(() => {
+    const map = new Map(items.map((item) => [item.key, item] as const));
+    return [...bulk.selectedIds]
+      .map((key) => map.get(key))
+      .filter((item): item is CompanySupervisionItem => Boolean(item && canSelectForBulk(item)));
   }, [items, bulk.selectedIds]);
 
   const selectedApprovableItems = useMemo(
@@ -849,6 +884,30 @@ function CompanySupervisionAdminInner({
     });
   };
 
+  const runBulkTopic = (planLabels: string[]) => {
+    if (selectedTopicItems.length === 0) {
+      toast.error("حداقل یک مورد را انتخاب کنید");
+      return;
+    }
+    startTransition(async () => {
+      const result = await bulkUpdatePlanLabelsAction({
+        campaignId,
+        items: selectedTopicItems.map((item) => ({
+          contentType: item.contentType,
+          contentId: item.contentId,
+        })),
+        planLabels,
+      });
+      if (!result.success) {
+        toast.error(result.error ?? "تغییر موضوع ناموفق بود");
+        return;
+      }
+      toast.success(`موضوع ${formatPersianNumber(result.updated)} مورد به‌روزرسانی شد`);
+      bulk.clearSelection();
+      router.refresh();
+    });
+  };
+
   const handleExport = () => {
     try {
       downloadCompanyPerformanceExcel({
@@ -943,50 +1002,61 @@ function CompanySupervisionAdminInner({
   const renderBulkToolbar = () => {
     if (!canManageReviews) return null;
     return (
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant={bulk.bulkMode ? "default" : "outline"}
-          className="gap-1.5"
-          onClick={() => bulk.setBulkMode(!bulk.bulkMode)}
-        >
-          <Layers className="h-4 w-4" />
-          ویرایش گروهی
-        </Button>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={bulk.bulkMode ? "default" : "outline"}
+            className="gap-1.5"
+            onClick={() => bulk.setBulkMode(!bulk.bulkMode)}
+          >
+            <Layers className="h-4 w-4" />
+            ویرایش گروهی
+          </Button>
+          {bulk.bulkMode && (
+            <>
+              <Button type="button" size="sm" variant="outline" onClick={bulk.toggleAllVisible}>
+                {bulk.allVisibleSelected
+                  ? "لغو انتخاب همه"
+                  : `انتخاب همه (${formatPersianNumber(bulkVisibleKeys.length)})`}
+              </Button>
+              <BulkContentReviewActions
+                selectedCount={bulk.selectedCount}
+                approveCount={selectedApprovableItems.length}
+                rejectCount={selectedReviewItems.length}
+                pending={isPending}
+                onApprove={() => setApproveBulkOpen(true)}
+                onReject={() => {
+                  setRejectingItem(null);
+                  setRejectingBulk(true);
+                  setRejectionReason("");
+                }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="gap-1.5"
+                onClick={() => {
+                  bulk.setBulkMode(false);
+                  bulk.clearSelection();
+                }}
+              >
+                <X className="h-4 w-4" />
+                خروج
+              </Button>
+            </>
+          )}
+        </div>
         {bulk.bulkMode && (
-          <>
-            <Button type="button" size="sm" variant="outline" onClick={bulk.toggleAllVisible}>
-              {bulk.allVisibleSelected
-                ? "لغو انتخاب همه"
-                : `انتخاب همه (${formatPersianNumber(bulkVisibleKeys.length)})`}
-            </Button>
-            <BulkContentReviewActions
-              selectedCount={bulk.selectedCount}
-              approveCount={selectedApprovableItems.length}
-              rejectCount={selectedReviewItems.length}
-              pending={isPending}
-              onApprove={() => setApproveBulkOpen(true)}
-              onReject={() => {
-                setRejectingItem(null);
-                setRejectingBulk(true);
-                setRejectionReason("");
-              }}
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="gap-1.5"
-              onClick={() => {
-                bulk.setBulkMode(false);
-                bulk.clearSelection();
-              }}
-            >
-              <X className="h-4 w-4" />
-              خروج
-            </Button>
-          </>
+          <BulkTopicEditPanel
+            selectedCount={selectedTopicItems.length}
+            contentTopics={contentTopics}
+            contentPlans={contentPlans}
+            pending={isPending}
+            onApply={runBulkTopic}
+          />
         )}
       </div>
     );
@@ -1026,7 +1096,7 @@ function CompanySupervisionAdminInner({
                 {visible.map((item) => (
                   <BulkItemShell
                     key={item.key}
-                    enabled={canManageReviews && bulk.bulkMode && item.isReviewable}
+                    enabled={canManageReviews && bulk.bulkMode && canSelectForBulk(item)}
                     selected={bulk.isSelected(item.key)}
                     onToggle={() => bulk.toggle(item.key)}
                   >
@@ -1106,7 +1176,15 @@ function CompanySupervisionAdminInner({
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4" dir="rtl">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          if (viewingItem) return;
+          setActiveTab(value);
+        }}
+        className="space-y-4"
+        dir="rtl"
+      >
         <TabsList className="h-auto w-full justify-start">
           <TabsTrigger value="summary">خلاصه</TabsTrigger>
           <TabsTrigger value="content">

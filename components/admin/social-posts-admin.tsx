@@ -155,7 +155,7 @@ export function SocialPostsAdmin({
       ),
     [rows, contentFilter]
   );
-  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
+  const paginationResetKey = adminContentFilterResetKey(contentFilter);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredRows.length,
     paginationResetKey
@@ -165,7 +165,8 @@ export function SocialPostsAdmin({
     [filteredRows, visibleCount]
   );
   const visibleIds = useMemo(() => visibleRows.map((item) => item.id), [visibleRows]);
-  const bulk = useSectionBulkEdit(visibleIds);
+  const filteredIds = useMemo(() => filteredRows.map((item) => item.id), [filteredRows]);
+  const bulk = useSectionBulkEdit(visibleIds, filteredIds);
 
   useEffect(() => {
     setRows(initialPosts.filter((post) => !isSitePublication(post)));
@@ -658,7 +659,7 @@ export function SocialPostsAdmin({
               <AdminSocialPostCompactCard
                 post={post}
                 canScore={canScore}
-                onClick={() => openEdit(post)}
+                onClick={() => (bulk.bulkMode ? setPreviewPost(post) : openEdit(post))}
                 onView={() => setPreviewPost(post)}
                 onEdit={() => openEdit(post)}
                 onDelete={() => handleDelete(post)}
@@ -695,13 +696,11 @@ export function SocialPostsAdmin({
                   </p>
                 </div>
               </div>
-              {!bulk.bulkMode && (
-                <AdminItemActions
+              <AdminItemActions
                   onView={() => setPreviewPost(post)}
                   onEdit={() => openEdit(post)}
                   onDelete={() => handleDelete(post)}
                 />
-              )}
             </div>
           ))}
           {filteredRows.length === 0 && (

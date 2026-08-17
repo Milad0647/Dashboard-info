@@ -154,7 +154,8 @@ export function PressPublicationsAdmin({
   );
   const visibleRows = useMemo(() => filteredRows.slice(0, visibleCount), [filteredRows, visibleCount]);
   const visibleIds = useMemo(() => visibleRows.map((item) => item.id), [visibleRows]);
-  const bulk = useSectionBulkEdit(visibleIds);
+  const filteredIds = useMemo(() => filteredRows.map((item) => item.id), [filteredRows]);
+  const bulk = useSectionBulkEdit(visibleIds, filteredIds);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -462,7 +463,7 @@ export function PressPublicationsAdmin({
             <AdminActivityCompactCard
               activity={activity}
               canScore={canScore}
-              onClick={() => openEdit(activity)}
+              onClick={() => (bulk.bulkMode ? setPreviewActivity(activity) : openEdit(activity))}
               onView={() => setPreviewActivity(activity)}
               onEdit={() => openEdit(activity)}
               onDelete={() => handleDelete(activity)}

@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canTransferContentOwnership } from "@/lib/auth/access";
-import { getAuthSession, getOwnerFilter, isFullAdmin } from "@/lib/auth/get-session";
+import { canManageAllContent, canTransferContentOwnership } from "@/lib/auth/access";
+import { getAuthSession, getOwnerFilter } from "@/lib/auth/get-session";
 import { hasContributorPermission, type ContributorPermissionKey } from "@/lib/contributor-permissions";
 import { normalizePlanLabels } from "@/lib/content-topics";
 import { getSql } from "@/lib/db/client";
@@ -74,6 +74,18 @@ function applyOwnablePatch<T extends Ownable & { published?: boolean }>(
   return next;
 }
 
+const TOPIC_BULK_TYPES_BY_SOURCE: Record<string, BulkEditableContentType[]> = {
+  billboard: ["billboard"],
+  poster: ["poster"],
+  video: ["video"],
+  file: ["file"],
+  raw_media: ["raw_media"],
+  social_post: ["social_post"],
+  site_publication: ["site_publication"],
+  activity: ["activity", "press"],
+  press: ["press"],
+};
+
 async function assertCanBulkEdit(
   campaignId: string,
   contentType: BulkEditableContentType
@@ -81,7 +93,7 @@ async function assertCanBulkEdit(
   const session = await getAuthSession();
   if (!session) return { ok: false, error: "ورود لازم است" };
 
-  if (isFullAdmin(session)) {
+  if (canManageAllContent(session)) {
     return { ok: true };
   }
 
@@ -161,6 +173,50 @@ export async function bulkUpdateContentAction(input: {
   }
 
   return { success: false, updated: 0, error: "ویرایش گروهی فقط روی دیتابیس فعال است" };
+}
+
+export async function bulkUpdatePlanLabelsAction(input: {
+  campaignId: string;
+  items: Array<{ contentType: string; contentId: string }>;
+  planLabels: string[];
+}): Promise<{ success: boolean; updated: number; error?: string }> {
+  const grouped = new Map<BulkEditableContentType, string[]>();
+  for (const item of input.items) {
+    const contentId = item.contentId?.trim();
+    if (!contentId) continue;
+    const types = TOPIC_BULK_TYPES_BY_SOURCE[item.contentType] ?? [];
+    for (const contentType of types) {
+      const ids = grouped.get(contentType) ?? [];
+      if (!ids.includes(contentId)) ids.push(contentId);
+      grouped.set(contentType, ids);
+    }
+  }
+
+  if (grouped.size === 0) {
+    return { success: false, updated: 0, error: "نوع محتوا برای تغییر موضوع پشتیبانی نمی‌شود" };
+  }
+
+  const uniqueCount = new Set(
+    input.items.map((item) => item.contentId?.trim()).filter(Boolean)
+  ).size;
+
+  let anySuccess = false;
+  let lastError: string | undefined;
+  for (const [contentType, ids] of grouped) {
+    const result = await bulkUpdateContentAction({
+      campaignId: input.campaignId,
+      contentType,
+      ids,
+      patch: { planLabels: input.planLabels },
+    });
+    if (result.success) anySuccess = true;
+    else lastError = result.error;
+  }
+
+  if (!anySuccess) {
+    return { success: false, updated: 0, error: lastError ?? "خطا در ذخیره موضوع" };
+  }
+  return { success: true, updated: uniqueCount };
 }
 
 async function bulkUpdatePostgres(

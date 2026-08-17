@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "ba62ac6bb40a99c995bc88c8e80f18e44586e0c5",
+      "committedAt": "2026-08-17T15:17:09+03:30",
+      "title": "نمایش پیام‌های کارت‌ها به‌صورت گفتگوی رفت‌وبرگشت",
+      "subject": "Show content-card messages as chat threads"
+    },
+    {
       "hash": "2c9065fcea2d31a85fba8279ab11cf1f087d6d7e",
       "committedAt": "2026-08-17T15:08:20+03:30",
       "title": "امکان تایید و رد گروهی محتوا برای کارفرما",

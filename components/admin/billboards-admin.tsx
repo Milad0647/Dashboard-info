@@ -146,7 +146,7 @@ export function BillboardsAdmin({
     () => filteredBillboards.filter((billboard) => !isApiBillboard(billboard)),
     [filteredBillboards]
   );
-  const paginationResetKey = adminContentFilterResetKey(contentFilter, categoryFilter, viewMode);
+  const paginationResetKey = adminContentFilterResetKey(contentFilter, categoryFilter);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     manualBillboards.length,
     paginationResetKey
@@ -159,7 +159,11 @@ export function BillboardsAdmin({
     () => visibleManualBillboards.map((item) => item.id),
     [visibleManualBillboards]
   );
-  const bulk = useSectionBulkEdit(visibleIds);
+  const filteredIds = useMemo(
+    () => manualBillboards.map((item) => item.id),
+    [manualBillboards]
+  );
+  const bulk = useSectionBulkEdit(visibleIds, filteredIds);
 
   const openCreate = () => {
     void requestCreate(() => {
@@ -344,7 +348,7 @@ export function BillboardsAdmin({
             >
               <AdminBillboardCompactCard
                 billboard={billboard}
-                onClick={() => openEdit(billboard)}
+                onClick={() => (bulk.bulkMode ? setPreviewBillboard(billboard) : openEdit(billboard))}
                 onView={() => setPreviewBillboard(billboard)}
                 onEdit={() => openEdit(billboard)}
                 onDelete={handleDelete}
@@ -389,13 +393,11 @@ export function BillboardsAdmin({
                   />
                 </div>
               </div>
-              {!bulk.bulkMode && (
                 <AdminItemActions
                   onView={() => setPreviewBillboard(billboard)}
                   onEdit={() => openEdit(billboard)}
                   onDelete={() => handleDelete(billboard)}
                 />
-              )}
             </div>
           ))}
         </div>

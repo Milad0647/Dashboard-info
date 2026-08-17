@@ -135,7 +135,7 @@ export function PostersAdmin({
       ),
     [posters, contentFilter]
   );
-  const paginationResetKey = adminContentFilterResetKey(contentFilter, viewMode);
+  const paginationResetKey = adminContentFilterResetKey(contentFilter);
   const { visibleCount, hasMore, isLoadingMore, loadMore } = useAdminInfiniteScroll(
     filteredPosters.length,
     paginationResetKey
@@ -145,7 +145,8 @@ export function PostersAdmin({
     [filteredPosters, visibleCount]
   );
   const visibleIds = useMemo(() => visiblePosters.map((item) => item.id), [visiblePosters]);
-  const bulk = useSectionBulkEdit(visibleIds);
+  const filteredIds = useMemo(() => filteredPosters.map((item) => item.id), [filteredPosters]);
+  const bulk = useSectionBulkEdit(visibleIds, filteredIds);
 
   const activePoster = useMemo(() => {
     if (!activePosterId) return null;
@@ -300,7 +301,7 @@ export function PostersAdmin({
               <AdminPosterCompactCard
                 poster={poster}
                 versions={versionsByPosterId.get(poster.id) ?? []}
-                onClick={() => openEditor(poster.id)}
+                onClick={() => (bulk.bulkMode ? setPreviewPoster(poster) : openEditor(poster.id))}
                 onView={() => setPreviewPoster(poster)}
                 onEdit={() => openEditor(poster.id)}
                 onDelete={() => handleDelete(poster)}
@@ -354,7 +355,6 @@ export function PostersAdmin({
                     </p>
                   </div>
                 </div>
-                {!bulk.bulkMode && (
                   <div className="flex items-center gap-2">
                     {(canTransferOwnership || isFullAdmin) && (
                       <SendContentMessageButton
@@ -373,7 +373,6 @@ export function PostersAdmin({
                       onDelete={() => handleDelete(poster)}
                     />
                   </div>
-                )}
               </div>
             );
           })}
@@ -438,7 +437,7 @@ export function PostersAdmin({
       </Dialog>
 
       <Dialog open={Boolean(previewPoster)} onOpenChange={(open) => !open && setPreviewPoster(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" onCloseAutoFocus={(event) => event.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{previewPoster?.title ?? "نمایش پوستر"}</DialogTitle>
             <DialogDescription className="sr-only">پیش‌نمایش پوستر</DialogDescription>

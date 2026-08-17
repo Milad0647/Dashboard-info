@@ -30,14 +30,16 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
-import { BulkContentReviewActions } from "@/components/admin/bulk-content-review-bar";
+import { BulkContentReviewActions, BulkTopicEditPanel } from "@/components/admin/bulk-content-review-bar";
 import {
   approveContentAction,
   bulkApproveContentAction,
   bulkRejectContentForRevisionAction,
   rejectContentForRevisionAction,
 } from "@/lib/actions/content-review-actions";
+import { bulkUpdatePlanLabelsAction } from "@/lib/actions/bulk-update-actions";
 import { isReviewableContentType } from "@/lib/content-review/types";
+import type { ContentTopic } from "@/lib/content-topics";
 import {
   getNotificationReadsAction,
   markNotificationsSeenAction,
@@ -114,6 +116,8 @@ interface NotificationsAdminProps {
   videoVersions?: VideoVersion[];
   contentReviews?: ContentReview[];
   canManageReviews?: boolean;
+  contentTopics?: ContentTopic[];
+  contentPlans?: string[];
 }
 
 function NotificationCard({
@@ -315,6 +319,8 @@ export function NotificationsAdmin({
   videoVersions = [],
   contentReviews = [],
   canManageReviews = false,
+  contentTopics = [],
+  contentPlans = [],
 }: NotificationsAdminProps) {
   const router = useRouter();
   const [view, setView] = useState<NotificationFilterView>("new");
@@ -651,6 +657,31 @@ export function NotificationsAdmin({
     });
   };
 
+  const submitBulkTopic = (planLabels: string[]) => {
+    const selectedItems = filtered.filter((item) => selectedKeys.has(item.key));
+    if (selectedItems.length === 0) {
+      toast.error("حداقل یک مورد را انتخاب کنید");
+      return;
+    }
+    startTransition(async () => {
+      const result = await bulkUpdatePlanLabelsAction({
+        campaignId,
+        items: selectedItems.map((item) => ({
+          contentType: item.contentType,
+          contentId: item.contentId,
+        })),
+        planLabels,
+      });
+      if (!result.success) {
+        toast.error(result.error ?? "تغییر موضوع ناموفق بود");
+        return;
+      }
+      toast.success(`موضوع ${formatPersianNumber(result.updated)} مورد به‌روزرسانی شد`);
+      setSelectedKeys(new Set());
+      router.refresh();
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -762,6 +793,16 @@ export function NotificationsAdmin({
           />
         )}
       </div>
+
+      {canManageReviews && (
+        <BulkTopicEditPanel
+          selectedCount={selectedKeys.size}
+          contentTopics={contentTopics}
+          contentPlans={contentPlans}
+          pending={isPending}
+          onApply={submitBulkTopic}
+        />
+      )}
 
       <div className="rounded-xl border bg-card p-4">
         <p className="text-sm text-muted-foreground">
