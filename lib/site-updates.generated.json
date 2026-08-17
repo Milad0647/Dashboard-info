@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "7909a3092ad17d4292595c86613972a1e5ab8ba6",
+      "committedAt": "2026-08-17T16:25:09+03:30",
+      "title": "فیلتر موارد بدون موضوع، محل اکران یا متراژ برای ارجاع به کاربر",
+      "subject": "Filter empty topic, location, and area for user referral"
+    },
+    {
+      "hash": "f5143d080cb3fc0e70e4b74ad38734895c1d9a4a",
+      "committedAt": "2026-08-17T16:23:20+03:30",
+      "title": "امکان پیش‌نمایش پوستر در پنل مدیریت بدون نیاز به دانلود",
+      "subject": "Show full poster preview in admin eye action"
+    },
+    {
       "hash": "4fc382d77123e8f28d977effccf87652592146cf",
       "committedAt": "2026-08-17T16:18:46+03:30",
       "title": "نمایش آپلود، ورود، برگشتی، خطا و پیام امروز در خلاصه عملکرد هر استان",
