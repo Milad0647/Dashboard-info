@@ -30,10 +30,14 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
+import { BulkContentReviewActions } from "@/components/admin/bulk-content-review-bar";
 import {
   approveContentAction,
+  bulkApproveContentAction,
+  bulkRejectContentForRevisionAction,
   rejectContentForRevisionAction,
 } from "@/lib/actions/content-review-actions";
+import { isReviewableContentType } from "@/lib/content-review/types";
 import {
   getNotificationReadsAction,
   markNotificationsSeenAction,
@@ -263,7 +267,7 @@ function NotificationCard({
               compact
             />
           )}
-          {canManageReviews && onApprove && onReject ? (
+          {canManageReviews && onApprove && onReject && reviewStatus !== "approved" ? (
             <>
               <Button
                 type="button"
@@ -327,6 +331,8 @@ export function NotificationsAdmin({
   const [previewItem, setPreviewItem] = useState<NotificationFeedItem | null>(null);
   const [reviewPendingKey, setReviewPendingKey] = useState<string | null>(null);
   const [rejectingItem, setRejectingItem] = useState<NotificationFeedItem | null>(null);
+  const [rejectingBulk, setRejectingBulk] = useState(false);
+  const [approveBulkOpen, setApproveBulkOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [page, setPage] = useState(1);
   const [isPending, startTransition] = useTransition();
@@ -443,6 +449,22 @@ export function NotificationsAdmin({
     return map;
   }, [contentReviews]);
 
+  const selectedReviewableItems = useMemo(
+    () =>
+      filtered.filter(
+        (item) => selectedKeys.has(item.key) && isReviewableContentType(item.contentType)
+      ),
+    [filtered, selectedKeys]
+  );
+
+  const selectedApprovableItems = useMemo(
+    () =>
+      selectedReviewableItems.filter(
+        (item) => reviewByKey.get(`${item.contentType}:${item.contentId}`)?.status !== "approved"
+      ),
+    [selectedReviewableItems, reviewByKey]
+  );
+
   const allVisibleSelected =
     visibleItems.length > 0 && visibleItems.every((item) => selectedKeys.has(item.key));
 
@@ -535,17 +557,50 @@ export function NotificationsAdmin({
   };
 
   const openRejectDialog = (item: NotificationFeedItem) => {
+    setRejectingBulk(false);
     setRejectingItem(item);
     setRejectionReason("");
   };
 
   const submitReject = () => {
-    if (!rejectingItem) return;
     const reason = rejectionReason.trim();
     if (reason.length < 3) {
       toast.error("دلیل رد حداقل ۳ کاراکتر باشد");
       return;
     }
+
+    if (rejectingBulk) {
+      if (selectedReviewableItems.length === 0) return;
+      startTransition(async () => {
+        const result = await bulkRejectContentForRevisionAction({
+          campaignId,
+          items: selectedReviewableItems.map((item) => ({
+            contentType: item.contentType,
+            contentId: item.contentId,
+            notificationKey: item.key,
+          })),
+          rejectionReason: reason,
+        });
+        if (!result.success) {
+          toast.error(result.error ?? "رد گروهی ناموفق بود");
+          return;
+        }
+        const seen = selectedReviewableItems.map((item) => item.key);
+        setSeenKeys((prev) => new Set([...prev, ...seen]));
+        setSelectedKeys(new Set());
+        setRejectingBulk(false);
+        setRejectionReason("");
+        const extra =
+          result.skipped > 0 || result.failed > 0
+            ? ` — ${formatPersianNumber(result.skipped)} ردشده از قبل / ${formatPersianNumber(result.failed)} ناموفق`
+            : "";
+        toast.success(`${formatPersianNumber(result.processed)} محتوا برای ویرایش برگشت داده شد${extra}`);
+        router.refresh();
+      });
+      return;
+    }
+
+    if (!rejectingItem) return;
     setReviewPendingKey(rejectingItem.key);
     startTransition(async () => {
       const result = await rejectContentForRevisionAction({
@@ -564,6 +619,34 @@ export function NotificationsAdmin({
       setRejectingItem(null);
       setRejectionReason("");
       toast.success("محتوا برای ویرایش برگشت داده شد");
+      router.refresh();
+    });
+  };
+
+  const submitBulkApprove = () => {
+    if (selectedApprovableItems.length === 0) return;
+    startTransition(async () => {
+      const result = await bulkApproveContentAction({
+        campaignId,
+        items: selectedApprovableItems.map((item) => ({
+          contentType: item.contentType,
+          contentId: item.contentId,
+          notificationKey: item.key,
+        })),
+      });
+      setApproveBulkOpen(false);
+      if (!result.success) {
+        toast.error(result.error ?? "تایید گروهی ناموفق بود");
+        return;
+      }
+      const seen = selectedApprovableItems.map((item) => item.key);
+      setSeenKeys((prev) => new Set([...prev, ...seen]));
+      setSelectedKeys(new Set());
+      const extra =
+        result.skipped > 0 || result.failed > 0
+          ? ` — ${formatPersianNumber(result.skipped)} تاییدشده از قبل / ${formatPersianNumber(result.failed)} ناموفق`
+          : "";
+      toast.success(`${formatPersianNumber(result.processed)} محتوا تایید شد${extra}`);
       router.refresh();
     });
   };
@@ -663,6 +746,20 @@ export function NotificationsAdmin({
           <Button variant="outline" onClick={handleConfirmSelected} disabled={isPending}>
             علامت‌گذاری دیده‌شده ({formatPersianNumber(selectedKeys.size)})
           </Button>
+        )}
+        {canManageReviews && (
+          <BulkContentReviewActions
+            selectedCount={selectedKeys.size}
+            approveCount={selectedApprovableItems.length}
+            rejectCount={selectedReviewableItems.length}
+            pending={isPending}
+            onApprove={() => setApproveBulkOpen(true)}
+            onReject={() => {
+              setRejectingItem(null);
+              setRejectingBulk(true);
+              setRejectionReason("");
+            }}
+          />
         )}
       </div>
 
@@ -845,12 +942,29 @@ export function NotificationsAdmin({
           }
         />
       )}
-      <Dialog open={Boolean(rejectingItem)} onOpenChange={(open) => !open && setRejectingItem(null)}>
+      <Dialog
+        open={Boolean(rejectingItem) || rejectingBulk}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRejectingItem(null);
+            setRejectingBulk(false);
+            setRejectionReason("");
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>رد محتوا و برگشت برای ویرایش</DialogTitle>
+            <DialogTitle>
+              {rejectingBulk ? "رد گروهی و برگشت برای ویرایش" : "رد محتوا و برگشت برای ویرایش"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
+            {rejectingBulk ? (
+              <p className="text-sm text-muted-foreground">
+                دلیل رد روی {formatPersianNumber(selectedReviewableItems.length)} مورد انتخاب‌شده اعمال
+                می‌شود.
+              </p>
+            ) : null}
             <Label htmlFor="rejection-reason">دلیل رد</Label>
             <Textarea
               id="rejection-reason"
@@ -861,11 +975,37 @@ export function NotificationsAdmin({
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectingItem(null)} disabled={isPending}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRejectingItem(null);
+                setRejectingBulk(false);
+              }}
+              disabled={isPending}
+            >
               انصراف
             </Button>
             <Button variant="destructive" onClick={submitReject} disabled={isPending}>
-              ثبت رد
+              {rejectingBulk ? "ثبت رد گروهی" : "ثبت رد"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={approveBulkOpen} onOpenChange={setApproveBulkOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تایید گروهی محتوا</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {formatPersianNumber(selectedApprovableItems.length)} مورد تایید و منتشر شود؟
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveBulkOpen(false)} disabled={isPending}>
+              انصراف
+            </Button>
+            <Button onClick={submitBulkApprove} disabled={isPending}>
+              تایید گروهی
             </Button>
           </DialogFooter>
         </DialogContent>

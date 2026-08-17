@@ -20,12 +20,18 @@ import {
   MessageSquare,
   Share2,
   Video,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ContentMixChart } from "@/components/charts/content-mix-chart";
 import { UploadActivityChart } from "@/components/charts/upload-activity-chart";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
+import { BulkContentReviewActions } from "@/components/admin/bulk-content-review-bar";
 import { SendContentMessageButton } from "@/components/admin/send-content-message-button";
+import {
+  BulkItemShell,
+  useSectionBulkEdit,
+} from "@/components/admin/section-bulk-edit";
 import { UserProfileNotesPanel } from "@/components/admin/user-profile-notes-panel";
 import { KPICard } from "@/components/public/kpi-card";
 import { OwnerLocationFilterBar } from "@/components/public/owner-location-filter-bar";
@@ -59,6 +65,8 @@ import {
 } from "@/lib/actions/content-message-actions";
 import {
   approveContentAction,
+  bulkApproveContentAction,
+  bulkRejectContentForRevisionAction,
   rejectContentForRevisionAction,
 } from "@/lib/actions/content-review-actions";
 import { getProvinceRankBadge, type UserLeaderboardEntry } from "@/lib/city-leaderboard";
@@ -653,6 +661,8 @@ function CompanySupervisionAdminInner({
   const [reviewFilter, setReviewFilter] = useState<CompanySupervisionReviewFilter>("all");
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [rejectingItem, setRejectingItem] = useState<CompanySupervisionItem | null>(null);
+  const [rejectingBulk, setRejectingBulk] = useState(false);
+  const [approveBulkOpen, setApproveBulkOpen] = useState(false);
   const [viewingItem, setViewingItem] = useState<CompanySupervisionItem | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -692,6 +702,38 @@ function CompanySupervisionAdminInner({
         reviewFilter,
       }),
     [items, filter, typeFilter, reviewFilter]
+  );
+
+  const contentVisibleKeys = useMemo(() => {
+    const groups = groupCompanySupervisionItems(filteredContent);
+    const keys: string[] = [];
+    for (const group of groups) {
+      const { visible } = limitCompanyCategoryItems(group.items, showAllCategoryCards);
+      for (const item of visible) {
+        if (item.isReviewable) keys.push(item.key);
+      }
+    }
+    return keys;
+  }, [filteredContent, showAllCategoryCards]);
+
+  const returnedVisibleKeys = useMemo(
+    () => returnedItems.filter((item) => item.isReviewable).map((item) => item.key),
+    [returnedItems]
+  );
+
+  const bulkVisibleKeys = activeTab === "returned" ? returnedVisibleKeys : contentVisibleKeys;
+  const bulk = useSectionBulkEdit(canManageReviews ? bulkVisibleKeys : []);
+
+  const selectedReviewItems = useMemo(() => {
+    const map = new Map(items.map((item) => [item.key, item] as const));
+    return [...bulk.selectedIds]
+      .map((key) => map.get(key))
+      .filter((item): item is CompanySupervisionItem => Boolean(item?.isReviewable));
+  }, [items, bulk.selectedIds]);
+
+  const selectedApprovableItems = useMemo(
+    () => selectedReviewItems.filter((item) => item.reviewStatus !== "approved"),
+    [selectedReviewItems]
   );
 
   const loadMessages = useCallback(() => {
@@ -738,12 +780,42 @@ function CompanySupervisionAdminInner({
   };
 
   const runReject = () => {
-    if (!rejectingItem) return;
     const reason = rejectionReason.trim();
     if (reason.length < 3) {
       toast.error("دلیل رد حداقل ۳ کاراکتر باشد");
       return;
     }
+
+    if (rejectingBulk) {
+      if (selectedReviewItems.length === 0) return;
+      startTransition(async () => {
+        const result = await bulkRejectContentForRevisionAction({
+          campaignId,
+          items: selectedReviewItems.map((item) => ({
+            contentType: item.contentType,
+            contentId: item.contentId,
+          })),
+          rejectionReason: reason,
+        });
+        if (!result.success) {
+          toast.error(result.error ?? "رد گروهی ناموفق بود");
+          return;
+        }
+        bulk.clearSelection();
+        setRejectingBulk(false);
+        setRejectionReason("");
+        const extra =
+          result.skipped > 0 || result.failed > 0
+            ? ` — ${formatPersianNumber(result.skipped)} ردشده از قبل / ${formatPersianNumber(result.failed)} ناموفق`
+            : "";
+        toast.success(`${formatPersianNumber(result.processed)} محتوا برای ویرایش برگشت داده شد${extra}`);
+        router.refresh();
+        loadMessages();
+      });
+      return;
+    }
+
+    if (!rejectingItem) return;
     const item = rejectingItem;
     setPendingKey(item.key);
     startTransition(async () => {
@@ -764,6 +836,31 @@ function CompanySupervisionAdminInner({
       setViewingItem(null);
       router.refresh();
       loadMessages();
+    });
+  };
+
+  const runBulkApprove = () => {
+    if (selectedApprovableItems.length === 0) return;
+    startTransition(async () => {
+      const result = await bulkApproveContentAction({
+        campaignId,
+        items: selectedApprovableItems.map((item) => ({
+          contentType: item.contentType,
+          contentId: item.contentId,
+        })),
+      });
+      setApproveBulkOpen(false);
+      if (!result.success) {
+        toast.error(result.error ?? "تایید گروهی ناموفق بود");
+        return;
+      }
+      bulk.clearSelection();
+      const extra =
+        result.skipped > 0 || result.failed > 0
+          ? ` — ${formatPersianNumber(result.skipped)} تاییدشده از قبل / ${formatPersianNumber(result.failed)} ناموفق`
+          : "";
+      toast.success(`${formatPersianNumber(result.processed)} محتوا تایید شد${extra}`);
+      router.refresh();
     });
   };
 
@@ -858,6 +955,58 @@ function CompanySupervisionAdminInner({
     }[]
   ).filter((item) => item.value > 0 || (item.todayDelta ?? 0) > 0);
 
+  const renderBulkToolbar = () => {
+    if (!canManageReviews) return null;
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={bulk.bulkMode ? "default" : "outline"}
+          className="gap-1.5"
+          onClick={() => bulk.setBulkMode(!bulk.bulkMode)}
+        >
+          <Layers className="h-4 w-4" />
+          ویرایش گروهی
+        </Button>
+        {bulk.bulkMode && (
+          <>
+            <Button type="button" size="sm" variant="outline" onClick={bulk.toggleAllVisible}>
+              {bulk.allVisibleSelected
+                ? "لغو انتخاب همه"
+                : `انتخاب همه (${formatPersianNumber(bulkVisibleKeys.length)})`}
+            </Button>
+            <BulkContentReviewActions
+              selectedCount={bulk.selectedCount}
+              approveCount={selectedApprovableItems.length}
+              rejectCount={selectedReviewItems.length}
+              pending={isPending}
+              onApprove={() => setApproveBulkOpen(true)}
+              onReject={() => {
+                setRejectingItem(null);
+                setRejectingBulk(true);
+                setRejectionReason("");
+              }}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="gap-1.5"
+              onClick={() => {
+                bulk.setBulkMode(false);
+                bulk.clearSelection();
+              }}
+            >
+              <X className="h-4 w-4" />
+              خروج
+            </Button>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const renderGroupedGrid = (list: CompanySupervisionItem[], applyCategoryLimit: boolean) => {
     const groups = groupCompanySupervisionItems(list);
     if (groups.length === 0) {
@@ -890,21 +1039,28 @@ function CompanySupervisionAdminInner({
               </div>
               <div className={CONTENT_CARD_GRID_CLASS}>
                 {visible.map((item) => (
-                  <ContentItemCard
+                  <BulkItemShell
                     key={item.key}
-                    item={item}
-                    campaignId={campaignId}
-                    canScore={canScore}
-                    canSendMessage={canSendMessage}
-                    canManageReviews={canManageReviews}
-                    reviewPending={isPending && pendingKey === item.key}
-                    onOpen={() => setViewingItem(item)}
-                    onApprove={() => runApprove(item)}
-                    onReject={() => {
-                      setRejectingItem(item);
-                      setRejectionReason("");
-                    }}
-                  />
+                    enabled={canManageReviews && bulk.bulkMode && item.isReviewable}
+                    selected={bulk.isSelected(item.key)}
+                    onToggle={() => bulk.toggle(item.key)}
+                  >
+                    <ContentItemCard
+                      item={item}
+                      campaignId={campaignId}
+                      canScore={canScore}
+                      canSendMessage={canSendMessage}
+                      canManageReviews={canManageReviews}
+                      reviewPending={isPending && pendingKey === item.key}
+                      onOpen={() => setViewingItem(item)}
+                      onApprove={() => runApprove(item)}
+                      onReject={() => {
+                        setRejectingBulk(false);
+                        setRejectingItem(item);
+                        setRejectionReason("");
+                      }}
+                    />
+                  </BulkItemShell>
                 ))}
               </div>
             </section>
@@ -1088,6 +1244,7 @@ function CompanySupervisionAdminInner({
               )}
             </p>
           </div>
+          {renderBulkToolbar()}
           {renderGroupedGrid(filteredContent, true)}
         </TabsContent>
 
@@ -1097,7 +1254,10 @@ function CompanySupervisionAdminInner({
               محتوای برگشتی برای این شرکت نیست.
             </div>
           ) : (
-            renderGroupedGrid(returnedItems, false)
+            <>
+              {renderBulkToolbar()}
+              {renderGroupedGrid(returnedItems, false)}
+            </>
           )}
         </TabsContent>
 
@@ -1150,27 +1310,31 @@ function CompanySupervisionAdminInner({
         onApprove={() => viewingItem && runApprove(viewingItem)}
         onReject={() => {
           if (!viewingItem) return;
+          setRejectingBulk(false);
           setRejectingItem(viewingItem);
           setRejectionReason("");
         }}
       />
 
       <Dialog
-        open={Boolean(rejectingItem)}
+        open={Boolean(rejectingItem) || rejectingBulk}
         onOpenChange={(open) => {
           if (!open) {
             setRejectingItem(null);
+            setRejectingBulk(false);
             setRejectionReason("");
           }
         }}
       >
         <DialogContent className="text-right" dir="rtl">
           <DialogHeader className="text-right sm:text-right">
-            <DialogTitle>رد محتوا با دلیل</DialogTitle>
+            <DialogTitle>{rejectingBulk ? "رد گروهی با دلیل" : "رد محتوا با دلیل"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {rejectingItem?.title} — {rejectingItem?.typeLabel}
+              {rejectingBulk
+                ? `دلیل رد روی ${formatPersianNumber(selectedReviewItems.length)} مورد انتخاب‌شده اعمال می‌شود.`
+                : `${rejectingItem?.title} — ${rejectingItem?.typeLabel}`}
             </p>
             <div className="space-y-2">
               <Label htmlFor="company-reject-reason">دلیل رد</Label>
@@ -1189,6 +1353,7 @@ function CompanySupervisionAdminInner({
               variant="outline"
               onClick={() => {
                 setRejectingItem(null);
+                setRejectingBulk(false);
                 setRejectionReason("");
               }}
             >
@@ -1200,7 +1365,31 @@ function CompanySupervisionAdminInner({
               disabled={isPending}
               onClick={runReject}
             >
-              ثبت رد
+              {rejectingBulk ? "ثبت رد گروهی" : "ثبت رد"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={approveBulkOpen} onOpenChange={setApproveBulkOpen}>
+        <DialogContent className="text-right" dir="rtl">
+          <DialogHeader className="text-right sm:text-right">
+            <DialogTitle>تایید گروهی محتوا</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {formatPersianNumber(selectedApprovableItems.length)} مورد تایید و منتشر شود؟
+          </p>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setApproveBulkOpen(false)}
+              disabled={isPending}
+            >
+              انصراف
+            </Button>
+            <Button type="button" disabled={isPending} onClick={runBulkApprove}>
+              تایید گروهی
             </Button>
           </DialogFooter>
         </DialogContent>
