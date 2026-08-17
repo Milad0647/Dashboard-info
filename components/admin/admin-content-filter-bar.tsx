@@ -24,7 +24,12 @@ import {
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { Ownable } from "@/lib/types";
 import { formatPlanLabelDisplay, matchesAnyPlanLabelFilter } from "@/lib/content-topics";
+import { EmptyFieldFilterSelect } from "@/components/admin/empty-field-filter-select";
 import { matchesDateFilter } from "@/lib/campaign-content-filter";
+import {
+  matchesEmptyFieldFilter,
+  type EmptyFieldFilter,
+} from "@/lib/empty-content-fields";
 import { matchesContentSearch } from "@/lib/owner-location-filter";
 import {
   USER_COMPANY_TYPES,
@@ -54,6 +59,8 @@ export interface AdminContentFilterState {
   datePreset: AdminDatePreset;
   dateFrom: string;
   dateTo: string;
+  /** Filter items missing topic / screening location / area. */
+  emptyField: EmptyFieldFilter;
 }
 
 export const DEFAULT_ADMIN_CONTENT_FILTER: AdminContentFilterState = {
@@ -68,6 +75,7 @@ export const DEFAULT_ADMIN_CONTENT_FILTER: AdminContentFilterState = {
   datePreset: ADMIN_FILTER_ALL,
   dateFrom: "",
   dateTo: "",
+  emptyField: "all",
 };
 
 export interface AdminFilterUserOption {
@@ -178,6 +186,8 @@ export function matchesAdminContentFilter<T extends CreativeFilterable>(
   }
 
   if (!matchesAdminLocation(item, filter)) return false;
+
+  if (!matchesEmptyFieldFilter(item, filter.emptyField ?? "all")) return false;
 
   return matchesDateFilter(
     item,
@@ -402,6 +412,7 @@ export function adminContentFilterResetKey(
     filter.datePreset,
     filter.dateFrom,
     filter.dateTo,
+    filter.emptyField,
     ...extras.map((value) => String(value ?? "")),
   ].join(":");
 }
@@ -453,6 +464,7 @@ export function AdminContentFilterBar({
     filter.datePreset !== ADMIN_FILTER_ALL ||
     filter.dateFrom.trim().length > 0 ||
     filter.dateTo.trim().length > 0 ||
+    filter.emptyField !== DEFAULT_ADMIN_CONTENT_FILTER.emptyField ||
     (showCreativeFilter && filter.creative !== ADMIN_FILTER_ALL) ||
     (hasCategoryFilter && categoryValue !== ADMIN_FILTER_ALL);
 
@@ -648,6 +660,11 @@ export function AdminContentFilterBar({
             <SelectItem value="custom">تاریخ دستی</SelectItem>
           </SelectContent>
         </Select>
+
+        <EmptyFieldFilterSelect
+          value={filter.emptyField}
+          onChange={(emptyField) => onChange({ ...filter, emptyField })}
+        />
 
         <Select
           value={filter.sortOrder}

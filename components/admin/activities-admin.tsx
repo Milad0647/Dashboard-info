@@ -229,6 +229,7 @@ export function ActivitiesAdmin({
   const highlightMedia = highlightFields.includes("media") && !hasActivityMedia;
   const highlightDescription =
     highlightFields.includes("description") && !watchedDescription?.trim();
+  const highlightPlanLabels = highlightFields.includes("planLabels") && planLabels.length === 0;
 
   const openCreate = () => {
     void requestCreate(() => {
@@ -721,6 +722,8 @@ export function ActivitiesAdmin({
               plans={contentPlans}
               values={planLabels}
               onChangeMultiple={setPlanLabels}
+              highlight={highlightPlanLabels}
+              errorText="موضوع انتخاب نشده است؛ لطفاً تکمیل کنید."
             />
             {editingId && (
               <ContentScoreControl

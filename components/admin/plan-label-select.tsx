@@ -10,6 +10,7 @@ import {
   formatPlanLabelDisplay,
   type ContentTopic,
 } from "@/lib/content-topics";
+import { cn } from "@/lib/utils";
 
 interface PlanLabelSelectProps {
   topics?: ContentTopic[];
@@ -22,6 +23,8 @@ interface PlanLabelSelectProps {
   label?: string;
   optional?: boolean;
   multiple?: boolean;
+  highlight?: boolean;
+  errorText?: string;
 }
 
 function buildOptions(topics: ContentTopic[], plans: string[]): string[] {
@@ -48,6 +51,8 @@ export function PlanLabelSelect({
   label = "موضوع",
   optional = true,
   multiple = true,
+  highlight = false,
+  errorText,
 }: PlanLabelSelectProps) {
   const options = buildOptions(topics, plans);
   // Hide entirely when optional and campaign has no topics/plans configured.
@@ -92,8 +97,13 @@ export function PlanLabelSelect({
   });
 
   return (
-    <div className="space-y-2">
-      <Label>
+    <div
+      className={cn(
+        "space-y-2",
+        highlight && "rounded-lg border border-destructive bg-destructive/5 p-3"
+      )}
+    >
+      <Label className={cn(highlight && "text-destructive")}>
         {label}
         {!optional ? " *" : ""}
       </Label>
@@ -141,6 +151,9 @@ export function PlanLabelSelect({
           پاک کردن همه
         </Button>
       )}
+      {highlight && errorText ? (
+        <p className="text-xs text-destructive">{errorText}</p>
+      ) : null}
     </div>
   );
 }

@@ -5,11 +5,16 @@ import { AdminCreatedAtText } from "@/components/admin/admin-created-at";
 import { AdminItemActions } from "@/components/admin/admin-item-actions";
 import { AdminOwnerBadge } from "@/components/admin/admin-owner-badge";
 import { AdminPlanLabelsBadges } from "@/components/admin/admin-plan-labels-badges";
+import { EmptyFieldsBadges } from "@/components/admin/empty-fields-badges";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { MediaThumbnail } from "@/components/ui/media-thumbnail";
 import { resolveBillboardCategoryDisplay } from "@/lib/billboard-categories";
 import { formatBillboardCityLine } from "@/lib/billboard-location";
 import { getBillboardCardImage, hasBillboardDisplayImage } from "@/lib/billboard-media";
+import {
+  collectEmptyContentFields,
+  emptyFieldScopeForContentType,
+} from "@/lib/empty-content-fields";
 import type { Billboard } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +40,10 @@ export function AdminBillboardCompactCard({
   const categoryLabel = resolveBillboardCategoryDisplay(billboard);
   const city = billboard.city?.trim() || "";
   const cityLine = formatBillboardCityLine(billboard);
+  const emptyFields = collectEmptyContentFields(
+    billboard,
+    emptyFieldScopeForContentType("billboard")
+  );
 
   return (
     <div className="apple-lift group relative w-full overflow-hidden rounded-xl border bg-card text-right hover:border-primary/50">
@@ -69,6 +78,7 @@ export function AdminBillboardCompactCard({
         <div className="space-y-1 p-2">
           <p className="truncate text-xs font-medium">{billboard.title}</p>
           <AdminPlanLabelsBadges planLabels={billboard.planLabels} planLabel={billboard.planLabel} />
+          <EmptyFieldsBadges fields={emptyFields} />
           <p className="truncate text-[10px] text-muted-foreground">{cityLine}</p>
           <AdminCreatedAtText createdAt={billboard.createdAt} />
           <AdminOwnerBadge ownerUserId={billboard.ownerUserId} ownerName={billboard.ownerName} />

@@ -9,6 +9,13 @@ import type {
   VideoVersion,
 } from "@/lib/types";
 import { resolveDisplayVersion } from "@/lib/media-utils";
+import {
+  collectEmptyContentFields,
+  emptyFieldScopeForContentType,
+  matchesEmptyFieldFilter,
+  type EmptyContentField,
+  type EmptyFieldFilter,
+} from "@/lib/empty-content-fields";
 
 export type NotificationRange = "day" | "week" | "month" | "all";
 export type NotificationSort = "upload" | "date" | "owner" | "province";
@@ -33,6 +40,10 @@ export interface NotificationFeedItem {
   score?: number | null;
   autoScore?: number | null;
   manualScore?: number | null;
+  planLabels?: string[];
+  location?: string | null;
+  areaSqm?: number | null;
+  emptyFields?: EmptyContentField[];
 }
 
 function eventTimestamp(createdAt: string, updatedAt?: string): string {
@@ -74,6 +85,27 @@ function activityThumbnail(activity: CampaignActivity): string | null {
   return firstImage?.url ?? null;
 }
 
+function withEmptyFields<T extends EmptyFieldSourceLike>(
+  item: NotificationFeedItem,
+  source: T
+): NotificationFeedItem {
+  const scope = emptyFieldScopeForContentType(item.contentType);
+  return {
+    ...item,
+    planLabels: source.planLabels ?? undefined,
+    location: "location" in source ? source.location : undefined,
+    areaSqm: "areaSqm" in source ? source.areaSqm : undefined,
+    emptyFields: collectEmptyContentFields(source, scope),
+  };
+}
+
+type EmptyFieldSourceLike = {
+  planLabel?: string | null;
+  planLabels?: string[] | null;
+  location?: string | null;
+  areaSqm?: number | null;
+};
+
 function buildAdminEditPath(basePath: string, campaignId: string, contentId: string): string {
   const params = new URLSearchParams({
     campaign: campaignId,
@@ -99,127 +131,152 @@ export function buildNotificationFeed(input: {
 
   for (const poster of input.posters) {
     const eventAt = eventTimestamp(poster.createdAt, poster.updatedAt);
-    items.push({
-      key: `poster:${poster.id}`,
-      contentType: "poster",
-      contentId: poster.id,
-      title: poster.title,
-      ownerName: poster.ownerName,
-      ownerProvince: poster.ownerProvince,
-      ownerCity: poster.ownerCity,
-      planLabel: poster.planLabel,
-      typeLabel: "پوستر",
-      date: eventAt.slice(0, 10),
-      eventAt,
-      createdAt: poster.createdAt,
-      thumbnailUrl: posterThumbnail(poster.id, posterVersions),
-      published: poster.published,
-      adminPath: buildAdminEditPath("/admin/posters", campaignId, poster.id),
-      score: poster.score,
-      autoScore: poster.autoScore,
-      manualScore: poster.manualScore,
-    });
+    items.push(
+      withEmptyFields(
+        {
+          key: `poster:${poster.id}`,
+          contentType: "poster",
+          contentId: poster.id,
+          title: poster.title,
+          ownerName: poster.ownerName,
+          ownerProvince: poster.ownerProvince,
+          ownerCity: poster.ownerCity,
+          planLabel: poster.planLabel,
+          typeLabel: "پوستر",
+          date: eventAt.slice(0, 10),
+          eventAt,
+          createdAt: poster.createdAt,
+          thumbnailUrl: posterThumbnail(poster.id, posterVersions),
+          published: poster.published,
+          adminPath: buildAdminEditPath("/admin/posters", campaignId, poster.id),
+          score: poster.score,
+          autoScore: poster.autoScore,
+          manualScore: poster.manualScore,
+        },
+        poster
+      )
+    );
   }
 
   for (const video of input.videos) {
     const eventAt = eventTimestamp(video.createdAt, video.updatedAt);
-    items.push({
-      key: `video:${video.id}`,
-      contentType: "video",
-      contentId: video.id,
-      title: video.title,
-      ownerName: video.ownerName,
-      ownerProvince: video.ownerProvince,
-      ownerCity: video.ownerCity,
-      planLabel: video.planLabel,
-      typeLabel: "ویدیو",
-      date: eventAt.slice(0, 10),
-      eventAt,
-      createdAt: video.createdAt,
-      thumbnailUrl: videoThumbnail(video.id, videoVersions),
-      published: video.published,
-      adminPath: buildAdminEditPath("/admin/videos", campaignId, video.id),
-      score: video.score,
-      autoScore: video.autoScore,
-      manualScore: video.manualScore,
-    });
+    items.push(
+      withEmptyFields(
+        {
+          key: `video:${video.id}`,
+          contentType: "video",
+          contentId: video.id,
+          title: video.title,
+          ownerName: video.ownerName,
+          ownerProvince: video.ownerProvince,
+          ownerCity: video.ownerCity,
+          planLabel: video.planLabel,
+          typeLabel: "ویدیو",
+          date: eventAt.slice(0, 10),
+          eventAt,
+          createdAt: video.createdAt,
+          thumbnailUrl: videoThumbnail(video.id, videoVersions),
+          published: video.published,
+          adminPath: buildAdminEditPath("/admin/videos", campaignId, video.id),
+          score: video.score,
+          autoScore: video.autoScore,
+          manualScore: video.manualScore,
+        },
+        video
+      )
+    );
   }
 
   for (const billboard of input.billboards) {
     const eventAt = eventTimestamp(billboard.createdAt, billboard.updatedAt);
-    items.push({
-      key: `billboard:${billboard.id}`,
-      contentType: "billboard",
-      contentId: billboard.id,
-      title: billboard.title,
-      ownerName: billboard.ownerName,
-      ownerProvince: billboard.ownerProvince ?? billboard.province,
-      ownerCity: billboard.ownerCity ?? billboard.city,
-      planLabel: billboard.planLabel,
-      typeLabel: "تبلیغات محیطی",
-      date: eventAt.slice(0, 10),
-      eventAt,
-      createdAt: billboard.createdAt,
-      thumbnailUrl: billboard.thumbnailUrl,
-      published: billboard.published,
-      adminPath: buildAdminEditPath("/admin/billboards", campaignId, billboard.id),
-      score: billboard.score,
-      autoScore: billboard.autoScore,
-      manualScore: billboard.manualScore,
-    });
+    items.push(
+      withEmptyFields(
+        {
+          key: `billboard:${billboard.id}`,
+          contentType: "billboard",
+          contentId: billboard.id,
+          title: billboard.title,
+          ownerName: billboard.ownerName,
+          ownerProvince: billboard.ownerProvince ?? billboard.province,
+          ownerCity: billboard.ownerCity ?? billboard.city,
+          planLabel: billboard.planLabel,
+          typeLabel: "تبلیغات محیطی",
+          date: eventAt.slice(0, 10),
+          eventAt,
+          createdAt: billboard.createdAt,
+          thumbnailUrl: billboard.thumbnailUrl,
+          published: billboard.published,
+          adminPath: buildAdminEditPath("/admin/billboards", campaignId, billboard.id),
+          score: billboard.score,
+          autoScore: billboard.autoScore,
+          manualScore: billboard.manualScore,
+        },
+        billboard
+      )
+    );
   }
 
   for (const activity of input.activities) {
     const eventAt = eventTimestamp(activity.createdAt, activity.updatedAt);
-    items.push({
-      key: `activity:${activity.id}`,
-      contentType: "activity",
-      contentId: activity.id,
-      title: activity.title,
-      ownerName: activity.ownerName,
-      ownerProvince: activity.ownerProvince,
-      ownerCity: activity.ownerCity,
-      planLabel: activity.planLabel,
-      typeLabel: "اقدام / مجله",
-      date: eventAt.slice(0, 10),
-      eventAt,
-      createdAt: activity.createdAt,
-      thumbnailUrl: activityThumbnail(activity),
-      published: activity.published,
-      adminPath: buildAdminEditPath("/admin/activities", campaignId, activity.id),
-      score: activity.score,
-      autoScore: activity.autoScore,
-      manualScore: activity.manualScore,
-    });
+    items.push(
+      withEmptyFields(
+        {
+          key: `activity:${activity.id}`,
+          contentType: "activity",
+          contentId: activity.id,
+          title: activity.title,
+          ownerName: activity.ownerName,
+          ownerProvince: activity.ownerProvince,
+          ownerCity: activity.ownerCity,
+          planLabel: activity.planLabel,
+          typeLabel: "اقدام / مجله",
+          date: eventAt.slice(0, 10),
+          eventAt,
+          createdAt: activity.createdAt,
+          thumbnailUrl: activityThumbnail(activity),
+          published: activity.published,
+          adminPath: buildAdminEditPath("/admin/activities", campaignId, activity.id),
+          score: activity.score,
+          autoScore: activity.autoScore,
+          manualScore: activity.manualScore,
+        },
+        activity
+      )
+    );
   }
 
   for (const post of input.socialPosts) {
     const eventAt = eventTimestamp(post.createdAt, post.updatedAt);
     const isSite = post.platform === "site";
-    items.push({
-      key: `social:${post.id}`,
-      contentType: isSite ? "site_publication" : "social_post",
-      contentId: post.id,
-      title: post.title,
-      ownerName: post.ownerName,
-      ownerProvince: post.ownerProvince,
-      ownerCity: post.ownerCity,
-      planLabel: post.planLabel,
-      typeLabel: isSite ? "انتشار در سایت" : "شبکه اجتماعی",
-      date: eventAt.slice(0, 10),
-      eventAt,
-      createdAt: post.createdAt,
-      thumbnailUrl: post.coverImageUrl ?? post.mediaUrl,
-      published: post.published,
-      adminPath: buildAdminEditPath(
-        isSite ? "/admin/site-publications" : "/admin/social-posts",
-        campaignId,
-        post.id
-      ),
-      score: post.score,
-      autoScore: post.autoScore,
-      manualScore: post.manualScore,
-    });
+    items.push(
+      withEmptyFields(
+        {
+          key: `social:${post.id}`,
+          contentType: isSite ? "site_publication" : "social_post",
+          contentId: post.id,
+          title: post.title,
+          ownerName: post.ownerName,
+          ownerProvince: post.ownerProvince,
+          ownerCity: post.ownerCity,
+          planLabel: post.planLabel,
+          typeLabel: isSite ? "انتشار در سایت" : "شبکه اجتماعی",
+          date: eventAt.slice(0, 10),
+          eventAt,
+          createdAt: post.createdAt,
+          thumbnailUrl: post.coverImageUrl ?? post.mediaUrl,
+          published: post.published,
+          adminPath: buildAdminEditPath(
+            isSite ? "/admin/site-publications" : "/admin/social-posts",
+            campaignId,
+            post.id
+          ),
+          score: post.score,
+          autoScore: post.autoScore,
+          manualScore: post.manualScore,
+        },
+        post
+      )
+    );
   }
 
   return items;
@@ -279,6 +336,20 @@ export function filterNotificationByPlan(
 ): NotificationFeedItem[] {
   if (!planLabel || planLabel === "all") return feed;
   return feed.filter((item) => item.planLabel === planLabel);
+}
+
+export function filterNotificationByEmptyField(
+  feed: NotificationFeedItem[],
+  filter: EmptyFieldFilter
+): NotificationFeedItem[] {
+  if (filter === "all") return feed;
+  return feed.filter((item) =>
+    matchesEmptyFieldFilter(
+      item,
+      filter,
+      emptyFieldScopeForContentType(item.contentType)
+    )
+  );
 }
 
 export function collectNotificationProvinces(feed: NotificationFeedItem[]): string[] {

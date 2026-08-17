@@ -91,6 +91,9 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
   const completenessInput = {
     campaignId,
     ownerUserId: canOverseeAllContent ? undefined : session?.userId,
+    requirePlanLabels:
+      (data.settings.contentPlans?.length ?? 0) > 0 ||
+      (data.settings.contentTopics?.length ?? 0) > 0,
     posters: data.posters,
     posterVersions: data.posterVersions,
     videos: data.videos,
@@ -223,6 +226,10 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
         <AdminDashboardFilteredStats
           campaignId={campaignId}
           contentPlans={data.settings.contentPlans ?? []}
+          requirePlanLabels={
+            (data.settings.contentPlans?.length ?? 0) > 0 ||
+            (data.settings.contentTopics?.length ?? 0) > 0
+          }
           users={showUserFilter ? users : []}
           showUserFilter={showUserFilter}
           showOwnerHint={!canOverseeAllContent}

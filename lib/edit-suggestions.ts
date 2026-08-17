@@ -1,3 +1,4 @@
+import { normalizePlanLabels } from "@/lib/content-topics";
 import { splitPressActivities } from "@/lib/press-publications";
 import { splitSocialPosts } from "@/lib/social-posts";
 import type {
@@ -36,7 +37,9 @@ export type EditSuggestionMissingField =
   | "file"
   | "city"
   | "discussion"
-  | "date";
+  | "date"
+  | "planLabels"
+  | "areaSqm";
 
 export type CategoryCompletenessStatus = "empty" | "complete" | "partial" | "incomplete";
 
@@ -97,6 +100,8 @@ const MISSING_FIELD_VALUES = new Set<EditSuggestionMissingField>([
   "city",
   "discussion",
   "date",
+  "planLabels",
+  "areaSqm",
 ]);
 
 const CONTENT_TYPE_PATH: Record<EditSuggestionContentType, string> = {
@@ -118,11 +123,13 @@ export const editSuggestionFieldLabels: Record<EditSuggestionMissingField, strin
   description: "توضیحات",
   media: "رسانه",
   link: "لینک",
-  location: "موقعیت",
+  location: "محل اکران",
   file: "فایل",
   city: "شهر",
   discussion: "خلاصه بحث",
   date: "تاریخ",
+  planLabels: "موضوع",
+  areaSqm: "متراژ",
 };
 
 export const editSuggestionContentTypeLabels: Record<EditSuggestionContentType, string> = {
@@ -176,6 +183,17 @@ export function isPlaceholderBillboardImage(url?: string | null): boolean {
 
 function isBlank(value?: string | null): boolean {
   return !value?.trim();
+}
+
+function hasPlanLabels(item: {
+  planLabels?: string[] | null;
+  planLabel?: string | null;
+}): boolean {
+  return normalizePlanLabels(item.planLabels, item.planLabel).length > 0;
+}
+
+function hasAreaSqm(value?: number | null): boolean {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
 function isWeakTitle(title: string, defaultPattern?: RegExp): boolean {
@@ -245,23 +263,33 @@ function hasVideoMedia(versions: VideoVersion[]): boolean {
   return versions.some((version) => Boolean(version.videoUrl?.trim()));
 }
 
-function getPosterChecks(poster: Poster, versions: PosterVersion[]): CheckedField[] {
+function getPosterChecks(
+  poster: Poster,
+  versions: PosterVersion[],
+  requirePlanLabels: boolean
+): CheckedField[] {
   return [
     { key: "title", ok: !isWeakTitle(poster.title, DEFAULT_POSTER_TITLE_PATTERN) },
     { key: "description", ok: !isBlank(poster.description) },
     { key: "media", ok: hasPosterMedia(versions) },
+    { key: "planLabels", ok: !requirePlanLabels || hasPlanLabels(poster) },
   ];
 }
 
-function getVideoChecks(video: Video, versions: VideoVersion[]): CheckedField[] {
+function getVideoChecks(
+  video: Video,
+  versions: VideoVersion[],
+  requirePlanLabels: boolean
+): CheckedField[] {
   return [
     { key: "title", ok: !isWeakTitle(video.title, DEFAULT_VIDEO_TITLE_PATTERN) },
     { key: "description", ok: !isBlank(video.description) },
     { key: "media", ok: hasVideoMedia(versions) },
+    { key: "planLabels", ok: !requirePlanLabels || hasPlanLabels(video) },
   ];
 }
 
-function getSocialChecks(post: SocialMediaPost): CheckedField[] {
+function getSocialChecks(post: SocialMediaPost, requirePlanLabels: boolean): CheckedField[] {
   return [
     { key: "title", ok: !isBlank(post.title) },
     {
@@ -277,31 +305,36 @@ function getSocialChecks(post: SocialMediaPost): CheckedField[] {
       ),
     },
     { key: "description", ok: !isBlank(post.description) },
+    { key: "planLabels", ok: !requirePlanLabels || hasPlanLabels(post) },
   ];
 }
 
-function getBillboardChecks(billboard: Billboard): CheckedField[] {
+function getBillboardChecks(billboard: Billboard, requirePlanLabels: boolean): CheckedField[] {
   return [
     { key: "title", ok: !isWeakTitle(billboard.title, DEFAULT_BILLBOARD_TITLE_PATTERN) },
     { key: "city", ok: !isBlank(billboard.city) },
     { key: "location", ok: !isBlank(billboard.location) },
+    { key: "areaSqm", ok: hasAreaSqm(billboard.areaSqm) },
+    { key: "planLabels", ok: !requirePlanLabels || hasPlanLabels(billboard) },
     { key: "description", ok: !isBlank(billboard.description) },
   ];
 }
 
-function getFileChecks(file: CampaignFile): CheckedField[] {
+function getFileChecks(file: CampaignFile, requirePlanLabels: boolean): CheckedField[] {
   return [
     { key: "title", ok: !isWeakTitle(file.title, DEFAULT_FILE_TITLE_PATTERN) },
     { key: "file", ok: !isBlank(file.fileUrl) },
     { key: "description", ok: !isBlank(file.description) },
+    { key: "planLabels", ok: !requirePlanLabels || hasPlanLabels(file) },
   ];
 }
 
-function getRawMediaChecks(item: RawMediaUpload): CheckedField[] {
+function getRawMediaChecks(item: RawMediaUpload, requirePlanLabels: boolean): CheckedField[] {
   return [
     { key: "title", ok: !isBlank(item.title) },
     { key: "file", ok: !isBlank(item.fileUrl) },
     { key: "description", ok: !isBlank(item.description) },
+    { key: "planLabels", ok: !requirePlanLabels || hasPlanLabels(item) },
   ];
 }
 
@@ -323,7 +356,7 @@ function getMeetingChecks(meeting: CampaignMeeting): CheckedField[] {
   ];
 }
 
-function getActivityChecks(activity: CampaignActivity): CheckedField[] {
+function getActivityChecks(activity: CampaignActivity, requirePlanLabels: boolean): CheckedField[] {
   const hasMedia =
     Boolean(activity.imageUrl?.trim() || activity.videoUrl?.trim()) ||
     Boolean(activity.mediaItems?.some((item) => item.url.trim()));
@@ -334,11 +367,15 @@ function getActivityChecks(activity: CampaignActivity): CheckedField[] {
     { key: "location", ok: !isBlank(activity.location) },
     { key: "media", ok: hasMedia },
     { key: "description", ok: !isBlank(activity.description) },
+    { key: "planLabels", ok: !requirePlanLabels || hasPlanLabels(activity) },
   ];
 }
 
 /** Press rows live under /admin/press-publications; public cards need a link or image. */
-function getPressPublicationChecks(activity: CampaignActivity): CheckedField[] {
+function getPressPublicationChecks(
+  activity: CampaignActivity,
+  requirePlanLabels: boolean
+): CheckedField[] {
   const hasDisplayContent =
     Boolean(activity.link?.trim()) ||
     Boolean(activity.imageUrl?.trim()) ||
@@ -349,6 +386,7 @@ function getPressPublicationChecks(activity: CampaignActivity): CheckedField[] {
     { key: "date", ok: !isBlank(activity.activityDate) },
     { key: "media", ok: hasDisplayContent },
     { key: "description", ok: !isBlank(activity.description) },
+    { key: "planLabels", ok: !requirePlanLabels || hasPlanLabels(activity) },
   ];
 }
 
@@ -437,6 +475,8 @@ export interface BuildEditSuggestionsInput {
   campaignId: string;
   /** When set, only that owner's items are evaluated. When omitted, all items are included. */
   ownerUserId?: string | null;
+  /** When campaign topics exist, empty موضوع counts as incomplete. */
+  requirePlanLabels?: boolean;
   posters?: Poster[];
   posterVersions?: PosterVersion[];
   videos?: Video[];
@@ -462,6 +502,7 @@ export function buildCategoryCompleteness(
   const {
     campaignId,
     ownerUserId,
+    requirePlanLabels = false,
     posters = [],
     posterVersions = [],
     videos = [],
@@ -499,7 +540,7 @@ export function buildCategoryCompleteness(
         "poster",
         campaignId,
         poster,
-        getPosterChecks(poster, posterVersionsByPosterId.get(poster.id) ?? [])
+        getPosterChecks(poster, posterVersionsByPosterId.get(poster.id) ?? [], requirePlanLabels)
       )
     )
     .filter((item): item is EditSuggestionItem => Boolean(item));
@@ -510,31 +551,33 @@ export function buildCategoryCompleteness(
         "video",
         campaignId,
         video,
-        getVideoChecks(video, videoVersionsByVideoId.get(video.id) ?? [])
+        getVideoChecks(video, videoVersionsByVideoId.get(video.id) ?? [], requirePlanLabels)
       )
     )
     .filter((item): item is EditSuggestionItem => Boolean(item));
 
   const socialSuggestions = split.socialPosts
-    .map((post) => toSuggestion("socialPost", campaignId, post, getSocialChecks(post)))
+    .map((post) => toSuggestion("socialPost", campaignId, post, getSocialChecks(post, requirePlanLabels)))
     .filter((item): item is EditSuggestionItem => Boolean(item));
 
   const siteSuggestions = split.sitePublications
-    .map((post) => toSuggestion("sitePublication", campaignId, post, getSocialChecks(post)))
+    .map((post) =>
+      toSuggestion("sitePublication", campaignId, post, getSocialChecks(post, requirePlanLabels))
+    )
     .filter((item): item is EditSuggestionItem => Boolean(item));
 
   const billboardSuggestions = ownedBillboards
     .map((billboard) =>
-      toSuggestion("billboard", campaignId, billboard, getBillboardChecks(billboard))
+      toSuggestion("billboard", campaignId, billboard, getBillboardChecks(billboard, requirePlanLabels))
     )
     .filter((item): item is EditSuggestionItem => Boolean(item));
 
   const fileSuggestions = ownedFiles
-    .map((file) => toSuggestion("file", campaignId, file, getFileChecks(file)))
+    .map((file) => toSuggestion("file", campaignId, file, getFileChecks(file, requirePlanLabels)))
     .filter((item): item is EditSuggestionItem => Boolean(item));
 
   const rawMediaSuggestions = ownedRawMedia
-    .map((item) => toSuggestion("rawMedia", campaignId, item, getRawMediaChecks(item)))
+    .map((item) => toSuggestion("rawMedia", campaignId, item, getRawMediaChecks(item, requirePlanLabels)))
     .filter((item): item is EditSuggestionItem => Boolean(item));
 
   const broadcastSuggestions = ownedBroadcasts
@@ -546,12 +589,19 @@ export function buildCategoryCompleteness(
     .filter((item): item is EditSuggestionItem => Boolean(item));
 
   const activitySuggestions = ownedActivities
-    .map((activity) => toSuggestion("activity", campaignId, activity, getActivityChecks(activity)))
+    .map((activity) =>
+      toSuggestion("activity", campaignId, activity, getActivityChecks(activity, requirePlanLabels))
+    )
     .filter((item): item is EditSuggestionItem => Boolean(item));
 
   const pressSuggestions = ownedPressPublications
     .map((activity) =>
-      toSuggestion("pressPublication", campaignId, activity, getPressPublicationChecks(activity))
+      toSuggestion(
+        "pressPublication",
+        campaignId,
+        activity,
+        getPressPublicationChecks(activity, requirePlanLabels)
+      )
     )
     .filter((item): item is EditSuggestionItem => Boolean(item));
 

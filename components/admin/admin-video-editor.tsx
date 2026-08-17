@@ -283,6 +283,8 @@ export function AdminVideoEditor({
   const highlightDescription =
     highlightFields.includes("description") && !editDescription.trim();
   const highlightMedia = highlightFields.includes("media") && !videoUrl.trim();
+  const highlightPlanLabels =
+    highlightFields.includes("planLabels") && editPlanLabels.length === 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -415,6 +417,8 @@ export function AdminVideoEditor({
               plans={contentPlans}
               values={editPlanLabels}
               onChangeMultiple={setEditPlanLabels}
+              highlight={highlightPlanLabels}
+              errorText="موضوع انتخاب نشده است؛ لطفاً تکمیل کنید."
             />
             <LiveScorePanel
               contentType="video"

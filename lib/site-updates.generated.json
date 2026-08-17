@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "4fc382d77123e8f28d977effccf87652592146cf",
+      "committedAt": "2026-08-17T16:18:46+03:30",
+      "title": "نمایش آپلود، ورود، برگشتی، خطا و پیام امروز در خلاصه عملکرد هر استان",
+      "subject": "Show today's company cards in supervision summary"
+    },
+    {
+      "hash": "fb3081e15f96e6e1c2c3c40388fb15be20167dbc",
+      "committedAt": "2026-08-17T16:06:47+03:30",
+      "title": "امکان تعیین سقف روزانه بارگذاری محتوا برای هر دسته‌بندی کاربر",
+      "subject": "Add daily posting limits per user category"
+    },
+    {
       "hash": "1d049f4eeb39a0122e75b67d8284806044d9ba8f",
       "committedAt": "2026-08-17T15:59:02+03:30",
       "title": "محاسبه امتیاز موضوع فقط از بیشترین موضوع انتخاب‌شده",

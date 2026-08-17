@@ -185,6 +185,10 @@ export function BillboardCreateAssignmentDialog({
     (!axis.trim() || isDefaultBillboardTitle(axis));
   const highlightCity = highlightFields.includes("city") && !city.trim();
   const highlightLocation = highlightFields.includes("location") && !address.trim();
+  const highlightArea =
+    highlightFields.includes("areaSqm") && (!areaSqm.trim() || Number(areaSqm) <= 0);
+  const highlightPlanLabels =
+    highlightFields.includes("planLabels") && planLabels.length === 0;
   const highlightDescription = highlightFields.includes("description") && !address.trim();
   const highlightMedia = highlightFields.includes("media") && !hasPeriodMedia;
 
@@ -477,15 +481,24 @@ export function BillboardCreateAssignmentDialog({
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label>متراژ (متر مربع)</Label>
+          <div
+            className={cn(
+              "space-y-2",
+              highlightArea && "rounded-lg border border-destructive bg-destructive/5 p-3"
+            )}
+          >
+            <Label className={cn(highlightArea && "text-destructive")}>متراژ (متر مربع)</Label>
             <Input
               type="number"
               min="0"
               step="0.1"
               value={areaSqm}
               onChange={(event) => setAreaSqm(event.target.value)}
+              className={cn(highlightArea && "border-destructive focus-visible:ring-destructive")}
             />
+            {highlightArea && (
+              <p className="text-xs text-destructive">متراژ خالی است؛ لطفاً تکمیل کنید.</p>
+            )}
           </div>
 
           {!isEditing && (
@@ -675,6 +688,8 @@ export function BillboardCreateAssignmentDialog({
             values={planLabels}
             onChangeMultiple={setPlanLabels}
             optional={false}
+            highlight={highlightPlanLabels}
+            errorText="موضوع انتخاب نشده است؛ لطفاً تکمیل کنید."
           />
 
           <LiveScorePanel

@@ -201,6 +201,8 @@ export function AdminPosterEditor({
   const highlightDescription =
     highlightFields.includes("description") && !editDescription.trim();
   const highlightMedia = highlightFields.includes("media") && !imageUrl.trim();
+  const highlightPlanLabels =
+    highlightFields.includes("planLabels") && editPlanLabels.length === 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -281,6 +283,8 @@ export function AdminPosterEditor({
               plans={contentPlans}
               values={editPlanLabels}
               onChangeMultiple={setEditPlanLabels}
+              highlight={highlightPlanLabels}
+              errorText="موضوع انتخاب نشده است؛ لطفاً تکمیل کنید."
             />
             <LiveScorePanel
               contentType="poster"

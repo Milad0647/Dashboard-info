@@ -46,6 +46,7 @@ import type {
 interface AdminDashboardFilteredStatsProps {
   campaignId: string;
   contentPlans?: string[];
+  requirePlanLabels?: boolean;
   users?: AdminUser[];
   showUserFilter?: boolean;
   showOwnerHint?: boolean;
@@ -81,6 +82,7 @@ function filterOwnables<T extends Ownable>(
 export function AdminDashboardFilteredStats({
   campaignId,
   contentPlans = [],
+  requirePlanLabels = false,
   users = [],
   showUserFilter = false,
   showOwnerHint = false,
@@ -201,6 +203,7 @@ export function AdminDashboardFilteredStats({
     for (const summary of buildCategoryCompleteness({
       campaignId,
       ownerUserId: completenessOwnerUserId,
+      requirePlanLabels,
       posters: filtered.posters,
       posterVersions,
       videos: filtered.videos,
@@ -219,6 +222,7 @@ export function AdminDashboardFilteredStats({
   }, [
     campaignId,
     completenessOwnerUserId,
+    requirePlanLabels,
     filtered,
     posterVersions,
     videoVersions,

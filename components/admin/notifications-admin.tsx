@@ -31,6 +31,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
 import { BulkContentReviewActions, BulkTopicEditPanel } from "@/components/admin/bulk-content-review-bar";
+import { EmptyFieldFilterSelect } from "@/components/admin/empty-field-filter-select";
+import { EmptyFieldsBadges } from "@/components/admin/empty-fields-badges";
 import {
   approveContentAction,
   bulkApproveContentAction,
@@ -49,6 +51,7 @@ import {
   collectNotificationOwners,
   collectNotificationPlans,
   collectNotificationProvinces,
+  filterNotificationByEmptyField,
   filterNotificationByOwner,
   filterNotificationByPlan,
   filterNotificationByProvince,
@@ -59,6 +62,10 @@ import {
   type NotificationSort,
   type NotificationView,
 } from "@/lib/notification-feed";
+import {
+  referralReasonForEmptyItems,
+  type EmptyFieldFilter,
+} from "@/lib/empty-content-fields";
 import { resolveDisplayVersion } from "@/lib/media-utils";
 import type { ContentReview } from "@/lib/content-review/types";
 import type {
@@ -221,6 +228,7 @@ function NotificationCard({
               <p>{[item.ownerProvince, item.ownerCity].filter(Boolean).join(" / ")}</p>
             )}
             {item.planLabel && <p>موضوع: {item.planLabel}</p>}
+            <EmptyFieldsBadges fields={item.emptyFields} className="pt-1" />
           </div>
           <p className="mt-auto text-[11px] text-muted-foreground">
             {formatPersianDateTime(item.eventAt)}
@@ -329,6 +337,7 @@ export function NotificationsAdmin({
   const [province, setProvince] = useState("all");
   const [ownerName, setOwnerName] = useState("all");
   const [planLabel, setPlanLabel] = useState("all");
+  const [emptyField, setEmptyField] = useState<EmptyFieldFilter>("all");
   const [seenKeys, setSeenKeys] = useState<Set<string>>(new Set());
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [scoreOverrides, setScoreOverrides] = useState<Record<string, number | null>>({});
@@ -415,15 +424,16 @@ export function NotificationsAdmin({
     items = filterNotificationByProvince(items, province);
     items = filterNotificationByOwner(items, ownerName);
     items = filterNotificationByPlan(items, planLabel);
+    items = filterNotificationByEmptyField(items, emptyField);
 
     if (view === "unscored") {
       return items.filter((item) => item.score == null);
     }
 
     return items.filter((item) => (view === "seen" ? seenKeys.has(item.key) : !seenKeys.has(item.key)));
-  }, [feed, range, province, ownerName, planLabel, view, seenKeys]);
+  }, [feed, range, province, ownerName, planLabel, emptyField, view, seenKeys]);
 
-  const paginationResetKey = `${view}:${range}:${sort}:${province}:${ownerName}:${planLabel}`;
+  const paginationResetKey = `${view}:${range}:${sort}:${province}:${ownerName}:${planLabel}:${emptyField}`;
 
   useEffect(() => {
     setPage(1);
@@ -565,7 +575,7 @@ export function NotificationsAdmin({
   const openRejectDialog = (item: NotificationFeedItem) => {
     setRejectingBulk(false);
     setRejectingItem(item);
-    setRejectionReason("");
+    setRejectionReason(referralReasonForEmptyItems([item], emptyField));
   };
 
   const submitReject = () => {
@@ -768,6 +778,11 @@ export function NotificationsAdmin({
             </SelectContent>
           </Select>
         )}
+        <EmptyFieldFilterSelect
+          value={emptyField}
+          onChange={setEmptyField}
+          className="w-56"
+        />
         {visibleItems.length > 0 && (
           <Button variant="outline" onClick={toggleSelectAll}>
             {allVisibleSelected ? "لغو انتخاب همه" : "انتخاب همه در این صفحه"}
@@ -788,7 +803,7 @@ export function NotificationsAdmin({
             onReject={() => {
               setRejectingItem(null);
               setRejectingBulk(true);
-              setRejectionReason("");
+              setRejectionReason(referralReasonForEmptyItems(selectedReviewableItems, emptyField));
             }}
           />
         )}

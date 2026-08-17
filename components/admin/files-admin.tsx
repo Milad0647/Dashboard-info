@@ -202,6 +202,7 @@ export function FilesAdmin({
     highlightFields.includes("title") && (isDefaultFileTitle(title) || !title.trim());
   const highlightFile = highlightFields.includes("file") && !upload.url;
   const highlightDescription = highlightFields.includes("description") && !description.trim();
+  const highlightPlanLabels = highlightFields.includes("planLabels") && planLabels.length === 0;
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -518,6 +519,8 @@ export function FilesAdmin({
               plans={contentPlans}
               values={planLabels}
               onChangeMultiple={setPlanLabels}
+              highlight={highlightPlanLabels}
+              errorText="موضوع انتخاب نشده است؛ لطفاً تکمیل کنید."
             />
             {canTransferOwnership && (
               <ContentOwnerSelect

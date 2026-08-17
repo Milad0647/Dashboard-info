@@ -352,6 +352,7 @@ export function SocialPostsAdmin({
     !watchedCover?.trim() &&
     !watchedMedia?.trim() &&
     !groupEntriesHaveMedia;
+  const highlightPlanLabels = highlightFields.includes("planLabels") && planLabels.length === 0;
 
   const updateLinkEntry = (
     id: string,
@@ -867,6 +868,8 @@ export function SocialPostsAdmin({
               plans={contentPlans}
               values={planLabels}
               onChangeMultiple={setPlanLabels}
+              highlight={highlightPlanLabels}
+              errorText="موضوع انتخاب نشده است؛ لطفاً تکمیل کنید."
             />
             {editingId && (
               <ContentScoreControl

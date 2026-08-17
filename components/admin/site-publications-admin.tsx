@@ -198,6 +198,7 @@ export function SitePublicationsAdmin({
   const highlightMedia = highlightFields.includes("media") && !watchedCover?.trim();
   const highlightDescription =
     highlightFields.includes("description") && !watchedDescription?.trim();
+  const highlightPlanLabels = highlightFields.includes("planLabels") && planLabels.length === 0;
 
   const updateLinkEntry = (id: string, patch: Partial<Pick<SocialPostLinkEntry, "link">>) => {
     setLinkEntries((prev) =>
@@ -746,6 +747,8 @@ export function SitePublicationsAdmin({
               plans={contentPlans}
               values={planLabels}
               onChangeMultiple={setPlanLabels}
+              highlight={highlightPlanLabels}
+              errorText="موضوع انتخاب نشده است؛ لطفاً تکمیل کنید."
             />
             {editingId && (
               <ContentScoreControl
