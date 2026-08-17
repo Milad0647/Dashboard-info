@@ -135,6 +135,8 @@ export interface CampaignSettings {
    * @deprecated Legacy formula policy — no longer used for scoring; kept for backup compatibility.
    */
   scoringPolicy?: import("./scoring/scoring-policy").CampaignScoringPolicy;
+  /** Per user-category daily upload quota. Stored in daily_posting_limits JSONB. */
+  dailyPostingLimits?: import("./posting-limits").DailyPostingLimitsConfig;
   /** Campaign content plan names configured by admin (e.g. مهتاب، سامان). Legacy flat list. */
   contentPlans?: string[];
   /** Hierarchical topics with optional subtopics (موضوع / زیرموضوع). */

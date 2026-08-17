@@ -132,6 +132,15 @@ export async function saveSocialPostAction(data: Partial<SocialMediaPost> & { id
   );
   if (tutorialDenied) return tutorialDenied;
 
+  const { denyIfCreateQuotaExceeded } = await import("@/lib/scoring/daily-cap-and-duplicates");
+  const quota = await denyIfCreateQuotaExceeded({
+    campaignId: payload.campaignId ?? data.campaignId ?? "",
+    ownerUserId: payload.ownerUserId ?? session.userId,
+    contentId: data.id,
+    table: "social_media_posts",
+  });
+  if (quota) return quota;
+
   const result = await pgExt.pgSaveSocialPost(payload);
   await auditContentChange({
     isUpdate: Boolean(data.id),
@@ -365,6 +374,15 @@ export async function saveBroadcastReportAction(data: Partial<BroadcastReport> &
   );
   if (tutorialDenied) return tutorialDenied;
 
+  const { denyIfCreateQuotaExceeded } = await import("@/lib/scoring/daily-cap-and-duplicates");
+  const quota = await denyIfCreateQuotaExceeded({
+    campaignId: payload.campaignId ?? data.campaignId ?? "",
+    ownerUserId: payload.ownerUserId ?? session.userId,
+    contentId: data.id,
+    table: "broadcast_reports",
+  });
+  if (quota) return quota;
+
   const result = await pgExt.pgSaveBroadcastReport(payload);
   await auditContentChange({
     isUpdate: Boolean(data.id),
@@ -483,6 +501,15 @@ export async function saveCampaignActivityAction(data: Partial<CampaignActivity>
   );
   if (tutorialDenied) return tutorialDenied;
 
+  const { denyIfCreateQuotaExceeded } = await import("@/lib/scoring/daily-cap-and-duplicates");
+  const quota = await denyIfCreateQuotaExceeded({
+    campaignId: payload.campaignId ?? data.campaignId ?? "",
+    ownerUserId: payload.ownerUserId ?? session.userId,
+    contentId: data.id,
+    table: "campaign_activities",
+  });
+  if (quota) return quota;
+
   const result = await pgExt.pgSaveCampaignActivity(payload);
   await auditContentChange({
     isUpdate: Boolean(data.id),
@@ -537,6 +564,15 @@ export async function saveMeetingAction(
     data.id
   );
   if (tutorialDenied) return tutorialDenied;
+
+  const { denyIfCreateQuotaExceeded } = await import("@/lib/scoring/daily-cap-and-duplicates");
+  const quota = await denyIfCreateQuotaExceeded({
+    campaignId: payload.campaignId ?? data.campaignId ?? "",
+    ownerUserId: payload.ownerUserId ?? session.userId,
+    contentId: data.id,
+    table: "campaign_meetings",
+  });
+  if (quota) return quota;
 
   const result = await pgExt.pgSaveMeetingWithTasks(payload, tasks, decisions);
   await auditContentChange({

@@ -28,6 +28,7 @@ import type { ContributorPermissions } from "@/lib/contributor-permissions";
 import { normalizeAnalyticsConfig } from "@/lib/analytics-config";
 import { normalizeScoringRules } from "@/lib/scoring/normalize-scoring-rules";
 import { normalizeScoringPolicy } from "@/lib/scoring/scoring-policy";
+import { normalizeDailyPostingLimits } from "@/lib/posting-limits";
 import {
   contentPlansFromTopics,
   normalizeContentTopics,
@@ -155,6 +156,11 @@ export function mapSettingsFromDb(row: any): CampaignSettings {
       typeof row.scoring_policy === "string"
         ? JSON.parse(row.scoring_policy)
         : row.scoring_policy
+    ),
+    dailyPostingLimits: normalizeDailyPostingLimits(
+      typeof row.daily_posting_limits === "string"
+        ? JSON.parse(row.daily_posting_limits)
+        : row.daily_posting_limits
     ),
     adminOwnerLabel: row.admin_owner_label ?? "توانیر",
     contentTopics: normalizeContentTopics(row.content_plans),

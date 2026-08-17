@@ -495,6 +495,10 @@ ALTER TABLE campaign_settings
 ALTER TABLE campaign_settings
   ADD COLUMN IF NOT EXISTS scoring_policy JSONB NOT NULL DEFAULT '{}'::jsonb;
 
+-- Daily upload quota per user category (region / company type)
+ALTER TABLE campaign_settings
+  ADD COLUMN IF NOT EXISTS daily_posting_limits JSONB NOT NULL DEFAULT '{}'::jsonb;
+
 ALTER TABLE billboards ADD COLUMN IF NOT EXISTS location_type TEXT;
 ALTER TABLE billboards ADD COLUMN IF NOT EXISTS uses_approved_design BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE billboards ADD COLUMN IF NOT EXISTS content_hash TEXT;

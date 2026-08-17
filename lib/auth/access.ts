@@ -38,6 +38,11 @@ export function canScoreContent(session: AuthSession): boolean {
   return false;
 }
 
+/** Admin and کارفرما can set daily upload limits per user category. */
+export function canManagePostingLimits(session: AuthSession): boolean {
+  return canScoreContent(session);
+}
+
 /** Admin and کارفرما can send content-card messages to owners. */
 export function canSendContentMessages(session: AuthSession): boolean {
   return canManageAllContent(session);

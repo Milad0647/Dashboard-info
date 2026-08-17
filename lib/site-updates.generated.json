@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "1d049f4eeb39a0122e75b67d8284806044d9ba8f",
+      "committedAt": "2026-08-17T15:59:02+03:30",
+      "title": "محاسبه امتیاز موضوع فقط از بیشترین موضوع انتخاب‌شده",
+      "subject": "Apply only the highest topic score"
+    },
+    {
       "hash": "5e9ee446c5697e9331d8122f55887b30f8e4a015",
       "committedAt": "2026-08-17T15:56:12+03:30",
       "title": "امکان ثبت تبلیغات محیطی بدون عکس",

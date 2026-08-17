@@ -22,6 +22,7 @@ const ACTION_LABELS: Record<string, string> = {
   "content.delete": "حذف محتوا",
   "content.score": "امتیازدهی",
   "admin.settings_update": "به‌روزرسانی تنظیمات",
+  "campaign.daily_posting_limits": "محدودیت بارگذاری روزانه",
   "user.create": "ایجاد کاربر",
   "user.update": "ویرایش کاربر",
   "user.delete": "حذف کاربر",

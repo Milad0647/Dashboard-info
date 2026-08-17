@@ -18,6 +18,7 @@ import {
   HardDrive,
   ImageIcon,
   Images,
+  Gauge,
   Globe,
   LayoutDashboard,
   LayoutGrid,
@@ -94,6 +95,12 @@ const allNavItems: {
     adminOrClientOnly: true,
   },
   {
+    href: "/admin/posting-limits",
+    label: "محدودیت روزانه",
+    icon: Gauge,
+    adminOrClientOnly: true,
+  },
+  {
     href: "/admin/performance",
     label: "مشاهده عملکرد",
     icon: Medal,
@@ -143,6 +150,7 @@ const managementNavHrefs = new Set([
   "/admin/audit",
   "/admin/settings",
   "/admin/scoring",
+  "/admin/posting-limits",
   "/admin/performance",
   "/admin/tutorials",
   "/admin/elanha",

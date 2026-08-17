@@ -206,7 +206,16 @@ export async function saveBillboardAction(data: Partial<Billboard> & { id?: stri
   const scoped = await withOwnerScope(auth, data);
   const ownerId = scoped.ownerUserId ?? auth.userId;
   if (ownerId && (scoped.campaignId || data.campaignId)) {
-    const { findDuplicateBillboard } = await import("@/lib/scoring/daily-cap-and-duplicates");
+    const { denyIfCreateQuotaExceeded, findDuplicateBillboard } = await import(
+      "@/lib/scoring/daily-cap-and-duplicates"
+    );
+    const quota = await denyIfCreateQuotaExceeded({
+      campaignId: scoped.campaignId ?? data.campaignId ?? "",
+      ownerUserId: ownerId,
+      contentId: data.id,
+      table: "billboards",
+    });
+    if (quota) return quota;
     const dup = await findDuplicateBillboard({
       campaignId: scoped.campaignId ?? data.campaignId ?? "",
       ownerUserId: ownerId,
@@ -287,27 +296,28 @@ export async function savePosterAction(data: Partial<Poster> & { id?: string }) 
   const tutorialDenied = await assertTutorialForPossibleCreate("posters", "posters", data.id);
   if (tutorialDenied) return tutorialDenied;
   const scoped = await withOwnerScope(auth, data);
-  if (!data.id) {
-    const { assertDailyCapForCreate, findDuplicatePosterOrVideo } = await import(
-      "@/lib/scoring/daily-cap-and-duplicates"
-    );
-    const cap = await assertDailyCapForCreate({
+  const { denyIfCreateQuotaExceeded, findDuplicatePosterOrVideo } = await import(
+    "@/lib/scoring/daily-cap-and-duplicates"
+  );
+  const quota = await denyIfCreateQuotaExceeded({
+    campaignId: scoped.campaignId ?? data.campaignId ?? "",
+    ownerUserId: scoped.ownerUserId ?? auth.userId,
+    contentId: data.id,
+    table: "posters",
+    section: "poster",
+  });
+  if (quota) return quota;
+  const ownerId = scoped.ownerUserId ?? auth.userId;
+  if (ownerId) {
+    const dup = await findDuplicatePosterOrVideo({
       campaignId: scoped.campaignId ?? data.campaignId ?? "",
-      ownerUserId: scoped.ownerUserId ?? auth.userId,
+      ownerUserId: ownerId,
       section: "poster",
+      title: scoped.title ?? data.title ?? "",
+      contentHash: (scoped as { contentHash?: string | null }).contentHash ?? null,
+      excludeId: data.id ?? null,
     });
-    if (!cap.ok) return { success: false as const, error: cap.error };
-    const ownerId = scoped.ownerUserId ?? auth.userId;
-    if (ownerId) {
-      const dup = await findDuplicatePosterOrVideo({
-        campaignId: scoped.campaignId ?? data.campaignId ?? "",
-        ownerUserId: ownerId,
-        section: "poster",
-        title: scoped.title ?? data.title ?? "",
-        contentHash: (scoped as { contentHash?: string | null }).contentHash ?? null,
-      });
-      if (dup.duplicate) return { success: false as const, error: dup.reason };
-    }
+    if (dup.duplicate) return { success: false as const, error: dup.reason };
   }
   const result = await savePoster(scoped);
   await auditContentChange({
@@ -380,27 +390,28 @@ export async function saveVideoAction(data: Partial<Video> & { id?: string }) {
   const tutorialDenied = await assertTutorialForPossibleCreate("videos", "videos", data.id);
   if (tutorialDenied) return tutorialDenied;
   const scoped = await withOwnerScope(auth, data);
-  if (!data.id) {
-    const { assertDailyCapForCreate, findDuplicatePosterOrVideo } = await import(
-      "@/lib/scoring/daily-cap-and-duplicates"
-    );
-    const cap = await assertDailyCapForCreate({
+  const { denyIfCreateQuotaExceeded, findDuplicatePosterOrVideo } = await import(
+    "@/lib/scoring/daily-cap-and-duplicates"
+  );
+  const quota = await denyIfCreateQuotaExceeded({
+    campaignId: scoped.campaignId ?? data.campaignId ?? "",
+    ownerUserId: scoped.ownerUserId ?? auth.userId,
+    contentId: data.id,
+    table: "videos",
+    section: "video",
+  });
+  if (quota) return quota;
+  const ownerId = scoped.ownerUserId ?? auth.userId;
+  if (ownerId) {
+    const dup = await findDuplicatePosterOrVideo({
       campaignId: scoped.campaignId ?? data.campaignId ?? "",
-      ownerUserId: scoped.ownerUserId ?? auth.userId,
+      ownerUserId: ownerId,
       section: "video",
+      title: scoped.title ?? data.title ?? "",
+      contentHash: (scoped as { contentHash?: string | null }).contentHash ?? null,
+      excludeId: data.id ?? null,
     });
-    if (!cap.ok) return { success: false as const, error: cap.error };
-    const ownerId = scoped.ownerUserId ?? auth.userId;
-    if (ownerId) {
-      const dup = await findDuplicatePosterOrVideo({
-        campaignId: scoped.campaignId ?? data.campaignId ?? "",
-        ownerUserId: ownerId,
-        section: "video",
-        title: scoped.title ?? data.title ?? "",
-        contentHash: (scoped as { contentHash?: string | null }).contentHash ?? null,
-      });
-      if (dup.duplicate) return { success: false as const, error: dup.reason };
-    }
+    if (dup.duplicate) return { success: false as const, error: dup.reason };
   }
   const result = await saveVideo(scoped);
   await auditContentChange({
@@ -592,7 +603,16 @@ export async function saveCampaignFileAction(data: Partial<CampaignFile> & { id?
     data.id
   );
   if (tutorialDenied) return tutorialDenied;
-  const result = await saveCampaignFile(await withOwnerScope(auth, data));
+  const scoped = await withOwnerScope(auth, data);
+  const { denyIfCreateQuotaExceeded } = await import("@/lib/scoring/daily-cap-and-duplicates");
+  const quota = await denyIfCreateQuotaExceeded({
+    campaignId: scoped.campaignId ?? data.campaignId ?? "",
+    ownerUserId: scoped.ownerUserId ?? auth.userId,
+    contentId: data.id,
+    table: "campaign_files",
+  });
+  if (quota) return quota;
+  const result = await saveCampaignFile(scoped);
   await auditContentChange({
     isUpdate: Boolean(data.id),
     entityType: "file",
@@ -630,7 +650,16 @@ export async function saveRawMediaUploadAction(data: Partial<RawMediaUpload> & {
     data.id
   );
   if (tutorialDenied) return tutorialDenied;
-  const result = await saveRawMediaUpload(await withOwnerScope(auth, data));
+  const scoped = await withOwnerScope(auth, data);
+  const { denyIfCreateQuotaExceeded } = await import("@/lib/scoring/daily-cap-and-duplicates");
+  const quota = await denyIfCreateQuotaExceeded({
+    campaignId: scoped.campaignId ?? data.campaignId ?? "",
+    ownerUserId: scoped.ownerUserId ?? auth.userId,
+    contentId: data.id,
+    table: "raw_media_uploads",
+  });
+  if (quota) return quota;
+  const result = await saveRawMediaUpload(scoped);
   await auditContentChange({
     isUpdate: Boolean(data.id),
     entityType: "raw_media",

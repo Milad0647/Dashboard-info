@@ -1,10 +1,17 @@
 import { getSql } from "@/lib/db/client";
+import { loadDailyPostingLimits } from "@/lib/db/posting-limits-repository";
+import {
+  dailyPostingLimitMessage,
+  resolveDailyPostingMax,
+} from "@/lib/posting-limits";
 import { getTehranCalendarDateIso } from "@/lib/safe-dates";
 import {
   DAILY_CAP_MESSAGE,
   normalizeTitleForDuplicate,
   type CampaignScoringPolicy,
 } from "@/lib/scoring/scoring-policy";
+import { normalizeUserCompanyType } from "@/lib/user-company-types";
+import { normalizeUserRegion } from "@/lib/user-regions";
 import { isPostgresConfigured } from "@/lib/utils";
 
 export { DAILY_CAP_MESSAGE };
@@ -83,6 +90,152 @@ export async function assertDailyCapForCreate(input: {
     return { ok: false, error: DAILY_CAP_MESSAGE };
   }
   return { ok: true };
+}
+
+export const DAILY_CAP_TABLES = [
+  "billboards",
+  "posters",
+  "videos",
+  "campaign_files",
+  "raw_media_uploads",
+  "social_media_posts",
+  "campaign_activities",
+  "broadcast_reports",
+  "campaign_meetings",
+] as const;
+
+export type DailyCapTable = (typeof DAILY_CAP_TABLES)[number];
+
+async function contentRowExists(table: DailyCapTable, id?: string | null): Promise<boolean> {
+  if (!id || !isPostgresConfigured()) return false;
+  const sql = getSql();
+  const rows =
+    table === "billboards"
+      ? await sql`SELECT 1 FROM billboards WHERE id = ${id} LIMIT 1`
+      : table === "posters"
+        ? await sql`SELECT 1 FROM posters WHERE id = ${id} LIMIT 1`
+        : table === "videos"
+          ? await sql`SELECT 1 FROM videos WHERE id = ${id} LIMIT 1`
+          : table === "campaign_files"
+            ? await sql`SELECT 1 FROM campaign_files WHERE id = ${id} LIMIT 1`
+            : table === "raw_media_uploads"
+              ? await sql`SELECT 1 FROM raw_media_uploads WHERE id = ${id} LIMIT 1`
+              : table === "social_media_posts"
+                ? await sql`SELECT 1 FROM social_media_posts WHERE id = ${id} LIMIT 1`
+                : table === "campaign_activities"
+                  ? await sql`SELECT 1 FROM campaign_activities WHERE id = ${id} LIMIT 1`
+                  : table === "broadcast_reports"
+                    ? await sql`SELECT 1 FROM broadcast_reports WHERE id = ${id} LIMIT 1`
+                    : await sql`SELECT 1 FROM campaign_meetings WHERE id = ${id} LIMIT 1`;
+  return Boolean(rows[0]);
+}
+
+export async function countTodayContentForOwner(input: {
+  campaignId: string;
+  ownerUserId: string;
+}): Promise<number> {
+  if (!isPostgresConfigured()) return 0;
+  const sql = getSql();
+  const today = getTehranCalendarDateIso();
+  const rows = await sql`
+    SELECT (
+      (SELECT COUNT(*) FROM billboards
+        WHERE campaign_id = ${input.campaignId}
+          AND owner_user_id = ${input.ownerUserId}
+          AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date)
+      + (SELECT COUNT(*) FROM posters
+        WHERE campaign_id = ${input.campaignId}
+          AND owner_user_id = ${input.ownerUserId}
+          AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date)
+      + (SELECT COUNT(*) FROM videos
+        WHERE campaign_id = ${input.campaignId}
+          AND owner_user_id = ${input.ownerUserId}
+          AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date)
+      + (SELECT COUNT(*) FROM campaign_files
+        WHERE campaign_id = ${input.campaignId}
+          AND owner_user_id = ${input.ownerUserId}
+          AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date)
+      + (SELECT COUNT(*) FROM raw_media_uploads
+        WHERE campaign_id = ${input.campaignId}
+          AND owner_user_id = ${input.ownerUserId}
+          AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date)
+      + (SELECT COUNT(*) FROM social_media_posts
+        WHERE campaign_id = ${input.campaignId}
+          AND owner_user_id = ${input.ownerUserId}
+          AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date)
+      + (SELECT COUNT(*) FROM campaign_activities
+        WHERE campaign_id = ${input.campaignId}
+          AND owner_user_id = ${input.ownerUserId}
+          AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date)
+      + (SELECT COUNT(*) FROM broadcast_reports
+        WHERE campaign_id = ${input.campaignId}
+          AND owner_user_id = ${input.ownerUserId}
+          AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date)
+      + (SELECT COUNT(*) FROM campaign_meetings
+        WHERE campaign_id = ${input.campaignId}
+          AND owner_user_id = ${input.ownerUserId}
+          AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date)
+    )::int AS count
+  `;
+  return Number(rows[0]?.count) || 0;
+}
+
+export async function assertUserCategoryDailyLimit(input: {
+  campaignId: string;
+  ownerUserId: string | null | undefined;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!input.ownerUserId || !input.campaignId) return { ok: true };
+  const config = await loadDailyPostingLimits(input.campaignId);
+  if (!config.enabled) return { ok: true };
+
+  const sql = getSql();
+  const ownerRows = await sql`
+    SELECT region, company_type FROM users WHERE id = ${input.ownerUserId} LIMIT 1
+  `;
+  const dailyMax = resolveDailyPostingMax({
+    config,
+    region: normalizeUserRegion(ownerRows[0]?.region),
+    companyType: normalizeUserCompanyType(ownerRows[0]?.company_type),
+  });
+  if (dailyMax == null) return { ok: true };
+
+  const count = await countTodayContentForOwner({
+    campaignId: input.campaignId,
+    ownerUserId: input.ownerUserId,
+  });
+  if (count >= dailyMax) {
+    return { ok: false, error: dailyPostingLimitMessage(dailyMax) };
+  }
+  return { ok: true };
+}
+
+/** Block first-time content create when the owner's daily quota is full. Updates are skipped. */
+export async function denyIfCreateQuotaExceeded(input: {
+  campaignId?: string | null;
+  ownerUserId?: string | null;
+  contentId?: string | null;
+  table: DailyCapTable;
+  section?: "poster" | "video";
+}): Promise<{ success: false; error: string } | null> {
+  if (!input.campaignId) return null;
+  if (await contentRowExists(input.table, input.contentId)) return null;
+
+  const categoryCap = await assertUserCategoryDailyLimit({
+    campaignId: input.campaignId,
+    ownerUserId: input.ownerUserId,
+  });
+  if (!categoryCap.ok) return { success: false as const, error: categoryCap.error };
+
+  if (input.section) {
+    const sectionCap = await assertDailyCapForCreate({
+      campaignId: input.campaignId,
+      ownerUserId: input.ownerUserId,
+      section: input.section,
+    });
+    if (!sectionCap.ok) return { success: false as const, error: sectionCap.error };
+  }
+
+  return null;
 }
 
 export async function findDuplicatePosterOrVideo(input: {
