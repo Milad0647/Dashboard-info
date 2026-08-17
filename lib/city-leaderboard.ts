@@ -17,6 +17,10 @@ import type {
   SocialMediaPost,
   VideoWithVersions,
 } from "@/lib/types";
+import type { UserCompanyType } from "@/lib/user-company-types";
+import { isUserCompanyType } from "@/lib/user-company-types";
+import type { UserRegion } from "@/lib/user-regions";
+import { isUserRegion } from "@/lib/user-regions";
 
 /** Minimal campaign payload needed to compute leaderboard metrics. */
 export type LeaderboardSourceData = {
@@ -89,6 +93,9 @@ export interface UserLeaderboardEntry extends ProvinceLeaderboardMetrics {
   userName: string;
   userKey: string;
   province: string;
+  city: string;
+  companyType: UserCompanyType | null;
+  region: UserRegion | null;
 }
 
 const SCORE_WEIGHTS = {
@@ -118,18 +125,42 @@ function resolveUserKey(item: Ownable): { userKey: string; userName: string } {
   return { userKey, userName };
 }
 
-function resolvePrimaryProvince(counts: Map<string, number>): string {
-  let province = "نامشخص";
+function resolveCity(item: Ownable & { city?: string | null }): string {
+  const raw = item.ownerCity?.trim() || item.city?.trim() || "";
+  return raw || "نامشخص";
+}
+
+function resolvePrimaryNamed(counts: Map<string, number>, fallback = "نامشخص"): string {
+  let name = fallback;
   let maxCount = 0;
 
-  for (const [name, count] of counts) {
+  for (const [key, count] of counts) {
     if (count > maxCount) {
-      province = name;
+      name = key;
       maxCount = count;
     }
   }
 
-  return province;
+  return name;
+}
+
+function resolvePrimaryOptional(counts: Map<string, number>): string | null {
+  let name: string | null = null;
+  let maxCount = 0;
+
+  for (const [key, count] of counts) {
+    if (!key) continue;
+    if (count > maxCount) {
+      name = key;
+      maxCount = count;
+    }
+  }
+
+  return name;
+}
+
+function resolvePrimaryProvince(counts: Map<string, number>): string {
+  return resolvePrimaryNamed(counts);
 }
 
 function emptyMetrics(): ProvinceLeaderboardMetrics {
@@ -265,6 +296,9 @@ function addContributor<T extends Ownable & { createdAt?: string | null; provinc
 type UserAccumulator = ProvinceLeaderboardMetrics & {
   userName: string;
   provinceCounts: Map<string, number>;
+  cityCounts: Map<string, number>;
+  companyTypeCounts: Map<string, number>;
+  regionCounts: Map<string, number>;
 };
 
 function addUserItem<T extends Ownable & { createdAt?: string | null; province?: string | null }>(
@@ -274,10 +308,14 @@ function addUserItem<T extends Ownable & { createdAt?: string | null; province?:
 ) {
   const { userKey, userName } = resolveUserKey(item);
   const province = resolveProvince(item);
+  const city = resolveCity(item);
   const current = map.get(userKey) ?? {
     ...emptyMetrics(),
     userName,
     provinceCounts: new Map<string, number>(),
+    cityCounts: new Map<string, number>(),
+    companyTypeCounts: new Map<string, number>(),
+    regionCounts: new Map<string, number>(),
   };
 
   current[field]++;
@@ -309,6 +347,19 @@ function addUserItem<T extends Ownable & { createdAt?: string | null; province?:
   }
 
   current.provinceCounts.set(province, (current.provinceCounts.get(province) ?? 0) + 1);
+  current.cityCounts.set(city, (current.cityCounts.get(city) ?? 0) + 1);
+  if (item.ownerCompanyType) {
+    current.companyTypeCounts.set(
+      item.ownerCompanyType,
+      (current.companyTypeCounts.get(item.ownerCompanyType) ?? 0) + 1
+    );
+  }
+  if (item.ownerRegion) {
+    current.regionCounts.set(
+      item.ownerRegion,
+      (current.regionCounts.get(item.ownerRegion) ?? 0) + 1
+    );
+  }
   map.set(userKey, current);
 }
 
@@ -406,6 +457,15 @@ export function buildUserLeaderboard(data: LeaderboardSourceData): UserLeaderboa
       userKey,
       userName: metrics.userName,
       province: resolvePrimaryProvince(metrics.provinceCounts),
+      city: resolvePrimaryNamed(metrics.cityCounts),
+      companyType: (() => {
+        const value = resolvePrimaryOptional(metrics.companyTypeCounts);
+        return isUserCompanyType(value) ? value : null;
+      })(),
+      region: (() => {
+        const value = resolvePrimaryOptional(metrics.regionCounts);
+        return isUserRegion(value) ? value : null;
+      })(),
       billboards: metrics.billboards,
       posters: metrics.posters,
       videos: metrics.videos,

@@ -84,7 +84,7 @@ export function getOwnableContentDate(item: Ownable & Record<string, unknown>): 
 
 export function matchesDateFilter(
   item: Ownable,
-  filter: OwnerLocationFilter,
+  filter: CampaignDateFilter,
   getItemDate?: (item: Ownable) => string | undefined
 ): boolean {
   const range = resolveDateFilterRange(filter);

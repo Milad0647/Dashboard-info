@@ -1,5 +1,7 @@
 import * as XLSX from "xlsx";
 import type { UserLeaderboardEntry } from "@/lib/city-leaderboard";
+import { getUserCompanyTypeLabel } from "@/lib/user-company-types";
+import { getUserRegionLabel } from "@/lib/user-regions";
 import type {
   CompanyExcelSource,
   CompanySupervisionItem,
@@ -59,6 +61,9 @@ export function buildPerformanceExcelBuffer(
     رتبه: entry.rank,
     "نام کاربر / شرکت": entry.userName,
     استان: entry.province,
+    شهر: entry.city,
+    "نوع شرکت": getUserCompanyTypeLabel(entry.companyType),
+    منطقه: getUserRegionLabel(entry.region),
     "تبلیغات محیطی": entry.billboards,
     متراژ: roundArea(entry.totalAreaSqm),
     پوستر: entry.posters,
@@ -79,6 +84,9 @@ export function buildPerformanceExcelBuffer(
     { wch: 8 },
     { wch: 28 },
     { wch: 14 },
+    { wch: 14 },
+    { wch: 16 },
+    { wch: 10 },
     { wch: 14 },
     { wch: 10 },
     { wch: 10 },

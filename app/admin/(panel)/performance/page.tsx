@@ -4,6 +4,7 @@ import { resolveAdminCampaignId } from "@/lib/admin-campaign";
 import { PerformanceAdmin } from "@/components/admin/performance-admin";
 import { canScoreContent } from "@/lib/auth/access";
 import { getAuthSession } from "@/lib/auth/get-session";
+import { contentPlansFromTopics } from "@/lib/content-topics";
 import { buildLeaderboardSourceFromAdmin } from "@/lib/performance-overview";
 
 export const dynamic = "force-dynamic";
@@ -46,12 +47,18 @@ export default async function PerformancePage({ searchParams }: PageProps) {
     files: data.files,
   });
 
+  const contentPlans =
+    data.settings.contentTopics && data.settings.contentTopics.length > 0
+      ? contentPlansFromTopics(data.settings.contentTopics)
+      : data.settings.contentPlans ?? [];
+
   return (
     <PerformanceAdmin
       source={source}
       campaignId={campaignId}
       campaignTitle={data.settings.title}
       campaignSlug={data.settings.slug}
+      contentPlans={contentPlans}
     />
   );
 }

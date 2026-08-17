@@ -192,16 +192,9 @@ export function matchesAdminContentFilter<T extends CreativeFilterable>(
   return matchesDateFilter(
     item,
     {
-      searchQuery: filter.searchQuery,
-      province: filter.province,
-      city: filter.city,
-      userKey: filter.userKey,
-      planLabels: filter.planLabels,
-      companyType: filter.companyType,
       datePreset: filter.datePreset,
       dateFrom: filter.dateFrom,
       dateTo: filter.dateTo,
-      sortOrder: "default",
     },
     getItemDate as ((item: Ownable) => string | undefined) | undefined
   );

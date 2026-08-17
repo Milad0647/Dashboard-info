@@ -3,19 +3,25 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
+  Building2,
+  CalendarRange,
   Download,
   LayoutList,
+  MapPin,
+  RotateCcw,
   Search,
   Star,
   Table2,
   Trophy,
   Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PersianDateInput } from "@/components/ui/persian-date-input";
 import {
   Select,
   SelectContent,
@@ -23,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   buildUserLeaderboard,
   buildUserRatingLeaderboard,
@@ -30,7 +37,28 @@ import {
   type LeaderboardSourceData,
   type UserLeaderboardEntry,
 } from "@/lib/city-leaderboard";
+import { formatPlanLabelDisplay } from "@/lib/content-topics";
+import type { CampaignDatePreset } from "@/lib/owner-location-filter";
+import {
+  DEFAULT_PERFORMANCE_LEADERBOARD_FILTER,
+  OWNER_COMPANY_TYPE_ALL,
+  OWNER_DATE_ALL,
+  OWNER_LOCATION_ALL,
+  PERFORMANCE_CONTENT_CATEGORY_OPTIONS,
+  collectPerformanceFilterOptions,
+  filterLeaderboardSourceForPerformance,
+  isPerformanceLeaderboardFilterActive,
+  type PerformanceContentCategory,
+  type PerformanceLeaderboardFilter,
+  type PerformanceRegionFilter,
+} from "@/lib/performance-filters";
 import { downloadPerformanceExcel } from "@/lib/services/performance-excel-export";
+import {
+  USER_COMPANY_TYPES,
+  getUserCompanyTypeLabel,
+  type UserCompanyType,
+} from "@/lib/user-company-types";
+import { USER_REGIONS, getUserRegionLabel } from "@/lib/user-regions";
 import { formatPersianNumber } from "@/lib/utils";
 
 type SortMode = "activity" | "rating";
@@ -41,6 +69,7 @@ interface PerformanceAdminProps {
   campaignId: string;
   campaignTitle: string;
   campaignSlug: string;
+  contentPlans?: string[];
 }
 
 const METRIC_COLUMNS: {
@@ -99,35 +128,41 @@ export function PerformanceAdmin({
   campaignId,
   campaignTitle,
   campaignSlug,
+  contentPlans = [],
 }: PerformanceAdminProps) {
   const [sortMode, setSortMode] = useState<SortMode>("activity");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [search, setSearch] = useState("");
-  const [provinceFilter, setProvinceFilter] = useState("all");
+  const [filter, setFilter] = useState<PerformanceLeaderboardFilter>(
+    DEFAULT_PERFORMANCE_LEADERBOARD_FILTER
+  );
 
-  const activityEntries = useMemo(() => buildUserLeaderboard(source), [source]);
-  const ratingEntries = useMemo(() => buildUserRatingLeaderboard(source), [source]);
-  const entries = sortMode === "rating" ? ratingEntries : activityEntries;
+  const options = useMemo(() => collectPerformanceFilterOptions(source), [source]);
+  const planOptionsSource = contentPlans.length > 0 ? contentPlans : options.planLabels;
+  const cities =
+    filter.province === OWNER_LOCATION_ALL
+      ? []
+      : (options.citiesByProvince[filter.province] ?? []);
+  const filterActive = isPerformanceLeaderboardFilterActive(filter);
 
-  const provinces = useMemo(() => {
-    const set = new Set<string>();
-    for (const entry of entries) {
-      if (entry.province.trim()) set.add(entry.province);
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, "fa"));
-  }, [entries]);
+  const rankedEntries = useMemo(() => {
+    const filteredSource = filterLeaderboardSourceForPerformance(source, filter);
+    return sortMode === "rating"
+      ? buildUserRatingLeaderboard(filteredSource)
+      : buildUserLeaderboard(filteredSource);
+  }, [source, filter, sortMode]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return entries.filter((entry) => {
-      if (provinceFilter !== "all" && entry.province !== provinceFilter) return false;
-      if (!query) return true;
+    if (!query) return rankedEntries;
+    return rankedEntries.filter((entry) => {
       return (
         entry.userName.toLowerCase().includes(query) ||
-        entry.province.toLowerCase().includes(query)
+        entry.province.toLowerCase().includes(query) ||
+        entry.city.toLowerCase().includes(query)
       );
     });
-  }, [entries, search, provinceFilter]);
+  }, [rankedEntries, search]);
 
   const totals = useMemo(() => {
     return filtered.reduce(
@@ -141,6 +176,16 @@ export function PerformanceAdmin({
       { users: 0, content: 0, score: 0, today: 0 }
     );
   }, [filtered, sortMode]);
+
+  const updateFilter = (patch: Partial<PerformanceLeaderboardFilter>) => {
+    setFilter((current) => {
+      const next = { ...current, ...patch };
+      if (patch.province !== undefined && patch.province !== current.province) {
+        next.city = OWNER_LOCATION_ALL;
+      }
+      return next;
+    });
+  };
 
   const handleExport = () => {
     if (filtered.length === 0) {
@@ -159,14 +204,44 @@ export function PerformanceAdmin({
     }
   };
 
+  const provinceOptions = [
+    { value: OWNER_LOCATION_ALL, label: "همه استان‌ها" },
+    ...options.provinces.map((province) => ({ value: province, label: province })),
+  ];
+  const cityOptions = [
+    { value: OWNER_LOCATION_ALL, label: "همه شهرها" },
+    ...cities.map((city) => ({ value: city, label: city })),
+  ];
+  const companyTypeOptions = [
+    { value: OWNER_COMPANY_TYPE_ALL, label: "همه انواع شرکت" },
+    ...USER_COMPANY_TYPES.map((companyType) => ({
+      value: companyType,
+      label: getUserCompanyTypeLabel(companyType),
+    })),
+  ];
+  const regionOptions = [
+    { value: OWNER_LOCATION_ALL, label: "همه مناطق" },
+    ...USER_REGIONS.map((region) => ({
+      value: region,
+      label: getUserRegionLabel(region),
+    })),
+  ];
+  const planSelectOptions = planOptionsSource
+    .filter((plan) => !filter.planLabels.includes(plan))
+    .map((plan) => ({
+      value: plan,
+      label: formatPlanLabelDisplay(plan),
+      keywords: plan,
+    }));
+
   return (
     <div className="space-y-6 text-right" dir="rtl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold">مشاهده عملکرد</h1>
           <p className="text-sm text-muted-foreground">
-            نمای مدیریتی از آمار عددی همه کاربران کمپین «{campaignTitle}» — با کلیک روی هر
-            کاربر صفحه نظارت شرکت باز می‌شود
+            نمای مدیریتی از آمار عددی همه کاربران کمپین «{campaignTitle}» — رتبه با فیلترهای
+            انتخاب‌شده دوباره محاسبه می‌شود
           </p>
         </div>
         <Button type="button" onClick={handleExport} className="shrink-0 gap-2">
@@ -186,31 +261,185 @@ export function PerformanceAdmin({
       </div>
 
       <Card>
-        <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative w-full max-w-md">
-              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="جستجوی نام کاربر یا استان..."
-                className="pr-9"
-              />
+        <CardContent className="space-y-4 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <MapPin className="h-4 w-4 shrink-0 text-primary" />
+              فیلتر رتبه‌بندی
+              {filterActive ? (
+                <Badge variant="secondary">رتبه بر اساس فیلتر فعلی</Badge>
+              ) : null}
             </div>
-            <Select value={provinceFilter} onValueChange={setProvinceFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="فیلتر استان" />
+            {filterActive ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setFilter(DEFAULT_PERFORMANCE_LEADERBOARD_FILTER)}
+              >
+                <RotateCcw className="h-4 w-4" />
+                پاک کردن فیلترها
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="relative w-full max-w-md">
+            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="جستجوی نام شرکت، استان یا شهر..."
+              className="pr-9"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <SearchableSelect
+              value={filter.province}
+              onValueChange={(province) => updateFilter({ province })}
+              options={provinceOptions}
+              placeholder="استان"
+              searchPlaceholder="جستجوی استان..."
+            />
+            <SearchableSelect
+              value={filter.city}
+              onValueChange={(city) => updateFilter({ city })}
+              options={cityOptions}
+              placeholder={
+                filter.province === OWNER_LOCATION_ALL ? "ابتدا استان را انتخاب کنید" : "شهر"
+              }
+              searchPlaceholder="جستجوی شهر..."
+              disabled={filter.province === OWNER_LOCATION_ALL}
+            />
+            <SearchableSelect
+              value={filter.companyType}
+              onValueChange={(companyType) =>
+                updateFilter({ companyType: companyType as UserCompanyType | "all" })
+              }
+              options={companyTypeOptions}
+              placeholder="نوع شرکت"
+              searchPlaceholder="جستجوی نوع شرکت..."
+              leadingIcon={<Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />}
+            />
+            <SearchableSelect
+              value={filter.region}
+              onValueChange={(region) =>
+                updateFilter({ region: region as PerformanceRegionFilter })
+              }
+              options={regionOptions}
+              placeholder="دسته‌بندی منطقه‌ای"
+              searchPlaceholder="جستجوی منطقه..."
+            />
+            <Select
+              value={filter.contentCategory}
+              onValueChange={(value) =>
+                updateFilter({ contentCategory: value as PerformanceContentCategory })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="دسته محتوا" />
               </SelectTrigger>
               <SelectContent dir="rtl">
-                <SelectItem value="all">همه استان‌ها</SelectItem>
-                {provinces.map((province) => (
-                  <SelectItem key={province} value={province}>
-                    {province}
+                {PERFORMANCE_CONTENT_CATEGORY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={filter.datePreset}
+              onValueChange={(value) =>
+                updateFilter({ datePreset: value as CampaignDatePreset })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <div className="flex items-center gap-2">
+                  <CalendarRange className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <SelectValue placeholder="تاریخ و روز" />
+                </div>
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                <SelectItem value={OWNER_DATE_ALL}>همه زمان‌ها</SelectItem>
+                <SelectItem value="today">امروز</SelectItem>
+                <SelectItem value="this_week">۷ روز اخیر</SelectItem>
+                <SelectItem value="this_month">۳۰ روز اخیر</SelectItem>
+                <SelectItem value="custom">تاریخ دستی</SelectItem>
+              </SelectContent>
+            </Select>
+            {planOptionsSource.length > 0 ? (
+              <SearchableSelect
+                key={filter.planLabels.join("|")}
+                value=""
+                onValueChange={(value) => {
+                  if (!filter.planLabels.includes(value)) {
+                    updateFilter({ planLabels: [...filter.planLabels, value] });
+                  }
+                }}
+                options={planSelectOptions}
+                placeholder="افزودن موضوع"
+                searchPlaceholder="جستجوی موضوع..."
+                clearAfterSelect
+                emptyText="موضوعی برای افزودن نیست"
+              />
+            ) : null}
           </div>
+
+          {filter.planLabels.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">موضوع‌های انتخاب‌شده:</span>
+              {filter.planLabels.map((label) => (
+                <Badge key={label} variant="secondary" className="gap-1 pl-1">
+                  {formatPlanLabelDisplay(label)}
+                  <button
+                    type="button"
+                    className="rounded-sm p-0.5 hover:bg-muted"
+                    onClick={() =>
+                      updateFilter({
+                        planLabels: filter.planLabels.filter((item) => item !== label),
+                      })
+                    }
+                    aria-label={`حذف ${label}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => updateFilter({ planLabels: [] })}
+              >
+                پاک کردن موضوع‌ها
+              </Button>
+            </div>
+          ) : null}
+
+          {filter.datePreset === "custom" ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">از تاریخ</label>
+                <PersianDateInput
+                  value={filter.dateFrom}
+                  onChange={(dateFrom) => updateFilter({ dateFrom })}
+                  allowEmpty
+                  placeholder="از تاریخ"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">تا تاریخ</label>
+                <PersianDateInput
+                  value={filter.dateTo}
+                  onChange={(dateTo) => updateFilter({ dateTo })}
+                  allowEmpty
+                  placeholder="تا تاریخ"
+                />
+              </div>
+            </div>
+          ) : null}
+
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
@@ -276,7 +505,18 @@ export function PerformanceAdmin({
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-lg">{getProvinceRankBadge(entry.rank)}</span>
                         <p className="font-semibold">{entry.userName}</p>
-                        <span className="text-sm text-muted-foreground">— {entry.province}</span>
+                        <span className="text-sm text-muted-foreground">
+                          — {entry.province}
+                          {entry.city && entry.city !== "نامشخص" ? `، ${entry.city}` : ""}
+                        </span>
+                        {entry.companyType ? (
+                          <Badge variant="outline">
+                            {getUserCompanyTypeLabel(entry.companyType)}
+                          </Badge>
+                        ) : null}
+                        {entry.region ? (
+                          <Badge variant="outline">{getUserRegionLabel(entry.region)}</Badge>
+                        ) : null}
                         {entry.todayUploads > 0 && (
                           <Badge className="bg-success/15 text-success hover:bg-success/20">
                             +{formatPersianNumber(entry.todayUploads)} امروز
@@ -314,12 +554,15 @@ export function PerformanceAdmin({
             <CardTitle className="text-base">جدول عملکرد کاربران</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">
-            <table className="w-full min-w-[1180px] border-collapse text-sm">
+            <table className="w-full min-w-[1380px] border-collapse text-sm">
               <thead>
                 <tr className="border-b bg-muted/40 text-muted-foreground">
                   <th className="px-3 py-3 text-right font-medium">رتبه</th>
                   <th className="px-3 py-3 text-right font-medium">کاربر</th>
                   <th className="px-3 py-3 text-right font-medium">استان</th>
+                  <th className="px-3 py-3 text-right font-medium">شهر</th>
+                  <th className="px-3 py-3 text-right font-medium">نوع شرکت</th>
+                  <th className="px-3 py-3 text-right font-medium">منطقه</th>
                   {METRIC_COLUMNS.map((column) => (
                     <th key={column.key} className="px-3 py-3 text-right font-medium">
                       {column.label}
@@ -352,6 +595,13 @@ export function PerformanceAdmin({
                       </div>
                     </td>
                     <td className="px-3 py-3 text-muted-foreground">{entry.province}</td>
+                    <td className="px-3 py-3 text-muted-foreground">{entry.city}</td>
+                    <td className="px-3 py-3 text-muted-foreground">
+                      {getUserCompanyTypeLabel(entry.companyType)}
+                    </td>
+                    <td className="px-3 py-3 text-muted-foreground">
+                      {getUserRegionLabel(entry.region)}
+                    </td>
                     {METRIC_COLUMNS.map((column) => (
                       <td key={column.key} className="px-3 py-3 tabular-nums">
                         {formatPersianNumber(Number(entry[column.key] ?? 0))}
