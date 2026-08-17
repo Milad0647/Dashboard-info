@@ -40,15 +40,11 @@ import {
   matchBillboardCategoryKey,
   type BillboardCategory,
 } from "@/lib/billboard-categories";
-import {
-  parseAddressFromBillboard,
-  parseAreaSqmFromBillboard,
-  parseProvinceFromBillboard,
-} from "@/lib/billboard-form-utils";
+import { parseAddressFromBillboard, parseAreaSqmFromBillboard, parseProvinceFromBillboard } from "@/lib/billboard-form-utils";
+import { isUsableBillboardImageUrl } from "@/lib/billboard-media";
 import { normalizePlanLabels, type ContentTopic } from "@/lib/content-topics";
 import {
   isDefaultBillboardTitle,
-  isPlaceholderBillboardImage,
   type EditSuggestionMissingField,
 } from "@/lib/edit-suggestions";
 import { getLocationCenter, resolveLocationNames } from "@/lib/iran-location-center";
@@ -173,7 +169,9 @@ export function BillboardCreateAssignmentDialog({
   const hasPeriodMedia = periods.some(
     (period) =>
       Boolean(period.billboardImageFile) ||
-      Boolean(period.existingBillboardImageUrl?.trim() && !isPlaceholderBillboardImage(period.existingBillboardImageUrl))
+      Boolean(period.imageFile) ||
+      isUsableBillboardImageUrl(period.existingBillboardImageUrl) ||
+      isUsableBillboardImageUrl(period.existingConfirmationImageUrl)
   );
   const highlightTitle =
     highlightFields.includes("title") &&
@@ -280,92 +278,101 @@ export function BillboardCreateAssignmentDialog({
     }
 
     startTransition(async () => {
-      const buildFormData = (structure: {
-        category: BillboardCategory;
-        locationType: string;
-        areaSqm: string;
-        axis: string;
-        address: string;
-        billboardId?: string;
-      }) => {
-        const formData = new FormData();
-        formData.append("campaignId", campaignId);
-        if (structure.billboardId) formData.append("billboardId", structure.billboardId);
-        formData.append("category", structure.category);
-        formData.append("locationType", structure.locationType);
-        formData.append("usesApprovedDesign", usesApprovedDesign ? "true" : "false");
-        formData.append("axis", structure.axis.trim());
-        formData.append("address", structure.address.trim());
-        formData.append("area_sqm", structure.areaSqm.trim());
-        formData.append("latitude", String(coords.latitude));
-        formData.append("longitude", String(coords.longitude));
+      try {
+        const buildFormData = (structure: {
+          category: BillboardCategory;
+          locationType: string;
+          areaSqm: string;
+          axis: string;
+          address: string;
+          billboardId?: string;
+        }) => {
+          const formData = new FormData();
+          formData.append("campaignId", campaignId);
+          if (structure.billboardId) formData.append("billboardId", structure.billboardId);
+          formData.append("category", structure.category);
+          formData.append("locationType", structure.locationType);
+          formData.append("usesApprovedDesign", usesApprovedDesign ? "true" : "false");
+          formData.append("axis", structure.axis.trim());
+          formData.append("address", structure.address.trim());
+          formData.append("area_sqm", structure.areaSqm.trim());
+          formData.append("latitude", String(coords.latitude));
+          formData.append("longitude", String(coords.longitude));
 
-        const resolvedProvince = province || contributorProfile?.province?.trim() || "";
-        const resolvedCity = city || contributorProfile?.city?.trim() || "";
-        if (resolvedProvince) formData.append("province", resolvedProvince);
-        if (resolvedCity) formData.append("city", resolvedCity);
-        if (notes.trim()) formData.append("notes", notes.trim());
-        formData.append("published", "true");
-        formData.append("status", "published");
-        for (const label of planLabels) {
-          formData.append("planLabels", label);
+          const resolvedProvince = province || contributorProfile?.province?.trim() || "";
+          const resolvedCity = city || contributorProfile?.city?.trim() || "";
+          if (resolvedProvince) formData.append("province", resolvedProvince);
+          if (resolvedCity) formData.append("city", resolvedCity);
+          if (notes.trim()) formData.append("notes", notes.trim());
+          formData.append("published", "true");
+          formData.append("status", "published");
+          for (const label of planLabels) {
+            formData.append("planLabels", label);
+          }
+          if (planLabels[0]) formData.append("planLabel", planLabels[0]);
+          if (canTransferOwnership && editOwnerUserId) {
+            formData.append("ownerUserId", editOwnerUserId);
+          }
+
+          formData.append("periods", JSON.stringify(buildPeriodsFormPayload(periods)));
+          appendPeriodFilesToFormData(formData, periods);
+          return formData;
+        };
+
+        const payloads = [
+          {
+            category,
+            locationType,
+            areaSqm,
+            axis,
+            address,
+            billboardId: editingBillboard?.id,
+          },
+          ...(!isEditing
+            ? extraStructures.map((row) => ({
+                category: row.category,
+                locationType: row.locationType,
+                areaSqm: row.areaSqm,
+                axis: row.axis.trim() || axis,
+                address: row.address.trim() || address,
+              }))
+            : []),
+        ];
+
+        for (const [index, payload] of payloads.entries()) {
+          const response = await fetch("/api/billboard/create", {
+            method: "POST",
+            body: buildFormData(payload),
+          });
+          let result: { error?: string } = {};
+          try {
+            result = (await response.json()) as { error?: string };
+          } catch {
+            result = {};
+          }
+          if (!response.ok) {
+            toast.error(
+              result.error ??
+                (payloads.length > 1
+                  ? `ثبت سازه ${index + 1} ناموفق بود`
+                  : "ثبت تبلیغات محیطی ناموفق بود")
+            );
+            return;
+          }
         }
-        if (planLabels[0]) formData.append("planLabel", planLabels[0]);
-        if (canTransferOwnership && editOwnerUserId) {
-          formData.append("ownerUserId", editOwnerUserId);
-        }
 
-        formData.append("periods", JSON.stringify(buildPeriodsFormPayload(periods)));
-        appendPeriodFilesToFormData(formData, periods);
-        return formData;
-      };
-
-      const payloads = [
-        {
-          category,
-          locationType,
-          areaSqm,
-          axis,
-          address,
-          billboardId: editingBillboard?.id,
-        },
-        ...(!isEditing
-          ? extraStructures.map((row) => ({
-              category: row.category,
-              locationType: row.locationType,
-              areaSqm: row.areaSqm,
-              axis: row.axis.trim() || axis,
-              address: row.address.trim() || address,
-            }))
-          : []),
-      ];
-
-      for (const [index, payload] of payloads.entries()) {
-        const response = await fetch("/api/billboard/create", {
-          method: "POST",
-          body: buildFormData(payload),
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          toast.error(
-            result.error ??
-              (payloads.length > 1
-                ? `ثبت سازه ${index + 1} ناموفق بود`
-                : "ثبت تبلیغات محیطی ناموفق بود")
-          );
-          return;
-        }
+        toast.success(
+          isEditing
+            ? "تبلیغات محیطی ویرایش شد"
+            : payloads.length > 1
+              ? `${payloads.length} سازه به‌صورت مستقل ثبت شد`
+              : "تبلیغات محیطی جدید ثبت شد"
+        );
+        onOpenChange(false);
+        onCreated?.();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "ثبت تبلیغات محیطی ناموفق بود");
       }
-
-      toast.success(
-        isEditing
-          ? "تبلیغات محیطی ویرایش شد"
-          : payloads.length > 1
-            ? `${payloads.length} سازه به‌صورت مستقل ثبت شد`
-            : "تبلیغات محیطی جدید ثبت شد"
-      );
-      onOpenChange(false);
-      onCreated?.();
     });
   };
 

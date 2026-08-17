@@ -7,9 +7,13 @@ import { resolveDefaultAdminOwnerUserId } from "@/lib/admin-content-owner";
 import { pgGetCampaignById } from "@/lib/db/repository";
 import { pgGetUserById } from "@/lib/db/repository-extended";
 import type { BillboardDisplayPeriodInput } from "@/lib/services/billboard-assignment-api";
-import { createLocalBillboard } from "@/lib/services/local-billboard-create";
 import { isUsableBillboardImageUrl } from "@/lib/billboard-media";
+import { createLocalBillboard } from "@/lib/services/local-billboard-create";
 import { matchBillboardCategoryKey, type BillboardCategory } from "@/lib/billboard-categories";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 function parseRequiredPeriods(formData: FormData): BillboardDisplayPeriodInput[] {
   const raw = formData.get("periods");

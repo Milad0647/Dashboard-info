@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "171e4d8c885d37a06c0f08fbc9ef575eed9f8f3d",
+      "committedAt": "2026-08-17T15:35:33+03:30",
+      "title": "امکان ثبت تبلیغات محیطی بدون عکس",
+      "subject": "Allow creating billboards without a photo"
+    },
+    {
       "hash": "eb0ffb76efb58c56f162956561cb7875f809fc8a",
       "committedAt": "2026-08-17T15:24:24+03:30",
       "title": "با باز شدن کارت، ویرایش گروهی و موارد انتخاب‌شده حفظ می‌شود",

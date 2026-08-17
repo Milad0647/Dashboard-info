@@ -215,29 +215,40 @@ export async function pgGetAdminData(
         u.company_type AS owner_company_type,
         COALESCE(
           NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
-          NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(period_img.cover_url, '') LIKE '%/api/files/%' THEN period_img.cover_url END), ''),
           NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
           NULLIF(TRIM(b.thumbnail_url), ''),
-          NULLIF(TRIM(period_img.billboard_image_url), ''),
+          NULLIF(TRIM(period_img.cover_url), ''),
           NULLIF(TRIM(b.image_url), '')
         ) AS thumbnail_url,
         COALESCE(
           NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
-          NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(period_img.cover_url, '') LIKE '%/api/files/%' THEN period_img.cover_url END), ''),
           NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
           NULLIF(TRIM(b.image_url), ''),
-          NULLIF(TRIM(period_img.billboard_image_url), ''),
+          NULLIF(TRIM(period_img.cover_url), ''),
           NULLIF(TRIM(b.thumbnail_url), '')
         ) AS image_url
       FROM billboards b
       LEFT JOIN users u ON u.id = b.owner_user_id
       LEFT JOIN LATERAL (
-        SELECT p.billboard_image_url
+        SELECT
+          COALESCE(
+            NULLIF(TRIM(p.billboard_image_url), ''),
+            NULLIF(TRIM(p.confirmation_image_url), '')
+          ) AS cover_url
         FROM billboard_display_periods p
         WHERE p.billboard_id = b.id
-          AND NULLIF(TRIM(p.billboard_image_url), '') IS NOT NULL
+          AND (
+            NULLIF(TRIM(p.billboard_image_url), '') IS NOT NULL
+            OR NULLIF(TRIM(p.confirmation_image_url), '') IS NOT NULL
+          )
         ORDER BY
-          CASE WHEN p.billboard_image_url LIKE '%/api/files/%' THEN 0 ELSE 1 END,
+          CASE
+            WHEN COALESCE(p.billboard_image_url, '') LIKE '%/api/files/%' THEN 0
+            WHEN COALESCE(p.confirmation_image_url, '') LIKE '%/api/files/%' THEN 1
+            ELSE 2
+          END,
           p.sort_order ASC,
           p.created_at ASC
         LIMIT 1
@@ -559,29 +570,40 @@ export async function pgGetBillboardById(id: string): Promise<Billboard | null> 
       u.company_type AS owner_company_type,
       COALESCE(
         NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
-        NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+        NULLIF(TRIM(CASE WHEN COALESCE(period_img.cover_url, '') LIKE '%/api/files/%' THEN period_img.cover_url END), ''),
         NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
         NULLIF(TRIM(b.thumbnail_url), ''),
-        NULLIF(TRIM(period_img.billboard_image_url), ''),
+        NULLIF(TRIM(period_img.cover_url), ''),
         NULLIF(TRIM(b.image_url), '')
       ) AS thumbnail_url,
       COALESCE(
         NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
-        NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+        NULLIF(TRIM(CASE WHEN COALESCE(period_img.cover_url, '') LIKE '%/api/files/%' THEN period_img.cover_url END), ''),
         NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
         NULLIF(TRIM(b.image_url), ''),
-        NULLIF(TRIM(period_img.billboard_image_url), ''),
+        NULLIF(TRIM(period_img.cover_url), ''),
         NULLIF(TRIM(b.thumbnail_url), '')
       ) AS image_url
     FROM billboards b
     LEFT JOIN users u ON u.id = b.owner_user_id
     LEFT JOIN LATERAL (
-      SELECT p.billboard_image_url
+      SELECT
+        COALESCE(
+          NULLIF(TRIM(p.billboard_image_url), ''),
+          NULLIF(TRIM(p.confirmation_image_url), '')
+        ) AS cover_url
       FROM billboard_display_periods p
       WHERE p.billboard_id = b.id
-        AND NULLIF(TRIM(p.billboard_image_url), '') IS NOT NULL
+        AND (
+          NULLIF(TRIM(p.billboard_image_url), '') IS NOT NULL
+          OR NULLIF(TRIM(p.confirmation_image_url), '') IS NOT NULL
+        )
       ORDER BY
-        CASE WHEN p.billboard_image_url LIKE '%/api/files/%' THEN 0 ELSE 1 END,
+        CASE
+          WHEN COALESCE(p.billboard_image_url, '') LIKE '%/api/files/%' THEN 0
+          WHEN COALESCE(p.confirmation_image_url, '') LIKE '%/api/files/%' THEN 1
+          ELSE 2
+        END,
         p.sort_order ASC,
         p.created_at ASC
       LIMIT 1
@@ -1189,29 +1211,40 @@ export async function pgGetPublicCampaignData(campaignId: string) {
         u.company_type AS owner_company_type,
         COALESCE(
           NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
-          NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(period_img.cover_url, '') LIKE '%/api/files/%' THEN period_img.cover_url END), ''),
           NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
           NULLIF(TRIM(b.thumbnail_url), ''),
-          NULLIF(TRIM(period_img.billboard_image_url), ''),
+          NULLIF(TRIM(period_img.cover_url), ''),
           NULLIF(TRIM(b.image_url), '')
         ) AS thumbnail_url,
         COALESCE(
           NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
-          NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(period_img.cover_url, '') LIKE '%/api/files/%' THEN period_img.cover_url END), ''),
           NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
           NULLIF(TRIM(b.image_url), ''),
-          NULLIF(TRIM(period_img.billboard_image_url), ''),
+          NULLIF(TRIM(period_img.cover_url), ''),
           NULLIF(TRIM(b.thumbnail_url), '')
         ) AS image_url
       FROM billboards b
       LEFT JOIN users u ON u.id = b.owner_user_id
       LEFT JOIN LATERAL (
-        SELECT p.billboard_image_url
+        SELECT
+          COALESCE(
+            NULLIF(TRIM(p.billboard_image_url), ''),
+            NULLIF(TRIM(p.confirmation_image_url), '')
+          ) AS cover_url
         FROM billboard_display_periods p
         WHERE p.billboard_id = b.id
-          AND NULLIF(TRIM(p.billboard_image_url), '') IS NOT NULL
+          AND (
+            NULLIF(TRIM(p.billboard_image_url), '') IS NOT NULL
+            OR NULLIF(TRIM(p.confirmation_image_url), '') IS NOT NULL
+          )
         ORDER BY
-          CASE WHEN p.billboard_image_url LIKE '%/api/files/%' THEN 0 ELSE 1 END,
+          CASE
+            WHEN COALESCE(p.billboard_image_url, '') LIKE '%/api/files/%' THEN 0
+            WHEN COALESCE(p.confirmation_image_url, '') LIKE '%/api/files/%' THEN 1
+            ELSE 2
+          END,
           p.sort_order ASC,
           p.created_at ASC
         LIMIT 1

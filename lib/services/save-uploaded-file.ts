@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "fs/promises";
 import { randomUUID } from "crypto";
 import sharp from "sharp";
-import { assertMagicMatchesKind } from "@/lib/security/file-magic";
+import { assertMagicMatchesKind, detectFileKind } from "@/lib/security/file-magic";
 import {
   isThumbnailableImageFilename,
   writeImageThumbnail,
@@ -82,13 +82,30 @@ async function normalizeImageForWeb(
   }
 }
 
+function mimeFromDetectedKind(kind: ReturnType<typeof detectFileKind>): string {
+  switch (kind) {
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "webp":
+      return "image/webp";
+    case "gif":
+      return "image/gif";
+    default:
+      return "";
+  }
+}
+
+function resolveDeclaredImageMime(fileType: string): string {
+  const normalized = fileType.trim().toLowerCase();
+  if (normalized === "image/jpg") return "image/jpeg";
+  return normalized;
+}
+
 export async function saveUploadedImageFile(file: File): Promise<string> {
   if (file.type === "image/svg+xml") {
     throw new Error("آپلود فایل SVG مجاز نیست");
-  }
-
-  if (!IMAGE_TYPES.has(file.type)) {
-    throw new Error("نوع فایل تصویر مجاز نیست");
   }
 
   if (file.size > MAX_IMAGE_BYTES) {
@@ -101,7 +118,15 @@ export async function saveUploadedImageFile(file: File): Promise<string> {
     throw new Error(magic.error);
   }
 
-  const normalized = await normalizeImageForWeb(buffer, file.type);
+  const declaredMime = resolveDeclaredImageMime(file.type);
+  const mime = IMAGE_TYPES.has(declaredMime)
+    ? declaredMime
+    : mimeFromDetectedKind(detectFileKind(buffer));
+  if (!IMAGE_TYPES.has(mime)) {
+    throw new Error("نوع فایل تصویر مجاز نیست");
+  }
+
+  const normalized = await normalizeImageForWeb(buffer, mime);
   const filename = `${randomUUID()}${normalized.extension}`;
   const uploadsDir = getUploadsDir();
 

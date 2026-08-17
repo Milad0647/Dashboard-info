@@ -93,6 +93,14 @@ async function resolveConfirmationImage(
   return existingUrl ? stripFileAccessToken(existingUrl) : null;
 }
 
+function pickCoverImageUrl(...urls: Array<string | null | undefined>): string {
+  for (const url of urls) {
+    const trimmed = url?.trim() ?? "";
+    if (isUsableBillboardImageUrl(trimmed)) return stripFileAccessToken(trimmed);
+  }
+  return "";
+}
+
 export async function saveLocalBillboard(params: CreateLocalBillboardInput): Promise<string> {
   if (params.periods.length === 0) {
     throw new Error("حداقل یک دوره نمایش الزامی است");
@@ -140,6 +148,11 @@ export async function saveLocalBillboard(params: CreateLocalBillboardInput): Pro
 
   const id = params.billboardId ?? generateId();
 
+  const coverUrl = pickCoverImageUrl(
+    primaryPeriod.billboardImageUrl,
+    primaryPeriod.confirmationImageUrl
+  );
+
   const result = await saveBillboard({
     id,
     campaignId: params.campaignId,
@@ -149,8 +162,8 @@ export async function saveLocalBillboard(params: CreateLocalBillboardInput): Pro
     city,
     location,
     date: primaryPeriod.startDate,
-    thumbnailUrl: primaryPeriod.billboardImageUrl,
-    imageUrl: primaryPeriod.billboardImageUrl,
+    thumbnailUrl: coverUrl,
+    imageUrl: coverUrl,
     externalUrl: buildMapsUrl(params.latitude, params.longitude),
     latitude: params.latitude,
     longitude: params.longitude,

@@ -41,6 +41,7 @@ function collectBillboardImageUrls(billboard: Billboard): string[] {
   const periods = [...(billboard.displayPeriods ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
   for (const period of periods) {
     add(period.billboardImageUrl);
+    add(period.confirmationImageUrl);
   }
 
   return urls;

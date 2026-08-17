@@ -34,7 +34,8 @@ export function ImageFileDropzone({
   };
 
   const handleFile = (file: File | null) => {
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file) return;
+    if (file.type && !file.type.startsWith("image/")) return;
     setFile(file);
   };
 
