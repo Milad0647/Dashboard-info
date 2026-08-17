@@ -1,3 +1,4 @@
+import { normalizePlanLabels } from "@/lib/content-topics";
 import { normalizeImportedProvince } from "@/lib/iran-locations";
 import type {
   CampaignScoringConfig,
@@ -138,7 +139,33 @@ function prepareScoreItem(item: Record<string, unknown>): Record<string, unknown
     ? (normalizeImportedProvince(rawProvince) ?? rawProvince)
     : null;
   const ownerRegion = normalizeUserRegion(item.ownerRegion);
-  return { ...item, ownerProvince, ownerRegion };
+  const planLabels = normalizePlanLabels(
+    Array.isArray(item.planLabels) ? (item.planLabels as string[]) : null,
+    typeof item.planLabel === "string" ? item.planLabel : null
+  );
+  return { ...item, ownerProvince, ownerRegion, planLabels };
+}
+
+/** For these fields, multiple matching equals rules keep only the highest points. */
+const BEST_OF_EQUALS_FIELDS = new Set(["planLabels"]);
+
+function pickBestEqualsRuleId(
+  contentType: ScoreableContentType,
+  item: Record<string, unknown>,
+  rules: ScoringRule[],
+  field: string
+): string | null {
+  let bestId: string | null = null;
+  let bestPoints = -1;
+  for (const rule of rules) {
+    if (rule.field !== field || rule.kind !== "equals") continue;
+    if (!ruleMatches(contentType, item, rule)) continue;
+    if (rule.points > bestPoints) {
+      bestPoints = rule.points;
+      bestId = rule.id;
+    }
+  }
+  return bestId;
 }
 
 function applyRules(
@@ -150,6 +177,11 @@ function applyRules(
 ): number {
   let total = 0;
   const matchedRangeFields = new Set<string>();
+  const bestEqualsRuleByField = new Map<string, string | null>();
+
+  for (const field of BEST_OF_EQUALS_FIELDS) {
+    bestEqualsRuleByField.set(field, pickBestEqualsRuleId(contentType, item, rules, field));
+  }
 
   for (const rule of rules) {
     let matched = ruleMatches(contentType, item, rule);
@@ -158,6 +190,12 @@ function applyRules(
         matched = false;
       } else {
         matchedRangeFields.add(rule.field);
+      }
+    }
+    if (matched && rule.kind === "equals" && BEST_OF_EQUALS_FIELDS.has(rule.field)) {
+      const bestId = bestEqualsRuleByField.get(rule.field);
+      if (bestId !== rule.id) {
+        matched = false;
       }
     }
     const points = matched ? rule.points : 0;

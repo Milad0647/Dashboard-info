@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "5e9ee446c5697e9331d8122f55887b30f8e4a015",
+      "committedAt": "2026-08-17T15:56:12+03:30",
+      "title": "امکان ثبت تبلیغات محیطی بدون عکس",
+      "subject": "Allow billboard records without a photo"
+    },
+    {
       "hash": "c50fd5e0c7bf5c8fe14046d1f8cc3fc83af37f82",
       "committedAt": "2026-08-17T15:54:06+03:30",
       "title": "افزودن امتیاز پر بودن هر فیلد کارت در بخش‌های امتیازدهی",
