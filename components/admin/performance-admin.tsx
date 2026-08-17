@@ -6,6 +6,7 @@ import {
   Building2,
   CalendarRange,
   Download,
+  Hash,
   LayoutList,
   MapPin,
   RotateCcw,
@@ -31,8 +32,7 @@ import {
 } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
-  buildUserLeaderboard,
-  buildUserRatingLeaderboard,
+  buildUserLeaderboardByMode,
   getProvinceRankBadge,
   type LeaderboardSourceData,
   type UserLeaderboardEntry,
@@ -53,6 +53,7 @@ import {
   type PerformanceContentCategory,
   type PerformanceLeaderboardFilter,
   type PerformanceRegionFilter,
+  type PerformanceSortMode,
 } from "@/lib/performance-filters";
 import { downloadPerformanceExcel } from "@/lib/services/performance-excel-export";
 import {
@@ -63,7 +64,6 @@ import {
 import { USER_REGIONS, getUserRegionLabel } from "@/lib/user-regions";
 import { formatPersianNumber } from "@/lib/utils";
 
-type SortMode = "activity" | "rating";
 type ViewMode = "cards" | "table";
 
 interface PerformanceAdminProps {
@@ -123,10 +123,12 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
 function companySupervisionHref(
   campaignId: string,
   userKey: string,
-  filter: PerformanceLeaderboardFilter
+  filter: PerformanceLeaderboardFilter,
+  sortMode: PerformanceSortMode
 ): string {
   const params = new URLSearchParams({ campaign: campaignId });
   appendPerformanceFilterParams(params, filter);
+  if (sortMode !== "activity") params.set("sort", sortMode);
   return `/admin/performance/user/${encodeURIComponent(userKey)}?${params.toString()}`;
 }
 
@@ -137,7 +139,7 @@ export function PerformanceAdmin({
   campaignSlug,
   contentPlans = [],
 }: PerformanceAdminProps) {
-  const [sortMode, setSortMode] = useState<SortMode>("activity");
+  const [sortMode, setSortMode] = useState<PerformanceSortMode>("activity");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<PerformanceLeaderboardFilter>(
@@ -155,9 +157,7 @@ export function PerformanceAdmin({
 
   const rankedEntries = useMemo(() => {
     const filteredSource = filterLeaderboardSourceForPerformance(source, filter);
-    return sortMode === "rating"
-      ? buildUserRatingLeaderboard(filteredSource)
-      : buildUserLeaderboard(filteredSource);
+    return buildUserLeaderboardByMode(filteredSource, sortMode);
   }, [source, filter, sortMode]);
 
   const filtered = useMemo(() => {
@@ -485,6 +485,15 @@ export function PerformanceAdmin({
             <Button
               type="button"
               size="sm"
+              variant={sortMode === "count" ? "default" : "outline"}
+              onClick={() => setSortMode("count")}
+            >
+              <Hash className="h-4 w-4" />
+              تعداد محتوا
+            </Button>
+            <Button
+              type="button"
+              size="sm"
               variant={viewMode === "cards" ? "default" : "outline"}
               onClick={() => setViewMode("cards")}
             >
@@ -515,7 +524,13 @@ export function PerformanceAdmin({
         <div className="space-y-3">
           {filtered.map((entry) => {
             const scoreValue = sortMode === "rating" ? entry.ratingScore : entry.score;
-            const href = companySupervisionHref(campaignId, entry.userKey, filter);
+            const href = companySupervisionHref(campaignId, entry.userKey, filter, sortMode);
+            const rankingBadge =
+              sortMode === "count"
+                ? `${formatPersianNumber(entry.totalUploads)} محتوا`
+                : `${formatPersianNumber(scoreValue)} ${
+                    sortMode === "rating" ? "امتیاز محتوا" : "امتیاز"
+                  }`;
             return (
               <Link
                 key={entry.userKey}
@@ -550,14 +565,20 @@ export function PerformanceAdmin({
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <Badge variant="secondary">
-                        {formatPersianNumber(scoreValue)}{" "}
-                        {sortMode === "rating" ? "امتیاز محتوا" : "امتیاز"}
+                        {rankingBadge}
                         {periodLabel ? ` ${periodLabel}` : ""}
                       </Badge>
-                      <Badge variant="outline">
-                        {formatPersianNumber(entry.totalUploads)} محتوا
-                        {periodLabel ? ` ${periodLabel}` : ""}
-                      </Badge>
+                      {sortMode !== "count" ? (
+                        <Badge variant="outline">
+                          {formatPersianNumber(entry.totalUploads)} محتوا
+                          {periodLabel ? ` ${periodLabel}` : ""}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">
+                          {formatPersianNumber(entry.score)} امتیاز
+                          {periodLabel ? ` ${periodLabel}` : ""}
+                        </Badge>
+                      )}
                       {(entry.pendingScore ?? 0) > 0 && (
                         <Badge variant="outline" className="text-amber-700 dark:text-amber-400">
                           {formatPersianNumber(entry.pendingScore)} در انتظار
@@ -607,7 +628,12 @@ export function PerformanceAdmin({
                     <td className="px-3 py-3 font-medium">
                       <div className="flex flex-wrap items-center gap-2">
                         <Link
-                          href={companySupervisionHref(campaignId, entry.userKey, filter)}
+                          href={companySupervisionHref(
+                            campaignId,
+                            entry.userKey,
+                            filter,
+                            sortMode
+                          )}
                           className="text-primary hover:underline"
                         >
                           {entry.userName}
@@ -646,7 +672,7 @@ export function PerformanceAdmin({
                     </td>
                     <td className="px-3 py-3">
                       <Button type="button" size="sm" variant="outline" asChild>
-                        <Link href={companySupervisionHref(campaignId, entry.userKey, filter)}>
+                        <Link href={companySupervisionHref(campaignId, entry.userKey, filter, sortMode)}>
                           باز کردن
                         </Link>
                       </Button>

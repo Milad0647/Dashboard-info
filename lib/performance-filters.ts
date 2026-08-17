@@ -300,6 +300,13 @@ export function appendPerformanceFilterParams(
   if (filter.planLabels.length > 0) params.set("topics", filter.planLabels.join(","));
 }
 
+export type PerformanceSortMode = "activity" | "rating" | "count";
+
+export function parsePerformanceSortMode(value?: string | null): PerformanceSortMode {
+  if (value === "rating" || value === "count") return value;
+  return "activity";
+}
+
 export function performanceFilterFromQuery(query: {
   date?: string;
   from?: string;

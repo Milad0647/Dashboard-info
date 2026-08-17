@@ -16,7 +16,13 @@ import type {
   Video,
 } from "@/lib/types";
 
-export type PerformanceExcelSortMode = "activity" | "rating";
+export type PerformanceExcelSortMode = "activity" | "rating" | "count";
+
+function sortModeLabel(sortMode: PerformanceExcelSortMode): string {
+  if (sortMode === "rating") return "امتیاز محتوا";
+  if (sortMode === "count") return "تعداد محتوا";
+  return "امتیاز فعالیت";
+}
 
 function roundArea(value: number): number {
   return Math.round(value * 100) / 100;
@@ -52,7 +58,7 @@ export function buildPerformanceExcelBuffer(
       ["کمپین", options.campaignTitle],
       ["تاریخ گزارش", new Date().toISOString().slice(0, 10)],
       ["تعداد کاربران", entries.length],
-      ["مرتب‌سازی", sortMode === "rating" ? "امتیاز محتوا" : "امتیاز فعالیت"],
+      ["مرتب‌سازی", sortModeLabel(sortMode)],
     ]);
     XLSX.utils.book_append_sheet(workbook, meta, "خلاصه");
   }
@@ -102,7 +108,7 @@ export function buildPerformanceExcelBuffer(
     { wch: 12 },
   ];
 
-  const sheetName = sortMode === "rating" ? "امتیاز محتوا" : "امتیاز فعالیت";
+  const sheetName = sortModeLabel(sortMode);
   XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
 
   const bytes = XLSX.write(workbook, { type: "array", bookType: "xlsx" }) as number[];

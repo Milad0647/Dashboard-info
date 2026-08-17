@@ -11,7 +11,7 @@ import {
   canSendContentMessages,
 } from "@/lib/auth/access";
 import { getAuthSession } from "@/lib/auth/get-session";
-import { buildUserLeaderboard } from "@/lib/city-leaderboard";
+import { buildUserLeaderboard, buildUserLeaderboardByMode } from "@/lib/city-leaderboard";
 import {
   collectCompanySupervisionItems,
   filterLeaderboardSourceByUser,
@@ -27,6 +27,7 @@ import {
   filterLeaderboardSourceForPerformance,
   getPerformancePeriodLabel,
   isPerformanceLeaderboardFilterActive,
+  parsePerformanceSortMode,
   performanceFilterFromQuery,
   type PerformanceContentCategory,
 } from "@/lib/performance-filters";
@@ -46,6 +47,7 @@ interface PageProps {
     companyType?: string;
     region?: string;
     topics?: string;
+    sort?: string;
   }>;
 }
 
@@ -95,8 +97,9 @@ export default async function CompanySupervisionPage({
   });
 
   const rankingFilter = performanceFilterFromQuery(query);
+  const sortMode = parsePerformanceSortMode(query.sort);
   const periodSource = filterLeaderboardSourceForPerformance(source, rankingFilter);
-  const periodEntries = buildUserLeaderboard(periodSource);
+  const periodEntries = buildUserLeaderboardByMode(periodSource, sortMode);
   const allEntries = buildUserLeaderboard(source);
   const periodEntry = findUserLeaderboardEntry(periodEntries, userKey);
   const identity = findUserLeaderboardEntry(allEntries, userKey);

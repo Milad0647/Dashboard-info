@@ -500,6 +500,26 @@ export function buildUserRatingLeaderboard(data: LeaderboardSourceData): UserLea
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
+export function buildUserContentCountLeaderboard(
+  data: LeaderboardSourceData
+): UserLeaderboardEntry[] {
+  return buildUserLeaderboard(data)
+    .slice()
+    .sort((a, b) => b.totalUploads - a.totalUploads || b.score - a.score)
+    .map((entry, index) => ({ ...entry, rank: index + 1 }));
+}
+
+export type UserLeaderboardSortMode = "activity" | "rating" | "count";
+
+export function buildUserLeaderboardByMode(
+  data: LeaderboardSourceData,
+  mode: UserLeaderboardSortMode
+): UserLeaderboardEntry[] {
+  if (mode === "rating") return buildUserRatingLeaderboard(data);
+  if (mode === "count") return buildUserContentCountLeaderboard(data);
+  return buildUserLeaderboard(data);
+}
+
 export interface UserContentScoreItem {
   id: string;
   title: string;
