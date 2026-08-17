@@ -27,6 +27,8 @@ interface ImageZoomProps {
    * Keep `lazy` for grid cards.
    */
   loading?: "lazy" | "eager";
+  /** Skip the low-res card thumb and show the full image (preview dialogs). */
+  preferFullImage?: boolean;
   /** Called when the thumbnail image fails to load */
   onError?: () => void;
 }
@@ -41,6 +43,7 @@ export function ImageZoom({
   sizes: _sizes = DEFAULT_SIZES,
   quality: _quality,
   loading = "lazy",
+  preferFullImage = false,
   onError,
 }: ImageZoomProps) {
   void _sizes;
@@ -54,11 +57,11 @@ export function ImageZoom({
 
   const fullSrc = src.trim();
   const preferredPreview = (previewSrc?.trim() || fullSrc).trim();
-  const candidates = [
-    toCardThumbnailUrl(preferredPreview),
-    preferredPreview,
-    fullSrc,
-  ].filter((url, index, list) => Boolean(url) && list.indexOf(url) === index);
+  const candidates = (
+    preferFullImage
+      ? [fullSrc, preferredPreview]
+      : [toCardThumbnailUrl(preferredPreview), preferredPreview, fullSrc]
+  ).filter((url, index, list) => Boolean(url) && list.indexOf(url) === index);
   const cardSrc = candidates[Math.min(loadAttempt, candidates.length - 1)] ?? fullSrc;
 
   useEffect(() => {

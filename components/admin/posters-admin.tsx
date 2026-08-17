@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { AdminPosterAddCard, AdminPosterCompactCard } from "@/components/admin/admin-poster-compact-card";
 import { AdminPosterEditor } from "@/components/admin/admin-poster-editor";
@@ -24,7 +25,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ImageZoom } from "@/components/ui/image-zoom";
+import { AdminContentPreviewDialog } from "@/components/admin/admin-content-preview-dialog";
+import { Button } from "@/components/ui/button";
 import {
   BulkItemShell,
   SectionBulkEditBar,
@@ -41,7 +43,7 @@ import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { useAdminInfiniteScroll } from "@/lib/hooks/use-admin-infinite-scroll";
 import { AdminInfiniteScrollSentinel } from "@/components/admin/admin-infinite-scroll-sentinel";
-import { resolveDisplayVersion } from "@/lib/media-utils";
+import { downloadMedia, getFilenameFromUrl, resolveDisplayVersion } from "@/lib/media-utils";
 import { cn, formatPersianDate, formatPersianDateTime } from "@/lib/utils";
 import type {
   AdminUser,
@@ -436,87 +438,149 @@ export function PostersAdmin({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(previewPoster)} onOpenChange={(open) => !open && setPreviewPoster(null)}>
-        <DialogContent className="max-w-lg" onCloseAutoFocus={(event) => event.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>{previewPoster?.title ?? "نمایش پوستر"}</DialogTitle>
-            <DialogDescription className="sr-only">پیش‌نمایش پوستر</DialogDescription>
-          </DialogHeader>
-          {previewPoster && (
-            <div className="space-y-3">
-              {(() => {
-                const displayVersion = resolveDisplayVersion(versionsByPosterId.get(previewPoster.id) ?? []);
+      {(() => {
+        const displayVersion = previewPoster
+          ? resolveDisplayVersion(versionsByPosterId.get(previewPoster.id) ?? [])
+          : undefined;
+        const previewSrc = displayVersion?.imageUrl?.trim() || "";
 
-                return (
-                  <>
-                    <ImageZoom
-                      src={displayVersion?.imageUrl ?? ""}
-                      alt={previewPoster.title}
-                      className="w-full rounded-lg bg-muted"
-                      imgClassName="max-h-80 w-full object-contain"
-                    />
-                    <div className="grid gap-2 rounded-lg border bg-muted/20 p-3 text-sm sm:grid-cols-2">
-                      <div>
-                        <p className="text-xs text-muted-foreground">تاریخ</p>
-                        <p>{displayVersion?.date ? formatPersianDate(displayVersion.date) : "—"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">تاریخ ثبت</p>
-                        <p>
-                          {previewPoster.createdAt
-                            ? formatPersianDateTime(previewPoster.createdAt)
-                            : "—"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">مالک</p>
-                        <p>{previewPoster.ownerName ?? "—"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">برچسب‌ها</p>
-                        <p>{previewPoster.planLabels?.length ? previewPoster.planLabels.join("، ") : "—"}</p>
-                      </div>
-                      {canScore && (
-                        <div>
-                          <p className="text-xs text-muted-foreground">امتیاز</p>
-                          <p>{previewPoster.score ?? "—"}</p>
-                        </div>
-                      )}
-                      {displayVersion?.notes ? (
-                        <div className="sm:col-span-2">
-                          <p className="text-xs text-muted-foreground">یادداشت</p>
-                          <p className="whitespace-pre-wrap break-words">{displayVersion.notes}</p>
-                        </div>
-                      ) : null}
-                    </div>
-                  </>
-                );
-              })()}
-              <p className="text-sm text-muted-foreground">{previewPoster.description || "بدون توضیحات"}</p>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                {(canTransferOwnership || isFullAdmin) && (
-                  <SendContentMessageButton
-                    target={{
-                      campaignId,
-                      contentType: "poster",
-                      contentId: previewPoster.id,
-                      contentTitle: previewPoster.title,
-                      ownerName: previewPoster.ownerName,
-                    }}
-                  />
+        return (
+          <AdminContentPreviewDialog
+            open={Boolean(previewPoster)}
+            onOpenChange={(open) => !open && setPreviewPoster(null)}
+            title={previewPoster?.title ?? "نمایش پوستر"}
+            description={previewPoster?.description}
+            contentClassName="max-w-4xl"
+            mediaPreview={
+              <PosterAdminPreviewImage
+                src={previewSrc}
+                thumbnailUrl={displayVersion?.thumbnailUrl}
+                alt={previewPoster?.title ?? "پوستر"}
+                downloadName={getFilenameFromUrl(
+                  previewSrc,
+                  `${previewPoster?.title ?? "poster"}.jpg`
                 )}
-                <AdminItemActions
-                  onEdit={() => {
+              />
+            }
+            details={
+              previewPoster
+                ? [
+                    {
+                      label: "تاریخ",
+                      value: displayVersion?.date ? formatPersianDate(displayVersion.date) : "—",
+                    },
+                    {
+                      label: "تاریخ ثبت",
+                      value: previewPoster.createdAt
+                        ? formatPersianDateTime(previewPoster.createdAt)
+                        : "—",
+                    },
+                    { label: "مالک", value: previewPoster.ownerName ?? "—" },
+                    {
+                      label: "برچسب‌ها",
+                      value: previewPoster.planLabels?.length
+                        ? previewPoster.planLabels.join("، ")
+                        : "—",
+                    },
+                    ...(canScore ? [{ label: "امتیاز", value: previewPoster.score ?? "—" }] : []),
+                    { label: "یادداشت", value: displayVersion?.notes || "—" },
+                  ]
+                : []
+            }
+            canSendMessage={canTransferOwnership || isFullAdmin}
+            messageTarget={
+              previewPoster
+                ? {
+                    campaignId,
+                    contentType: "poster",
+                    contentId: previewPoster.id,
+                    contentTitle: previewPoster.title,
+                    ownerName: previewPoster.ownerName,
+                  }
+                : null
+            }
+            onEdit={
+              previewPoster
+                ? () => {
+                    const posterId = previewPoster.id;
                     setPreviewPoster(null);
-                    openEditor(previewPoster.id);
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                    openEditor(posterId);
+                  }
+                : undefined
+            }
+          />
+        );
+      })()}
     </div>
     </ScoringRulesProvider>
+  );
+}
+
+function PosterAdminPreviewImage({
+  src,
+  thumbnailUrl,
+  alt,
+  downloadName,
+}: {
+  src: string;
+  thumbnailUrl?: string | null;
+  alt: string;
+  downloadName: string;
+}) {
+  const [useThumb, setUseThumb] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
+  const thumb = thumbnailUrl?.trim() || "";
+  const displaySrc = useThumb && thumb ? thumb : src;
+
+  useEffect(() => {
+    setUseThumb(false);
+    setExhausted(false);
+  }, [src, thumb]);
+
+  if (!src) {
+    return (
+      <div className="flex h-48 items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">
+        تصویری ثبت نشده است
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {exhausted ? (
+        <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-lg bg-muted px-4 text-center text-sm text-muted-foreground">
+          پیش‌نمایش این فایل در مرورگر ممکن نیست
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-lg bg-zinc-950">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            key={displaySrc}
+            src={displaySrc}
+            alt={alt}
+            loading="eager"
+            decoding="async"
+            className="mx-auto max-h-[75vh] w-full object-contain"
+            onError={() => {
+              if (!useThumb && thumb && thumb !== src) {
+                setUseThumb(true);
+                return;
+              }
+              setExhausted(true);
+            }}
+          />
+        </div>
+      )}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="gap-2"
+        onClick={() => void downloadMedia(src, downloadName)}
+      >
+        <Download className="h-4 w-4" />
+        دانلود پوستر
+      </Button>
+    </div>
   );
 }
