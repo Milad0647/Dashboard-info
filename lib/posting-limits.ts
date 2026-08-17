@@ -1,4 +1,5 @@
 import { IRAN_PROVINCES, normalizeImportedProvince } from "@/lib/iran-locations";
+import type { ScoreableContentType } from "@/lib/types";
 import { USER_COMPANY_TYPES, userCompanyTypeLabels, type UserCompanyType } from "@/lib/user-company-types";
 import { USER_REGIONS, userRegionLabels, type UserRegion } from "@/lib/user-regions";
 
@@ -24,11 +25,38 @@ export interface DailyPostingLimitsConfig {
   byProvince: Record<string, CategoryDailyLimit>;
   /** User/company id → daily limit. Overrides category limits when enabled. */
   byCompany: Record<string, CategoryDailyLimit>;
+  /** Per content type (billboard, poster, …). Counted separately from the total cap. */
+  byContentType: Partial<Record<ScoreableContentType, CategoryDailyLimit>>;
 }
 
 export const POSTING_LIMIT_REGION_KEYS: UserRegion[] = [...USER_REGIONS];
 export const POSTING_LIMIT_COMPANY_TYPE_KEYS: UserCompanyType[] = [...USER_COMPANY_TYPES];
 export const POSTING_LIMIT_PROVINCE_KEYS = [...IRAN_PROVINCES];
+export const POSTING_LIMIT_CONTENT_TYPES: ScoreableContentType[] = [
+  "billboard",
+  "poster",
+  "video",
+  "file",
+  "raw_media",
+  "social_post",
+  "site_publication",
+  "activity",
+  "broadcast",
+  "meeting",
+];
+
+export const POSTING_LIMIT_CONTENT_TYPE_LABELS: Record<ScoreableContentType, string> = {
+  billboard: "تبلیغات محیطی",
+  poster: "پوسترها",
+  video: "ویدیوها",
+  file: "فایل‌ها",
+  raw_media: "راش تصویر",
+  social_post: "پست شبکه اجتماعی",
+  site_publication: "انتشار در سایت",
+  activity: "اقدامات",
+  broadcast: "پخش صدا و سیما",
+  meeting: "جلسات و مصوبات",
+};
 
 export const ALL_POSTING_LIMIT_CATEGORY_KEYS: PostingLimitCategoryKey[] = [
   ...POSTING_LIMIT_REGION_KEYS,
@@ -53,6 +81,7 @@ export function createDefaultDailyPostingLimits(): DailyPostingLimitsConfig {
     byCategory,
     byProvince: {},
     byCompany: {},
+    byContentType: {},
   };
 }
 
@@ -94,6 +123,17 @@ function normalizeLimitMap(raw: unknown): Record<string, CategoryDailyLimit> {
   return next;
 }
 
+function normalizeContentTypeLimits(
+  raw: unknown
+): Partial<Record<ScoreableContentType, CategoryDailyLimit>> {
+  const map = normalizeLimitMap(raw);
+  const next: Partial<Record<ScoreableContentType, CategoryDailyLimit>> = {};
+  for (const key of POSTING_LIMIT_CONTENT_TYPES) {
+    if (map[key]) next[key] = map[key];
+  }
+  return next;
+}
+
 export function normalizeDailyPostingLimits(raw: unknown): DailyPostingLimitsConfig {
   const defaults = createDefaultDailyPostingLimits();
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return defaults;
@@ -115,6 +155,7 @@ export function normalizeDailyPostingLimits(raw: unknown): DailyPostingLimitsCon
     byCategory,
     byProvince: normalizeLimitMap(source.byProvince),
     byCompany: normalizeLimitMap(source.byCompany),
+    byContentType: normalizeContentTypeLimits(source.byContentType),
   };
 }
 
@@ -169,6 +210,18 @@ export function resolveDailyPostingMax(input: {
   return null;
 }
 
+export function resolveContentTypeDailyMax(
+  config: DailyPostingLimitsConfig,
+  contentType: ScoreableContentType
+): number | null {
+  if (!config.enabled) return null;
+  return enabledDailyMax(config.byContentType[contentType]);
+}
+
 export function dailyPostingLimitMessage(dailyMax: number): string {
   return `سقف مجاز بارگذاری روزانه برای دسته شما تکمیل شده است. امروز حداکثر ${dailyMax} محتوا می‌توانید ثبت کنید.`;
+}
+
+export function dailyContentTypeLimitMessage(label: string, dailyMax: number): string {
+  return `سقف مجاز بارگذاری روزانه برای «${label}» تکمیل شده است. امروز حداکثر ${dailyMax} مورد می‌توانید ثبت کنید.`;
 }

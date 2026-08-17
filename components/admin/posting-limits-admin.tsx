@@ -13,6 +13,8 @@ import {
   getPostingLimitCategoryLabel,
   normalizeDailyPostingLimits,
   POSTING_LIMIT_COMPANY_TYPE_KEYS,
+  POSTING_LIMIT_CONTENT_TYPE_LABELS,
+  POSTING_LIMIT_CONTENT_TYPES,
   POSTING_LIMIT_PROVINCE_KEYS,
   POSTING_LIMIT_REGION_KEYS,
   UNCATEGORIZED_POSTING_LIMIT_KEY,
@@ -21,7 +23,7 @@ import {
   type PostingLimitCategoryKey,
 } from "@/lib/posting-limits";
 import { getUserCompanyTypeLabel, type UserCompanyType } from "@/lib/user-company-types";
-import type { CampaignSettings } from "@/lib/types";
+import type { CampaignSettings, ScoreableContentType } from "@/lib/types";
 
 export interface PostingLimitCompany {
   id: string;
@@ -143,6 +145,13 @@ export function PostingLimitsAdmin({
     }));
   };
 
+  const updateContentType = (type: ScoreableContentType, next: CategoryDailyLimit) => {
+    setConfig((prev) => ({
+      ...prev,
+      byContentType: { ...prev.byContentType, [type]: next },
+    }));
+  };
+
   const filteredProvinces = useMemo(() => {
     const q = provinceQuery.trim();
     if (!q) return POSTING_LIMIT_PROVINCE_KEYS;
@@ -182,8 +191,9 @@ export function PostingLimitsAdmin({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">محدودیت بارگذاری روزانه</h1>
         <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-          برای منطقه، استان، نوع شرکت یا خود شرکت مشخص کنید در هر روز چند محتوا می‌تواند ثبت شود. سقف اختصاصی
-          هر شرکت، اگر فعال باشد، بر بقیه دسته‌ها اولویت دارد.
+          برای هر دسته محتوا (تبلیغات محیطی، پوستر، ویدیو و بقیه)، و همچنین منطقه، استان، نوع شرکت یا خود شرکت،
+          مشخص کنید در هر روز چند مورد می‌تواند ثبت شود. سقف اختصاصی هر شرکت، اگر فعال باشد، بر سقف مجموع
+          دسته‌های کاربر اولویت دارد؛ سقف هر نوع محتوا جداگانه حساب می‌شود.
         </p>
       </div>
 
@@ -199,7 +209,7 @@ export function PostingLimitsAdmin({
             <div>
               <p className="text-sm font-medium">محدودیت روزانه</p>
               <p className="text-xs text-muted-foreground mt-1">
-                سقف روی مجموع محتواهای ثبت‌شده در همان روز (به وقت تهران) حساب می‌شود.
+                سقف مجموع و سقف هر نوع محتوا، هر دو روی ثبت همان روز (به وقت تهران) اعمال می‌شوند.
               </p>
             </div>
             <Switch
@@ -207,6 +217,27 @@ export function PostingLimitsAdmin({
               onCheckedChange={(enabled) => setConfig((prev) => ({ ...prev, enabled }))}
             />
           </label>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/70 shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">دسته محتوا</CardTitle>
+          <CardDescription>
+            سقف جدا برای هر نوع محتوا؛ مثلاً چند تبلیغات محیطی، پوستر یا ویدیو در روز. این سقف مستقل از سقف
+            مجموع کاربر است.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {POSTING_LIMIT_CONTENT_TYPES.map((type) => (
+            <LimitRow
+              key={type}
+              label={POSTING_LIMIT_CONTENT_TYPE_LABELS[type]}
+              row={config.byContentType[type] ?? createDefaultCategoryDailyLimit()}
+              disabled={!config.enabled}
+              onChange={(next) => updateContentType(type, next)}
+            />
+          ))}
         </CardContent>
       </Card>
 

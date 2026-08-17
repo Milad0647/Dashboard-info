@@ -138,6 +138,7 @@ export async function saveSocialPostAction(data: Partial<SocialMediaPost> & { id
     ownerUserId: payload.ownerUserId ?? session.userId,
     contentId: data.id,
     table: "social_media_posts",
+    contentType: data.platform === "site" ? "site_publication" : "social_post",
   });
   if (quota) return quota;
 

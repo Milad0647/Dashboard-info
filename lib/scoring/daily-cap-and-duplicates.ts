@@ -1,9 +1,13 @@
 import { getSql } from "@/lib/db/client";
 import { loadDailyPostingLimits } from "@/lib/db/posting-limits-repository";
 import {
+  dailyContentTypeLimitMessage,
   dailyPostingLimitMessage,
+  POSTING_LIMIT_CONTENT_TYPE_LABELS,
+  resolveContentTypeDailyMax,
   resolveDailyPostingMax,
 } from "@/lib/posting-limits";
+import type { ScoreableContentType } from "@/lib/types";
 import { getTehranCalendarDateIso } from "@/lib/safe-dates";
 import {
   DAILY_CAP_MESSAGE,
@@ -106,6 +110,18 @@ export const DAILY_CAP_TABLES = [
 
 export type DailyCapTable = (typeof DAILY_CAP_TABLES)[number];
 
+const TABLE_TO_CONTENT_TYPE: Record<DailyCapTable, ScoreableContentType> = {
+  billboards: "billboard",
+  posters: "poster",
+  videos: "video",
+  campaign_files: "file",
+  raw_media_uploads: "raw_media",
+  social_media_posts: "social_post",
+  campaign_activities: "activity",
+  broadcast_reports: "broadcast",
+  campaign_meetings: "meeting",
+};
+
 async function contentRowExists(table: DailyCapTable, id?: string | null): Promise<boolean> {
   if (!id || !isPostgresConfigured()) return false;
   const sql = getSql();
@@ -180,9 +196,86 @@ export async function countTodayContentForOwner(input: {
   return Number(rows[0]?.count) || 0;
 }
 
+export async function countTodayContentByType(input: {
+  campaignId: string;
+  ownerUserId: string;
+  contentType: ScoreableContentType;
+}): Promise<number> {
+  if (!isPostgresConfigured()) return 0;
+  const sql = getSql();
+  const today = getTehranCalendarDateIso();
+  const { campaignId, ownerUserId, contentType } = input;
+
+  const rows =
+    contentType === "billboard"
+      ? await sql`
+          SELECT COUNT(*)::int AS count FROM billboards
+          WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+            AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date
+        `
+      : contentType === "poster"
+        ? await sql`
+            SELECT COUNT(*)::int AS count FROM posters
+            WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+              AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date
+          `
+        : contentType === "video"
+          ? await sql`
+              SELECT COUNT(*)::int AS count FROM videos
+              WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+                AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date
+            `
+          : contentType === "file"
+            ? await sql`
+                SELECT COUNT(*)::int AS count FROM campaign_files
+                WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+                  AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date
+              `
+            : contentType === "raw_media"
+              ? await sql`
+                  SELECT COUNT(*)::int AS count FROM raw_media_uploads
+                  WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+                    AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date
+                `
+              : contentType === "site_publication"
+                ? await sql`
+                    SELECT COUNT(*)::int AS count FROM social_media_posts
+                    WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+                      AND platform = 'site'
+                      AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date
+                  `
+                : contentType === "social_post"
+                  ? await sql`
+                      SELECT COUNT(*)::int AS count FROM social_media_posts
+                      WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+                        AND platform IS DISTINCT FROM 'site'
+                        AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date
+                    `
+                  : contentType === "activity"
+                    ? await sql`
+                        SELECT COUNT(*)::int AS count FROM campaign_activities
+                        WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+                          AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date
+                      `
+                    : contentType === "broadcast"
+                      ? await sql`
+                          SELECT COUNT(*)::int AS count FROM broadcast_reports
+                          WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+                            AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date
+                        `
+                      : await sql`
+                          SELECT COUNT(*)::int AS count FROM campaign_meetings
+                          WHERE campaign_id = ${campaignId} AND owner_user_id = ${ownerUserId}
+                            AND (created_at AT TIME ZONE 'Asia/Tehran')::date = ${today}::date
+                        `;
+
+  return Number(rows[0]?.count) || 0;
+}
+
 export async function assertUserCategoryDailyLimit(input: {
   campaignId: string;
   ownerUserId: string | null | undefined;
+  contentType?: ScoreableContentType;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!input.ownerUserId || !input.campaignId) return { ok: true };
   const config = await loadDailyPostingLimits(input.campaignId);
@@ -199,15 +292,36 @@ export async function assertUserCategoryDailyLimit(input: {
     companyType: normalizeUserCompanyType(ownerRows[0]?.company_type),
     province: typeof ownerRows[0]?.province === "string" ? ownerRows[0].province : null,
   });
-  if (dailyMax == null) return { ok: true };
-
-  const count = await countTodayContentForOwner({
-    campaignId: input.campaignId,
-    ownerUserId: input.ownerUserId,
-  });
-  if (count >= dailyMax) {
-    return { ok: false, error: dailyPostingLimitMessage(dailyMax) };
+  if (dailyMax != null) {
+    const count = await countTodayContentForOwner({
+      campaignId: input.campaignId,
+      ownerUserId: input.ownerUserId,
+    });
+    if (count >= dailyMax) {
+      return { ok: false, error: dailyPostingLimitMessage(dailyMax) };
+    }
   }
+
+  if (input.contentType) {
+    const typeMax = resolveContentTypeDailyMax(config, input.contentType);
+    if (typeMax != null) {
+      const typeCount = await countTodayContentByType({
+        campaignId: input.campaignId,
+        ownerUserId: input.ownerUserId,
+        contentType: input.contentType,
+      });
+      if (typeCount >= typeMax) {
+        return {
+          ok: false,
+          error: dailyContentTypeLimitMessage(
+            POSTING_LIMIT_CONTENT_TYPE_LABELS[input.contentType],
+            typeMax
+          ),
+        };
+      }
+    }
+  }
+
   return { ok: true };
 }
 
@@ -217,6 +331,7 @@ export async function denyIfCreateQuotaExceeded(input: {
   ownerUserId?: string | null;
   contentId?: string | null;
   table: DailyCapTable;
+  contentType?: ScoreableContentType;
   section?: "poster" | "video";
 }): Promise<{ success: false; error: string } | null> {
   if (!input.campaignId) return null;
@@ -225,6 +340,7 @@ export async function denyIfCreateQuotaExceeded(input: {
   const categoryCap = await assertUserCategoryDailyLimit({
     campaignId: input.campaignId,
     ownerUserId: input.ownerUserId,
+    contentType: input.contentType ?? TABLE_TO_CONTENT_TYPE[input.table],
   });
   if (!categoryCap.ok) return { success: false as const, error: categoryCap.error };
 
