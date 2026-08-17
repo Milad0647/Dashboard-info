@@ -35,8 +35,13 @@ export function thumbFilenameFor(originalFilename: string): string {
 }
 
 export async function createWebpThumbnailBuffer(input: Buffer): Promise<Buffer> {
-  return sharp(input, { animated: false })
+  return sharp(input, {
+    animated: false,
+    failOn: "none",
+    limitInputPixels: 100_000_000,
+  })
     .rotate()
+    .toColourspace("srgb")
     .resize({
       width: CARD_THUMB_MAX_WIDTH,
       height: CARD_THUMB_MAX_WIDTH,

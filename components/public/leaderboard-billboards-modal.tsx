@@ -13,7 +13,6 @@ import { BillboardModal } from "@/components/public/billboard-modal";
 import { BillboardThumbnail } from "@/components/public/billboard-thumbnail";
 import { resolveBillboardCategoryDisplay } from "@/lib/billboard-categories";
 import { formatBillboardCityLine } from "@/lib/billboard-location";
-import { getBillboardCardImage, hasBillboardDisplayImage } from "@/lib/billboards";
 import type { Billboard } from "@/lib/types";
 import { formatPersianNumber } from "@/lib/utils";
 
@@ -55,7 +54,6 @@ export function LeaderboardBillboardsModal({
           ) : (
             <ul className="space-y-3">
               {billboards.map((billboard) => {
-                const canShowImage = hasBillboardDisplayImage(billboard);
                 const categoryLabel = resolveBillboardCategoryDisplay(billboard);
                 return (
                   <li key={billboard.id}>
@@ -65,20 +63,12 @@ export function LeaderboardBillboardsModal({
                       onClick={() => setSelected(billboard)}
                     >
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
-                        {canShowImage ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={getBillboardCardImage(billboard)}
-                            alt={billboard.title}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <BillboardThumbnail
-                            billboard={billboard}
-                            alt={billboard.title}
-                            sizes="56px"
-                          />
-                        )}
+                        <BillboardThumbnail
+                          billboard={billboard}
+                          alt={billboard.title}
+                          sizes="56px"
+                          loading="eager"
+                        />
                       </div>
                       <div className="min-w-0 flex-1 space-y-1">
                         <p className="break-words text-sm font-medium">{billboard.title}</p>

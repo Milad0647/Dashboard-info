@@ -59,6 +59,29 @@ async function tryDeleteUploadedFile(fileUrl?: string | null) {
     // File may already be missing; DB row removal is the source of truth.
   }
 }
+
+async function attachBillboardDisplayPeriods(billboards: Billboard[]): Promise<Billboard[]> {
+  if (billboards.length === 0) return billboards;
+  const sql = getSql();
+  const ids = billboards.map((item) => item.id);
+  const rows = await sql`
+    SELECT * FROM billboard_display_periods
+    WHERE billboard_id IN ${sql(ids)}
+    ORDER BY sort_order ASC, created_at ASC
+  `;
+  const byId = new Map<string, ReturnType<typeof mapBillboardDisplayPeriodFromDb>[]>();
+  for (const row of rows) {
+    const period = mapBillboardDisplayPeriodFromDb(row);
+    const list = byId.get(period.billboardId) ?? [];
+    list.push(period);
+    byId.set(period.billboardId, list);
+  }
+  return billboards.map((billboard) => ({
+    ...billboard,
+    displayPeriods: byId.get(billboard.id) ?? [],
+  }));
+}
+
 const defaultFeatures = {
   billboards: true,
   posters: true,
@@ -191,10 +214,17 @@ export async function pgGetAdminData(
         u.city AS owner_city,
         u.company_type AS owner_company_type,
         COALESCE(
+          NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
           NULLIF(TRIM(b.thumbnail_url), ''),
-          NULLIF(TRIM(period_img.billboard_image_url), '')
+          NULLIF(TRIM(period_img.billboard_image_url), ''),
+          NULLIF(TRIM(b.image_url), '')
         ) AS thumbnail_url,
         COALESCE(
+          NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
           NULLIF(TRIM(b.image_url), ''),
           NULLIF(TRIM(period_img.billboard_image_url), ''),
           NULLIF(TRIM(b.thumbnail_url), '')
@@ -206,7 +236,10 @@ export async function pgGetAdminData(
         FROM billboard_display_periods p
         WHERE p.billboard_id = b.id
           AND NULLIF(TRIM(p.billboard_image_url), '') IS NOT NULL
-        ORDER BY p.sort_order ASC, p.created_at ASC
+        ORDER BY
+          CASE WHEN p.billboard_image_url LIKE '%/api/files/%' THEN 0 ELSE 1 END,
+          p.sort_order ASC,
+          p.created_at ASC
         LIMIT 1
       ) period_img ON true
       WHERE b.campaign_id = ${campaignId}
@@ -331,10 +364,12 @@ export async function pgGetAdminData(
     want.has("smsReports") ? pgGetSmsSendReports(campaignId, ownerUserId) : emptySmsReports,
   ]);
 
+  const mappedBillboards = await attachBillboardDisplayPeriods(billboards.map(mapBillboardFromDb));
+
   return {
     settings: settingsRows[0] ? mapSettingsFromDb(settingsRows[0]) : null,
     campaigns: campaigns.map(mapSettingsFromDb),
-    billboards: billboards.map(mapBillboardFromDb),
+    billboards: mappedBillboards,
     posterCategories: posterCategories.map(mapCategoryFromDb),
     posters: posters.map(mapPosterFromDb),
     posterVersions: posterVersions.map(mapPosterVersionFromDb),
@@ -523,10 +558,17 @@ export async function pgGetBillboardById(id: string): Promise<Billboard | null> 
       u.city AS owner_city,
       u.company_type AS owner_company_type,
       COALESCE(
+        NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
+        NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+        NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
         NULLIF(TRIM(b.thumbnail_url), ''),
-        NULLIF(TRIM(period_img.billboard_image_url), '')
+        NULLIF(TRIM(period_img.billboard_image_url), ''),
+        NULLIF(TRIM(b.image_url), '')
       ) AS thumbnail_url,
       COALESCE(
+        NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
+        NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+        NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
         NULLIF(TRIM(b.image_url), ''),
         NULLIF(TRIM(period_img.billboard_image_url), ''),
         NULLIF(TRIM(b.thumbnail_url), '')
@@ -538,13 +580,19 @@ export async function pgGetBillboardById(id: string): Promise<Billboard | null> 
       FROM billboard_display_periods p
       WHERE p.billboard_id = b.id
         AND NULLIF(TRIM(p.billboard_image_url), '') IS NOT NULL
-      ORDER BY p.sort_order ASC, p.created_at ASC
+      ORDER BY
+        CASE WHEN p.billboard_image_url LIKE '%/api/files/%' THEN 0 ELSE 1 END,
+        p.sort_order ASC,
+        p.created_at ASC
       LIMIT 1
     ) period_img ON true
     WHERE b.id = ${id}
     LIMIT 1
   `;
-  return rows[0] ? mapBillboardFromDb(rows[0]) : null;
+  const mapped = rows[0] ? mapBillboardFromDb(rows[0]) : null;
+  if (!mapped) return null;
+  const [withPeriods] = await attachBillboardDisplayPeriods([mapped]);
+  return withPeriods;
 }
 
 export async function pgDeleteBillboard(id: string) {
@@ -1140,10 +1188,17 @@ export async function pgGetPublicCampaignData(campaignId: string) {
         u.city AS owner_city,
         u.company_type AS owner_company_type,
         COALESCE(
+          NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
           NULLIF(TRIM(b.thumbnail_url), ''),
-          NULLIF(TRIM(period_img.billboard_image_url), '')
+          NULLIF(TRIM(period_img.billboard_image_url), ''),
+          NULLIF(TRIM(b.image_url), '')
         ) AS thumbnail_url,
         COALESCE(
+          NULLIF(TRIM(CASE WHEN COALESCE(b.image_url, '') LIKE '%/api/files/%' THEN b.image_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(period_img.billboard_image_url, '') LIKE '%/api/files/%' THEN period_img.billboard_image_url END), ''),
+          NULLIF(TRIM(CASE WHEN COALESCE(b.thumbnail_url, '') LIKE '%/api/files/%' THEN b.thumbnail_url END), ''),
           NULLIF(TRIM(b.image_url), ''),
           NULLIF(TRIM(period_img.billboard_image_url), ''),
           NULLIF(TRIM(b.thumbnail_url), '')
@@ -1155,7 +1210,10 @@ export async function pgGetPublicCampaignData(campaignId: string) {
         FROM billboard_display_periods p
         WHERE p.billboard_id = b.id
           AND NULLIF(TRIM(p.billboard_image_url), '') IS NOT NULL
-        ORDER BY p.sort_order ASC, p.created_at ASC
+        ORDER BY
+          CASE WHEN p.billboard_image_url LIKE '%/api/files/%' THEN 0 ELSE 1 END,
+          p.sort_order ASC,
+          p.created_at ASC
         LIMIT 1
       ) period_img ON true
       WHERE b.campaign_id = ${campaignId}
@@ -1242,8 +1300,10 @@ export async function pgGetPublicCampaignData(campaignId: string) {
     `,
   ]);
 
+  const mappedBillboards = await attachBillboardDisplayPeriods(billboards.map(mapBillboardFromDb));
+
   return {
-    billboards: billboards.map(mapBillboardFromDb),
+    billboards: mappedBillboards,
     posterCategories: posterCategories.map(mapCategoryFromDb),
     posters: posters.map(mapPosterFromDb),
     posterVersions: posterVersions.map(mapPosterVersionFromDb),

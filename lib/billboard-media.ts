@@ -6,7 +6,15 @@ export const BILLBOARD_PLACEHOLDER_IMAGE = "/images/billboard-placeholder.svg";
 const INVALID_BILLBOARD_IMAGE_HINTS = ["via.placeholder.com", "placeholder.com"];
 
 function normalizeBillboardImageUrl(url?: string | null): string {
-  return url?.trim() ?? "";
+  const trimmed = url?.trim() ?? "";
+  if (!trimmed) return "";
+  if (
+    trimmed.startsWith("http://") &&
+    !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(trimmed)
+  ) {
+    return `https://${trimmed.slice("http://".length)}`;
+  }
+  return trimmed;
 }
 
 function isInvalidBillboardImageUrl(url: string): boolean {
@@ -16,45 +24,52 @@ function isInvalidBillboardImageUrl(url: string): boolean {
   return INVALID_BILLBOARD_IMAGE_HINTS.some((hint) => lower.includes(hint));
 }
 
-function firstPeriodImageUrl(billboard: Billboard): string {
-  const periods = billboard.displayPeriods;
-  if (!periods?.length) return "";
-
-  const sorted = [...periods].sort((a, b) => a.sortOrder - b.sortOrder);
-  for (const period of sorted) {
-    const url = normalizeBillboardImageUrl(period.billboardImageUrl);
-    if (!isInvalidBillboardImageUrl(url)) return url;
-  }
-  return "";
+function isLocalBillboardFileUrl(url: string): boolean {
+  return isLocalUploadedImageUrl(url) || url.includes("/api/files/");
 }
 
-function pickPreferredBillboardUrl(...urls: string[]): string {
+function collectBillboardImageUrls(billboard: Billboard): string[] {
+  const urls: string[] = [];
+  const add = (url?: string | null) => {
+    const normalized = normalizeBillboardImageUrl(url);
+    if (!isInvalidBillboardImageUrl(normalized)) urls.push(normalized);
+  };
+
+  add(billboard.imageUrl);
+  add(billboard.thumbnailUrl);
+
+  const periods = [...(billboard.displayPeriods ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
+  for (const period of periods) {
+    add(period.billboardImageUrl);
+  }
+
+  return urls;
+}
+
+function pickPreferredBillboardUrl(urls: string[]): string {
   const valid = urls.filter((url) => !isInvalidBillboardImageUrl(url));
   if (!valid.length) return "";
   // Prefer local uploads over remote hosts that may be expired/unreachable in view.
-  const local = valid.find((url) => isLocalUploadedImageUrl(url) || url.includes("/api/files/"));
+  const local = valid.find((url) => isLocalBillboardFileUrl(url));
   return local || valid[0];
 }
 
 /** Full-quality candidate for lightbox / download. */
 function resolveBillboardFullImageCandidate(billboard: Billboard): string {
-  const imageUrl = normalizeBillboardImageUrl(billboard.imageUrl);
-  const thumbnailUrl = normalizeBillboardImageUrl(billboard.thumbnailUrl);
-  const fromRow = pickPreferredBillboardUrl(imageUrl, thumbnailUrl);
-  if (fromRow) return fromRow;
-  return firstPeriodImageUrl(billboard);
+  return pickPreferredBillboardUrl(collectBillboardImageUrls(billboard));
 }
 
 /** Prefer card/thumbnail URLs for grid covers. */
 function resolveBillboardCardImageCandidate(billboard: Billboard): string {
-  const thumbnailUrl = normalizeBillboardImageUrl(billboard.thumbnailUrl);
-  const imageUrl = normalizeBillboardImageUrl(billboard.imageUrl);
-  if (!isInvalidBillboardImageUrl(thumbnailUrl)) {
-    return resolveCardCoverUrl(imageUrl || thumbnailUrl, thumbnailUrl);
-  }
   const fromFull = resolveBillboardFullImageCandidate(billboard);
-  if (!isInvalidBillboardImageUrl(fromFull)) return toCardThumbnailUrl(fromFull);
-  return "";
+  if (isInvalidBillboardImageUrl(fromFull)) return "";
+
+  const thumbnailUrl = normalizeBillboardImageUrl(billboard.thumbnailUrl);
+  if (!isInvalidBillboardImageUrl(thumbnailUrl) && isLocalBillboardFileUrl(thumbnailUrl)) {
+    return resolveCardCoverUrl(fromFull, thumbnailUrl);
+  }
+
+  return toCardThumbnailUrl(fromFull);
 }
 
 export function hasBillboardDisplayImage(billboard: Billboard): boolean {

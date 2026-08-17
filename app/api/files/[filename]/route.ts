@@ -1,5 +1,7 @@
+import { createReadStream } from "fs";
 import { open, readFile, stat } from "fs/promises";
 import path from "path";
+import { Readable } from "stream";
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth/get-session";
 import { verifyFileAccessToken } from "@/lib/auth/file-access-token";
@@ -9,12 +11,21 @@ import {
 } from "@/lib/server/image-thumbnail";
 import { resolveUploadFilePath } from "@/lib/uploads";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const MIME_TYPES: Record<string, string> = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".png": "image/png",
   ".webp": "image/webp",
   ".gif": "image/gif",
+  ".bmp": "image/bmp",
+  ".tif": "image/tiff",
+  ".tiff": "image/tiff",
+  ".avif": "image/avif",
+  ".heic": "image/heic",
+  ".heif": "image/heif",
   ".mp4": "video/mp4",
   ".webm": "video/webm",
   ".mov": "video/quicktime",
@@ -49,6 +60,25 @@ async function canAccessFile(request: Request, filename: string): Promise<boolea
 
   const { searchParams } = new URL(request.url);
   return verifyFileAccessToken(filename, searchParams.get("exp"), searchParams.get("sig"));
+}
+
+function streamFileResponse(
+  filePath: string,
+  fileSize: number,
+  contentType: string,
+  disposition: string | null
+) {
+  const nodeStream = createReadStream(filePath);
+  const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
+  return new NextResponse(webStream, {
+    headers: {
+      "Content-Type": contentType,
+      "Content-Length": String(fileSize),
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "private, max-age=3600",
+      ...(disposition ? { "Content-Disposition": disposition } : {}),
+    },
+  });
 }
 
 export async function GET(
@@ -142,24 +172,7 @@ export async function GET(
       }
     }
 
-    const fileHandle = await open(filePath, "r");
-    const buffer = Buffer.alloc(fileSize);
-
-    try {
-      await fileHandle.read(buffer, 0, fileSize, 0);
-    } finally {
-      await fileHandle.close();
-    }
-
-    return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": String(fileSize),
-        "Accept-Ranges": "bytes",
-        "Cache-Control": "private, max-age=3600",
-        ...(disposition ? { "Content-Disposition": disposition } : {}),
-      },
-    });
+    return streamFileResponse(filePath, fileSize, contentType, disposition);
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

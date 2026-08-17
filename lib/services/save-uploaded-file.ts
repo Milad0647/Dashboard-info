@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "fs/promises";
 import { randomUUID } from "crypto";
+import sharp from "sharp";
 import { assertMagicMatchesKind } from "@/lib/security/file-magic";
 import {
   isThumbnailableImageFilename,
@@ -8,6 +9,7 @@ import {
 import { getUploadPublicUrl, getUploadsDir } from "@/lib/uploads";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_IMAGE_EDGE = 4500;
 
 const IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -31,6 +33,55 @@ function extensionForMime(mime: string): string {
   }
 }
 
+/** Re-encode JPEG and oversized images into a browser-safe sRGB file. */
+async function normalizeImageForWeb(
+  buffer: Buffer,
+  mime: string
+): Promise<{ buffer: Buffer; mime: string; extension: string }> {
+  const fallback = { buffer, mime, extension: extensionForMime(mime) };
+  if (mime === "image/gif") return fallback;
+
+  try {
+    const pipeline = sharp(buffer, {
+      failOn: "none",
+      animated: false,
+      limitInputPixels: 100_000_000,
+    }).rotate();
+    const meta = await pipeline.metadata();
+    const tooLarge = (meta.width ?? 0) > MAX_IMAGE_EDGE || (meta.height ?? 0) > MAX_IMAGE_EDGE;
+    const isJpeg = mime === "image/jpeg" || meta.format === "jpeg";
+
+    if (!tooLarge && !isJpeg) return fallback;
+
+    let output = pipeline.toColourspace("srgb");
+    if (tooLarge) {
+      output = output.resize({
+        width: MAX_IMAGE_EDGE,
+        height: MAX_IMAGE_EDGE,
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+    }
+
+    if (isJpeg) {
+      const next = await output.jpeg({ quality: 88, mozjpeg: true }).toBuffer();
+      return { buffer: next, mime: "image/jpeg", extension: ".jpg" };
+    }
+    if (mime === "image/png" || meta.format === "png") {
+      const next = await output.png({ compressionLevel: 8 }).toBuffer();
+      return { buffer: next, mime: "image/png", extension: ".png" };
+    }
+    if (mime === "image/webp" || meta.format === "webp") {
+      const next = await output.webp({ quality: 82 }).toBuffer();
+      return { buffer: next, mime: "image/webp", extension: ".webp" };
+    }
+    return fallback;
+  } catch (error) {
+    console.warn("Image normalization failed:", error);
+    return fallback;
+  }
+}
+
 export async function saveUploadedImageFile(file: File): Promise<string> {
   if (file.type === "image/svg+xml") {
     throw new Error("آپلود فایل SVG مجاز نیست");
@@ -50,16 +101,16 @@ export async function saveUploadedImageFile(file: File): Promise<string> {
     throw new Error(magic.error);
   }
 
-  const extension = extensionForMime(file.type);
-  const filename = `${randomUUID()}${extension}`;
+  const normalized = await normalizeImageForWeb(buffer, file.type);
+  const filename = `${randomUUID()}${normalized.extension}`;
   const uploadsDir = getUploadsDir();
 
   await mkdir(uploadsDir, { recursive: true });
-  await writeFile(`${uploadsDir}/${filename}`, buffer);
+  await writeFile(`${uploadsDir}/${filename}`, normalized.buffer);
 
   if (isThumbnailableImageFilename(filename)) {
     try {
-      await writeImageThumbnail(filename, buffer);
+      await writeImageThumbnail(filename, normalized.buffer);
     } catch (error) {
       console.warn("Card thumbnail generation failed:", error);
     }

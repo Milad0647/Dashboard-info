@@ -129,12 +129,21 @@ function ContentItemCard({
           <MediaThumbnail
             src={item.thumbnailUrl}
             alt={item.title}
-            kind={item.contentType === "video" ? "video" : "poster"}
+            kind={
+              item.contentType === "video"
+                ? "video"
+                : item.contentType === "billboard"
+                  ? "billboard"
+                  : "poster"
+            }
             sizes="(max-width: 768px) 100vw, 33vw"
             objectFit="cover"
           />
         ) : (
-          <MediaPlaceholder kind="poster" className="h-full w-full" />
+          <MediaPlaceholder
+            kind={item.contentType === "billboard" ? "billboard" : "poster"}
+            className="h-full w-full"
+          />
         )}
         <div className="absolute top-2 end-2 flex flex-wrap justify-end gap-1">
           <Badge variant="overlay" className="text-[10px]">
@@ -432,7 +441,13 @@ function SupervisionItemDialog({
               <MediaThumbnail
                 src={item.imageUrl || item.thumbnailUrl}
                 alt={item.title}
-                kind={item.contentType === "video" ? "video" : "poster"}
+                kind={
+                  item.contentType === "video"
+                    ? "video"
+                    : item.contentType === "billboard"
+                      ? "billboard"
+                      : "poster"
+                }
                 sizes="(max-width: 768px) 100vw, 42rem"
                 objectFit="contain"
               />

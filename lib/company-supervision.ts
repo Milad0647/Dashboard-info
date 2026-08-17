@@ -11,6 +11,11 @@ import type { ContentReview, ContentReviewStatus } from "@/lib/content-review/ty
 import { isReviewableContentType } from "@/lib/content-review/types";
 import type { ContentMixItem } from "@/lib/campaign-overview-insights";
 import { countsAsTodayBillboardUpload } from "@/lib/billboards";
+import {
+  getBillboardCardImage,
+  getBillboardDisplayImage,
+  hasBillboardDisplayImage,
+} from "@/lib/billboard-media";
 import { resolveDisplayVersion, resolveVideoThumbnail } from "@/lib/media-utils";
 import {
   getSafeCreatedTimestamp,
@@ -259,8 +264,8 @@ export function collectCompanySupervisionItems(input: {
     push(
       source.billboards,
       "billboard",
-      (item) => item.thumbnailUrl,
-      (item) => item.imageUrl || item.thumbnailUrl
+      (item) => (hasBillboardDisplayImage(item) ? getBillboardCardImage(item) : null),
+      (item) => (hasBillboardDisplayImage(item) ? getBillboardDisplayImage(item) : null)
     );
   }
   if (source.sections.posters) {

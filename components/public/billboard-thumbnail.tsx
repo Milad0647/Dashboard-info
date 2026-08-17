@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MediaPlaceholder } from "@/components/ui/media-placeholder";
-import { getBillboardCardImage, hasBillboardDisplayImage } from "@/lib/billboard-media";
+import {
+  BILLBOARD_PLACEHOLDER_IMAGE,
+  getBillboardCardImage,
+  getBillboardDisplayImage,
+  hasBillboardDisplayImage,
+} from "@/lib/billboard-media";
 import type { Billboard } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +24,7 @@ interface BillboardThumbnailProps {
 /**
  * Use a plain img for billboards: next/image optimization often fails for
  * signed /api/files URLs and for remote map-bilboard hosts the server cannot reach.
+ * Tries the card thumb first, then the full image, before showing a placeholder.
  */
 export function BillboardThumbnail({
   billboard,
@@ -29,10 +35,26 @@ export function BillboardThumbnail({
   loading = "lazy",
 }: BillboardThumbnailProps) {
   void _sizes;
-  const [imageFailed, setImageFailed] = useState(false);
-  const hasImage = hasBillboardDisplayImage(billboard) && !imageFailed;
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const cardSrc = getBillboardCardImage(billboard);
+  const fullSrc = getBillboardDisplayImage(billboard);
+  const candidates = [cardSrc, fullSrc].filter(
+    (url, index, list) =>
+      Boolean(url) && url !== BILLBOARD_PLACEHOLDER_IMAGE && list.indexOf(url) === index
+  );
 
-  if (!hasImage) {
+  useEffect(() => {
+    setFailedSrc(null);
+  }, [billboard.id, cardSrc, fullSrc]);
+
+  const activeIndex = failedSrc ? candidates.indexOf(failedSrc) + 1 : 0;
+  const src = candidates[Math.min(Math.max(activeIndex, 0), candidates.length)] ?? "";
+  const exhausted =
+    !hasBillboardDisplayImage(billboard) ||
+    candidates.length === 0 ||
+    (failedSrc !== null && activeIndex >= candidates.length);
+
+  if (exhausted || !src) {
     return (
       <MediaPlaceholder
         kind="billboard"
@@ -44,13 +66,14 @@ export function BillboardThumbnail({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={getBillboardCardImage(billboard)}
+      key={src}
+      src={src}
       alt={alt}
       loading={loading}
       decoding="async"
       fetchPriority={loading === "eager" ? "high" : undefined}
       className={cn("absolute inset-0 h-full w-full object-cover", imageClassName, className)}
-      onError={() => setImageFailed(true)}
+      onError={() => setFailedSrc(src)}
     />
   );
 }
