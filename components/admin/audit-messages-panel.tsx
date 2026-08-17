@@ -15,12 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ContentMessageChatThread } from "@/components/admin/content-message-chat-thread";
 import {
   listAllContentMessagesAction,
   type AdminContentMessageListItem,
 } from "@/lib/actions/content-message-actions";
 import { getAuditRoleLabel } from "@/lib/audit/labels";
 import type { AuditUserPresence } from "@/lib/audit/types";
+import { threadFromRoot } from "@/lib/content-messages/thread";
 import { formatPersianDateTime, formatPersianNumber } from "@/lib/utils";
 
 function resolveUserLabel(name?: string | null, email?: string | null) {
@@ -92,19 +94,7 @@ function MessageRow({ message }: { message: AdminContentMessageListItem }) {
           </Link>
         </Button>
       </div>
-      <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{message.body}</p>
-      {message.replies && message.replies.length > 0 && (
-        <div className="mt-3 space-y-2 rounded-lg border bg-muted/40 p-3">
-          {message.replies.map((reply) => (
-            <div key={reply.id} className="rounded-md bg-background p-2 text-sm">
-              <p className="text-xs text-muted-foreground">
-                {reply.senderName ?? "کاربر"} · {formatPersianDateTime(reply.createdAt)}
-              </p>
-              <p className="mt-1 whitespace-pre-wrap">{reply.body}</p>
-            </div>
-          ))}
-        </div>
-      )}
+      <ContentMessageChatThread className="mt-3" items={threadFromRoot(message, "staff")} />
     </article>
   );
 }
@@ -150,6 +140,7 @@ export function AuditMessagesPanel({
         message.senderName,
         message.recipientName,
         message.recipientEmail,
+        ...(message.replies ?? []).flatMap((reply) => [reply.body, reply.senderName]),
       ]
         .filter(Boolean)
         .join(" ")

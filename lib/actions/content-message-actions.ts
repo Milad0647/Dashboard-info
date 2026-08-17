@@ -67,6 +67,34 @@ function parseContentType(value: string): ContentMessageContentType | null {
   return CONTENT_TYPE_SET.has(value) ? (value as ContentMessageContentType) : null;
 }
 
+function nestReplies<T extends ContentMessageListItem>(
+  roots: T[],
+  replies: ContentMessageListItem[]
+): T[] {
+  if (roots.length === 0) return [];
+  const repliesByRoot = new Map<string, ContentMessageListItem[]>();
+  for (const reply of replies) {
+    if (!reply.parentMessageId) continue;
+    const list = repliesByRoot.get(reply.parentMessageId) ?? [];
+    list.push(reply);
+    repliesByRoot.set(reply.parentMessageId, list);
+  }
+  for (const list of repliesByRoot.values()) {
+    list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+  return roots.map((item) => ({
+    ...item,
+    replies: repliesByRoot.get(item.id) ?? [],
+  }));
+}
+
+async function withReplies<T extends ContentMessageListItem>(items: T[]): Promise<T[]> {
+  const roots = items.filter((item) => !item.parentMessageId);
+  if (roots.length === 0) return [];
+  const replies = (await pgListRepliesForRootMessages(roots.map((item) => item.id))).map(toListItem);
+  return nestReplies(roots, replies);
+}
+
 export async function sendContentMessageAction(
   input: SendContentMessageInput
 ): Promise<{ success: boolean; error?: string; message?: ContentMessageListItem }> {
@@ -173,42 +201,23 @@ export async function listMyContentMessagesAction(input?: {
   const canSend = canSendContentMessages(session);
   const campaignId = input?.campaignId?.trim() || null;
 
-  const received =
-    session.userId
-      ? (await pgListReceivedContentMessages({ recipientUserId: session.userId })).map(toListItem)
-      : [];
+  const received = session.userId
+    ? await withReplies(
+        (await pgListReceivedContentMessages({ recipientUserId: session.userId })).map(toListItem)
+      )
+    : [];
 
   let sent: ContentMessageListItem[] = [];
   if (canSend) {
-    sent = (
-      await pgListSentContentMessages({
-        senderUserId: session.type === "db_user" ? session.userId : null,
-        includeNullSender: session.type === "env_admin",
-        campaignId,
-      })
-    ).map(toListItem);
-
-    const roots = sent.filter((item) => !item.parentMessageId);
-    if (roots.length > 0) {
-      const replies = (await pgListRepliesForRootMessages(roots.map((item) => item.id))).map(toListItem);
-      if (replies.length > 0) {
-        const repliesByRoot = new Map<string, ContentMessageListItem[]>();
-        for (const reply of replies) {
-          if (!reply.parentMessageId) continue;
-          const list = repliesByRoot.get(reply.parentMessageId) ?? [];
-          list.push(reply);
-          repliesByRoot.set(reply.parentMessageId, list);
-        }
-        sent = roots.map((item) => ({
-          ...item,
-          replies: repliesByRoot.get(item.id) ?? [],
-        }));
-      } else {
-        sent = roots;
-      }
-    } else {
-      sent = [];
-    }
+    sent = await withReplies(
+      (
+        await pgListSentContentMessages({
+          senderUserId: session.type === "db_user" ? session.userId : null,
+          includeNullSender: session.type === "env_admin",
+          campaignId,
+        })
+      ).map(toListItem)
+    );
   }
 
   return { success: true, received, sent, canSend };
@@ -333,7 +342,9 @@ export async function listContentMessagesForCardAction(input: {
     return { success: false, error: "شناسه محتوا نامعتبر است" };
   }
 
-  const messages = (await pgListMessagesForContent({ contentType, contentId })).map(toListItem);
+  const messages = await withReplies(
+    (await pgListMessagesForContent({ contentType, contentId, limit: 100 })).map(toListItem)
+  );
   return { success: true, messages };
 }
 
@@ -377,20 +388,10 @@ export async function listAllContentMessagesAction(input?: {
     })
   ).map(toAdminListItem);
 
-  const roots = messages.filter((item) => !item.parentMessageId);
-  const replies = messages.filter((item) => Boolean(item.parentMessageId));
-  if (replies.length > 0) {
-    const repliesByRoot = new Map<string, AdminContentMessageListItem[]>();
-    for (const reply of replies) {
-      if (!reply.parentMessageId) continue;
-      const list = repliesByRoot.get(reply.parentMessageId) ?? [];
-      list.push(reply);
-      repliesByRoot.set(reply.parentMessageId, list);
-    }
-    for (const root of roots) {
-      root.replies = repliesByRoot.get(root.id) ?? [];
-    }
-  }
+  const roots = nestReplies(
+    messages.filter((item) => !item.parentMessageId),
+    messages.filter((item) => Boolean(item.parentMessageId))
+  );
 
   return { success: true, messages: roots };
 }

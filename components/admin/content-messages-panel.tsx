@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ContentMessageChatThread } from "@/components/admin/content-message-chat-thread";
 import {
   listMyContentMessagesAction,
   markMyContentMessagesSeenAction,
@@ -14,6 +15,7 @@ import {
   type ContentMessageListItem,
 } from "@/lib/actions/content-message-actions";
 import { emitContentMessagesUnreadChanged } from "@/lib/content-messages-unread";
+import { threadFromRoot } from "@/lib/content-messages/thread";
 import { formatPersianDateTime } from "@/lib/utils";
 
 function MessageCard({
@@ -30,6 +32,7 @@ function MessageCard({
   onReply?: (messageId: string, body: string) => void;
 }) {
   const [reply, setReply] = useState("");
+  const viewer = showRecipientHint ? "staff" : "owner";
   const followUpLabel =
     message.followUpStatus === "awaiting_user"
       ? "در انتظار پاسخ کاربر"
@@ -75,19 +78,10 @@ function MessageCard({
           </Link>
         </Button>
       </div>
-      <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{message.body}</p>
-      {message.replies && message.replies.length > 0 && (
-        <div className="mt-3 space-y-2 rounded-lg border bg-muted/40 p-3">
-          {message.replies.map((replyItem) => (
-            <div key={replyItem.id} className="rounded-md bg-background p-2 text-sm">
-              <p className="text-xs text-muted-foreground">
-                {replyItem.senderName ?? "کاربر"} · {formatPersianDateTime(replyItem.createdAt)}
-              </p>
-              <p className="mt-1 whitespace-pre-wrap">{replyItem.body}</p>
-            </div>
-          ))}
-        </div>
-      )}
+      <ContentMessageChatThread
+        className="mt-3"
+        items={threadFromRoot(message, viewer)}
+      />
       {canReply && onReply && (
         <div className="mt-3 space-y-2">
           <textarea

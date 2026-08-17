@@ -313,7 +313,7 @@ export async function pgListMessagesForContent(input: {
   await ensureContentMessagesTable();
 
   const sql = getSql();
-  const limit = Math.min(Math.max(input.limit ?? 20, 1), 50);
+  const limit = Math.min(Math.max(input.limit ?? 20, 1), 100);
 
   const rows = await sql`
     SELECT *

@@ -28,6 +28,7 @@ import { UploadActivityChart } from "@/components/charts/upload-activity-chart";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
 import { BulkContentReviewActions } from "@/components/admin/bulk-content-review-bar";
 import { SendContentMessageButton } from "@/components/admin/send-content-message-button";
+import { ContentMessageChatThread } from "@/components/admin/content-message-chat-thread";
 import {
   BulkItemShell,
   useSectionBulkEdit,
@@ -89,6 +90,7 @@ import {
   type CompanySupervisionReviewFilter,
 } from "@/lib/company-supervision";
 import { ContentScoreProvider } from "@/lib/context/content-score-context";
+import { threadFromRoot, threadFromRoots } from "@/lib/content-messages/thread";
 import {
   OwnerLocationFilterProvider,
   useOwnerLocationFilter,
@@ -306,21 +308,10 @@ function MessageList({ messages }: { messages: AdminContentMessageListItem[] }) 
                 </Link>
               </Button>
             </div>
-            <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">
-              {message.body}
-            </p>
-            {message.replies && message.replies.length > 0 && (
-              <div className="mt-3 space-y-2 rounded-lg border bg-muted/40 p-3">
-                {message.replies.map((reply) => (
-                  <div key={reply.id} className="space-y-1 text-sm">
-                    <p className="text-xs text-muted-foreground">
-                      پاسخ · {formatPersianDateTime(reply.createdAt)}
-                    </p>
-                    <p className="whitespace-pre-wrap">{reply.body}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <ContentMessageChatThread
+              className="mt-3"
+              items={threadFromRoot(message, "staff")}
+            />
           </article>
         );
       })}
@@ -514,25 +505,7 @@ function SupervisionItemDialog({
             ) : messages.length === 0 ? (
               <p className="text-sm text-muted-foreground">پیامی روی این کارت نیست.</p>
             ) : (
-              <div className="space-y-3">
-                {messages.map((message) => (
-                  <article key={message.id} className="rounded-lg border bg-muted/30 p-3 text-sm">
-                    <p className="text-xs text-muted-foreground">
-                      {message.senderName ?? "مدیر / کارفرما"} ·{" "}
-                      {formatPersianDateTime(message.createdAt)}
-                    </p>
-                    <p className="mt-2 whitespace-pre-wrap">{message.body}</p>
-                    {message.replies?.map((reply) => (
-                      <div key={reply.id} className="mt-2 rounded-md border bg-background p-2">
-                        <p className="text-[11px] text-muted-foreground">
-                          پاسخ · {formatPersianDateTime(reply.createdAt)}
-                        </p>
-                        <p className="mt-1 whitespace-pre-wrap">{reply.body}</p>
-                      </div>
-                    ))}
-                  </article>
-                ))}
-              </div>
+              <ContentMessageChatThread items={threadFromRoots(messages, "staff")} />
             )}
           </section>
         </div>
@@ -721,8 +694,20 @@ function CompanySupervisionAdminInner({
     [returnedItems]
   );
 
+  const contentRetainKeys = useMemo(
+    () => filteredContent.filter((item) => item.isReviewable).map((item) => item.key),
+    [filteredContent]
+  );
+  const returnedRetainKeys = useMemo(
+    () => returnedItems.filter((item) => item.isReviewable).map((item) => item.key),
+    [returnedItems]
+  );
   const bulkVisibleKeys = activeTab === "returned" ? returnedVisibleKeys : contentVisibleKeys;
-  const bulk = useSectionBulkEdit(canManageReviews ? bulkVisibleKeys : []);
+  const bulkRetainKeys = activeTab === "returned" ? returnedRetainKeys : contentRetainKeys;
+  const bulk = useSectionBulkEdit(
+    canManageReviews ? bulkVisibleKeys : [],
+    canManageReviews ? bulkRetainKeys : []
+  );
 
   const selectedReviewItems = useMemo(() => {
     const map = new Map(items.map((item) => [item.key, item] as const));
