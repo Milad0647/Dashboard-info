@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "59b828d255e8515b3f31d17f62dd59357587b1b2",
+      "committedAt": "2026-08-17T15:51:36+03:30",
+      "title": "افزودن امتیاز بر اساس استان و منطقه کاربر در تنظیمات کلی امتیازدهی",
+      "subject": "Add province and region bonuses to general scoring"
+    },
+    {
+      "hash": "bbc87690b0dce683c5e7f53f4fd0fe8cc4e3c872",
+      "committedAt": "2026-08-17T15:50:45+03:30",
+      "title": "رفع خطای نمایش عکس‌های تبلیغات محیطی",
+      "subject": "Serve billboard photos without streaming or on-demand thumbs"
+    },
+    {
       "hash": "fb0c0e1e2772c712dffd4b6af3c459003068f449",
       "committedAt": "2026-08-17T15:43:59+03:30",
       "title": "نمایش عکس بیلبورد یا تأییدیه روی کاور تبلیغات محیطی",

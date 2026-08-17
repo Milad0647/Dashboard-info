@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { saveScoringRulesAction } from "@/lib/actions/score-actions";
 import {
   SCOREABLE_CONTENT_TYPE_LABELS,
+  getCategoryScoreableFields,
   getGeneralScoreableFields,
   getSelectableScoreableFields,
   type ScoreableFieldDef,
@@ -32,6 +33,23 @@ import { generateId, formatPersianNumber, cn } from "@/lib/utils";
 const CONTENT_TYPES = Object.keys(SCOREABLE_CONTENT_TYPE_LABELS) as ScoreableContentType[];
 
 type HubView = "hub" | "general" | ScoreableContentType;
+
+function findFilledPoints(rules: ScoringRule[], field: string): number {
+  return rules.find((r) => r.field === field && r.kind === "filled")?.points ?? 0;
+}
+
+function upsertFilledRule(rules: ScoringRule[], field: string, points: number): ScoringRule[] {
+  const next = rules.filter((r) => !(r.field === field && r.kind === "filled"));
+  if (points > 0) {
+    next.push({
+      id: generateId(),
+      field,
+      kind: "filled",
+      points,
+    });
+  }
+  return next;
+}
 
 function findEqualsPoints(rules: ScoringRule[], field: string, value: string): number {
   const rule = rules.find((r) => r.field === field && r.kind === "equals" && (r.value ?? "") === value);
@@ -57,6 +75,60 @@ function upsertEqualsRule(
     });
   }
   return next;
+}
+
+function FilledFieldsEditor({
+  fields,
+  rules,
+  onChange,
+}: {
+  fields: ScoreableFieldDef[];
+  rules: ScoringRule[];
+  onChange: (rules: ScoringRule[]) => void;
+}) {
+  if (fields.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">فیلدی برای این دسته تعریف نشده است.</p>
+    );
+  }
+
+  return (
+    <div className={fields.length > 12 ? "max-h-96 space-y-2 overflow-y-auto pr-1" : "space-y-2"}>
+      {fields.map((field) => {
+        const points = findFilledPoints(rules, field.key);
+        return (
+          <div
+            key={field.key}
+            className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/80 px-3 py-2"
+          >
+            <span className="text-sm font-medium">{field.label}</span>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                className="w-24 text-left"
+                dir="ltr"
+                value={points || ""}
+                placeholder="0"
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  onChange(
+                    upsertFilledRule(
+                      rules,
+                      field.key,
+                      Number.isFinite(n) && n > 0 ? n : 0
+                    )
+                  );
+                }}
+              />
+              <span className="text-xs text-muted-foreground w-10">امتیاز</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function OptionPointsEditor({
@@ -363,7 +435,7 @@ export function ScoringHub({
               قوانین {SCOREABLE_CONTENT_TYPE_LABELS[type]}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              امتیاز نهایی هر کارت = امتیاز پایه + موضوع (تنظیمات کلی) + فیلدهای انتخابی زیر
+              اگر هر فیلد کارت پر باشد امتیاز جدا می‌گیرد. امتیاز گزینه و بازه در ادامه، اضافه بر پر بودن است.
             </p>
           </div>
         </div>
@@ -397,19 +469,39 @@ export function ScoringHub({
           </CardContent>
         </Card>
 
-        {selectable.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            فیلد انتخابی برای این دسته تعریف نشده است. موضوع را از تنظیمات کلی تنظیم کنید.
-          </p>
-        ) : (
-          selectable.map((field) => (
-            <FieldBlock
-              key={field.key}
-              field={field}
+        <Card className="border-border/70 shadow-none">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">اگر فیلد کارت پر باشد</CardTitle>
+            <CardDescription>
+              برای هر فیلد یک امتیاز تعیین کنید؛ فقط وقتی آن فیلد روی کارت پر باشد به جمع اضافه می‌شود.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FilledFieldsEditor
+              fields={getCategoryScoreableFields(type, fieldsContext)}
               rules={cat.rules}
               onChange={(rules) => updateCategory(type, { ...cat, rules })}
             />
-          ))
+          </CardContent>
+        </Card>
+
+        {selectable.length > 0 && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-semibold">امتیاز بر اساس مقدار</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                اختیاری است و جدا از امتیاز پر بودن فیلد حساب می‌شود؛ مثلاً انتخاب یک گزینه مشخص.
+              </p>
+            </div>
+            {selectable.map((field) => (
+              <FieldBlock
+                key={field.key}
+                field={field}
+                rules={cat.rules}
+                onChange={(rules) => updateCategory(type, { ...cat, rules })}
+              />
+            ))}
+          </div>
         )}
 
         {pending && (
@@ -427,8 +519,8 @@ export function ScoringHub({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">قوانین امتیازدهی</h1>
         <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-          ابتدا تنظیمات کلی (موضوع، استان و منطقه کاربر) را مشخص کنید، سپس روی هر دسته محتوا کلیک کنید و امتیاز پایه و
-          فیلدهای انتخابی را تنظیم کنید. امتیاز رسمی فقط بعد از تأیید محتوا ثبت می‌شود.
+          ابتدا تنظیمات کلی (موضوع، استان و منطقه کاربر) را مشخص کنید، سپس روی هر دسته محتوا کلیک کنید و برای هر فیلد
+          کارت در صورت پر بودن امتیاز تعیین کنید. امتیاز رسمی فقط بعد از تأیید محتوا ثبت می‌شود.
         </p>
       </div>
 

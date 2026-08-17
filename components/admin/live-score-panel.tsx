@@ -77,10 +77,15 @@ export function LiveScorePanel({
               className="flex items-center justify-between text-sm gap-2"
             >
               <span className="text-muted-foreground truncate">
-                {entry.label === "امتیاز پایه اثر"
-                  ? "امتیاز پایه اثر"
-                  : getScoreableField(contentType, entry.field)?.label ??
-                    (entry.field === "planLabels" ? "موضوع" : entry.field)}
+                {(() => {
+                  if (entry.label === "امتیاز پایه اثر" || entry.kind === "base") {
+                    return "امتیاز پایه اثر";
+                  }
+                  const fieldLabel =
+                    getScoreableField(contentType, entry.field)?.label ??
+                    (entry.field === "planLabels" ? "موضوع" : entry.field);
+                  return entry.kind === "filled" ? `${fieldLabel} (پر بودن)` : fieldLabel;
+                })()}
               </span>
               <span className="tabular-nums font-medium">
                 +{formatPersianNumber(entry.points)}

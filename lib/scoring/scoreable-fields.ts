@@ -421,7 +421,16 @@ export const GENERAL_SCOREABLE_FIELD_KEYS = [
   "ownerRegion",
 ] as const;
 
-/** Selectable / option-based fields for category scoring UI (excludes general keys). */
+/** All card fields for a content type, excluding shared general keys. */
+export function getCategoryScoreableFields(
+  contentType: ScoreableContentType,
+  context?: ScoreableFieldsContext
+): ScoreableFieldDef[] {
+  const general = new Set<string>(GENERAL_SCOREABLE_FIELD_KEYS);
+  return getScoreableFields(contentType, context).filter((field) => !general.has(field.key));
+}
+
+/** Selectable / option-based fields for extra per-value bonuses (excludes general keys). */
 export function getSelectableScoreableFields(
   contentType: ScoreableContentType,
   context?: ScoreableFieldsContext

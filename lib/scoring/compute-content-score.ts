@@ -168,6 +168,7 @@ function applyRules(
       points,
       matched,
       label: labelPrefix,
+      kind: rule.kind,
     });
   }
 
@@ -210,6 +211,7 @@ export function computeContentScore(
       points: category.basePoints,
       matched: true,
       label: "امتیاز پایه اثر",
+      kind: "base",
     });
   }
 

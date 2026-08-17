@@ -250,6 +250,7 @@ export interface ScoreBreakdownEntry {
   matched: boolean;
   /** Optional display label for UI (e.g. base / topic). */
   label?: string;
+  kind?: ScoringRuleKind | "base";
 }
 
 export interface BillboardDisplayPeriod {
