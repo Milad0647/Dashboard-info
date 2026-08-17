@@ -77,10 +77,12 @@ export function BillboardDisplayPeriodsEditor({
           دوره نمایش *
         </Label>
         <p className="text-xs text-muted-foreground">
-          عکس بیلبورد اختیاری است؛ بدون عکس هم می‌توانید ثبت کنید. تصویر تأییدیه هم اختیاری است.
+          عکس بیلبورد و تصویر تأییدیه اختیاری هستند؛ بدون عکس هم می‌توانید ثبت کنید.
         </p>
         {highlightMedia && (
-          <p className="mt-1 text-xs text-destructive">عکس بیلبورد هنوز اضافه نشده است.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            اگر عکس دارید اضافه کنید؛ بدون عکس هم ذخیره می‌شود.
+          </p>
         )}
       </div>
 

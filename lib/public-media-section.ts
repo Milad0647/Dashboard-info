@@ -31,11 +31,13 @@ export function videoHasDisplayContent(video: { versions: { videoUrl?: string | 
 }
 
 export function billboardHasDisplayContent(billboard: {
+  title?: string | null;
   thumbnailUrl?: string | null;
   imageUrl?: string | null;
   location?: string | null;
   description?: string | null;
 }): boolean {
+  if (billboard.title?.trim()) return true;
   const hasAddress = Boolean(billboard.location?.trim() || billboard.description?.trim());
   const imageUrl = billboard.imageUrl?.trim() ?? "";
   const thumbnailUrl = billboard.thumbnailUrl?.trim() ?? "";

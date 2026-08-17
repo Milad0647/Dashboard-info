@@ -1,4 +1,3 @@
-import { hasBillboardDisplayImage } from "@/lib/billboard-media";
 import { splitPressActivities } from "@/lib/press-publications";
 import { splitSocialPosts } from "@/lib/social-posts";
 import type {
@@ -286,7 +285,6 @@ function getBillboardChecks(billboard: Billboard): CheckedField[] {
     { key: "title", ok: !isWeakTitle(billboard.title, DEFAULT_BILLBOARD_TITLE_PATTERN) },
     { key: "city", ok: !isBlank(billboard.city) },
     { key: "location", ok: !isBlank(billboard.location) },
-    { key: "media", ok: hasBillboardDisplayImage(billboard) },
     { key: "description", ok: !isBlank(billboard.description) },
   ];
 }

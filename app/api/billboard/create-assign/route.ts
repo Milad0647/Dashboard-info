@@ -35,11 +35,6 @@ function parseRequiredPeriods(formData: FormData): BillboardDisplayPeriodInput[]
     const billboardImage = period.billboardImageKey
       ? formData.get(period.billboardImageKey)
       : null;
-
-    if (!(billboardImage instanceof File) || billboardImage.size === 0) {
-      throw new Error("عکس بیلبورد در دوره نمایش الزامی است");
-    }
-
     const image = period.imageKey ? formData.get(period.imageKey) : null;
 
     return {
@@ -48,7 +43,8 @@ function parseRequiredPeriods(formData: FormData): BillboardDisplayPeriodInput[]
       endDate: period.endDate,
       sortOrder: period.sortOrder ?? index,
       image: image instanceof File && image.size > 0 ? image : null,
-      billboardImage,
+      billboardImage:
+        billboardImage instanceof File && billboardImage.size > 0 ? billboardImage : null,
     };
   });
 }

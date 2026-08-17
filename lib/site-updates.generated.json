@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "c50fd5e0c7bf5c8fe14046d1f8cc3fc83af37f82",
+      "committedAt": "2026-08-17T15:54:06+03:30",
+      "title": "افزودن امتیاز پر بودن هر فیلد کارت در بخش‌های امتیازدهی",
+      "subject": "Score filled card fields per content type"
+    },
+    {
       "hash": "59b828d255e8515b3f31d17f62dd59357587b1b2",
       "committedAt": "2026-08-17T15:51:36+03:30",
       "title": "افزودن امتیاز بر اساس استان و منطقه کاربر در تنظیمات کلی امتیازدهی",
