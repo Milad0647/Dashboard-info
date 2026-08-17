@@ -1,18 +1,18 @@
-import { createReadStream } from "fs";
 import { open, readFile, stat } from "fs/promises";
 import path from "path";
-import { Readable } from "stream";
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth/get-session";
 import { verifyFileAccessToken } from "@/lib/auth/file-access-token";
+import { detectFileKind } from "@/lib/security/file-magic";
 import {
-  ensureLocalImageThumbnail,
+  getExistingLocalImageThumbnail,
   isThumbnailableImageFilename,
 } from "@/lib/server/image-thumbnail";
 import { resolveUploadFilePath } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const MIME_TYPES: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -49,34 +49,89 @@ function sanitizeFilename(raw: string): string | null {
   return safeName;
 }
 
+function decodeFilenameParam(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 function contentDispositionAttachment(filename: string): string {
   const asciiFallback = filename.replace(/[^\w.\-()+ ]+/g, "_").trim() || "download";
   return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
 }
 
-async function canAccessFile(request: Request, filename: string): Promise<boolean> {
-  const session = await getAuthSession();
-  if (session) return true;
-
-  const { searchParams } = new URL(request.url);
-  return verifyFileAccessToken(filename, searchParams.get("exp"), searchParams.get("sig"));
+function tokenFilenameCandidates(filename: string, request: Request): string[] {
+  const names = new Set<string>([filename]);
+  try {
+    const pathname = new URL(request.url).pathname;
+    const fromPath = pathname.slice(pathname.lastIndexOf("/") + 1);
+    if (fromPath) {
+      names.add(fromPath);
+      names.add(decodeFilenameParam(fromPath));
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    names.add(decodeURIComponent(filename));
+  } catch {
+    // ignore
+  }
+  return [...names].filter(Boolean);
 }
 
-function streamFileResponse(
-  filePath: string,
-  fileSize: number,
+function hasValidAccessToken(filename: string, request: Request): boolean {
+  const { searchParams } = new URL(request.url);
+  const exp = searchParams.get("exp");
+  const sig = searchParams.get("sig");
+  return tokenFilenameCandidates(filename, request).some((name) =>
+    verifyFileAccessToken(name, exp, sig)
+  );
+}
+
+function sniffContentType(buffer: Buffer, fallback: string): string {
+  switch (detectFileKind(buffer)) {
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    default:
+      return fallback;
+  }
+}
+
+async function hasAuthSession(): Promise<boolean> {
+  try {
+    return Boolean(await getAuthSession());
+  } catch {
+    return false;
+  }
+}
+
+async function canAccessFile(request: Request, filename: string): Promise<boolean> {
+  // Prefer signed URL tokens so image grids do not hit the DB on every file.
+  if (hasValidAccessToken(filename, request)) return true;
+  return hasAuthSession();
+}
+
+function binaryResponse(
+  data: Buffer,
   contentType: string,
-  disposition: string | null
+  extraHeaders?: Record<string, string>
 ) {
-  const nodeStream = createReadStream(filePath);
-  const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
-  return new NextResponse(webStream, {
+  return new NextResponse(new Uint8Array(data), {
     headers: {
       "Content-Type": contentType,
-      "Content-Length": String(fileSize),
-      "Accept-Ranges": "bytes",
+      "Content-Length": String(data.byteLength),
       "Cache-Control": "private, max-age=3600",
-      ...(disposition ? { "Content-Disposition": disposition } : {}),
+      "X-Content-Type-Options": "nosniff",
+      ...extraHeaders,
     },
   });
 }
@@ -86,7 +141,7 @@ export async function GET(
   { params }: { params: Promise<{ filename: string }> }
 ) {
   const { filename: rawFilename } = await params;
-  const filename = sanitizeFilename(decodeURIComponent(rawFilename));
+  const filename = sanitizeFilename(decodeFilenameParam(rawFilename));
   if (!filename) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -101,22 +156,12 @@ export async function GET(
 
   try {
     if (wantCardThumb) {
-      try {
-        const thumbName = await ensureLocalImageThumbnail(filename);
-        if (thumbName) {
-          const thumbPath = resolveUploadFilePath(thumbName);
-          const thumbBuffer = await readFile(thumbPath);
-          return new NextResponse(thumbBuffer, {
-            headers: {
-              "Content-Type": "image/webp",
-              "Content-Length": String(thumbBuffer.byteLength),
-              "Cache-Control": "private, max-age=86400",
-              "X-Content-Type-Options": "nosniff",
-            },
-          });
-        }
-      } catch {
-        // Fall through and serve the original image when thumb generation fails.
+      const thumbName = await getExistingLocalImageThumbnail(filename);
+      if (thumbName) {
+        const thumbBuffer = await readFile(resolveUploadFilePath(thumbName));
+        return binaryResponse(thumbBuffer, "image/webp", {
+          "Cache-Control": "private, max-age=86400",
+        });
       }
     }
 
@@ -158,7 +203,7 @@ export async function GET(
           await fileHandle.close();
         }
 
-        return new NextResponse(buffer, {
+        return new NextResponse(new Uint8Array(buffer), {
           status: 206,
           headers: {
             "Content-Type": contentType,
@@ -166,13 +211,18 @@ export async function GET(
             "Content-Range": `bytes ${start}-${end}/${fileSize}`,
             "Accept-Ranges": "bytes",
             "Cache-Control": "private, max-age=3600",
+            "X-Content-Type-Options": "nosniff",
             ...(disposition ? { "Content-Disposition": disposition } : {}),
           },
         });
       }
     }
 
-    return streamFileResponse(filePath, fileSize, contentType, disposition);
+    const fileBuffer = await readFile(filePath);
+    return binaryResponse(fileBuffer, sniffContentType(fileBuffer, contentType), {
+      "Accept-Ranges": "bytes",
+      ...(disposition ? { "Content-Disposition": disposition } : {}),
+    });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

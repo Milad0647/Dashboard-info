@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "fb0c0e1e2772c712dffd4b6af3c459003068f449",
+      "committedAt": "2026-08-17T15:43:59+03:30",
+      "title": "نمایش عکس بیلبورد یا تأییدیه روی کاور تبلیغات محیطی",
+      "subject": "Use either billboard photo as card cover"
+    },
+    {
       "hash": "171e4d8c885d37a06c0f08fbc9ef575eed9f8f3d",
       "committedAt": "2026-08-17T15:35:33+03:30",
       "title": "امکان ثبت تبلیغات محیطی بدون عکس",

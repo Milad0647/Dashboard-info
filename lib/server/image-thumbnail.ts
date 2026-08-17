@@ -64,6 +64,22 @@ export async function writeImageThumbnail(
   return thumbName;
 }
 
+/** Return a cached WebP thumb name if it already exists — never generate on read. */
+export async function getExistingLocalImageThumbnail(
+  originalFilename: string
+): Promise<string | null> {
+  if (!isThumbnailableImageFilename(originalFilename)) return null;
+
+  const thumbName = thumbFilenameFor(originalFilename);
+  try {
+    const existing = await stat(resolveUploadFilePath(thumbName));
+    if (existing.isFile() && existing.size > 0) return thumbName;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 /**
  * Ensure a cached WebP card thumb exists for a local upload.
  * Returns the thumb filename, or null if the source is not an image.
