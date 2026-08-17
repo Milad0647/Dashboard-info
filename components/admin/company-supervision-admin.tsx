@@ -91,7 +91,7 @@ import {
   COMPANY_CATEGORY_CARD_LIMIT,
   COMPANY_SUPERVISION_REVIEW_FILTERS,
   COMPANY_SUPERVISION_TYPE_FILTERS,
-  buildCompanyContentMix,
+  buildCompanyContentMixFromCounts,
   buildCompanyUploadActivityStats,
   collectCompanyOwnerLocations,
   collectTodayReturnedItems,
@@ -102,6 +102,7 @@ import {
   isCompanyContentFilterActive,
   limitCompanyCategoryItems,
   reviewStatusLabel,
+  summarizeSupervisionItems,
   type CompanyExcelSource,
   type CompanySupervisionContentType,
   type CompanySupervisionItem,
@@ -114,7 +115,7 @@ import {
   OwnerLocationFilterProvider,
   useOwnerLocationFilter,
 } from "@/lib/context/owner-location-filter-context";
-import type { CampaignDatePreset } from "@/lib/owner-location-filter";
+import type { OwnerLocationFilter } from "@/lib/owner-location-filter";
 import { downloadCompanyPerformanceExcel } from "@/lib/services/performance-excel-export";
 import { getTehranCalendarDateIso, isTehranToday } from "@/lib/safe-dates";
 import {
@@ -681,6 +682,9 @@ export function CompanySupervisionAdmin({
   canScore,
   canManageReviews,
   canSendMessage,
+  initialFilter,
+  periodLabel,
+  initialContentType = "all",
 }: {
   campaignId: string;
   campaignTitle: string;
@@ -693,12 +697,20 @@ export function CompanySupervisionAdmin({
   canScore: boolean;
   canManageReviews: boolean;
   canSendMessage: boolean;
+  initialFilter?: Partial<OwnerLocationFilter>;
+  periodLabel?: string | null;
+  initialContentType?: CompanySupervisionContentType | "all";
 }) {
   const locations = useMemo(() => collectCompanyOwnerLocations(items), [items]);
 
   return (
     <ContentScoreProvider canScore={canScore} campaignId={campaignId}>
-      <OwnerLocationFilterProvider locations={locations} plans={contentPlans} users={[]}>
+      <OwnerLocationFilterProvider
+        locations={locations}
+        plans={contentPlans}
+        users={[]}
+        initialFilter={initialFilter}
+      >
         <CompanySupervisionAdminInner
           campaignId={campaignId}
           campaignTitle={campaignTitle}
@@ -711,6 +723,8 @@ export function CompanySupervisionAdmin({
           canScore={canScore}
           canManageReviews={canManageReviews}
           canSendMessage={canSendMessage}
+          periodLabel={periodLabel}
+          initialContentType={initialContentType}
         />
       </OwnerLocationFilterProvider>
     </ContentScoreProvider>
@@ -729,6 +743,8 @@ function CompanySupervisionAdminInner({
   canScore,
   canManageReviews,
   canSendMessage,
+  periodLabel,
+  initialContentType,
 }: {
   campaignId: string;
   campaignTitle: string;
@@ -741,10 +757,14 @@ function CompanySupervisionAdminInner({
   canScore: boolean;
   canManageReviews: boolean;
   canSendMessage: boolean;
+  periodLabel?: string | null;
+  initialContentType: CompanySupervisionContentType | "all";
 }) {
   const router = useRouter();
-  const { filter, setDatePreset } = useOwnerLocationFilter();
-  const [typeFilter, setTypeFilter] = useState<CompanySupervisionContentType | "all">("all");
+  const { filter } = useOwnerLocationFilter();
+  const [typeFilter, setTypeFilter] = useState<CompanySupervisionContentType | "all">(
+    initialContentType
+  );
   const [reviewFilter, setReviewFilter] = useState<CompanySupervisionReviewFilter>("all");
   const [emptyField, setEmptyField] = useState<EmptyFieldFilter>("all");
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -780,8 +800,25 @@ function CompanySupervisionAdminInner({
   );
 
   const todayCounts = useMemo(() => countTodayByContentType(items), [items]);
-  const contentMix = useMemo(() => buildCompanyContentMix(entry), [entry]);
-  const uploadStats = useMemo(() => buildCompanyUploadActivityStats(items), [items]);
+  const scopedItems = useMemo(
+    () =>
+      filterCompanySupervisionItems(items, {
+        campaignFilter: filter,
+        contentType: "all",
+        reviewFilter: "all",
+        emptyField: "all",
+      }),
+    [items, filter]
+  );
+  const scopedSummary = useMemo(() => summarizeSupervisionItems(scopedItems), [scopedItems]);
+  const contentMix = useMemo(
+    () => buildCompanyContentMixFromCounts(scopedSummary.byType),
+    [scopedSummary.byType]
+  );
+  const uploadStats = useMemo(
+    () => buildCompanyUploadActivityStats(scopedItems),
+    [scopedItems]
+  );
 
   const showAllCategoryCards = useMemo(
     () =>
@@ -1050,11 +1087,7 @@ function CompanySupervisionAdminInner({
     }
   };
 
-  const focusContentWithPreset = (
-    preset: CampaignDatePreset,
-    type: CompanySupervisionContentType | "all" = "all"
-  ) => {
-    setDatePreset(preset);
+  const focusContentType = (type: CompanySupervisionContentType | "all" = "all") => {
     setTypeFilter(type);
     setActiveTab("content");
   };
@@ -1062,57 +1095,57 @@ function CompanySupervisionAdminInner({
   const kpiItems = (
     [
       {
-        title: "مجموع محتوا",
-        value: entry.totalUploads,
+        title: periodLabel ? `مجموع محتوا (${periodLabel})` : "مجموع محتوا",
+        value: scopedSummary.total,
         icon: Layers,
         todayDelta: entry.todayUploads,
         type: "all" as const,
       },
       {
         title: "تبلیغات محیطی",
-        value: entry.billboards,
+        value: scopedSummary.byType.billboard ?? 0,
         icon: LayoutGrid,
         todayDelta: todayCounts.billboard,
         type: "billboard" as const,
       },
       {
         title: "پوستر",
-        value: entry.posters,
+        value: scopedSummary.byType.poster ?? 0,
         icon: ImageIcon,
         todayDelta: todayCounts.poster,
         type: "poster" as const,
       },
       {
         title: "ویدیو",
-        value: entry.videos,
+        value: scopedSummary.byType.video ?? 0,
         icon: Video,
         todayDelta: todayCounts.video,
         type: "video" as const,
       },
       {
         title: "شبکه اجتماعی",
-        value: entry.socialPosts,
+        value: scopedSummary.byType.social_post ?? 0,
         icon: Share2,
         todayDelta: todayCounts.social_post,
         type: "social_post" as const,
       },
       {
         title: "انتشار سایت",
-        value: entry.sitePublications,
+        value: scopedSummary.byType.site_publication ?? 0,
         icon: Globe,
         todayDelta: todayCounts.site_publication,
         type: "site_publication" as const,
       },
       {
         title: "اقدام",
-        value: entry.activities,
+        value: scopedSummary.byType.activity ?? 0,
         icon: Megaphone,
         todayDelta: todayCounts.activity,
         type: "activity" as const,
       },
       {
         title: "فایل",
-        value: entry.files,
+        value: scopedSummary.byType.file ?? 0,
         icon: FileText,
         todayDelta: todayCounts.file,
         type: "file" as const,
@@ -1331,16 +1364,22 @@ function CompanySupervisionAdminInner({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">رتبه {getProvinceRankBadge(entry.rank)}</Badge>
+            <Badge variant="secondary">
+              رتبه {entry.rank > 0 ? getProvinceRankBadge(entry.rank) : "—"}
+              {periodLabel ? ` ${periodLabel}` : ""}
+            </Badge>
             <Badge variant="outline">{entry.province}</Badge>
             <Badge variant="outline">
-              {formatPersianNumber(entry.totalUploads)} محتوا
+              {formatPersianNumber(scopedSummary.total)} محتوا
+              {periodLabel ? ` ${periodLabel}` : ""}
             </Badge>
             <Badge variant="outline">
-              {formatPersianNumber(entry.score)} امتیاز فعالیت
+              {formatPersianNumber(scopedSummary.activityScore)} امتیاز فعالیت
+              {periodLabel ? ` ${periodLabel}` : ""}
             </Badge>
             <Badge variant="outline">
-              {formatPersianNumber(entry.ratingScore)} امتیاز محتوا
+              {formatPersianNumber(scopedSummary.ratingScore)} امتیاز محتوا
+              {periodLabel ? ` ${periodLabel}` : ""}
             </Badge>
             {(entry.pendingScore ?? 0) > 0 && (
               <Badge variant="outline" className="text-amber-700 dark:text-amber-400">
@@ -1377,7 +1416,7 @@ function CompanySupervisionAdminInner({
         <TabsList className="h-auto w-full justify-start">
           <TabsTrigger value="summary">خلاصه</TabsTrigger>
           <TabsTrigger value="content">
-            محتوا ({formatPersianNumber(items.length)})
+            محتوا ({formatPersianNumber(filteredContent.length)})
           </TabsTrigger>
           <TabsTrigger value="returned">
             برگشتی ({formatPersianNumber(returnedItems.length)})
@@ -1398,7 +1437,7 @@ function CompanySupervisionAdminInner({
                   value={kpi.value}
                   icon={kpi.icon}
                   todayDelta={kpi.todayDelta}
-                  onClick={() => focusContentWithPreset("all", kpi.type)}
+                  onClick={() => focusContentType(kpi.type)}
                   onTodayDeltaClick={() => setTodayDialogOpen(true)}
                 />
               ))}
@@ -1416,7 +1455,9 @@ function CompanySupervisionAdminInner({
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">امتیاز بخش‌ها</CardTitle>
+              <CardTitle className="text-base">
+                امتیاز بخش‌ها{periodLabel ? ` (${periodLabel})` : ""}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -1450,7 +1491,10 @@ function CompanySupervisionAdminInner({
           </Card>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <ContentMixChart data={contentMix} title="ترکیب محتوای این شرکت" />
+            <ContentMixChart
+              data={contentMix}
+              title={periodLabel ? `ترکیب محتوا (${periodLabel})` : "ترکیب محتوای این شرکت"}
+            />
             <UploadActivityChart
               stats={uploadStats}
               onTodayClick={() => setTodayDialogOpen(true)}

@@ -47,7 +47,9 @@ import {
   PERFORMANCE_CONTENT_CATEGORY_OPTIONS,
   collectPerformanceFilterOptions,
   filterLeaderboardSourceForPerformance,
+  getPerformancePeriodLabel,
   isPerformanceLeaderboardFilterActive,
+  appendPerformanceFilterParams,
   type PerformanceContentCategory,
   type PerformanceLeaderboardFilter,
   type PerformanceRegionFilter,
@@ -118,8 +120,13 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function companySupervisionHref(campaignId: string, userKey: string): string {
+function companySupervisionHref(
+  campaignId: string,
+  userKey: string,
+  filter: PerformanceLeaderboardFilter
+): string {
   const params = new URLSearchParams({ campaign: campaignId });
+  appendPerformanceFilterParams(params, filter);
   return `/admin/performance/user/${encodeURIComponent(userKey)}?${params.toString()}`;
 }
 
@@ -144,6 +151,7 @@ export function PerformanceAdmin({
       ? []
       : (options.citiesByProvince[filter.province] ?? []);
   const filterActive = isPerformanceLeaderboardFilterActive(filter);
+  const periodLabel = getPerformancePeriodLabel(filter);
 
   const rankedEntries = useMemo(() => {
     const filteredSource = filterLeaderboardSourceForPerformance(source, filter);
@@ -252,9 +260,20 @@ export function PerformanceAdmin({
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <SummaryStat label="تعداد کاربران" value={totals.users} />
-        <SummaryStat label="جمع محتوا" value={totals.content} />
         <SummaryStat
-          label={sortMode === "rating" ? "جمع امتیاز محتوا" : "جمع امتیاز فعالیت"}
+          label={periodLabel ? `جمع محتوا (${periodLabel})` : "جمع محتوا"}
+          value={totals.content}
+        />
+        <SummaryStat
+          label={
+            periodLabel
+              ? sortMode === "rating"
+                ? `امتیاز محتوا (${periodLabel})`
+                : `امتیاز فعالیت (${periodLabel})`
+              : sortMode === "rating"
+                ? "جمع امتیاز محتوا"
+                : "جمع امتیاز فعالیت"
+          }
           value={totals.score}
         />
         <SummaryStat label="محتوای امروز" value={totals.today} />
@@ -267,7 +286,11 @@ export function PerformanceAdmin({
               <MapPin className="h-4 w-4 shrink-0 text-primary" />
               فیلتر رتبه‌بندی
               {filterActive ? (
-                <Badge variant="secondary">رتبه بر اساس فیلتر فعلی</Badge>
+                <Badge variant="secondary">
+                  {periodLabel
+                    ? `رتبه، تعداد و امتیاز بر اساس ${periodLabel}`
+                    : "رتبه بر اساس فیلتر فعلی"}
+                </Badge>
               ) : null}
             </div>
             {filterActive ? (
@@ -492,7 +515,7 @@ export function PerformanceAdmin({
         <div className="space-y-3">
           {filtered.map((entry) => {
             const scoreValue = sortMode === "rating" ? entry.ratingScore : entry.score;
-            const href = companySupervisionHref(campaignId, entry.userKey);
+            const href = companySupervisionHref(campaignId, entry.userKey, filter);
             return (
               <Link
                 key={entry.userKey}
@@ -529,9 +552,11 @@ export function PerformanceAdmin({
                       <Badge variant="secondary">
                         {formatPersianNumber(scoreValue)}{" "}
                         {sortMode === "rating" ? "امتیاز محتوا" : "امتیاز"}
+                        {periodLabel ? ` ${periodLabel}` : ""}
                       </Badge>
                       <Badge variant="outline">
                         {formatPersianNumber(entry.totalUploads)} محتوا
+                        {periodLabel ? ` ${periodLabel}` : ""}
                       </Badge>
                       {(entry.pendingScore ?? 0) > 0 && (
                         <Badge variant="outline" className="text-amber-700 dark:text-amber-400">
@@ -582,7 +607,7 @@ export function PerformanceAdmin({
                     <td className="px-3 py-3 font-medium">
                       <div className="flex flex-wrap items-center gap-2">
                         <Link
-                          href={companySupervisionHref(campaignId, entry.userKey)}
+                          href={companySupervisionHref(campaignId, entry.userKey, filter)}
                           className="text-primary hover:underline"
                         >
                           {entry.userName}
@@ -621,7 +646,7 @@ export function PerformanceAdmin({
                     </td>
                     <td className="px-3 py-3">
                       <Button type="button" size="sm" variant="outline" asChild>
-                        <Link href={companySupervisionHref(campaignId, entry.userKey)}>
+                        <Link href={companySupervisionHref(campaignId, entry.userKey, filter)}>
                           باز کردن
                         </Link>
                       </Button>

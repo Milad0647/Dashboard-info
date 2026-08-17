@@ -46,6 +46,7 @@ interface OwnerLocationFilterProviderProps {
   users?: OwnerFilterOption[];
   locations?: CampaignOwnerLocations;
   plans?: string[];
+  initialFilter?: Partial<OwnerLocationFilter>;
 }
 
 export function OwnerLocationFilterProvider({
@@ -53,8 +54,12 @@ export function OwnerLocationFilterProvider({
   users = [],
   locations = { provinces: [], citiesByProvince: {} },
   plans = [],
+  initialFilter,
 }: OwnerLocationFilterProviderProps) {
-  const [filter, setFilter] = useState<OwnerLocationFilter>(DEFAULT_OWNER_LOCATION_FILTER);
+  const [filter, setFilter] = useState<OwnerLocationFilter>({
+    ...DEFAULT_OWNER_LOCATION_FILTER,
+    ...initialFilter,
+  });
 
   const provinces = useMemo(() => locations.provinces, [locations.provinces]);
 

@@ -1,4 +1,4 @@
-import { getOwnableUploadDate, matchesDateFilter } from "@/lib/campaign-content-filter";
+import { matchesDateFilter } from "@/lib/campaign-content-filter";
 import type { LeaderboardSourceData } from "@/lib/city-leaderboard";
 import { matchesAnyPlanLabelFilter } from "@/lib/content-topics";
 import { normalizeImportedProvince } from "@/lib/iran-locations";
@@ -9,8 +9,10 @@ import {
   type CampaignDatePreset,
   type OwnerCompanyTypeFilter,
 } from "@/lib/owner-location-filter";
+import { getSafeCreatedTimestamp } from "@/lib/safe-dates";
 import type { Ownable } from "@/lib/types";
-import type { UserRegion } from "@/lib/user-regions";
+import { isUserCompanyType } from "@/lib/user-company-types";
+import { isUserRegion, type UserRegion } from "@/lib/user-regions";
 
 export const PERFORMANCE_FILTER_ALL = "all";
 
@@ -90,7 +92,11 @@ function resolveItemCity(item: Ownable & { city?: string | null }): string | nul
 }
 
 function itemUploadDate(item: Ownable): string | undefined {
-  return getOwnableUploadDate(item as Ownable & Record<string, unknown>) || undefined;
+  return (
+    getSafeCreatedTimestamp(
+      item as Ownable & { createdAt?: string | null; updatedAt?: string | null }
+    ) || undefined
+  );
 }
 
 function matchesContentCategory(
@@ -238,3 +244,100 @@ export function collectPerformanceFilterOptions(data: LeaderboardSourceData): {
 }
 
 export { OWNER_LOCATION_ALL, OWNER_DATE_ALL, OWNER_COMPANY_TYPE_ALL };
+
+const DATE_PRESETS: CampaignDatePreset[] = [
+  "all",
+  "today",
+  "this_week",
+  "this_month",
+  "custom",
+];
+
+const CONTENT_CATEGORIES: PerformanceContentCategory[] = [
+  "all",
+  "billboard",
+  "poster",
+  "video",
+  "social_post",
+  "site_publication",
+  "activity",
+  "file",
+];
+
+export function getPerformancePeriodLabel(
+  filter: PerformanceLeaderboardFilter
+): string | null {
+  switch (filter.datePreset) {
+    case "today":
+      return "امروز";
+    case "this_week":
+      return "۷ روز اخیر";
+    case "this_month":
+      return "۳۰ روز اخیر";
+    case "custom":
+      return "بازه انتخاب‌شده";
+    default:
+      return null;
+  }
+}
+
+export function appendPerformanceFilterParams(
+  params: URLSearchParams,
+  filter: PerformanceLeaderboardFilter
+) {
+  if (filter.datePreset !== OWNER_DATE_ALL) params.set("date", filter.datePreset);
+  if (filter.datePreset === "custom") {
+    if (filter.dateFrom.trim()) params.set("from", filter.dateFrom.trim());
+    if (filter.dateTo.trim()) params.set("to", filter.dateTo.trim());
+  }
+  if (filter.contentCategory !== "all") params.set("category", filter.contentCategory);
+  if (filter.province !== OWNER_LOCATION_ALL) params.set("province", filter.province);
+  if (filter.city !== OWNER_LOCATION_ALL) params.set("city", filter.city);
+  if (filter.companyType !== OWNER_COMPANY_TYPE_ALL) {
+    params.set("companyType", filter.companyType);
+  }
+  if (filter.region !== PERFORMANCE_FILTER_ALL) params.set("region", filter.region);
+  if (filter.planLabels.length > 0) params.set("topics", filter.planLabels.join(","));
+}
+
+export function performanceFilterFromQuery(query: {
+  date?: string;
+  from?: string;
+  to?: string;
+  category?: string;
+  province?: string;
+  city?: string;
+  companyType?: string;
+  region?: string;
+  topics?: string;
+}): PerformanceLeaderboardFilter {
+  const filter: PerformanceLeaderboardFilter = {
+    ...DEFAULT_PERFORMANCE_LEADERBOARD_FILTER,
+  };
+  if (query.date && DATE_PRESETS.includes(query.date as CampaignDatePreset)) {
+    filter.datePreset = query.date as CampaignDatePreset;
+  }
+  if (query.from?.trim()) filter.dateFrom = query.from.trim();
+  if (query.to?.trim()) filter.dateTo = query.to.trim();
+  if (
+    query.category &&
+    CONTENT_CATEGORIES.includes(query.category as PerformanceContentCategory)
+  ) {
+    filter.contentCategory = query.category as PerformanceContentCategory;
+  }
+  if (query.province?.trim()) filter.province = query.province.trim();
+  if (query.city?.trim()) filter.city = query.city.trim();
+  if (query.companyType && isUserCompanyType(query.companyType)) {
+    filter.companyType = query.companyType;
+  }
+  if (query.region && isUserRegion(query.region)) {
+    filter.region = query.region;
+  }
+  if (query.topics?.trim()) {
+    filter.planLabels = query.topics
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return filter;
+}

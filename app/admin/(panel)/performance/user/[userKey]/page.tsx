@@ -17,16 +17,36 @@ import {
   filterLeaderboardSourceByUser,
   findUserLeaderboardEntry,
   toCompanyExcelSource,
+  zeroPeriodLeaderboardEntry,
+  type CompanySupervisionContentType,
 } from "@/lib/company-supervision";
 import { contentPlansFromTopics } from "@/lib/content-topics";
 import { getAdminData } from "@/lib/data-access/admin";
 import { buildLeaderboardSourceFromAdmin } from "@/lib/performance-overview";
+import {
+  filterLeaderboardSourceForPerformance,
+  getPerformancePeriodLabel,
+  isPerformanceLeaderboardFilterActive,
+  performanceFilterFromQuery,
+  type PerformanceContentCategory,
+} from "@/lib/performance-filters";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ userKey: string }>;
-  searchParams: Promise<{ campaign?: string }>;
+  searchParams: Promise<{
+    campaign?: string;
+    date?: string;
+    from?: string;
+    to?: string;
+    category?: string;
+    province?: string;
+    city?: string;
+    companyType?: string;
+    region?: string;
+    topics?: string;
+  }>;
 }
 
 export default async function CompanySupervisionPage({
@@ -74,8 +94,27 @@ export default async function CompanySupervisionPage({
     files: data.files,
   });
 
-  const entries = buildUserLeaderboard(source);
-  const entry = findUserLeaderboardEntry(entries, userKey);
+  const rankingFilter = performanceFilterFromQuery(query);
+  const periodSource = filterLeaderboardSourceForPerformance(source, rankingFilter);
+  const periodEntries = buildUserLeaderboard(periodSource);
+  const allEntries = buildUserLeaderboard(source);
+  const periodEntry = findUserLeaderboardEntry(periodEntries, userKey);
+  const identity = findUserLeaderboardEntry(allEntries, userKey);
+  const filterActive = isPerformanceLeaderboardFilterActive(rankingFilter);
+  const entry = filterActive
+    ? periodEntry
+      ? {
+          ...periodEntry,
+          userName: identity?.userName ?? periodEntry.userName,
+          province: identity?.province || periodEntry.province,
+          city: identity?.city || periodEntry.city,
+          companyType: identity?.companyType ?? periodEntry.companyType,
+          region: identity?.region ?? periodEntry.region,
+        }
+      : identity
+        ? zeroPeriodLeaderboardEntry(identity)
+        : null
+    : (identity ?? periodEntry);
 
   if (!entry) {
     const backHref = `/admin/performance?campaign=${encodeURIComponent(campaignId)}`;
@@ -118,6 +157,24 @@ export default async function CompanySupervisionPage({
       canScore={canScoreContent(session)}
       canManageReviews={canManageAllContent(session)}
       canSendMessage={canSendContentMessages(session)}
+      periodLabel={getPerformancePeriodLabel(rankingFilter)}
+      initialContentType={contentTypeFromCategory(rankingFilter.contentCategory)}
+      initialFilter={{
+        datePreset: rankingFilter.datePreset,
+        dateFrom: rankingFilter.dateFrom,
+        dateTo: rankingFilter.dateTo,
+        province: rankingFilter.province,
+        city: rankingFilter.city,
+        planLabels: rankingFilter.planLabels,
+        companyType: rankingFilter.companyType,
+      }}
     />
   );
+}
+
+function contentTypeFromCategory(
+  category: PerformanceContentCategory
+): CompanySupervisionContentType | "all" {
+  if (category === "all") return "all";
+  return category;
 }

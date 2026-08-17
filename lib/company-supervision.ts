@@ -588,16 +588,89 @@ export function countTodayByContentType(
   return counts;
 }
 
+const ACTIVITY_SCORE_WEIGHTS: Partial<Record<CompanySupervisionContentType, number>> = {
+  billboard: 5,
+  poster: 3,
+  video: 4,
+  social_post: 2,
+  site_publication: 2,
+  activity: 3,
+  file: 1,
+};
+
+export function summarizeSupervisionItems(items: CompanySupervisionItem[]): {
+  byType: Partial<Record<CompanySupervisionContentType, number>>;
+  total: number;
+  activityScore: number;
+  ratingScore: number;
+} {
+  const byType: Partial<Record<CompanySupervisionContentType, number>> = {};
+  let activityScore = 0;
+  let ratingScore = 0;
+  for (const item of items) {
+    byType[item.contentType] = (byType[item.contentType] ?? 0) + 1;
+    activityScore += ACTIVITY_SCORE_WEIGHTS[item.contentType] ?? 0;
+    if (typeof item.score === "number" && item.score > 0) {
+      ratingScore += item.score;
+    }
+  }
+  return { byType, total: items.length, activityScore, ratingScore };
+}
+
 export function buildCompanyContentMix(entry: UserLeaderboardEntry): ContentMixItem[] {
+  return buildCompanyContentMixFromCounts({
+    billboard: entry.billboards,
+    poster: entry.posters,
+    video: entry.videos,
+    social_post: entry.socialPosts,
+    site_publication: entry.sitePublications,
+    activity: entry.activities,
+    file: entry.files,
+  });
+}
+
+export function buildCompanyContentMixFromCounts(
+  byType: Partial<Record<CompanySupervisionContentType, number>>
+): ContentMixItem[] {
   return [
-    { label: "تبلیغات محیطی", count: entry.billboards },
-    { label: "پوستر", count: entry.posters },
-    { label: "ویدیو", count: entry.videos },
-    { label: "پست اجتماعی", count: entry.socialPosts },
-    { label: "انتشار سایت", count: entry.sitePublications },
-    { label: "اقدام", count: entry.activities },
-    { label: "فایل", count: entry.files },
+    { label: "تبلیغات محیطی", count: byType.billboard ?? 0 },
+    { label: "پوستر", count: byType.poster ?? 0 },
+    { label: "ویدیو", count: byType.video ?? 0 },
+    { label: "پست اجتماعی", count: byType.social_post ?? 0 },
+    { label: "انتشار سایت", count: byType.site_publication ?? 0 },
+    { label: "اقدام", count: byType.activity ?? 0 },
+    { label: "فایل", count: byType.file ?? 0 },
   ].filter((item) => item.count > 0);
+}
+
+export function zeroPeriodLeaderboardEntry(
+  identity: UserLeaderboardEntry
+): UserLeaderboardEntry {
+  return {
+    ...identity,
+    billboards: 0,
+    posters: 0,
+    videos: 0,
+    socialPosts: 0,
+    sitePublications: 0,
+    activities: 0,
+    files: 0,
+    todayUploads: 0,
+    totalUploads: 0,
+    score: 0,
+    ratingScore: 0,
+    pendingScore: 0,
+    billboardScore: 0,
+    posterScore: 0,
+    videoScore: 0,
+    socialScore: 0,
+    pendingBillboardScore: 0,
+    pendingPosterScore: 0,
+    pendingVideoScore: 0,
+    pendingSocialScore: 0,
+    totalAreaSqm: 0,
+    rank: 0,
+  };
 }
 
 function emptyUploadPoint(date: string): UploadActivityPoint {
