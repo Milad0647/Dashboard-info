@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageFileDropzone } from "@/components/ui/image-file-dropzone";
 import { PersianDateInput } from "@/components/ui/persian-date-input";
+import { isUsableBillboardImageUrl } from "@/lib/billboard-media";
 import { todayISO } from "@/lib/jalali";
 import { cn } from "@/lib/utils";
 
@@ -76,7 +77,7 @@ export function BillboardDisplayPeriodsEditor({
           دوره نمایش *
         </Label>
         <p className="text-xs text-muted-foreground">
-          عکس بیلبورد الزامی است. تصویر تأییدیه اختیاری است.
+          عکس بیلبورد اختیاری است؛ بدون عکس هم می‌توانید ثبت کنید. تصویر تأییدیه هم اختیاری است.
         </p>
         {highlightMedia && (
           <p className="mt-1 text-xs text-destructive">عکس بیلبورد هنوز اضافه نشده است.</p>
@@ -128,14 +129,18 @@ export function BillboardDisplayPeriodsEditor({
             <div className="space-y-2">
               <ImageFileDropzone
                 label="عکس بیلبورد"
-                required={requireBillboardImage && !period.existingBillboardImageUrl}
+                required={
+                  requireBillboardImage && !isUsableBillboardImageUrl(period.existingBillboardImageUrl)
+                }
+                optionalHint={requireBillboardImage ? undefined : "اختیاری"}
                 value={period.billboardImageFile}
                 onChange={(file) => updatePeriod(period.id, { billboardImageFile: file })}
               />
-              {!period.billboardImageFile && period.existingBillboardImageUrl && (
+              {!period.billboardImageFile &&
+                isUsableBillboardImageUrl(period.existingBillboardImageUrl) && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={period.existingBillboardImageUrl}
+                  src={period.existingBillboardImageUrl ?? ""}
                   alt="عکس فعلی"
                   className="h-24 w-full rounded-md border object-cover"
                 />
@@ -181,7 +186,11 @@ export function buildPeriodsFormPayload(periods: DisplayPeriodDraft[]) {
     sortOrder: index,
     imageKey: `period_image_${period.id}`,
     billboardImageKey: `period_billboard_image_${period.id}`,
-    billboardImageUrl: period.billboardImageFile ? undefined : period.existingBillboardImageUrl ?? undefined,
+    billboardImageUrl: period.billboardImageFile
+      ? undefined
+      : isUsableBillboardImageUrl(period.existingBillboardImageUrl)
+        ? period.existingBillboardImageUrl ?? undefined
+        : undefined,
     confirmationImageUrl: period.imageFile ? undefined : period.existingConfirmationImageUrl ?? undefined,
   }));
 }

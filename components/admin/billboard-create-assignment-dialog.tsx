@@ -277,12 +277,6 @@ export function BillboardCreateAssignmentDialog({
         toast.error(`تاریخ دوره ${index + 1} الزامی است`);
         return;
       }
-      const hasBillboardImage =
-        Boolean(period.billboardImageFile) || Boolean(period.existingBillboardImageUrl?.trim());
-      if (!hasBillboardImage) {
-        toast.error(`عکس بیلبورد در دوره ${index + 1} الزامی است`);
-        return;
-      }
     }
 
     startTransition(async () => {
@@ -700,7 +694,6 @@ export function BillboardCreateAssignmentDialog({
           <BillboardDisplayPeriodsEditor
             periods={periods}
             onChange={setPeriods}
-            requireBillboardImage
             highlightMedia={highlightMedia}
           />
 

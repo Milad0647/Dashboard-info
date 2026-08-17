@@ -8,6 +8,7 @@ import { pgGetCampaignById } from "@/lib/db/repository";
 import { pgGetUserById } from "@/lib/db/repository-extended";
 import type { BillboardDisplayPeriodInput } from "@/lib/services/billboard-assignment-api";
 import { createLocalBillboard } from "@/lib/services/local-billboard-create";
+import { isUsableBillboardImageUrl } from "@/lib/billboard-media";
 import { matchBillboardCategoryKey, type BillboardCategory } from "@/lib/billboard-categories";
 
 function parseRequiredPeriods(formData: FormData): BillboardDisplayPeriodInput[] {
@@ -38,11 +39,7 @@ function parseRequiredPeriods(formData: FormData): BillboardDisplayPeriodInput[]
       : null;
 
     const hasNewBillboardImage = billboardImage instanceof File && billboardImage.size > 0;
-    const hasExistingBillboardImage = Boolean(period.billboardImageUrl?.trim());
-
-    if (!hasNewBillboardImage && !hasExistingBillboardImage) {
-      throw new Error("عکس بیلبورد در دوره نمایش الزامی است");
-    }
+    const hasExistingBillboardImage = isUsableBillboardImageUrl(period.billboardImageUrl);
 
     const image = period.imageKey ? formData.get(period.imageKey) : null;
 
@@ -54,7 +51,7 @@ function parseRequiredPeriods(formData: FormData): BillboardDisplayPeriodInput[]
       sortOrder: period.sortOrder ?? index,
       image: image instanceof File && image.size > 0 ? image : null,
       billboardImage: hasNewBillboardImage ? billboardImage : null,
-      billboardImageUrl: period.billboardImageUrl ?? null,
+      billboardImageUrl: hasExistingBillboardImage ? period.billboardImageUrl ?? null : null,
       confirmationImageUrl: period.confirmationImageUrl ?? null,
     };
   });

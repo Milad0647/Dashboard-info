@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "eb0ffb76efb58c56f162956561cb7875f809fc8a",
+      "committedAt": "2026-08-17T15:24:24+03:30",
+      "title": "با باز شدن کارت، ویرایش گروهی و موارد انتخاب‌شده حفظ می‌شود",
+      "subject": "Keep bulk edit selection when viewing a card"
+    },
+    {
       "hash": "ba62ac6bb40a99c995bc88c8e80f18e44586e0c5",
       "committedAt": "2026-08-17T15:17:09+03:30",
       "title": "نمایش پیام‌های کارت‌ها به‌صورت گفتگوی رفت‌وبرگشت",

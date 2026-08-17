@@ -76,6 +76,11 @@ export function hasBillboardDisplayImage(billboard: Billboard): boolean {
   return !isInvalidBillboardImageUrl(resolveBillboardFullImageCandidate(billboard));
 }
 
+/** True when a stored URL is a real photo, not empty or a placeholder. */
+export function isUsableBillboardImageUrl(url?: string | null): boolean {
+  return !isInvalidBillboardImageUrl(normalizeBillboardImageUrl(url));
+}
+
 /** Full image for modal / download (not the low-size card thumb). */
 export function getBillboardDisplayImage(billboard: Billboard): string {
   const candidate = resolveBillboardFullImageCandidate(billboard);
