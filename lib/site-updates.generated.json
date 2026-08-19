@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "b400dcfb78b2e46e2308ff94076e6ecb1b24d669",
+      "committedAt": "2026-08-19T12:47:36+03:30",
+      "title": "افزودن دکمه حذف وابستگی خارجی در بخش تبلیغات محیطی",
+      "subject": "Add button to remove all external billboard dependencies from DB"
+    },
+    {
       "hash": "c823ee7f995d0714d724af52688aaab24818cd9a",
       "committedAt": "2026-08-19T12:42:51+03:30",
       "title": "حذف کامل وابستگی به سرویس خارجی بیلبورد و مستقل‌سازی اپلیکیشن",

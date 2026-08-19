@@ -2246,6 +2246,11 @@ export const IRAN_PROVINCES_DATA: IranProvince[] = [
         "lng": 51.4204
       },
       {
+        "name": "چمستان",
+        "lat": 36.4782,
+        "lng": 52.1184
+      },
+      {
         "name": "رامسر",
         "lat": 36.91796,
         "lng": 50.64802
