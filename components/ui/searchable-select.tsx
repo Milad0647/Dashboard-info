@@ -114,33 +114,24 @@ export function SearchableSelect({
         Math.max(160, openUp ? spaceAbove - 12 : spaceBelow - 12)
       );
 
-      // Inside a Radix Dialog: portal INTO the dialog content so the panel is not
-      // marked inert / aria-hidden (body portals are). Absolute coords are relative
-      // to the dialog box (which is position:fixed + transformed), and must account
-      // for the dialog's own scroll offset.
+      // Inside a Radix Dialog: portal INTO the dialog DOM so the panel is not
+      // marked inert / aria-hidden (body portals are), but use position:fixed
+      // with viewport coords so the panel is not clipped by the dialog's
+      // overflow-y:auto.
       if (dialog) {
-        const dialogRect = dialog.getBoundingClientRect();
-        const scrollTop = dialog.scrollTop;
-        const scrollLeft = dialog.scrollLeft;
-        const width = Math.min(Math.max(rect.width, 0), dialogRect.width - 16);
-        const left = Math.min(
-          Math.max(8, rect.left - dialogRect.left + scrollLeft),
-          Math.max(8, dialogRect.width - width - 8)
-        );
-
-        const topInDialog = rect.bottom - dialogRect.top + scrollTop + 4;
-        const bottomInDialog = dialogRect.bottom - rect.top + scrollTop + 4;
+        const width = Math.min(Math.max(rect.width, 0), window.innerWidth - 16);
+        const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
 
         setPortalTarget(dialog);
         setPanelStyle({
-          position: "absolute",
+          position: "fixed",
           left,
           width,
           maxHeight,
-          zIndex: 60,
+          zIndex: 220,
           ...(openUp
-            ? { bottom: bottomInDialog }
-            : { top: topInDialog }),
+            ? { bottom: window.innerHeight - rect.top + 4 }
+            : { top: rect.bottom + 4 }),
         });
         return;
       }

@@ -11,6 +11,8 @@ export const PRESS_CONTENT_TYPES: PressContentType[] = [
   "report",
   "news_report",
   "interview",
+  "ad",
+  "advertorial",
   "other",
 ];
 
@@ -20,6 +22,8 @@ export const pressContentTypeLabels: Record<PressContentType, string> = {
   report: "گزارش",
   news_report: "گزارش خبری",
   interview: "مصاحبه",
+  ad: "آگهی",
+  advertorial: "رپرتاژ آگهی",
   other: "سایر",
 };
 

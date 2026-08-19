@@ -25,6 +25,8 @@ export type PressContentType =
   | "report"
   | "news_report"
   | "interview"
+  | "ad"
+  | "advertorial"
   | "other";
 export type SocialContentType = "image" | "text" | "video" | "carousel" | "story" | "reel" | "audio";
 /** Genre of a video publication (news, live, interview, …). */

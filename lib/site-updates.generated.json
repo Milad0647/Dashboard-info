@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "a2718dba0024cf8ff7e559539fc44046412a8705",
+      "committedAt": "2026-08-19T11:20:48+03:30",
+      "title": "رفع مشکل باز نشدن لیست موضوع در بخش شبکه‌های اجتماعی",
+      "subject": "Fix SearchableSelect dropdown position inside scrollable dialogs"
+    },
+    {
       "hash": "439ee595c101b0b956dc8d66925954bdd34462fa",
       "committedAt": "2026-08-19T11:14:33+03:30",
       "title": "رفع مشکل آپلود و نمایش عکس‌های تبلیغات محیطی",
