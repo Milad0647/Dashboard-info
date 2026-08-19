@@ -8,6 +8,7 @@ import {
   type ContentTopic,
 } from "@/lib/content-topics";
 import { IRAN_PROVINCES } from "@/lib/iran-locations";
+import { MEDIA_REPUBLISH_SCOPE_OPTIONS } from "@/lib/scoring/scoring-policy";
 import type { MediaCategory, ScoreableContentType } from "@/lib/types";
 import { USER_REGIONS, userRegionLabels } from "@/lib/user-regions";
 
@@ -63,6 +64,11 @@ const VIDEO_CONTENT_TYPE_OPTIONS: ScoreableFieldOption[] = [
   { value: "program_appearance", label: "حضور در برنامه" },
   { value: "tv_contest", label: "مسابقه تلویزیونی" },
 ];
+
+const MEDIA_SCOPE_OPTIONS: ScoreableFieldOption[] = MEDIA_REPUBLISH_SCOPE_OPTIONS.map((option) => ({
+  value: option.key,
+  label: option.label,
+}));
 
 const SOCIAL_PLATFORM_OPTIONS: ScoreableFieldOption[] = [
   { value: "instagram", label: "اینستاگرام" },
@@ -290,6 +296,13 @@ function buildScoreableFields(
       { key: "mediaUrl", label: "رسانه", valueType: "media", kinds: ["filled"] },
       { key: "link", label: "لینک", valueType: "text", kinds: ["filled"] },
       { key: "publishedDate", label: "تاریخ انتشار", valueType: "date", kinds: ["filled", "range"] },
+      {
+        key: "mediaScope",
+        label: "سطح پوشش (سراسری / استانی / محلی)",
+        valueType: "select",
+        kinds: ["filled", "equals"],
+        options: MEDIA_SCOPE_OPTIONS,
+      },
       { key: "views", label: "بازدید", valueType: "number", kinds: ["filled", "range"] },
       { key: "likes", label: "لایک", valueType: "number", kinds: ["filled", "range"] },
       planLabels,
@@ -307,6 +320,13 @@ function buildScoreableFields(
       { key: "mediaUrl", label: "رسانه", valueType: "media", kinds: ["filled"] },
       { key: "link", label: "لینک", valueType: "text", kinds: ["filled"] },
       { key: "publishedDate", label: "تاریخ انتشار", valueType: "date", kinds: ["filled", "range"] },
+      {
+        key: "mediaScope",
+        label: "سطح پوشش (سراسری / استانی / محلی)",
+        valueType: "select",
+        kinds: ["filled", "equals"],
+        options: MEDIA_SCOPE_OPTIONS,
+      },
       planLabels,
     ],
     activity: [
@@ -327,13 +347,10 @@ function buildScoreableFields(
       },
       {
         key: "mediaScope",
-        label: "سطح پوشش (سراسری / محلی)",
+        label: "سطح پوشش (سراسری / استانی / محلی)",
         valueType: "select",
         kinds: ["filled", "equals"],
-        options: [
-          { value: "national", label: "سراسری" },
-          { value: "local", label: "محلی" },
-        ],
+        options: MEDIA_SCOPE_OPTIONS,
       },
       { key: "activityDate", label: "تاریخ", valueType: "date", kinds: ["filled", "range"] },
       { key: "location", label: "مکان", valueType: "text", kinds: ["filled"] },
@@ -359,13 +376,10 @@ function buildScoreableFields(
       { key: "reportDate", label: "تاریخ گزارش", valueType: "date", kinds: ["filled", "range"] },
       {
         key: "mediaScope",
-        label: "سطح پوشش (سراسری / محلی)",
+        label: "سطح پوشش (سراسری / استانی / محلی)",
         valueType: "select",
         kinds: ["filled", "equals"],
-        options: [
-          { value: "national", label: "سراسری" },
-          { value: "local", label: "محلی" },
-        ],
+        options: MEDIA_SCOPE_OPTIONS,
       },
       { key: "pdfUrl", label: "فایل PDF/ویدیو", valueType: "media", kinds: ["filled"] },
       { key: "fileName", label: "نام فایل", valueType: "text", kinds: ["filled"] },

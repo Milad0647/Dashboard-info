@@ -64,6 +64,12 @@ import {
   sumSocialPostLinkEntryViews,
 } from "@/lib/social-posts";
 import { SocialPlatformIcon, getSocialPlatformLabel } from "@/components/public/social-platform-icon";
+import {
+  MEDIA_REPUBLISH_SCOPE_KEYS,
+  MEDIA_REPUBLISH_SCOPE_OPTIONS,
+  resolveMediaRepublishScope,
+  type MediaRepublishScope,
+} from "@/lib/scoring/scoring-policy";
 import type { AdminUser, SocialContentType, SocialMediaPost, SocialPlatform, SocialPostLinkEntry } from "@/lib/types";
 import { cn, ensureHttpUrl, formatPersianDate, formatPersianNumber, getStatusLabel } from "@/lib/utils";
 import { GenerateMissingVideoCoversButton } from "@/components/admin/generate-missing-video-covers-button";
@@ -87,6 +93,7 @@ const schema = z.object({
   mediaUrl: z.string().optional(),
   description: z.string().optional(),
   publishedDate: z.string(),
+  mediaScope: z.enum(MEDIA_REPUBLISH_SCOPE_KEYS),
 });
 
 function platformsFromPost(post: SocialMediaPost): SocialPlatform[] {
@@ -230,6 +237,7 @@ export function SocialPostsAdmin({
       mediaUrl: "",
       description: "",
       publishedDate: todayISO(),
+      mediaScope: "national" as const,
     },
   });
 
@@ -254,6 +262,7 @@ export function SocialPostsAdmin({
         mediaUrl: "",
         description: "",
         publishedDate: todayISO(),
+        mediaScope: "national",
       });
       setOpen(true);
     });
@@ -308,6 +317,7 @@ export function SocialPostsAdmin({
       mediaUrl: post.mediaUrl ?? "",
       description: post.description ?? "",
       publishedDate: post.publishedDate,
+      mediaScope: resolveMediaRepublishScope(post.mediaScope),
     });
     setOpen(true);
   };
@@ -1156,6 +1166,25 @@ export function SocialPostsAdmin({
             )}
 
             <PersianDateField control={form.control} name="publishedDate" label="تاریخ انتشار" />
+
+            <div className="space-y-2">
+              <Label>سطح پوشش رسانه</Label>
+              <Select
+                value={form.watch("mediaScope")}
+                onValueChange={(value) => form.setValue("mediaScope", value as MediaRepublishScope)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="انتخاب سطح پوشش" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEDIA_REPUBLISH_SCOPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.key} value={option.key}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div
               className={cn(

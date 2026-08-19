@@ -43,12 +43,29 @@ export interface ScoringMediaRepublishRow {
   points: number;
 }
 
+export const MEDIA_REPUBLISH_SCOPE_KEYS = ["national", "provincial", "local"] as const;
+
 export const MEDIA_REPUBLISH_SCOPE_OPTIONS = [
   { key: "national", label: "سراسری" },
+  { key: "provincial", label: "استانی" },
   { key: "local", label: "محلی" },
 ] as const;
 
 export type MediaRepublishScope = (typeof MEDIA_REPUBLISH_SCOPE_OPTIONS)[number]["key"];
+
+export function resolveMediaRepublishScope(
+  value: string | null | undefined
+): MediaRepublishScope {
+  const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (raw === "provincial" || raw === "استانی") return "provincial";
+  if (raw === "local" || raw === "محلی") return "local";
+  return "national";
+}
+
+export function getMediaRepublishScopeLabel(value: string | null | undefined): string {
+  const key = resolveMediaRepublishScope(value);
+  return MEDIA_REPUBLISH_SCOPE_OPTIONS.find((option) => option.key === key)?.label ?? "سراسری";
+}
 
 /** Per-company multipliers (phase coverage / entitlement). */
 export interface ScoringCompanyCoeff {
@@ -187,6 +204,12 @@ export function createDefaultScoringPolicy(): CampaignScoringPolicy {
       },
       {
         id: generateId(),
+        key: "provincial",
+        label: "پخش خبر و محتوا در روزنامه‌ها و صداوسیمای استانی",
+        points: 12,
+      },
+      {
+        id: generateId(),
         key: "local",
         label: "پخش خبر و محتوا در روزنامه‌ها و صداوسیمای محلی",
         points: 10,
@@ -288,6 +311,13 @@ function normalizeMediaRepublishRows(raw: unknown): ScoringMediaRepublishRow[] {
       label: label || key,
       points: Math.max(0, asFiniteNumber(obj.points, 0)),
     });
+  }
+  const existingKeys = new Set(rows.map((row) => row.key.trim().toLowerCase()));
+  const defaults = createDefaultScoringPolicy().mediaRepublishRows;
+  for (const fallback of defaults) {
+    if (!existingKeys.has(fallback.key.toLowerCase())) {
+      rows.push(fallback);
+    }
   }
   return rows;
 }

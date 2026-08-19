@@ -493,6 +493,7 @@ export async function pgSaveSocialPost(data: Partial<SocialMediaPost> & { id?: s
     ALTER TABLE social_media_posts
     ADD COLUMN IF NOT EXISTS link_entries JSONB NOT NULL DEFAULT '[]'::jsonb
   `;
+  await sql`ALTER TABLE social_media_posts ADD COLUMN IF NOT EXISTS media_scope TEXT`;
 
   const countRows = await sql`
     SELECT COUNT(*)::int AS count FROM social_media_posts WHERE campaign_id = ${data.campaignId ?? ""}
@@ -503,7 +504,7 @@ export async function pgSaveSocialPost(data: Partial<SocialMediaPost> & { id?: s
     INSERT INTO social_media_posts (
       id, campaign_id, owner_user_id, platform, title, cover_image_url,
       views, likes, comments, shares, link, link_entries, content_type, media_url, description,
-      published_date, published, sort_order, plan_label, plan_labels, created_at, updated_at
+      media_scope, published_date, published, sort_order, plan_label, plan_labels, created_at, updated_at
     ) VALUES (
       ${id},
       ${data.campaignId ?? ""},
@@ -520,6 +521,7 @@ export async function pgSaveSocialPost(data: Partial<SocialMediaPost> & { id?: s
       ${data.contentType ?? "image"},
       ${data.mediaUrl ?? null},
       ${data.description ?? null},
+      ${data.mediaScope?.trim() || null},
       ${data.publishedDate ?? now.split("T")[0]},
       ${data.published ?? true},
       ${sortOrder},
@@ -541,6 +543,7 @@ export async function pgSaveSocialPost(data: Partial<SocialMediaPost> & { id?: s
       content_type = EXCLUDED.content_type,
       media_url = EXCLUDED.media_url,
       description = EXCLUDED.description,
+      media_scope = COALESCE(EXCLUDED.media_scope, social_media_posts.media_scope),
       published_date = EXCLUDED.published_date,
       published = EXCLUDED.published,
       sort_order = EXCLUDED.sort_order,

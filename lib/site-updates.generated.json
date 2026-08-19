@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "hash": "83b49d5e6ef8c19d46104e80412f514acde330c9",
+      "committedAt": "2026-08-19T13:59:26+03:30",
+      "title": "تشخیص خودکار نوع محل از نقشه تبلیغات محیطی",
+      "subject": "Fill billboard location type from the map"
+    },
+    {
+      "hash": "e047e708b08ef1b75a0eea731f35efe10c6b93b3",
+      "committedAt": "2026-08-19T13:58:38+03:30",
+      "title": "نمایش محدودیت روزانه با شمارش معکوس به‌جای خطای رسانه",
+      "subject": "Show daily posting quota instead of media error"
+    },
+    {
       "hash": "6f3c9d4898c0a26500b321c320659e22b67d0f35",
       "committedAt": "2026-08-19T13:52:10+03:30",
       "title": "افزودن چمستان به فهرست انتخاب شهرستان در مازندران",

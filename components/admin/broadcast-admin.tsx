@@ -55,7 +55,12 @@ import { useAdminEditDeepLink } from "@/lib/hooks/use-admin-edit-deep-link";
 import { useAdminViewMode } from "@/lib/hooks/use-admin-view-mode";
 import { useSectionCreateGate } from "@/lib/hooks/use-section-create-gate";
 import { todayISO } from "@/lib/jalali";
-import { MEDIA_REPUBLISH_SCOPE_OPTIONS } from "@/lib/scoring/scoring-policy";
+import {
+  MEDIA_REPUBLISH_SCOPE_KEYS,
+  MEDIA_REPUBLISH_SCOPE_OPTIONS,
+  resolveMediaRepublishScope,
+  type MediaRepublishScope,
+} from "@/lib/scoring/scoring-policy";
 import type { AdminUser, BroadcastReport, VideoVersion } from "@/lib/types";
 import { cn, formatPersianDate } from "@/lib/utils";
 
@@ -66,7 +71,7 @@ const schema = z.object({
   title: z.string().min(1).max(CONTENT_TITLE_MAX_LENGTH, CONTENT_TITLE_MAX_LENGTH_MESSAGE),
   reportDate: z.string(),
   mediaType: z.enum(["pdf", "media"]),
-  mediaScope: z.enum(["national", "local"]),
+  mediaScope: z.enum(MEDIA_REPUBLISH_SCOPE_KEYS),
   pdfUrl: z.string().min(1),
   fileName: z.string().min(1),
   coverImageUrl: z.string().optional(),
@@ -97,9 +102,9 @@ function emptyFormValues(): FormValues {
   };
 }
 
-function resolveMediaScope(report: BroadcastReport): "national" | "local" {
+function resolveMediaScope(report: BroadcastReport): MediaRepublishScope {
   const raw = report.mediaScope ?? report.summaryData.mediaScope;
-  return raw === "local" ? "local" : "national";
+  return resolveMediaRepublishScope(typeof raw === "string" ? raw : null);
 }
 
 function reportToFormValues(report: BroadcastReport): FormValues {
@@ -594,7 +599,7 @@ export function BroadcastAdmin({
               <Select
                 value={form.watch("mediaScope")}
                 onValueChange={(value) =>
-                  form.setValue("mediaScope", value as "national" | "local", {
+                  form.setValue("mediaScope", value as MediaRepublishScope, {
                     shouldDirty: true,
                   })
                 }
@@ -611,7 +616,7 @@ export function BroadcastAdmin({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                سراسری و محلی امتیاز جداگانه در قوانین «باز نشر در رسانه‌ها» دارند.
+                سراسری، استانی و محلی امتیاز جداگانه در قوانین «باز نشر در رسانه‌ها» دارند.
               </p>
             </div>
 

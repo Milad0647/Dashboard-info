@@ -431,6 +431,10 @@ export function mapSocialPostFromDb(row: any): SocialMediaPost {
     publishedDate: toDateString(row.published_date),
     published: row.published ?? false,
     sortOrder: row.sort_order ?? 0,
+    mediaScope:
+      typeof row.media_scope === "string" && row.media_scope.trim()
+        ? row.media_scope.trim()
+        : null,
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
   };

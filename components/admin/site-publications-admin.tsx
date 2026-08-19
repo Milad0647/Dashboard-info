@@ -14,6 +14,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -55,6 +62,12 @@ import {
   MAX_SOCIAL_POST_LINK_ENTRIES,
   normalizeSocialPostLinkEntries,
 } from "@/lib/social-posts";
+import {
+  MEDIA_REPUBLISH_SCOPE_KEYS,
+  MEDIA_REPUBLISH_SCOPE_OPTIONS,
+  resolveMediaRepublishScope,
+  type MediaRepublishScope,
+} from "@/lib/scoring/scoring-policy";
 import type { AdminUser, SocialMediaPost, SocialPostLinkEntry } from "@/lib/types";
 import { cn, ensureHttpUrl, formatPersianDate, formatPersianNumber, isValidHttpUrl } from "@/lib/utils";
 
@@ -67,6 +80,7 @@ const schema = z.object({
   coverImageUrl: z.string().optional(),
   description: z.string().optional(),
   publishedDate: z.string(),
+  mediaScope: z.enum(MEDIA_REPUBLISH_SCOPE_KEYS),
 });
 
 interface SitePublicationsAdminProps {
@@ -138,6 +152,7 @@ export function SitePublicationsAdmin({
       coverImageUrl: "",
       description: "",
       publishedDate: todayISO(),
+      mediaScope: "national" as const,
     },
   });
 
@@ -169,6 +184,7 @@ export function SitePublicationsAdmin({
       coverImageUrl: post.coverImageUrl ?? "",
       description: post.description ?? "",
       publishedDate: post.publishedDate,
+      mediaScope: resolveMediaRepublishScope(post.mediaScope),
     });
     setFields(fields);
     setOpen(true);
@@ -254,6 +270,7 @@ export function SitePublicationsAdmin({
         coverImageUrl: "",
         description: "",
         publishedDate: todayISO(),
+        mediaScope: "national",
       });
       setOpen(true);
     });
@@ -380,6 +397,7 @@ export function SitePublicationsAdmin({
         likes: 0,
         comments: 0,
         shares: 0,
+        mediaScope: data.mediaScope,
         planLabels,
         planLabel: planLabels[0] ?? null,
         ...(canTransferOwnership
@@ -412,6 +430,7 @@ export function SitePublicationsAdmin({
         likes: 0,
         comments: 0,
         shares: 0,
+        mediaScope: data.mediaScope,
         planLabels,
         planLabel: planLabels[0] ?? null,
         sortOrder: rows.length + 1,
@@ -742,6 +761,24 @@ export function SitePublicationsAdmin({
             )}
 
             <PersianDateField control={form.control} name="publishedDate" label="تاریخ انتشار" />
+            <div className="space-y-2">
+              <Label>سطح پوشش رسانه</Label>
+              <Select
+                value={form.watch("mediaScope")}
+                onValueChange={(value) => form.setValue("mediaScope", value as MediaRepublishScope)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="انتخاب سطح پوشش" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEDIA_REPUBLISH_SCOPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.key} value={option.key}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <PlanLabelSelect
               topics={contentTopics}
               plans={contentPlans}

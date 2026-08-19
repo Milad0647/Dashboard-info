@@ -634,6 +634,8 @@ export interface SocialMediaPost extends Ownable {
   publishedDate: string;
   published: boolean;
   sortOrder: number;
+  /** Coverage scope for scoring: national / provincial / local. */
+  mediaScope?: "national" | "provincial" | "local" | string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -671,8 +673,8 @@ export interface BroadcastReportSummary {
   mediaType?: "pdf" | "media" | "video";
   /** Optional auto/custom cover when media is a video */
   coverImageUrl?: string;
-  /** Coverage scope for scoring: national (سراسری) or local (محلی). */
-  mediaScope?: "national" | "local" | string | null;
+  /** Coverage scope for scoring: national / provincial / local. */
+  mediaScope?: "national" | "provincial" | "local" | string | null;
   statusBreakdown?: BroadcastStatusRow[];
   cityBreakdown?: BroadcastCityRow[];
   billboards?: BroadcastBillboardRow[];
@@ -689,7 +691,7 @@ export interface BroadcastReport extends Ownable {
   fileName: string;
   summaryData: BroadcastReportSummary;
   /** Convenience mirror of summaryData.mediaScope for scoring / forms. */
-  mediaScope?: "national" | "local" | string | null;
+  mediaScope?: "national" | "provincial" | "local" | string | null;
   published: boolean;
   sortOrder: number;
   createdAt: string;
@@ -745,8 +747,8 @@ export interface CampaignActivity extends Ownable {
   description?: string | null;
   /** Marked as a creative field activity for review/filtering. */
   isCreative: boolean;
-  /** Coverage scope for press republication scoring (national / local). */
-  mediaScope?: "national" | "local" | string | null;
+  /** Coverage scope for press republication scoring (national / provincial / local). */
+  mediaScope?: "national" | "provincial" | "local" | string | null;
   /** Content genre for press publications (news, interview, report, …). */
   pressContentType?: PressContentType | string | null;
   published: boolean;

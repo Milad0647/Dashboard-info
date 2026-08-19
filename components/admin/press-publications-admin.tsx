@@ -62,7 +62,12 @@ import {
   PRESS_CONTENT_TYPES,
   PRESS_PUBLICATION_LABEL,
 } from "@/lib/press-publications";
-import { MEDIA_REPUBLISH_SCOPE_OPTIONS } from "@/lib/scoring/scoring-policy";
+import {
+  MEDIA_REPUBLISH_SCOPE_KEYS,
+  MEDIA_REPUBLISH_SCOPE_OPTIONS,
+  resolveMediaRepublishScope,
+  type MediaRepublishScope,
+} from "@/lib/scoring/scoring-policy";
 import { cn, ensureHttpUrl, formatPersianDate, isValidHttpUrl } from "@/lib/utils";
 import type { ActivityMediaItem, AdminUser, CampaignActivity, PressContentType } from "@/lib/types";
 import { ContentScoreControl } from "@/components/admin/content-score-control";
@@ -85,7 +90,7 @@ const schema = z.object({
     "advertorial",
     "other",
   ]),
-  mediaScope: z.enum(["national", "local"]),
+  mediaScope: z.enum(MEDIA_REPUBLISH_SCOPE_KEYS),
   activityDate: z.string(),
   location: z.string().optional(),
   link: z
@@ -184,7 +189,7 @@ export function PressPublicationsAdmin({
       form.reset({
         title: activity.title,
         pressContentType: resolvePressContentType(activity.pressContentType),
-        mediaScope: activity.mediaScope === "local" ? "local" : "national",
+        mediaScope: resolveMediaRepublishScope(activity.mediaScope),
         activityDate: activity.activityDate,
         location: activity.location,
         link: activity.link ?? "",
@@ -246,7 +251,7 @@ export function PressPublicationsAdmin({
     form.reset({
       title: activity.title,
       pressContentType: resolvePressContentType(activity.pressContentType),
-      mediaScope: activity.mediaScope === "local" ? "local" : "national",
+      mediaScope: resolveMediaRepublishScope(activity.mediaScope),
       activityDate: activity.activityDate,
       location: activity.location,
       link: activity.link ?? "",
@@ -597,7 +602,7 @@ export function PressPublicationsAdmin({
               <Select
                 value={form.watch("mediaScope")}
                 onValueChange={(value) =>
-                  form.setValue("mediaScope", value as "national" | "local")
+                  form.setValue("mediaScope", value as MediaRepublishScope)
                 }
               >
                 <SelectTrigger>

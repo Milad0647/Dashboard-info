@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import type { UserLeaderboardEntry } from "@/lib/city-leaderboard";
 import { getUserCompanyTypeLabel } from "@/lib/user-company-types";
 import { getUserRegionLabel } from "@/lib/user-regions";
+import { getMediaRepublishScopeLabel } from "@/lib/scoring/scoring-policy";
 import type {
   CompanyExcelSource,
   CompanySupervisionItem,
@@ -248,6 +249,7 @@ function socialRows(
     "نوع محتوا": item.contentType ?? "",
     لینک: item.link ?? "",
     "تاریخ انتشار": item.publishedDate ?? "",
+    "سطح پوشش": item.mediaScope?.trim() ? getMediaRepublishScopeLabel(item.mediaScope) : "",
     بازدید: item.views ?? 0,
     لایک: item.likes ?? 0,
     کامنت: item.comments ?? 0,
@@ -275,7 +277,7 @@ function activityRows(list: CampaignActivity[], items: CompanySupervisionItem[])
     مکان: item.location ?? "",
     لینک: item.link ?? "",
     خلاقانه: item.isCreative ? "بله" : "خیر",
-    "دامنه رسانه": item.mediaScope ?? "",
+    "دامنه رسانه": item.mediaScope?.trim() ? getMediaRepublishScopeLabel(item.mediaScope) : "",
     "ژانر نشریه": item.pressContentType ?? "",
     تصویر: item.imageUrl ?? "",
     ویدیو: item.videoUrl ?? "",
