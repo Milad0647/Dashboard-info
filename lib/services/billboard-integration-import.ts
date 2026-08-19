@@ -5,6 +5,7 @@ import {
   fetchCampaignIntegration,
   mapIntegrationBillboardToBillboard,
 } from "@/lib/services/billboard-api";
+import { downloadRemoteImageToLocal } from "@/lib/services/save-uploaded-file";
 import { matchOwnerToUser } from "@/lib/services/owner-user-match";
 import type { AdminUser, Billboard } from "@/lib/types";
 import { generateId } from "@/lib/utils";
@@ -16,6 +17,29 @@ export interface IntegrationBillboardImportResult {
   unmatchedOwners: string[];
   matchedUsers: number;
   total: number;
+}
+
+function isRemoteUrl(url?: string | null): boolean {
+  if (!url?.trim()) return false;
+  return url.startsWith("http://") || url.startsWith("https://");
+}
+
+async function localizeImageUrls(billboard: Partial<Billboard>): Promise<Partial<Billboard>> {
+  const result = { ...billboard };
+  if (isRemoteUrl(result.imageUrl)) {
+    const local = await downloadRemoteImageToLocal(result.imageUrl!);
+    if (local) {
+      result.imageUrl = local;
+      if (!result.thumbnailUrl || isRemoteUrl(result.thumbnailUrl)) {
+        result.thumbnailUrl = local;
+      }
+    }
+  }
+  if (isRemoteUrl(result.thumbnailUrl)) {
+    const local = await downloadRemoteImageToLocal(result.thumbnailUrl!);
+    if (local) result.thumbnailUrl = local;
+  }
+  return result;
 }
 
 function indexByExternalId(dbBillboards: Billboard[]): Map<string, Billboard> {
@@ -86,8 +110,9 @@ export async function importIntegrationBillboards(params: {
         source: "manual",
       });
 
+      const localized = await localizeImageUrls(mapped);
       await pgSaveBillboard({
-        ...mapped,
+        ...localized,
         id: existing.id,
         source: "manual",
         ownerUserId:
@@ -106,8 +131,9 @@ export async function importIntegrationBillboards(params: {
       source: "manual",
     });
 
+    const localized = await localizeImageUrls(mapped);
     await pgSaveBillboard({
-      ...mapped,
+      ...localized,
       id: generateId(),
       ownerUserId: ownerOverrideUserId ?? mapped.ownerUserId ?? null,
     });

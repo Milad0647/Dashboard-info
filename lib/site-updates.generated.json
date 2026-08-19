@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "583d34d54ac6cefa34b5b5a32844e675c720f9ed",
+      "committedAt": "2026-08-19T11:46:39+03:30",
+      "title": "رفع مشکل باز نشدن دراپ‌داون موضوع در فرم‌های ثبت محتوا",
+      "subject": "Fix SearchableSelect dropdown not interactive inside dialogs"
+    },
+    {
       "hash": "c74fffdbcc94652625a739f074a40a5c12048cac",
       "committedAt": "2026-08-19T11:41:23+03:30",
       "title": "نمایش خطای محدودیت بارگذاری روزانه هنگام کلیک روی دکمه ثبت جدید",

@@ -180,3 +180,50 @@ export async function saveUploadedImageFile(file: File): Promise<string> {
 
   return getUploadPublicUrl(filename);
 }
+
+/**
+ * Download a remote image URL and save it locally, returning a `/api/files/...` URL.
+ * Returns `null` when the download fails or the response is not an image.
+ */
+export async function downloadRemoteImageToLocal(
+  remoteUrl: string
+): Promise<string | null> {
+  if (!remoteUrl?.trim()) return null;
+  if (remoteUrl.startsWith("/api/files/")) return remoteUrl;
+
+  try {
+    const response = await fetch(remoteUrl, {
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.startsWith("image/")) return null;
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (buffer.length === 0 || buffer.length > MAX_IMAGE_BYTES) return null;
+
+    const kind = detectFileKind(buffer);
+    const mime = mimeFromDetectedKind(kind) || contentType.split(";")[0].trim();
+    if (!IMAGE_TYPES.has(mime)) return null;
+
+    const normalized = await normalizeImageForWeb(buffer, mime);
+    const filename = `${randomUUID()}${normalized.extension}`;
+    const uploadsDir = getUploadsDir();
+
+    await mkdir(uploadsDir, { recursive: true });
+    await writeFile(`${uploadsDir}/${filename}`, normalized.buffer);
+
+    if (isThumbnailableImageFilename(filename)) {
+      try {
+        await writeImageThumbnail(filename, normalized.buffer);
+      } catch {
+        // thumbnail generation is best-effort
+      }
+    }
+
+    return getUploadPublicUrl(filename);
+  } catch {
+    return null;
+  }
+}
