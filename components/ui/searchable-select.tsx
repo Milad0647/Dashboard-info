@@ -116,14 +116,20 @@ export function SearchableSelect({
 
       // Inside a Radix Dialog: portal INTO the dialog content so the panel is not
       // marked inert / aria-hidden (body portals are). Absolute coords are relative
-      // to the dialog box (which is position:fixed + transformed).
+      // to the dialog box (which is position:fixed + transformed), and must account
+      // for the dialog's own scroll offset.
       if (dialog) {
         const dialogRect = dialog.getBoundingClientRect();
+        const scrollTop = dialog.scrollTop;
+        const scrollLeft = dialog.scrollLeft;
         const width = Math.min(Math.max(rect.width, 0), dialogRect.width - 16);
         const left = Math.min(
-          Math.max(8, rect.left - dialogRect.left),
+          Math.max(8, rect.left - dialogRect.left + scrollLeft),
           Math.max(8, dialogRect.width - width - 8)
         );
+
+        const topInDialog = rect.bottom - dialogRect.top + scrollTop + 4;
+        const bottomInDialog = dialogRect.bottom - rect.top + scrollTop + 4;
 
         setPortalTarget(dialog);
         setPanelStyle({
@@ -133,8 +139,8 @@ export function SearchableSelect({
           maxHeight,
           zIndex: 60,
           ...(openUp
-            ? { bottom: dialogRect.bottom - rect.top + 4 }
-            : { top: rect.bottom - dialogRect.top + 4 }),
+            ? { bottom: bottomInDialog }
+            : { top: topInDialog }),
         });
         return;
       }
@@ -156,11 +162,14 @@ export function SearchableSelect({
     };
 
     updatePosition();
+    const dialog = findDialogContent(rootRef.current);
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
+    dialog?.addEventListener("scroll", updatePosition);
     return () => {
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
+      dialog?.removeEventListener("scroll", updatePosition);
     };
   }, [open, filtered.length]);
 
