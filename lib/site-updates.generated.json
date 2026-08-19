@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "daebb3b60d9aca779cbcd27d46b70605db114d5d",
+      "committedAt": "2026-08-19T11:22:25+03:30",
+      "title": "رفع مشکل باز نشدن لیست موضوع در دیالوگ‌های اسکرول‌دار (مجلات و روزنامه‌ها)",
+      "subject": "Fix SearchableSelect panel clipped by dialog overflow"
+    },
+    {
       "hash": "a2718dba0024cf8ff7e559539fc44046412a8705",
       "committedAt": "2026-08-19T11:20:48+03:30",
       "title": "رفع مشکل باز نشدن لیست موضوع در بخش شبکه‌های اجتماعی",

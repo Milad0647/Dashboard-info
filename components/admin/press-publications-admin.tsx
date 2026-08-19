@@ -81,6 +81,8 @@ const schema = z.object({
     "report",
     "news_report",
     "interview",
+    "ad",
+    "advertorial",
     "other",
   ]),
   mediaScope: z.enum(["national", "local"]),
