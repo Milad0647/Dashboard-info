@@ -194,18 +194,17 @@ export async function downloadRemoteImageToLocal(
   try {
     const response = await fetch(remoteUrl, {
       signal: AbortSignal.timeout(30_000),
+      headers: { Accept: "image/*" },
     });
     if (!response.ok) return null;
-
-    const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.startsWith("image/")) return null;
 
     const buffer = Buffer.from(await response.arrayBuffer());
     if (buffer.length === 0 || buffer.length > MAX_IMAGE_BYTES) return null;
 
+    const contentType = response.headers.get("content-type") ?? "";
     const kind = detectFileKind(buffer);
     const mime = mimeFromDetectedKind(kind) || contentType.split(";")[0].trim();
-    if (!IMAGE_TYPES.has(mime)) return null;
+    if (!IMAGE_TYPES.has(mime) && kind === "unknown") return null;
 
     const normalized = await normalizeImageForWeb(buffer, mime);
     const filename = `${randomUUID()}${normalized.extension}`;

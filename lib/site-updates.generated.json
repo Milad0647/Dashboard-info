@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "05e52416849138f6b90126f4b2a2a19603c6bafc",
+      "committedAt": "2026-08-19T12:09:45+03:30",
+      "title": "رفع مشکل باز نشدن لیست‌های انتخابی داخل دیالوگ‌ها",
+      "subject": "Fix SearchableSelect not opening inside dialogs"
+    },
+    {
       "hash": "f4f3eda22675a066af5f40fdfdbe52503a91b1db",
       "committedAt": "2026-08-19T12:02:28+03:30",
       "title": "افزودن دکمه دانلود تصاویر خارجی در صفحه ادمین تبلیغات محیطی",

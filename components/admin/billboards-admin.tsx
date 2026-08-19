@@ -237,7 +237,7 @@ export function BillboardsAdmin({
   };
 
   const handleLocalizeImages = () => {
-    if (!isFullAdmin || isLocalizingImages) return;
+    if (isLocalizingImages) return;
     setIsLocalizingImages(true);
     startTransition(async () => {
       try {
@@ -282,23 +282,21 @@ export function BillboardsAdmin({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {isFullAdmin && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isLocalizingImages}
-              onClick={handleLocalizeImages}
-            >
-              {isLocalizingImages ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  در حال دانلود تصاویر...
-                </>
-              ) : (
-                "دانلود تصاویر خارجی"
-              )}
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isLocalizingImages}
+            onClick={handleLocalizeImages}
+          >
+            {isLocalizingImages ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                در حال دانلود تصاویر...
+              </>
+            ) : (
+              "دانلود تصاویر خارجی"
+            )}
+          </Button>
           {isFullAdmin && (
             <Button
               type="button"
