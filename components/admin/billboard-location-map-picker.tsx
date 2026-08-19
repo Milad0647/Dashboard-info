@@ -10,6 +10,8 @@ interface BillboardLocationMapPickerProps {
   longitude: number;
   mapCenter?: { lat: number; lng: number; revision?: number } | null;
   onChange: (coords: { latitude: number; longitude: number }) => void;
+  /** Fired only when the user clicks the map or finishes dragging the marker. */
+  onUserPick?: (coords: { latitude: number; longitude: number }) => void;
 }
 
 export function BillboardLocationMapPicker({
@@ -17,14 +19,17 @@ export function BillboardLocationMapPicker({
   longitude,
   mapCenter = null,
   onChange,
+  onUserPick,
 }: BillboardLocationMapPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const onChangeRef = useRef(onChange);
+  const onUserPickRef = useRef(onUserPick);
   const pendingCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const skipCoordsSyncRef = useRef(false);
   onChangeRef.current = onChange;
+  onUserPickRef.current = onUserPick;
 
   const mapCenterRef = useRef(mapCenter);
   mapCenterRef.current = mapCenter;
@@ -77,12 +82,16 @@ export function BillboardLocationMapPicker({
       const marker = L.marker([initialCenter.lat, initialCenter.lng], { draggable: true }).addTo(map);
       marker.on("dragend", () => {
         const position = marker.getLatLng();
-        onChangeRef.current({ latitude: position.lat, longitude: position.lng });
+        const coords = { latitude: position.lat, longitude: position.lng };
+        onChangeRef.current(coords);
+        onUserPickRef.current?.(coords);
       });
 
       map.on("click", (event) => {
         marker.setLatLng(event.latlng);
-        onChangeRef.current({ latitude: event.latlng.lat, longitude: event.latlng.lng });
+        const coords = { latitude: event.latlng.lat, longitude: event.latlng.lng };
+        onChangeRef.current(coords);
+        onUserPickRef.current?.(coords);
       });
 
       mapRef.current = map;
@@ -112,7 +121,8 @@ export function BillboardLocationMapPicker({
     <div className="overflow-hidden rounded-xl border bg-card">
       <div ref={containerRef} className="h-[320px] w-full" />
       <p className="border-t px-3 py-2 text-xs text-muted-foreground">
-        روی نقشه کلیک کنید یا نشانگر را بکشید. مختصات: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+        روی نقشه کلیک کنید یا نشانگر را بکشید تا نوع محل از نقشه خوانده شود. مختصات:{" "}
+        {latitude.toFixed(5)}, {longitude.toFixed(5)}
       </p>
     </div>
   );

@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "6f3c9d4898c0a26500b321c320659e22b67d0f35",
+      "committedAt": "2026-08-19T13:52:10+03:30",
+      "title": "افزودن چمستان به فهرست انتخاب شهرستان در مازندران",
+      "subject": "Add Chamestan to Mazandaran city options"
+    },
+    {
       "hash": "b400dcfb78b2e46e2308ff94076e6ecb1b24d669",
       "committedAt": "2026-08-19T12:47:36+03:30",
       "title": "افزودن دکمه حذف وابستگی خارجی در بخش تبلیغات محیطی",

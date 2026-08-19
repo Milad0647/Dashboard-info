@@ -1,9 +1,55 @@
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, ChevronDown } from "lucide-react";
+import { announceExclusiveDropdown, EXCLUSIVE_DROPDOWN_EVENT } from "@/lib/exclusive-dropdown";
 import { cn } from "@/lib/utils";
 
-const Select = SelectPrimitive.Root;
+type SelectRootProps = React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root> & {
+  /** Radix Select supports this at runtime; types in this version omit it. */
+  modal?: boolean;
+};
+
+function Select({
+  modal = false,
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
+  ...props
+}: SelectRootProps) {
+  const id = React.useId();
+  const isControlled = openProp !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false);
+  const open = isControlled ? openProp : uncontrolledOpen;
+
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      if (next) announceExclusiveDropdown(id);
+      if (!isControlled) setUncontrolledOpen(next);
+      onOpenChange?.(next);
+    },
+    [id, isControlled, onOpenChange]
+  );
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onOther = (event: Event) => {
+      const otherId = (event as CustomEvent<string>).detail;
+      if (otherId === id) return;
+      handleOpenChange(false);
+    };
+    window.addEventListener(EXCLUSIVE_DROPDOWN_EVENT, onOther);
+    return () => window.removeEventListener(EXCLUSIVE_DROPDOWN_EVENT, onOther);
+  }, [open, id, handleOpenChange]);
+
+  return (
+    <SelectPrimitive.Root
+      {...({ modal, open, onOpenChange: handleOpenChange, ...props } as React.ComponentPropsWithoutRef<
+        typeof SelectPrimitive.Root
+      >)}
+    />
+  );
+}
+
 const SelectGroup = SelectPrimitive.Group;
 const SelectValue = SelectPrimitive.Value;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,10 @@ import {
   isDefaultBillboardTitle,
   type EditSuggestionMissingField,
 } from "@/lib/edit-suggestions";
+import {
+  BILLBOARD_LOCATION_TYPES,
+  isBillboardLocationTypeKey,
+} from "@/lib/billboard-location-types";
 import { getLocationCenter, resolveLocationNames } from "@/lib/iran-location-center";
 import type { AdminUser, Billboard, BillboardDisplayPeriod } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -123,7 +127,9 @@ export function BillboardCreateAssignmentDialog({
   const [province, setProvince] = useState("");
   const [city, setCity] = useState("");
   const [category, setCategory] = useState<BillboardCategory>("billboard");
-  const [locationType, setLocationType] = useState("highway");
+  const [locationType, setLocationType] = useState("");
+  const [locationTypeFromMap, setLocationTypeFromMap] = useState(false);
+  const [detectingLocationType, setDetectingLocationType] = useState(false);
   const [usesApprovedDesign, setUsesApprovedDesign] = useState(true);
   const [axis, setAxis] = useState("");
   const [areaSqm, setAreaSqm] = useState("");
@@ -172,6 +178,8 @@ export function BillboardCreateAssignmentDialog({
   };
 
   const isEditing = Boolean(editingBillboard);
+  const locationDetectTimerRef = useRef<number | null>(null);
+  const locationDetectAbortRef = useRef<AbortController | null>(null);
 
   const hasPeriodMedia = periods.some(
     (period) =>
@@ -204,7 +212,9 @@ export function BillboardCreateAssignmentDialog({
         setProvince(resolvedProvince);
         setCity(resolvedCity);
         setCategory(matchBillboardCategoryKey(editingBillboard.category) ?? "billboard");
-        setLocationType(editingBillboard.locationType ?? "highway");
+        setLocationType(editingBillboard.locationType ?? "");
+        setLocationTypeFromMap(false);
+        setDetectingLocationType(false);
         setUsesApprovedDesign(Boolean(editingBillboard.usesApprovedDesign));
         setAxis(editingBillboard.title);
         setAreaSqm(parseAreaSqmFromBillboard(editingBillboard));
@@ -248,7 +258,11 @@ export function BillboardCreateAssignmentDialog({
       setProvince(resolved.province);
       setCity(resolved.city);
       setCategory("billboard");
-      setLocationType("highway");
+      setLocationType("");
+      setLocationTypeFromMap(false);
+      setDetectingLocationType(false);
+      if (locationDetectTimerRef.current) window.clearTimeout(locationDetectTimerRef.current);
+      locationDetectAbortRef.current?.abort();
       setUsesApprovedDesign(true);
       setAxis("");
       setAreaSqm("");
@@ -271,7 +285,45 @@ export function BillboardCreateAssignmentDialog({
     setCoords({ latitude: center.lat, longitude: center.lng });
   };
 
+  const detectLocationTypeFromMap = async (pick: { latitude: number; longitude: number }) => {
+    locationDetectAbortRef.current?.abort();
+    const controller = new AbortController();
+    locationDetectAbortRef.current = controller;
+    setDetectingLocationType(true);
+    try {
+      const response = await fetch(
+        `/api/map/location-type?lat=${encodeURIComponent(String(pick.latitude))}&lng=${encodeURIComponent(String(pick.longitude))}`,
+        { signal: controller.signal }
+      );
+      const data = (await response.json()) as { locationType?: string | null };
+      if (controller.signal.aborted) return;
+      if (typeof data.locationType === "string" && isBillboardLocationTypeKey(data.locationType)) {
+        setLocationType(data.locationType);
+        setLocationTypeFromMap(true);
+      }
+    } catch {
+      // aborted or network — user can still pick manually
+    } finally {
+      if (!controller.signal.aborted) setDetectingLocationType(false);
+    }
+  };
+
+  const handleUserMapPick = (pick: { latitude: number; longitude: number }) => {
+    if (locationDetectTimerRef.current) window.clearTimeout(locationDetectTimerRef.current);
+    locationDetectTimerRef.current = window.setTimeout(() => {
+      void detectLocationTypeFromMap(pick);
+    }, 400);
+  };
+
   const handleSubmit = () => {
+    if (!locationType) {
+      toast.error("نوع محل را انتخاب کنید");
+      return;
+    }
+    if (extraStructures.some((row) => !row.locationType)) {
+      toast.error("نوع محل همه سازه‌ها را انتخاب کنید");
+      return;
+    }
     if (axis.trim().length < 2) {
       toast.error("محور باید حداقل ۲ کاراکتر باشد");
       return;
@@ -420,20 +472,35 @@ export function BillboardCreateAssignmentDialog({
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>نوع محل *</Label>
-              <Select value={locationType} onValueChange={setLocationType}>
+              <Select
+                value={locationType || undefined}
+                onValueChange={(value) => {
+                  setLocationType(value);
+                  setLocationTypeFromMap(false);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="انتخاب محل" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="highway">بزرگراه</SelectItem>
-                  <SelectItem value="boulevard">بلوار</SelectItem>
-                  <SelectItem value="main_street">خیابان اصلی</SelectItem>
-                  <SelectItem value="square">میدان</SelectItem>
-                  <SelectItem value="metro">مترو</SelectItem>
-                  <SelectItem value="bus_station">ایستگاه اتوبوس</SelectItem>
-                  <SelectItem value="other">سایر</SelectItem>
+                  {BILLBOARD_LOCATION_TYPES.map((item) => (
+                    <SelectItem key={item.key} value={item.key}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              {detectingLocationType ? (
+                <p className="text-xs text-muted-foreground">در حال خواندن نوع محل از نقشه...</p>
+              ) : locationTypeFromMap ? (
+                <p className="text-xs text-muted-foreground">
+                  از نقشه تشخیص داده شد؛ در صورت نیاز می‌توانید عوض کنید.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  با کلیک روی نقشه پر می‌شود، یا خودتان انتخاب کنید.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>طرح مصوب</Label>
@@ -520,7 +587,7 @@ export function BillboardCreateAssignmentDialog({
                       {
                         id: crypto.randomUUID(),
                         category: "straboard",
-                        locationType: "boulevard",
+                        locationType: "",
                         areaSqm: "",
                         axis: "",
                         address: "",
@@ -571,7 +638,7 @@ export function BillboardCreateAssignmentDialog({
                       </SelectContent>
                     </Select>
                     <Select
-                      value={row.locationType}
+                      value={row.locationType || undefined}
                       onValueChange={(value) =>
                         setExtraStructures((prev) =>
                           prev.map((item) =>
@@ -581,16 +648,14 @@ export function BillboardCreateAssignmentDialog({
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="نوع محل" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="highway">بزرگراه</SelectItem>
-                        <SelectItem value="boulevard">بلوار</SelectItem>
-                        <SelectItem value="main_street">خیابان اصلی</SelectItem>
-                        <SelectItem value="square">میدان</SelectItem>
-                        <SelectItem value="metro">مترو</SelectItem>
-                        <SelectItem value="bus_station">ایستگاه اتوبوس</SelectItem>
-                        <SelectItem value="other">سایر</SelectItem>
+                        {BILLBOARD_LOCATION_TYPES.map((item) => (
+                          <SelectItem key={item.key} value={item.key}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <Input
@@ -672,6 +737,7 @@ export function BillboardCreateAssignmentDialog({
               longitude={coords.longitude}
               mapCenter={mapCenter}
               onChange={setCoords}
+              onUserPick={handleUserMapPick}
             />
           </div>
 

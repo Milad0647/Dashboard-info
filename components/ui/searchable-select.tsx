@@ -13,6 +13,7 @@ import {
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { announceExclusiveDropdown, EXCLUSIVE_DROPDOWN_EVENT } from "@/lib/exclusive-dropdown";
 import { cn } from "@/lib/utils";
 
 export interface SearchableSelectOption {
@@ -145,8 +146,16 @@ export function SearchableSelect({
 
   useEffect(() => {
     if (!open) return;
+    announceExclusiveDropdown(listId);
 
-    const onPointerDown = (event: MouseEvent) => {
+    const onOther = (event: Event) => {
+      const otherId = (event as CustomEvent<string>).detail;
+      if (otherId === listId) return;
+      setOpen(false);
+      setQuery("");
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (rootRef.current?.contains(target) || panelRef.current?.contains(target)) {
         return;
@@ -162,13 +171,15 @@ export function SearchableSelect({
       }
     };
 
-    document.addEventListener("mousedown", onPointerDown);
+    window.addEventListener(EXCLUSIVE_DROPDOWN_EVENT, onOther);
+    document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener(EXCLUSIVE_DROPDOWN_EVENT, onOther);
+      document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, listId]);
 
   useEffect(() => {
     if (!open) return;
@@ -282,7 +293,11 @@ export function SearchableSelect({
         title={clearAfterSelect ? undefined : displayLabel || undefined}
         onClick={() => {
           if (disabled) return;
-          setOpen((current) => !current);
+          setOpen((current) => {
+            const next = !current;
+            if (next) announceExclusiveDropdown(listId);
+            return next;
+          });
           setQuery("");
         }}
         className={cn(
