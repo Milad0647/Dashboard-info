@@ -883,12 +883,13 @@ export async function pgSaveCampaignActivity(data: Partial<CampaignActivity> & {
   const link = ensureHttpUrl(data.link ?? "");
 
   await sql`ALTER TABLE campaign_activities ADD COLUMN IF NOT EXISTS media_scope TEXT`;
+  await sql`ALTER TABLE campaign_activities ADD COLUMN IF NOT EXISTS press_content_type TEXT`;
 
   await sql`
     INSERT INTO campaign_activities (
       id, campaign_id, owner_user_id, title, activity_type, activity_date,
       location, link, image_url, video_url, media_items, attachments, description,
-      is_creative, media_scope, published, sort_order, plan_label, plan_labels, created_at, updated_at
+      is_creative, media_scope, press_content_type, published, sort_order, plan_label, plan_labels, created_at, updated_at
     ) VALUES (
       ${id},
       ${data.campaignId ?? ""},
@@ -905,6 +906,7 @@ export async function pgSaveCampaignActivity(data: Partial<CampaignActivity> & {
       ${data.description ?? null},
       ${data.isCreative ?? false},
       ${data.mediaScope?.trim() || null},
+      ${data.pressContentType?.toString().trim() || null},
       ${data.published ?? true},
       ${sortOrder},
       ${planLabel},
@@ -925,6 +927,7 @@ export async function pgSaveCampaignActivity(data: Partial<CampaignActivity> & {
       description = EXCLUDED.description,
       is_creative = EXCLUDED.is_creative,
       media_scope = EXCLUDED.media_scope,
+      press_content_type = EXCLUDED.press_content_type,
       published = EXCLUDED.published,
       sort_order = EXCLUDED.sort_order,
       owner_user_id = COALESCE(EXCLUDED.owner_user_id, campaign_activities.owner_user_id),

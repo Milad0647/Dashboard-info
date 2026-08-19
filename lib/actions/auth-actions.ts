@@ -240,7 +240,10 @@ export async function logoutAdminAction() {
     label: "خروج از پنل",
   });
 
-  if (session) {
+  // Only bump version for DB users (per-user key). Env admins share a
+  // single version key (__env_admin__), so bumping on logout would
+  // invalidate every other env-admin session simultaneously.
+  if (session && session.type === "db_user" && session.userId) {
     await bumpSessionVersion(session.userId);
   }
 

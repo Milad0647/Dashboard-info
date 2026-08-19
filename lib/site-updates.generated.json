@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "dd912c3a617459641aa65c4d657d4649a41194f0",
+      "committedAt": "2026-08-19T11:23:32+03:30",
+      "title": "افزودن گزینه‌های آگهی و رپرتاژ آگهی به بخش مجله و روزنامه",
+      "subject": "Add ad and advertorial press content types"
+    },
+    {
       "hash": "daebb3b60d9aca779cbcd27d46b70605db114d5d",
       "committedAt": "2026-08-19T11:22:25+03:30",
       "title": "رفع مشکل باز نشدن لیست موضوع در دیالوگ‌های اسکرول‌دار (مجلات و روزنامه‌ها)",
