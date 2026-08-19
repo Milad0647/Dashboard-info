@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "fs/promises";
 import { randomUUID } from "crypto";
 import sharp from "sharp";
-import { assertMagicMatchesKind, detectFileKind } from "@/lib/security/file-magic";
+import { assertMagicMatchesKind, detectFileKind, looksLikeSvg } from "@/lib/security/file-magic";
 import {
   isThumbnailableImageFilename,
   writeImageThumbnail,
@@ -16,6 +16,11 @@ const IMAGE_TYPES = new Set([
   "image/png",
   "image/webp",
   "image/gif",
+  "image/bmp",
+  "image/tiff",
+  "image/heic",
+  "image/heif",
+  "image/avif",
 ]);
 
 function extensionForMime(mime: string): string {
@@ -103,6 +108,28 @@ function resolveDeclaredImageMime(fileType: string): string {
   return normalized;
 }
 
+function looksLikeExecutable(buffer: Buffer): boolean {
+  // Windows PE / ELF / Mach-O
+  if (buffer.length >= 2 && buffer[0] === 0x4d && buffer[1] === 0x5a) return true;
+  if (
+    buffer.length >= 4 &&
+    buffer[0] === 0x7f &&
+    buffer[1] === 0x45 &&
+    buffer[2] === 0x4c &&
+    buffer[3] === 0x46
+  ) {
+    return true;
+  }
+  if (
+    buffer.length >= 4 &&
+    ((buffer[0] === 0xcf && buffer[1] === 0xfa && buffer[2] === 0xed && buffer[3] === 0xfe) ||
+      (buffer[0] === 0xce && buffer[1] === 0xfa && buffer[2] === 0xed && buffer[3] === 0xfe))
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export async function saveUploadedImageFile(file: File): Promise<string> {
   if (file.type === "image/svg+xml") {
     throw new Error("آپلود فایل SVG مجاز نیست");
@@ -114,19 +141,29 @@ export async function saveUploadedImageFile(file: File): Promise<string> {
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const magic = assertMagicMatchesKind(buffer, "image");
-  if (!magic.ok) {
-    throw new Error(magic.error);
-  }
 
   const declaredMime = resolveDeclaredImageMime(file.type);
   const mime = IMAGE_TYPES.has(declaredMime)
     ? declaredMime
     : mimeFromDetectedKind(detectFileKind(buffer));
-  if (!IMAGE_TYPES.has(mime)) {
-    throw new Error("نوع فایل تصویر مجاز نیست");
+  if (!magic.ok && !IMAGE_TYPES.has(mime)) {
+    if (looksLikeSvg(buffer)) {
+      throw new Error("آپلود فایل SVG مجاز نیست");
+    }
+    if (looksLikeExecutable(buffer)) {
+      throw new Error("نوع فایل تصویر مجاز نیست");
+    }
+    // Fallback for modern/phone formats that magic checker doesn't classify yet.
+    try {
+      await sharp(buffer, { failOn: "none", limitInputPixels: 100_000_000 })
+        .rotate()
+        .metadata();
+    } catch {
+      throw new Error("محتوای فایل با نوع تصویر هم‌خوانی ندارد");
+    }
   }
 
-  const normalized = await normalizeImageForWeb(buffer, mime);
+  const normalized = await normalizeImageForWeb(buffer, IMAGE_TYPES.has(mime) ? mime : "image/jpeg");
   const filename = `${randomUUID()}${normalized.extension}`;
   const uploadsDir = getUploadsDir();
 

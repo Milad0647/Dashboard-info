@@ -1,6 +1,36 @@
 {
   "entries": [
     {
+      "hash": "c57824599cf170313a2d3b21e8a944b4cb61d4b2",
+      "committedAt": "2026-08-17T17:13:43+03:30",
+      "title": "افزودن رتبه‌بندی بر اساس تعداد محتوا در کنار امتیازها",
+      "subject": "Add content-count ranking beside score modes"
+    },
+    {
+      "hash": "aa5fdfc86cf6dad8bb728b818968151b31f1feb2",
+      "committedAt": "2026-08-17T17:09:02+03:30",
+      "title": "محاسبه تعداد، امتیاز و رتبه عملکرد بر اساس بازه زمانی انتخاب‌شده",
+      "subject": "Rank performance by selected date window"
+    },
+    {
+      "hash": "c8ef7986789483665677a51b0c3bfc0e296a9010",
+      "committedAt": "2026-08-17T16:52:06+03:30",
+      "title": "تعیین سقف روزانه جدا برای هر دسته محتوا مثل پوستر و تبلیغات محیطی",
+      "subject": "Add daily posting limits per content type"
+    },
+    {
+      "hash": "02c104d0874a865a7481dd2dec53af0196ece476",
+      "committedAt": "2026-08-17T16:46:46+03:30",
+      "title": "تعیین سقف روزانه بارگذاری بر اساس استان و هر شرکت",
+      "subject": "Add province and per-company daily posting limits"
+    },
+    {
+      "hash": "66b67e9d1c45ed2d38e3d45fe8ba3879f8c0f116",
+      "committedAt": "2026-08-17T16:30:53+03:30",
+      "title": "فیلتر رتبه‌بندی در مشاهده عملکرد بر اساس استان، شهر، موضوع، تاریخ، دسته محتوا، نوع شرکت و منطقه",
+      "subject": "Add ranking filters to performance overview"
+    },
+    {
       "hash": "7909a3092ad17d4292595c86613972a1e5ab8ba6",
       "committedAt": "2026-08-17T16:25:09+03:30",
       "title": "فیلتر موارد بدون موضوع، محل اکران یا متراژ برای ارجاع به کاربر",

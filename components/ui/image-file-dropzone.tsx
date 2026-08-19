@@ -15,6 +15,17 @@ interface ImageFileDropzoneProps {
   disabled?: boolean;
 }
 
+const IMAGE_EXTENSION_FALLBACK_RE = /\.(jpe?g|png|webp|gif|bmp|tiff?|heic|heif|avif)$/i;
+
+function looksLikeImageFile(file: File): boolean {
+  if (file.type.startsWith("image/")) return true;
+  // Some browsers/Windows pickers return generic MIME for phone exports.
+  if (!file.type || file.type === "application/octet-stream") {
+    return IMAGE_EXTENSION_FALLBACK_RE.test(file.name);
+  }
+  return false;
+}
+
 export function ImageFileDropzone({
   value,
   onChange,
@@ -35,7 +46,7 @@ export function ImageFileDropzone({
 
   const handleFile = (file: File | null) => {
     if (!file) return;
-    if (file.type && !file.type.startsWith("image/")) return;
+    if (!looksLikeImageFile(file)) return;
     setFile(file);
   };
 
