@@ -11,8 +11,15 @@ export type ErrorSolutionCategory =
   | "permission"
   | "auth"
   | "quota"
+  | "daily_limit"
   | "runtime"
   | "other";
+
+export interface DailyLimitErrorDetails {
+  dailyMax: number;
+  /** e.g. پوسترها — null when the cap is the user category, not a content type */
+  scopeLabel: string | null;
+}
 
 export interface ResolvedErrorInfo {
   /** Short headline shown in the modal */
@@ -24,6 +31,7 @@ export interface ResolvedErrorInfo {
   category: ErrorSolutionCategory;
   /** Original raw message */
   message: string;
+  dailyLimit?: DailyLimitErrorDetails;
 }
 
 interface ErrorRule {
@@ -35,6 +43,14 @@ interface ErrorRule {
 }
 
 const RULES: ErrorRule[] = [
+  {
+    match: /سقف مجاز بارگذاری روزانه/,
+    title: "محدودیت روزانه",
+    problem: "سهمیه ثبت امروز برای این دسته تمام شده است.",
+    solution:
+      "تا باز شدن سهمیه فردا صبر کنید. شمارش معکوس تا نیمه‌شب (به وقت ایران) در همین پنجره نمایش داده می‌شود.",
+    category: "daily_limit",
+  },
   {
     match: /الزامی|لازم است|وارد کنید|انتخاب .+ الزامی|پر کنید/i,
     title: "اطلاعات ناقص",
@@ -156,6 +172,18 @@ function matchesRule(message: string, rule: ErrorRule): boolean {
   return rule.match.test(message);
 }
 
+function parseDailyLimitDetails(message: string): DailyLimitErrorDetails | undefined {
+  if (!/سقف مجاز بارگذاری روزانه/.test(message)) return undefined;
+  const maxMatch = message.match(/حداکثر\s+(\d+)\s+(?:مورد|محتوا)/);
+  const dailyMax = maxMatch ? Number(maxMatch[1]) : NaN;
+  if (!Number.isFinite(dailyMax) || dailyMax <= 0) return undefined;
+  const scopeMatch = message.match(/برای «([^»]+)» تکمیل شده/);
+  return {
+    dailyMax,
+    scopeLabel: scopeMatch?.[1]?.trim() || null,
+  };
+}
+
 /** Resolve a user-facing error message into title / problem / solution. */
 export function resolveErrorInfo(rawMessage: unknown): ResolvedErrorInfo {
   const message =
@@ -166,6 +194,7 @@ export function resolveErrorInfo(rawMessage: unknown): ResolvedErrorInfo {
         : "خطای ناشناخته";
 
   const safeMessage = message || "خطای ناشناخته";
+  const dailyLimit = parseDailyLimitDetails(safeMessage);
 
   for (const rule of RULES) {
     if (matchesRule(safeMessage, rule)) {
@@ -175,6 +204,7 @@ export function resolveErrorInfo(rawMessage: unknown): ResolvedErrorInfo {
         solution: rule.solution,
         category: rule.category,
         message: safeMessage,
+        ...(dailyLimit ? { dailyLimit } : {}),
       };
     }
   }
@@ -183,6 +213,7 @@ export function resolveErrorInfo(rawMessage: unknown): ResolvedErrorInfo {
     ...DEFAULT_INFO,
     problem: safeMessage.length <= 120 ? safeMessage : DEFAULT_INFO.problem,
     message: safeMessage,
+    ...(dailyLimit ? { dailyLimit } : {}),
   };
 }
 
@@ -194,6 +225,7 @@ export const ERROR_SOLUTION_CATEGORY_LABELS: Record<ErrorSolutionCategory, strin
   permission: "دسترسی",
   auth: "ورود",
   quota: "سهمیه",
+  daily_limit: "محدودیت روزانه",
   runtime: "سیستمی",
   other: "سایر",
 };

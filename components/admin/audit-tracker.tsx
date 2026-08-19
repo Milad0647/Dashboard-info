@@ -96,7 +96,8 @@ function reportUiError(
     });
   }
 
-  if (!isDuplicate) {
+  // Daily quota is expected policy, not a client/runtime problem for rasad.
+  if (!isDuplicate && info.category !== "daily_limit") {
     sendTrack({
       action: "ui.error",
       path: currentPath(),

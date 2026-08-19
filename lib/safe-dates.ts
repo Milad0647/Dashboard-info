@@ -45,6 +45,13 @@ export function getTehranOffsetDateIso(daysFromToday: number): string {
   return getTehranCalendarDateIso(base);
 }
 
+/** Next Tehran calendar midnight as epoch ms (daily quotas reset here). */
+export function getTehranNextMidnightMs(now: Date = new Date()): number {
+  const tehranToday = getTehranCalendarDateIso(now);
+  const todayStart = new Date(`${tehranToday}T00:00:00+03:30`).getTime();
+  return todayStart + 24 * 60 * 60 * 1000;
+}
+
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
