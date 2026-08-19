@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "f4f3eda22675a066af5f40fdfdbe52503a91b1db",
+      "committedAt": "2026-08-19T12:02:28+03:30",
+      "title": "افزودن دکمه دانلود تصاویر خارجی در صفحه ادمین تبلیغات محیطی",
+      "subject": "Add localize images button to billboards admin page"
+    },
+    {
       "hash": "7b777ea82ad7cbd04b10d558c765b128d28a863b",
       "committedAt": "2026-08-19T11:59:14+03:30",
       "title": "افزودن ابزار دانلود محلی عکس‌های بیلبورد از سرور خارجی",

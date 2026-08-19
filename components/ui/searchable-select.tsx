@@ -56,14 +56,6 @@ function findDialogContent(from: HTMLElement | null): HTMLElement | null {
   );
 }
 
-function findRadixPortal(from: HTMLElement | null): HTMLElement | null {
-  if (!from) return null;
-  const dialogContent = findDialogContent(from);
-  if (!dialogContent) return null;
-  const portal = dialogContent.closest("[data-radix-portal]") as HTMLElement | null;
-  return portal;
-}
-
 export function SearchableSelect({
   value,
   onValueChange,
@@ -111,7 +103,6 @@ export function SearchableSelect({
       const trigger = rootRef.current;
       if (!trigger) return;
 
-      const dialog = findDialogContent(trigger);
       const rect = trigger.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
@@ -122,30 +113,9 @@ export function SearchableSelect({
         Math.max(160, openUp ? spaceAbove - 12 : spaceBelow - 12)
       );
 
-      // Inside a Radix Dialog: portal into the Radix portal container (or
-      // the dialog element itself) so Radix does not mark our panel as inert.
-      // We use fixed positioning so the panel is never clipped by the
-      // dialog's overflow or CSS transform.
-      if (dialog) {
-        const width = Math.min(Math.max(rect.width, 0), window.innerWidth - 16);
-        const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
-
-        const radixPortal = findRadixPortal(trigger);
-        setPortalTarget(radixPortal ?? dialog);
-        setPanelStyle({
-          position: "fixed",
-          left,
-          width,
-          maxHeight,
-          zIndex: 220,
-          ...(openUp
-            ? { bottom: window.innerHeight - rect.top + 4 }
-            : { top: rect.bottom + 4 }),
-        });
-        return;
-      }
-
-      // Outside dialogs (filter bars, etc.): fixed to the viewport via body portal.
+      // Always portal to document.body with fixed positioning so the panel
+      // is never clipped by a parent's overflow or CSS transform.
+      // panelCallbackRef strips inert/aria-hidden that Radix Dialog applies.
       const width = Math.min(Math.max(rect.width, 0), window.innerWidth - 16);
       const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
       setPortalTarget(document.body);
