@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "631a3e8b7faf3099142cc246fca4f1c653ab0bee",
+      "committedAt": "2026-08-19T12:26:42+03:30",
+      "title": "حذف کامل وابستگی به سرور خارجی بیلبورد — تمام داده‌ها مستقل و محلی مدیریت می‌شوند",
+      "subject": "Remove all external billboard API dependencies (billboard.pixlink.ir)"
+    },
+    {
       "hash": "675678107de3bd6717f42915de8da351ebcebb20",
       "committedAt": "2026-08-19T12:15:40+03:30",
       "title": "پشتیبانی از فرمت‌های غیر وب (HEIC، AVIF و ...) با تبدیل خودکار به JPEG",
