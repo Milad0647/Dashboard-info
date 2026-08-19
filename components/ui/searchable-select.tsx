@@ -114,15 +114,15 @@ export function SearchableSelect({
         Math.max(160, openUp ? spaceAbove - 12 : spaceBelow - 12)
       );
 
-      // Inside a Radix Dialog: portal INTO the dialog DOM so the panel is not
-      // marked inert / aria-hidden (body portals are), but use position:fixed
-      // with viewport coords so the panel is not clipped by the dialog's
-      // overflow-y:auto.
+      // Inside a Radix Dialog: portal to body with fixed positioning so the
+      // panel is never clipped by the dialog's overflow or CSS transform.
+      // We temporarily remove inert/aria-hidden from the body portal so the
+      // panel remains interactive while the dialog is open.
       if (dialog) {
         const width = Math.min(Math.max(rect.width, 0), window.innerWidth - 16);
         const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
 
-        setPortalTarget(dialog);
+        setPortalTarget(document.body);
         setPanelStyle({
           position: "fixed",
           left,
@@ -197,6 +197,28 @@ export function SearchableSelect({
     return () => window.clearTimeout(timer);
   }, [open]);
 
+  // When the panel is portalled to document.body inside a Radix Dialog,
+  // Radix marks all direct body children as inert. Strip inert/aria-hidden
+  // from the panel element so it stays interactive.
+  const panelCallbackRef = (el: HTMLDivElement | null) => {
+    const prev = panelRef.current;
+    if (prev && (prev as HTMLDivElement & { _mo?: MutationObserver })._mo) {
+      (prev as HTMLDivElement & { _mo?: MutationObserver })._mo!.disconnect();
+    }
+    (panelRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    if (!el) return;
+    const strip = () => {
+      el.removeAttribute("inert");
+      if (el.getAttribute("aria-hidden") === "true") {
+        el.removeAttribute("aria-hidden");
+      }
+    };
+    strip();
+    const mo = new MutationObserver(strip);
+    mo.observe(el, { attributes: true, attributeFilter: ["inert", "aria-hidden"] });
+    (el as HTMLDivElement & { _mo?: MutationObserver })._mo = mo;
+  };
+
   const handleSelect = (nextValue: string) => {
     onValueChange(nextValue);
     setOpen(false);
@@ -206,7 +228,7 @@ export function SearchableSelect({
   const panel =
     open && !disabled && panelStyle && portalTarget ? (
       <div
-        ref={panelRef}
+        ref={panelCallbackRef}
         style={panelStyle}
         data-searchable-select-panel=""
         className="pointer-events-auto flex flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md"

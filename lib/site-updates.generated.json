@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "553fce20bdd82049d05a22440d96e95959534cf8",
+      "committedAt": "2026-08-19T11:24:42+03:30",
+      "title": "رفع مشکل منقضی شدن نشست سایر کاربران هنگام خروج ادمین",
+      "subject": "Fix shared session invalidation on env-admin logout"
+    },
+    {
       "hash": "dd912c3a617459641aa65c4d657d4649a41194f0",
       "committedAt": "2026-08-19T11:23:32+03:30",
       "title": "افزودن گزینه‌های آگهی و رپرتاژ آگهی به بخش مجله و روزنامه",

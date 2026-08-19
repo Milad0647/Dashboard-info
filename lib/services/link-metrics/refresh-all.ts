@@ -2,8 +2,8 @@ import { detectLinkMetricsPlatform } from "./detect";
 import { fetchSocialLinkMetrics } from "./index";
 import type { LinkMetricsResult } from "./types";
 import * as pgExt from "@/lib/db/repository-extended";
-import { isGroupSocialPost } from "@/lib/social-posts";
-import type { CampaignActivity, SocialMediaPost } from "@/lib/types";
+import { isGroupSocialPost, sumSocialPostLinkEntryViews } from "@/lib/social-posts";
+import type { CampaignActivity, SocialMediaPost, SocialPostLinkEntry } from "@/lib/types";
 import { isPostgresConfigured } from "@/lib/utils";
 
 const DEFAULT_DELAY_MS = 500;
@@ -118,7 +118,58 @@ export async function runDailyLinkMetricsRefresh(options?: {
     if (processed >= maxItems) break;
     summary.socialPosts.scanned += 1;
 
-    if (isGroupSocialPost(post) || !isLinkAutoRefreshable(post.link, post.platform)) {
+    if (isGroupSocialPost(post)) {
+      const entries = post.linkEntries ?? [];
+      const refreshableEntries = entries.filter((e) =>
+        isLinkAutoRefreshable(e.link, e.platform ?? post.platform)
+      );
+      if (refreshableEntries.length === 0) {
+        summary.socialPosts.skipped += 1;
+        continue;
+      }
+
+      processed += 1;
+      let anyUpdated = false;
+      const updatedEntries: SocialPostLinkEntry[] = [...entries];
+
+      for (const entry of refreshableEntries) {
+        try {
+          const metrics = await fetchSocialLinkMetrics(
+            entry.link,
+            entry.platform ?? post.platform
+          );
+          if (metrics.error || metrics.supported === false) continue;
+          const idx = updatedEntries.findIndex((e) => e.id === entry.id);
+          if (idx !== -1) {
+            updatedEntries[idx] = {
+              ...updatedEntries[idx],
+              views: metrics.views ?? updatedEntries[idx].views,
+              coverImageUrl:
+                pickText(updatedEntries[idx].coverImageUrl, metrics.coverImageUrl) ?? undefined,
+            };
+            anyUpdated = true;
+          }
+        } catch {
+          // skip individual entry errors
+        }
+        if (delayMs > 0) await sleep(delayMs);
+      }
+
+      if (anyUpdated) {
+        const totalViews = sumSocialPostLinkEntryViews(updatedEntries);
+        await pgExt.pgSaveSocialPost({
+          ...post,
+          linkEntries: updatedEntries,
+          views: totalViews,
+        });
+        summary.socialPosts.updated += 1;
+      } else {
+        summary.socialPosts.skipped += 1;
+      }
+      continue;
+    }
+
+    if (!isLinkAutoRefreshable(post.link, post.platform)) {
       summary.socialPosts.skipped += 1;
       continue;
     }
