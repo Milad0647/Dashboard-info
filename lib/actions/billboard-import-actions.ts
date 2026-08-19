@@ -1,69 +1,28 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { getAuthSession, isFullAdmin } from "@/lib/auth/get-session";
-import { saveBillboard } from "@/lib/data-access/admin";
-import {
-  fetchAllExternalBillboards,
-  fetchExternalCampaigns,
-  mapExternalBillboardToLocal,
-} from "@/lib/services/billboard-api";
-import { getExternalBillboardTag } from "@/lib/models/billboard-api";
 import type { ExternalBillboard, ExternalCampaign } from "@/lib/models/billboard-api";
-import type { Billboard } from "@/lib/types";
-
-async function requireFullAdmin(): Promise<{ success: false; error: string } | null> {
-  const session = await getAuthSession();
-  if (!session || !isFullAdmin(session)) {
-    return { success: false, error: "Unauthorized" };
-  }
-  return null;
-}
 
 export async function fetchExternalCampaignsAction(): Promise<{
   success: boolean;
   campaigns?: ExternalCampaign[];
   error?: string;
 }> {
-  const denied = await requireFullAdmin();
-  if (denied) return denied;
-
-  try {
-    const campaigns = await fetchExternalCampaigns();
-    return { success: true, campaigns };
-  } catch (error) {
-    console.error("fetchExternalCampaignsAction failed:", error);
-    return { success: false, error: "دریافت کمپین‌ها از Map Bilboard با خطا مواجه شد" };
-  }
+  return { success: false, error: "واردات از API خارجی غیرفعال شده است" };
 }
 
-export async function fetchExternalBillboardsAction(externalCampaignId: string): Promise<{
+export async function fetchExternalBillboardsAction(_externalCampaignId: string): Promise<{
   success: boolean;
   billboards?: ExternalBillboard[];
   error?: string;
 }> {
-  const denied = await requireFullAdmin();
-  if (denied) return denied;
-
-  try {
-    const billboards = await fetchAllExternalBillboards(externalCampaignId);
-    return { success: true, billboards };
-  } catch (error) {
-    console.error("fetchExternalBillboardsAction failed:", error);
-    return { success: false, error: "دریافت بیلبوردها با خطا مواجه شد" };
-  }
+  return { success: false, error: "واردات از API خارجی غیرفعال شده است" };
 }
 
-function isAlreadyImported(existing: Billboard[], externalId: string): boolean {
-  const tag = getExternalBillboardTag(externalId);
-  return existing.some((billboard) => billboard.tags.includes(tag));
-}
-
-export async function importExternalBillboardsAction(input: {
+export async function importExternalBillboardsAction(_input: {
   campaignId: string;
   externalCampaignId: string;
   externalBillboardIds: string[];
-  existingBillboards: Billboard[];
+  existingBillboards: unknown[];
   campaignEndDate?: string;
 }): Promise<{
   success: boolean;
@@ -71,52 +30,5 @@ export async function importExternalBillboardsAction(input: {
   skipped: number;
   error?: string;
 }> {
-  const denied = await requireFullAdmin();
-  if (denied) return { ...denied, imported: 0, skipped: 0 };
-
-  const { campaignId, externalCampaignId, externalBillboardIds, existingBillboards, campaignEndDate } =
-    input;
-
-  if (!campaignId || !externalCampaignId || externalBillboardIds.length === 0) {
-    return { success: false, imported: 0, skipped: 0, error: "اطلاعات ورودی ناقص است" };
-  }
-
-  try {
-    const externalBillboards = await fetchAllExternalBillboards(externalCampaignId);
-    const selected = externalBillboards.filter((item) => externalBillboardIds.includes(item.id));
-
-    let imported = 0;
-    let skipped = 0;
-    let sortOrder = existingBillboards.length;
-
-    for (const external of selected) {
-      if (isAlreadyImported(existingBillboards, external.id)) {
-        skipped += 1;
-        continue;
-      }
-
-      sortOrder += 1;
-      const payload = mapExternalBillboardToLocal(external, campaignId, {
-        date: campaignEndDate,
-        sortOrder,
-        published: true,
-      });
-
-      await saveBillboard(payload);
-      imported += 1;
-    }
-
-    revalidatePath("/admin/billboards");
-    revalidatePath("/");
-
-    return { success: true, imported, skipped };
-  } catch (error) {
-    console.error("importExternalBillboardsAction failed:", error);
-    return {
-      success: false,
-      imported: 0,
-      skipped: 0,
-      error: "واردات بیلبوردها با خطا مواجه شد",
-    };
-  }
+  return { success: false, imported: 0, skipped: 0, error: "واردات از API خارجی غیرفعال شده است" };
 }

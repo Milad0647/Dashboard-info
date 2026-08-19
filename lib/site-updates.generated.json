@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "675678107de3bd6717f42915de8da351ebcebb20",
+      "committedAt": "2026-08-19T12:15:40+03:30",
+      "title": "پشتیبانی از فرمت‌های غیر وب (HEIC، AVIF و ...) با تبدیل خودکار به JPEG",
+      "subject": "Convert non-web image formats (HEIC/AVIF/BMP/TIFF) to JPEG on upload"
+    },
+    {
       "hash": "23ac51738e19303b9e772de4bd4a9787ed28a8de",
       "committedAt": "2026-08-19T12:14:16+03:30",
       "title": "بهبود دکمه دانلود تصاویر خارجی و نمایش خطاهای دانلود",

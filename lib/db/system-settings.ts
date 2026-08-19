@@ -10,7 +10,7 @@ import type {
 
 const MAP_BILBOARD_SETTINGS_KEY = "map_bilboard_api";
 const SMS_PROVIDER_SETTINGS_KEY = "sms_provider";
-const DEFAULT_BASE_URL = "https://billboard.pixlink.ir";
+const DEFAULT_BASE_URL = "";
 
 const SMS_PROVIDERS: SmsProviderId[] = ["none", "kavenegar", "melipayamak", "custom"];
 

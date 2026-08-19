@@ -1,4 +1,4 @@
-const DEFAULT_BASE_URL = "https://billboard.pixlink.ir";
+const DEFAULT_BASE_URL = "";
 
 export function getBillboardApiBaseUrl(): string {
   const baseUrl = process.env.BILLBOARD_API_BASE_URL ?? DEFAULT_BASE_URL;
