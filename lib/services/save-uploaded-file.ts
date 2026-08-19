@@ -46,6 +46,9 @@ async function normalizeImageForWeb(
   const fallback = { buffer, mime, extension: extensionForMime(mime) };
   if (mime === "image/gif") return fallback;
 
+  const WEB_SAFE_MIMES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+  const needsConversion = !WEB_SAFE_MIMES.has(mime);
+
   try {
     const pipeline = sharp(buffer, {
       failOn: "none",
@@ -56,7 +59,7 @@ async function normalizeImageForWeb(
     const tooLarge = (meta.width ?? 0) > MAX_IMAGE_EDGE || (meta.height ?? 0) > MAX_IMAGE_EDGE;
     const isJpeg = mime === "image/jpeg" || meta.format === "jpeg";
 
-    if (!tooLarge && !isJpeg) return fallback;
+    if (!tooLarge && !isJpeg && !needsConversion) return fallback;
 
     let output = pipeline.toColourspace("srgb");
     if (tooLarge) {
@@ -80,7 +83,9 @@ async function normalizeImageForWeb(
       const next = await output.webp({ quality: 82 }).toBuffer();
       return { buffer: next, mime: "image/webp", extension: ".webp" };
     }
-    return fallback;
+    // Non-web formats (HEIC, AVIF, BMP, TIFF, etc.) → convert to JPEG
+    const next = await output.jpeg({ quality: 88, mozjpeg: true }).toBuffer();
+    return { buffer: next, mime: "image/jpeg", extension: ".jpg" };
   } catch (error) {
     console.warn("Image normalization failed:", error);
     return fallback;

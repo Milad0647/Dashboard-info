@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "23ac51738e19303b9e772de4bd4a9787ed28a8de",
+      "committedAt": "2026-08-19T12:14:16+03:30",
+      "title": "بهبود دکمه دانلود تصاویر خارجی و نمایش خطاهای دانلود",
+      "subject": "Improve image localization: show button for all admins, log failed URLs, localize period images"
+    },
+    {
       "hash": "05e52416849138f6b90126f4b2a2a19603c6bafc",
       "committedAt": "2026-08-19T12:09:45+03:30",
       "title": "رفع مشکل باز نشدن لیست‌های انتخابی داخل دیالوگ‌ها",
