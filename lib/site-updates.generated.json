@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "5579a03a5235888012c0dc4dafb449e43e5d01fc",
+      "committedAt": "2026-08-19T11:53:29+03:30",
+      "title": "رفع مشکل نمایش تصاویر بیلبوردها با دانلود محلی عکس‌های وارد شده از سرور خارجی",
+      "subject": "Download remote billboard images locally during integration import"
+    },
+    {
       "hash": "583d34d54ac6cefa34b5b5a32844e675c720f9ed",
       "committedAt": "2026-08-19T11:46:39+03:30",
       "title": "رفع مشکل باز نشدن دراپ‌داون موضوع در فرم‌های ثبت محتوا",
