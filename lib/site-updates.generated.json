@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "7b777ea82ad7cbd04b10d558c765b128d28a863b",
+      "committedAt": "2026-08-19T11:59:14+03:30",
+      "title": "افزودن ابزار دانلود محلی عکس‌های بیلبورد از سرور خارجی",
+      "subject": "Add API endpoint to localize remote billboard images"
+    },
+    {
       "hash": "5579a03a5235888012c0dc4dafb449e43e5d01fc",
       "committedAt": "2026-08-19T11:53:29+03:30",
       "title": "رفع مشکل نمایش تصاویر بیلبوردها با دانلود محلی عکس‌های وارد شده از سرور خارجی",

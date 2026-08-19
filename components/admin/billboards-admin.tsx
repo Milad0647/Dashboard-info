@@ -93,6 +93,7 @@ export function BillboardsAdmin({
   const [editingBillboard, setEditingBillboard] = useState<Billboard | null>(null);
   const [previewBillboard, setPreviewBillboard] = useState<Billboard | null>(null);
   const [isRestoringCategories, setIsRestoringCategories] = useState(false);
+  const [isLocalizingImages, setIsLocalizingImages] = useState(false);
   const [contentFilter, setContentFilter] = useState<AdminContentFilterState>(DEFAULT_ADMIN_CONTENT_FILTER);
   const [categoryFilter, setCategoryFilter] = useState(ADMIN_FILTER_ALL);
   const { viewMode, setViewMode } = useAdminViewMode("billboards");
@@ -235,6 +236,40 @@ export function BillboardsAdmin({
     });
   };
 
+  const handleLocalizeImages = () => {
+    if (!isFullAdmin || isLocalizingImages) return;
+    setIsLocalizingImages(true);
+    startTransition(async () => {
+      try {
+        const res = await fetch("/api/billboard/localize-images", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ campaignId }),
+        });
+        const result = await res.json();
+        if (!res.ok || !result.success) {
+          toast.error(result.error ?? "دانلود تصاویر ناموفق بود");
+          return;
+        }
+        const { downloaded, failed, skipped } = result;
+        if (downloaded === 0 && failed === 0) {
+          toast.message("همه تصاویر قبلاً محلی هستند.");
+        } else {
+          toast.success(
+            `${downloaded} تصویر دانلود شد` +
+              (failed > 0 ? ` — ${failed} مورد ناموفق` : "") +
+              (skipped > 0 ? ` — ${skipped} بدون تغییر` : "")
+          );
+        }
+        router.refresh();
+      } catch {
+        toast.error("خطا در دانلود تصاویر");
+      } finally {
+        setIsLocalizingImages(false);
+      }
+    });
+  };
+
   return (
     <ScoringRulesProvider scoringRules={scoringRules}>
     <div className="space-y-6">
@@ -247,6 +282,23 @@ export function BillboardsAdmin({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {isFullAdmin && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isLocalizingImages}
+              onClick={handleLocalizeImages}
+            >
+              {isLocalizingImages ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  در حال دانلود تصاویر...
+                </>
+              ) : (
+                "دانلود تصاویر خارجی"
+              )}
+            </Button>
+          )}
           {isFullAdmin && (
             <Button
               type="button"
