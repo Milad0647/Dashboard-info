@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "c74fffdbcc94652625a739f074a40a5c12048cac",
+      "committedAt": "2026-08-19T11:41:23+03:30",
+      "title": "نمایش خطای محدودیت بارگذاری روزانه هنگام کلیک روی دکمه ثبت جدید",
+      "subject": "Check daily upload quota before opening create form"
+    },
+    {
       "hash": "95eb1c7ea592bad0a32b314da1112814b34c7712",
       "committedAt": "2026-08-19T11:32:19+03:30",
       "title": "رفع مشکل باز نشدن لیست موضوع در تبلیغات محیطی و سایر دیالوگ‌ها",
