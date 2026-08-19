@@ -1,31 +1,19 @@
-const DEFAULT_BASE_URL = "";
-
 export function getBillboardApiBaseUrl(): string {
-  const baseUrl = process.env.BILLBOARD_API_BASE_URL ?? DEFAULT_BASE_URL;
-  return baseUrl.replace(/\/$/, "");
+  return "";
 }
 
 export const billboardApiRoutes = {
-  campaigns: () => `${getBillboardApiBaseUrl()}/api/v1/campaigns`,
-  campaignIntegration: (slug: string) =>
-    `${getBillboardApiBaseUrl()}/api/v1/campaigns/${encodeURIComponent(slug)}/integration`,
-  billboards: (params?: { campaignId?: string; page?: number; perPage?: number }) => {
-    const searchParams = new URLSearchParams();
-    if (params?.campaignId) searchParams.set("campaign_id", params.campaignId);
-    if (params?.page) searchParams.set("page", String(params.page));
-    if (params?.perPage) searchParams.set("per_page", String(params.perPage));
-    const query = searchParams.toString();
-    return `${getBillboardApiBaseUrl()}/api/v1/billboards${query ? `?${query}` : ""}`;
-  },
-  createBillboard: () => `${getBillboardApiBaseUrl()}/api/v1/billboards`,
-  authLogin: () => `${getBillboardApiBaseUrl()}/api/v1/auth/login`,
-  campaignBillboards: (campaignId: string) =>
-    `${getBillboardApiBaseUrl()}/api/v1/campaigns/${encodeURIComponent(campaignId)}/billboards`,
-  campaignBillboardDesigns: (campaignId: string, assignmentId: string) =>
-    `${getBillboardApiBaseUrl()}/api/v1/campaigns/${encodeURIComponent(campaignId)}/billboards/${encodeURIComponent(assignmentId)}/designs`,
+  campaigns: () => "",
+  campaignIntegration: (_slug: string) => "",
+  billboards: (_params?: { campaignId?: string; page?: number; perPage?: number }) => "",
+  createBillboard: () => "",
+  authLogin: () => "",
+  campaignBillboards: (_campaignId: string) => "",
+  campaignBillboardDesigns: (_campaignId: string, _assignmentId: string) => "",
   resolveAssetUrl: (path: string | null | undefined) => {
     if (!path) return null;
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${getBillboardApiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
+    if (path.startsWith("/")) return path;
+    return `/${path}`;
   },
 };

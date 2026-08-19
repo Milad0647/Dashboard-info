@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "78932fb451893c7c13177b973fe5d8c2d6a0fe41",
+      "committedAt": "2026-08-19T12:32:44+03:30",
+      "title": "افزودن ابزار بررسی وضعیت فایل‌های تصویر بیلبورد روی سرور",
+      "subject": "Add diagnostic API to check billboard image status on disk"
+    },
+    {
       "hash": "631a3e8b7faf3099142cc246fca4f1c653ab0bee",
       "committedAt": "2026-08-19T12:26:42+03:30",
       "title": "حذف کامل وابستگی به سرور خارجی بیلبورد — تمام داده‌ها مستقل و محلی مدیریت می‌شوند",

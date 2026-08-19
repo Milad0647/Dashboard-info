@@ -1,5 +1,4 @@
-// Auto-generated — synced from Map-Bilboard (billboard.pixlink.ir) dataset
-// Keep in sync with the billboard API project so province/city names match.
+// Static dataset of Iranian provinces and cities used for billboard location fields.
 
 export interface IranCity {
   name: string;

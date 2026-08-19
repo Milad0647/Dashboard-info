@@ -3,7 +3,7 @@ import { basename, join } from "path";
 import JSZip from "jszip";
 import { pgSaveBillboard } from "@/lib/db/repository";
 import { matchProviderToUser } from "@/lib/services/provider-user-match";
-import { getBillboardApiBaseUrl } from "@/lib/routes/billboard-api";
+
 import { getUploadPublicUrl, getUploadsDir } from "@/lib/uploads";
 import { getExternalBillboardTag } from "@/lib/models/billboard-api";
 import type { AdminUser } from "@/lib/types";
@@ -102,43 +102,9 @@ async function copyZipAsset(zip: JSZip, relativePath: string | null | undefined)
   return getUploadPublicUrl(filename);
 }
 
-export async function forwardMapBilboardBackupZip(buffer: Buffer): Promise<{ ok: boolean; error?: string }> {
-  const restoreUrl = process.env.BILLBOARD_BACKUP_RESTORE_URL?.trim();
-  if (!restoreUrl) {
-    return { ok: false, error: "BILLBOARD_BACKUP_RESTORE_URL تنظیم نشده است" };
-  }
-
-  const token = process.env.BILLBOARD_BACKUP_RESTORE_TOKEN?.trim();
-  const formData = new FormData();
-  formData.append(
-    "file",
-    new Blob([new Uint8Array(buffer)], { type: "application/zip" }),
-    "map-bilboard-backup.zip"
-  );
-
-  try {
-    const response = await fetch(restoreUrl, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      body: formData,
-      signal: AbortSignal.timeout(120_000),
-    });
-
-    if (!response.ok) {
-      const message = await response.text();
-      return {
-        ok: false,
-        error: message || `خطای ${response.status} از سرویس بیلبورد (${getBillboardApiBaseUrl()})`,
-      };
-    }
-
-    return { ok: true };
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "ارسال پشتیبان به سرویس بیلبورد ناموفق بود",
-    };
-  }
+export async function forwardMapBilboardBackupZip(_buffer: Buffer): Promise<{ ok: boolean; error?: string }> {
+  void _buffer;
+  return { ok: false, error: "ارسال پشتیبان به سرویس خارجی غیرفعال شده است" };
 }
 
 export async function importMapBilboardBackupZip(params: {

@@ -45,8 +45,6 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "aparat.com" },
       { protocol: "https", hostname: "www.aparat.com" },
       { protocol: "https", hostname: "*.supabase.co" },
-      { protocol: "https", hostname: "billboard.pixlink.ir" },
-      { protocol: "https", hostname: "*.pixlink.ir" },
       { protocol: "https", hostname: "*.darkube.ir" },
     ],
   },
