@@ -236,34 +236,49 @@ export function BillboardsAdmin({
     });
   };
 
-  const handleLocalizeImages = () => {
+  const handleRemoveExternalDeps = () => {
     if (isLocalizingImages) return;
+    const confirmed = window.confirm(
+      "همه وابستگی‌های خارجی حذف شوند؟\n\n" +
+      "• تصاویر خارجی دانلود و محلی می‌شوند\n" +
+      "• تگ‌های map/assignment/provider پاک می‌شوند\n" +
+      "• منبع (source) همه بیلبوردها به «دستی» تغییر می‌کند\n" +
+      "• شناسه‌های خارجی حذف می‌شوند"
+    );
+    if (!confirmed) return;
+
     setIsLocalizingImages(true);
     startTransition(async () => {
       try {
-        const res = await fetch("/api/billboard/localize-images", {
+        const res = await fetch("/api/billboard/remove-external-deps", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ campaignId }),
         });
         const result = await res.json();
         if (!res.ok || !result.success) {
-          toast.error(result.error ?? "دانلود تصاویر ناموفق بود");
+          toast.error(result.error ?? "عملیات ناموفق بود");
           return;
         }
-        const { downloaded, failed, skipped } = result;
-        if (downloaded === 0 && failed === 0) {
-          toast.message("همه تصاویر قبلاً محلی هستند.");
+        const {
+          imagesLocalized, tagsCleanedCount, sourceFixedCount,
+          externalIdClearedCount, periodsFixed, alreadyClean,
+        } = result;
+        const changes = imagesLocalized + tagsCleanedCount + sourceFixedCount + externalIdClearedCount + periodsFixed;
+        if (changes === 0) {
+          toast.message("همه بیلبوردها قبلاً مستقل هستند — وابستگی خارجی وجود ندارد.");
         } else {
-          toast.success(
-            `${downloaded} تصویر دانلود شد` +
-              (failed > 0 ? ` — ${failed} مورد ناموفق` : "") +
-              (skipped > 0 ? ` — ${skipped} بدون تغییر` : "")
-          );
+          const parts: string[] = [];
+          if (imagesLocalized > 0) parts.push(`${imagesLocalized} تصویر محلی شد`);
+          if (tagsCleanedCount > 0) parts.push(`${tagsCleanedCount} تگ خارجی پاک شد`);
+          if (sourceFixedCount > 0) parts.push(`${sourceFixedCount} منبع اصلاح شد`);
+          if (externalIdClearedCount > 0) parts.push(`${externalIdClearedCount} شناسه خارجی حذف شد`);
+          if (periodsFixed > 0) parts.push(`${periodsFixed} دوره نمایش اصلاح شد`);
+          toast.success(parts.join(" | ") + (alreadyClean > 0 ? ` — ${alreadyClean} بدون تغییر` : ""));
         }
         router.refresh();
       } catch {
-        toast.error("خطا در دانلود تصاویر");
+        toast.error("خطا در حذف وابستگی‌ها");
       } finally {
         setIsLocalizingImages(false);
       }
@@ -286,15 +301,15 @@ export function BillboardsAdmin({
             type="button"
             variant="outline"
             disabled={isLocalizingImages}
-            onClick={handleLocalizeImages}
+            onClick={handleRemoveExternalDeps}
           >
             {isLocalizingImages ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                در حال دانلود تصاویر...
+                در حال پاکسازی...
               </>
             ) : (
-              "دانلود تصاویر خارجی"
+              "حذف وابستگی خارجی"
             )}
           </Button>
           {isFullAdmin && (

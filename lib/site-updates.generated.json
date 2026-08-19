@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "c823ee7f995d0714d724af52688aaab24818cd9a",
+      "committedAt": "2026-08-19T12:42:51+03:30",
+      "title": "حذف کامل وابستگی به سرویس خارجی بیلبورد و مستقل‌سازی اپلیکیشن",
+      "subject": "Fully decouple app from external billboard API (billboard.pixlink.ir)"
+    },
+    {
       "hash": "78932fb451893c7c13177b973fe5d8c2d6a0fe41",
       "committedAt": "2026-08-19T12:32:44+03:30",
       "title": "افزودن ابزار بررسی وضعیت فایل‌های تصویر بیلبورد روی سرور",
