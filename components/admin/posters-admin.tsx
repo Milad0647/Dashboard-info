@@ -83,7 +83,7 @@ export function PostersAdmin({
   canTransferOwnership = false,
   users = [],
 }: PostersAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("posters");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("posters", campaignId);
   const router = useRouter();
   const searchParams = useSearchParams();
   const openedFromQueryRef = useRef<string | null>(null);

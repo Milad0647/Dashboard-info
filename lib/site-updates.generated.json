@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "hash": "95eb1c7ea592bad0a32b314da1112814b34c7712",
+      "committedAt": "2026-08-19T11:32:19+03:30",
+      "title": "رفع مشکل باز نشدن لیست موضوع در تبلیغات محیطی و سایر دیالوگ‌ها",
+      "subject": "Fix SearchableSelect dropdown invisible inside transformed dialogs"
+    },
+    {
       "hash": "553fce20bdd82049d05a22440d96e95959534cf8",
       "committedAt": "2026-08-19T11:24:42+03:30",
       "title": "رفع مشکل منقضی شدن نشست سایر کاربران هنگام خروج ادمین",

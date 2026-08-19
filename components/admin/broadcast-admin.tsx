@@ -148,7 +148,7 @@ export function BroadcastAdmin({
   canTransferOwnership = false,
   users = [],
 }: BroadcastAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("broadcast");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("broadcast", campaignId);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rows, setRows] = useState(initialReports);

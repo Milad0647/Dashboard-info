@@ -100,7 +100,7 @@ export function SmsReportsAdmin({
   canTransferOwnership = false,
   users = [],
 }: SmsReportsAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("smsReports");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("smsReports", campaignId);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rows, setRows] = useState(initialReports);

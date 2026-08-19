@@ -47,7 +47,7 @@ export function SubmissionsAdmin({
   canTransferOwnership = false,
   users = [],
 }: SubmissionsAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("submissions");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("submissions", campaignId);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [submissions, setSubmissions] = useState(initialSubmissions);

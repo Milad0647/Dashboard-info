@@ -124,7 +124,7 @@ export function PressPublicationsAdmin({
   canScore = false,
   users = [],
 }: PressPublicationsAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("pressPublications");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("pressPublications", campaignId);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [mediaItems, setMediaItems] = useState<ActivityMediaItem[]>([]);

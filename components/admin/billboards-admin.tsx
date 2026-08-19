@@ -86,7 +86,7 @@ export function BillboardsAdmin({
   users = [],
   contributorProfile = null,
 }: BillboardsAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("billboards");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("billboards", campaignId);
   const router = useRouter();
   const [billboards, setBillboards] = useState(initialBillboards);
   const [formOpen, setFormOpen] = useState(false);

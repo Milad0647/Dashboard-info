@@ -90,7 +90,7 @@ export function SitePublicationsAdmin({
   canTransferOwnership = false,
   users = [],
 }: SitePublicationsAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("sitePublications");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("sitePublications", campaignId);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [planLabels, setPlanLabels] = useState<string[]>([]);

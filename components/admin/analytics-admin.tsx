@@ -57,7 +57,7 @@ export function AnalyticsAdmin({
   canTransferOwnership = false,
   users = [],
 }: AnalyticsAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("analytics");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("analytics", campaignId);
   const siteMetrics = useMemo(
     () => initialMetrics.filter((metric) => (metric.channel ?? "site") === "site"),
     [initialMetrics]

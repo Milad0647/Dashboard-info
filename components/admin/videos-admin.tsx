@@ -85,7 +85,7 @@ export function VideosAdmin({
   canTransferOwnership = false,
   users = [],
 }: VideosAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("videos");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("videos", campaignId);
   const router = useRouter();
   const searchParams = useSearchParams();
   const openedFromQueryRef = useRef<string | null>(null);

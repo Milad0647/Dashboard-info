@@ -93,7 +93,7 @@ export function MeetingsAdmin({
   canTransferOwnership = false,
   users = [],
 }: MeetingsAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("meetings");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("meetings", campaignId);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rows, setRows] = useState(initialMeetings);

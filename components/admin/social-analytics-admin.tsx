@@ -89,7 +89,7 @@ export function SocialAnalyticsAdmin({
   canTransferOwnership = false,
   users = [],
 }: SocialAnalyticsAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("socialAnalytics");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("socialAnalytics", campaignId);
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

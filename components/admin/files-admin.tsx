@@ -84,7 +84,7 @@ export function FilesAdmin({
   canTransferOwnership = false,
   users = [],
 }: FilesAdminProps) {
-  const { requestCreate, tutorialModal } = useSectionCreateGate("files");
+  const { requestCreate, tutorialModal } = useSectionCreateGate("files", campaignId);
   const [files, setFiles] = useState(initialFiles);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
